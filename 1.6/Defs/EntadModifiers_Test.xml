@@ -3,9 +3,16 @@
     <defName>Entad_BlessedComfort</defName>
     <label>blessed comfort</label>
     <description>An ethereal warmth radiates from this object, easing the mind of anyone using it.</description>
-    <category>Furniture</category>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
     <statOffsets>
-      <MarketValue>350</MarketValue>
+      <li>
+        <stat>Comfort</stat>
+        <min>0.05</min>
+        <max>0.25</max>
+      </li>
     </statOffsets>
   </EntadFramework.EntadModifierDef>
 </Defs>

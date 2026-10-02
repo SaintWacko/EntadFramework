@@ -40,9 +40,9 @@ namespace EntadFramework
             }
 
             EntadModifierDef randomMod = allMods.RandomElement();
-            if (!comp.activeModifiers.Contains(randomMod))
+            if (!comp.HasModifier(randomMod))
             {
-                comp.activeModifiers.Add(randomMod);
+                comp.AddModifier(randomMod);
                 Messages.Message($"Applied '{randomMod.LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
             }
             else

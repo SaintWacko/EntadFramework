@@ -1,44 +1,109 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using RimWorld;
 
 namespace EntadFramework
 {
+    // A modifier applied to a specific item, with the values rolled for it
+    public class AppliedEntadModifier : IExposable
+    {
+        public EntadModifierDef def;
+        public List<float> offsetValues = new List<float>();
+        public List<float> factorValues = new List<float>();
+
+        public void ExposeData()
+        {
+            Scribe_Defs.Look(ref def, "def");
+            Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
+            Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                offsetValues = offsetValues ?? new List<float>();
+                factorValues = factorValues ?? new List<float>();
+            }
+        }
+
+        public static AppliedEntadModifier Roll(EntadModifierDef def)
+        {
+            var applied = new AppliedEntadModifier { def = def };
+            if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
+            if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
+            return applied;
+        }
+
+        public float OffsetFor(int i) => i < offsetValues.Count ? offsetValues[i] : 0f;
+        public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
+
+        // Average position (0..1) of the rolled values within their ranges
+        public float RollQuality()
+        {
+            float sum = 0f;
+            int n = 0;
+            if (def.statOffsets != null)
+                for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
+            if (def.statFactors != null)
+                for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
+            return n == 0 ? 0.5f : sum / n;
+        }
+
+        // Market value added by this modifier: scales with rarity and where the roll landed
+        public float MarketValueOffset() => def.BaseMarketValue * (0.5f + RollQuality());
+    }
+
     public class CompEntad : ThingComp
     {
-        // Stores active modifiers rolled for this specific item instance
-        public List<EntadModifierDef> activeModifiers = new List<EntadModifierDef>();
+        public List<AppliedEntadModifier> activeModifiers = new List<AppliedEntadModifier>();
 
         public CompProperties_Entad Props => (CompProperties_Entad)props;
 
-        // Called when the game saves/loads (handles save state persistence)
+        public bool HasModifier(EntadModifierDef def) => activeModifiers.Any(m => m.def == def);
+
+        public void AddModifier(EntadModifierDef def)
+        {
+            activeModifiers.Add(AppliedEntadModifier.Roll(def));
+        }
+
         public override void PostExposeData()
         {
             base.PostExposeData();
-            Scribe_Collections.Look(ref activeModifiers, "activeModifiers", LookMode.Def);
-
-            // Re-initialize list if loading a clean item
-            if (Scribe.mode == LoadSaveMode.PostLoadInit && activeModifiers == null)
+            Scribe_Collections.Look(ref activeModifiers, "activeModifiers", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                activeModifiers = new List<EntadModifierDef>();
+                activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
+                activeModifiers.RemoveAll(m => m == null || m.def == null);
             }
         }
 
-        // Appends custom modifier details to the item's bottom-left inspect box in-game
         public override string CompInspectStringExtra()
         {
             if (activeModifiers.NullOrEmpty()) return null;
+            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.def.LabelCap.ToString()));
+        }
 
-            string inspectText = "Entad Modifiers:";
-            foreach (var mod in activeModifiers)
+        // Shows modifiers in the item's info panel, like unique weapon parts
+        public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
+        {
+            if (activeModifiers.NullOrEmpty()) yield break;
+            foreach (var m in activeModifiers)
             {
-                inspectText += $"\n • {mod.LabelCap}: {mod.description}";
+                string desc = m.def.description;
+                for (int i = 0; m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
+                {
+                    var s = m.def.statOffsets[i].stat;
+                    desc += $"\n{s.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(s.toStringStyle)}";
+                }
+                for (int i = 0; m.def.statFactors != null && i < m.def.statFactors.Count; i++)
+                {
+                    var s = m.def.statFactors[i].stat;
+                    desc += $"\n{s.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
+                }
+                desc += $"\nRarity: {m.def.rarity}";
+                yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, m.def.LabelCap, m.def.rarity.ToString(), desc, 4000);
             }
-            return inspectText;
         }
     }
 
-    // Standard wrapper required by RimWorld to attach a ThingComp via XML
     public class CompProperties_Entad : CompProperties
     {
         public CompProperties_Entad()
