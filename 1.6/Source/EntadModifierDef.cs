@@ -10,7 +10,7 @@ namespace EntadFramework
         Common,
         Uncommon,
         Rare,
-        VeryRare,
+        Epic,
         Legendary
     }
 
@@ -49,7 +49,7 @@ namespace EntadFramework
                 {
                     case EntadRarity.Uncommon: return 100f;
                     case EntadRarity.Rare: return 300f;
-                    case EntadRarity.VeryRare: return 800f;
+                    case EntadRarity.Epic: return 800f;
                     case EntadRarity.Legendary: return 2000f;
                     default: return 30f;
                 }
