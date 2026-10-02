@@ -30,25 +30,14 @@ namespace EntadFramework
                 return;
             }
 
-            CompEntad comp = targetThing.TryGetComp<CompEntad>();
-
-            List<EntadModifierDef> allMods = DefDatabase<EntadModifierDef>.AllDefsListForReading.FindAll(d => d.CanApplyTo(targetThing));
-            if (allMods.NullOrEmpty())
+            var applied = EntadApi.ApplyRandomModifiers(targetThing);
+            if (applied.Count == 0)
             {
                 Messages.Message("No applicable EntadModifierDefs for this item!", MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
-            EntadModifierDef randomMod = allMods.RandomElement();
-            if (!comp.HasModifier(randomMod))
-            {
-                comp.AddModifier(randomMod);
-                Messages.Message($"Applied '{randomMod.LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
-            }
-            else
-            {
-                Messages.Message($"{targetThing.LabelCap} already has '{randomMod.LabelCap}'.", MessageTypeDefOf.RejectInput, false);
-            }
+            Messages.Message($"Applied '{applied[0].LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
         }
     }
 }
