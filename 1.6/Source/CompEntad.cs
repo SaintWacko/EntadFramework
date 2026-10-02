@@ -11,12 +11,14 @@ namespace EntadFramework
         public EntadModifierDef def;
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
+        public float thoughtHours;
 
         public void ExposeData()
         {
             Scribe_Defs.Look(ref def, "def");
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
+            Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 offsetValues = offsetValues ?? new List<float>();
@@ -29,8 +31,11 @@ namespace EntadFramework
             var applied = new AppliedEntadModifier { def = def };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
+            if (def.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
             return applied;
         }
+
+        public int ThoughtDurationTicks => UnityEngine.Mathf.Max(1, (int)(thoughtHours * GenDate.TicksPerHour));
 
         public float OffsetFor(int i) => i < offsetValues.Count ? offsetValues[i] : 0f;
         public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
@@ -44,6 +49,7 @@ namespace EntadFramework
                 for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
             if (def.statFactors != null)
                 for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
+            if (def.thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
             return n == 0 ? 0.5f : sum / n;
         }
 
@@ -73,6 +79,26 @@ namespace EntadFramework
                 activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
                 activeModifiers.RemoveAll(m => m == null || m.def == null);
             }
+        }
+
+        // The pawn currently wearing/wielding this item, if any
+        public Pawn Holder
+        {
+            get
+            {
+                if (parent is Apparel apparel) return apparel.Wearer;
+                return (parent.ParentHolder as Pawn_EquipmentTracker)?.pawn;
+            }
+        }
+
+        // While equipped, keep the mood thought refreshed with a short lifetime so it ends soon after unequipping
+        public override void CompTick()
+        {
+            if (activeModifiers.NullOrEmpty() || !parent.IsHashIntervalTick(150)) return;
+            Pawn holder = Holder;
+            if (holder == null) return;
+            foreach (var m in activeModifiers)
+                if (m.def.thought != null) EntadMoods.Give(holder, m.def.thought, 600);
         }
 
         public override string TransformLabel(string label)
@@ -106,6 +132,10 @@ namespace EntadFramework
                 {
                     var s = m.def.statFactors[i].stat;
                     sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
+                }
+                if (m.def.thought != null)
+                {
+                    sb.AppendLine($" - Mood: {m.def.thought.stages?.FirstOrDefault()?.LabelCap ?? m.def.thought.defName} ({m.thoughtHours:0.#}h)");
                 }
                 sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }

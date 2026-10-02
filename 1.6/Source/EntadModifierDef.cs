@@ -38,6 +38,11 @@ namespace EntadFramework
         public List<StatModifierRange> statOffsets;
         public List<StatModifierRange> statFactors;
 
+        // Mood effect: while equipped (weapons/apparel) or after use (furniture) the wearer/user gets this thought.
+        // The lifetime in hours is rolled in thoughtHours when the modifier is applied.
+        public ThoughtDef thought;
+        public FloatRange thoughtHours = new FloatRange(1f, 1f);
+
         public string discoveryMessage;
 
         // Base market value contributed by this modifier, by rarity
@@ -63,6 +68,8 @@ namespace EntadFramework
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat offset range";
             foreach (var r in Ranges(statFactors))
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat factor range";
+            if (thought != null && !thought.IsMemory) yield return $"{defName}: thought {thought.defName} is not a memory thought";
+            if (thought != null && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
