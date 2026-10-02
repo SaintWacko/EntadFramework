@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using RimWorld;
 
@@ -62,6 +63,47 @@ namespace EntadFramework
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat offset range";
             foreach (var r in Ranges(statFactors))
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat factor range";
+        }
+
+        // Categories restrict by item type; stats must additionally be meaningful for the item
+        public bool CanApplyTo(Thing thing)
+        {
+            ThingDef td = thing?.def;
+            if (td == null) return false;
+
+            if (!categories.NullOrEmpty())
+            {
+                bool match = false;
+                foreach (string c in categories)
+                {
+                    if ((c == "Weapon" && td.IsWeapon) ||
+                        (c == "Apparel" && td.IsApparel) ||
+                        (c == "Furniture" && td.building != null && td.designationCategory != null && td.designationCategory.defName == "Furniture"))
+                    { match = true; break; }
+                }
+                if (!match) return false;
+            }
+
+            foreach (var r in AllRanges())
+            {
+                if (r.stat == null) continue;
+                if (r.stat == StatDefOf.MarketValue) continue;
+                if (!StatAppliesTo(r.stat, thing)) return false;
+            }
+            return true;
+        }
+
+        private static bool StatAppliesTo(StatDef stat, Thing thing)
+        {
+            ThingDef td = thing.def;
+            if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Stats such as equipped offsets work on any equippable item
+        private static bool StatDefHasEquippedOrBase(StatDef stat, ThingDef td)
+        {
+            return stat.category == StatCategoryDefOf.EquippedStatOffsets && (td.IsWeapon || td.IsApparel);
         }
 
         public IEnumerable<StatModifierRange> AllRanges()

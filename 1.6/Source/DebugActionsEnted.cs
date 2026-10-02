@@ -32,10 +32,10 @@ namespace EntadFramework
 
             CompEntad comp = targetThing.TryGetComp<CompEntad>();
 
-            List<EntadModifierDef> allMods = DefDatabase<EntadModifierDef>.AllDefsListForReading;
+            List<EntadModifierDef> allMods = DefDatabase<EntadModifierDef>.AllDefsListForReading.FindAll(d => d.CanApplyTo(targetThing));
             if (allMods.NullOrEmpty())
             {
-                Messages.Message("No EntadModifierDefs found in database!", MessageTypeDefOf.RejectInput, false);
+                Messages.Message("No applicable EntadModifierDefs for this item!", MessageTypeDefOf.RejectInput, false);
                 return;
             }
 

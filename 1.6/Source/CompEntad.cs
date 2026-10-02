@@ -81,26 +81,32 @@ namespace EntadFramework
             return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.def.LabelCap.ToString()));
         }
 
-        // Shows modifiers in the item's info panel, like unique weapon parts
+        // Single row in the Basics section; hover shows details like unique weapon traits
         public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
         {
             if (activeModifiers.NullOrEmpty()) yield break;
+
+            var sb = new System.Text.StringBuilder("This item's entad modifiers.\n");
             foreach (var m in activeModifiers)
             {
-                string desc = m.def.description;
+                sb.Append("\n").AppendLine(m.def.LabelCap.Resolve().Colorize(ColoredText.TipSectionTitleColor));
+                sb.AppendLine(m.def.description);
                 for (int i = 0; m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
                     var s = m.def.statOffsets[i].stat;
-                    desc += $"\n{s.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(s.toStringStyle)}";
+                    float v = m.OffsetFor(i);
+                    sb.AppendLine($" - {s.LabelCap} {(v >= 0 ? "+" : "")}{v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
                 }
                 for (int i = 0; m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
                     var s = m.def.statFactors[i].stat;
-                    desc += $"\n{s.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
+                    sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
                 }
-                desc += $"\nRarity: {m.def.rarity}";
-                yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, m.def.LabelCap, m.def.rarity.ToString(), desc, 4000);
+                sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }
+
+            string label = string.Join(", ", activeModifiers.Select(m => m.def.label));
+            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
         }
     }
 
