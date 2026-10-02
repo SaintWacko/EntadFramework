@@ -76,9 +76,7 @@ namespace EntadFramework
                 bool match = false;
                 foreach (string c in categories)
                 {
-                    if ((c == "Weapon" && td.IsWeapon) ||
-                        (c == "Apparel" && td.IsApparel) ||
-                        (c == "Furniture" && td.building != null && td.designationCategory != null && td.designationCategory.defName == "Furniture"))
+                    if ((EntadUtility.KindOf(td) & EntadUtility.ParseKind(c)) != EntadItemKind.None)
                     { match = true; break; }
                 }
                 if (!match) return false;
