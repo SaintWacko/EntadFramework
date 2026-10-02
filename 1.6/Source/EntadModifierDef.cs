@@ -30,6 +30,16 @@ namespace EntadFramework
         }
     }
 
+    [System.Flags]
+    public enum EntadEffectKind
+    {
+        None = 0,
+        Stat = 1,
+        Mood = 2,
+        Meal = 4,
+        Ability = 8
+    }
+
     public class EntadModifierDef : Def
     {
         public List<string> categories = new List<string>();
@@ -68,6 +78,19 @@ namespace EntadFramework
                     case EntadRarity.Legendary: return 2000f;
                     default: return 30f;
                 }
+            }
+        }
+
+        public EntadEffectKind EffectKinds
+        {
+            get
+            {
+                EntadEffectKind kinds = EntadEffectKind.None;
+                if (AllRanges().Any()) kinds |= EntadEffectKind.Stat;
+                if (thought != null) kinds |= EntadEffectKind.Mood;
+                if (HasMealEffect) kinds |= EntadEffectKind.Meal;
+                if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
+                return kinds;
             }
         }
 

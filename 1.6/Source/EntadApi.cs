@@ -19,6 +19,8 @@ namespace EntadFramework
         public HashSet<EntadRarity> rarities = new HashSet<EntadRarity>();
         // Only modifiers declaring one of these categories (all when empty)
         public HashSet<string> categories = new HashSet<string>();
+        // Modifier must have at least one of these kinds of effect (all when None)
+        public EntadEffectKind effectKinds = EntadEffectKind.None;
         // Additional arbitrary check
         public Predicate<EntadModifierDef> predicate;
 
@@ -28,6 +30,8 @@ namespace EntadFramework
             if (defBlacklist.Contains(def)) return false;
             if (rarities.Count > 0 && !rarities.Contains(def.rarity)) return false;
             if (categories.Count > 0 && (def.categories == null || !def.categories.Any(categories.Contains))) return false;
+
+            if (effectKinds != EntadEffectKind.None && (def.EffectKinds & effectKinds) == EntadEffectKind.None) return false;
 
             var stats = def.AllRanges().Select(r => r.stat).Where(s => s != null).ToList();
             if (statBlacklist.Count > 0 && stats.Any(statBlacklist.Contains)) return false;
