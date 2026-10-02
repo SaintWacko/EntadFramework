@@ -5,5 +5,8 @@
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
+  <loadAfter>
+    <li>Ludeon.RimWorld</li>
+  </loadAfter>
   <description>Core framework for dynamic, randomized item modifiers and abilities.</description>
 </ModMetaData>
