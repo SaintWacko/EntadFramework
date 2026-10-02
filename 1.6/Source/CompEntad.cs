@@ -75,6 +75,11 @@ namespace EntadFramework
             }
         }
 
+        public override string TransformLabel(string label)
+        {
+            return activeModifiers.NullOrEmpty() ? label : "\u263C" + label + "\u263C";
+        }
+
         public override string CompInspectStringExtra()
         {
             if (activeModifiers.NullOrEmpty()) return null;
