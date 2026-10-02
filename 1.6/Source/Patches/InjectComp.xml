@@ -1,0 +1,8 @@
+<Patch>
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThingDef[@Name="BaseWeapon" or @Name="FurnitureWithQualityBase" or @Name="ApparelBase"]/comps</xpath>
+    <value>
+      <li Class="EntadFramework.CompProperties_Entad" />
+    </value>
+  </Operation>
+</Patch>

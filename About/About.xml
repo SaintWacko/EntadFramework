@@ -1,0 +1,9 @@
+<ModMetaData>
+  <name>Entad Framework</name>
+  <packageId>SaintWacko.EntadFramework</packageId>
+  <author>SaintWacko</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Core framework for dynamic, randomized item modifiers and abilities.</description>
+</ModMetaData>
