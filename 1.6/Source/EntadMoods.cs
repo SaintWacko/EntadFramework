@@ -1,4 +1,4 @@
-using System.Linq;
+using System.Collections.Generic;
 using HarmonyLib;
 using Verse;
 using Verse.AI;
@@ -26,30 +26,62 @@ namespace EntadFramework
         }
     }
 
-    // Furniture mood effects trigger when a pawn finishes a job that used the furniture
-    [HarmonyPatch(typeof(Pawn_JobTracker), nameof(Pawn_JobTracker.EndCurrentJob))]
-    public static class Patch_EndCurrentJob_FurnitureMood
+    // Furniture mood effects trigger when a pawn finishes (or is pulled off) a job that used the furniture.
+    // CleanupCurrentJob is the single place every job ending passes through.
+    [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
+    public static class Patch_CleanupCurrentJob_FurnitureMood
     {
         public static void Prefix(Pawn_JobTracker __instance, JobCondition condition)
         {
             Job job = __instance.curJob;
             Pawn pawn = __instance.pawn;
-            if (job == null || pawn == null || !pawn.IsColonist || condition != JobCondition.Succeeded) return;
+            if (job == null || pawn == null || pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
+            if (condition == JobCondition.Errored || condition == JobCondition.ErroredPather) return;
             if (job.def == JobDefOf.Goto) return;
 
             Map map = pawn.MapHeld;
             if (map == null) return;
 
-            LocalTargetInfo[] targets = { job.targetA, job.targetB, job.targetC };
-            foreach (LocalTargetInfo target in targets)
+            var used = new HashSet<Thing>();
+            foreach (LocalTargetInfo target in new[] { job.targetA, job.targetB, job.targetC })
             {
                 Thing t = target.Thing;
-                if (t != null && t.def.building != null) EntadMoods.OnFurnitureUsed(pawn, t);
+                if (t != null && t.def.building != null) used.Add(t);
             }
 
             // Chairs, beds etc. the pawn is sitting/lying on
             foreach (Thing t in pawn.Position.GetThingList(map))
-                if (t.def.building != null && !targets.Any(x => x.Thing == t)) EntadMoods.OnFurnitureUsed(pawn, t);
+                if (t.def.building != null) used.Add(t);
+
+            // Tables the pawn is eating at
+            if (job.def == JobDefOf.Ingest)
+                foreach (Thing t in EntadMeals.SurfaceThings(pawn)) used.Add(t);
+
+            foreach (Thing t in used) EntadMoods.OnFurnitureUsed(pawn, t);
+        }
+    }
+
+    // Weapons and apparel: refresh thoughts and abilities for equipped entad items.
+    // Driven from the pawn so it doesn't depend on the item itself being ticked.
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.Tick))]
+    public static class Patch_PawnTick_EquippedEntad
+    {
+        public static void Postfix(Pawn __instance)
+        {
+            if (!__instance.IsHashIntervalTick(150)) return;
+            if (__instance.apparel != null)
+                foreach (Apparel a in __instance.apparel.WornApparel) Apply(__instance, a);
+            if (__instance.equipment != null)
+                foreach (ThingWithComps e in __instance.equipment.AllEquipmentListForReading) Apply(__instance, e);
+        }
+
+        private static void Apply(Pawn pawn, Thing item)
+        {
+            var comp = item.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
+            EntadAbilities.Grant(pawn, comp);
+            foreach (var m in comp.activeModifiers)
+                if (m.thought != null) EntadMoods.Give(pawn, m.thought, 600);
         }
     }
 }

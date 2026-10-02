@@ -102,17 +102,6 @@ namespace EntadFramework
             }
         }
 
-        // While equipped, keep the mood thought refreshed with a short lifetime so it ends soon after unequipping
-        public override void CompTick()
-        {
-            if (activeModifiers.NullOrEmpty() || !parent.IsHashIntervalTick(150)) return;
-            Pawn holder = Holder;
-            if (holder == null) return;
-            EntadAbilities.Grant(holder, this);
-            foreach (var m in activeModifiers)
-                if (m.thought != null) EntadMoods.Give(holder, m.thought, 600);
-        }
-
         public override string TransformLabel(string label)
         {
             return activeModifiers.NullOrEmpty() ? label : "\u263C" + label + "\u263C";

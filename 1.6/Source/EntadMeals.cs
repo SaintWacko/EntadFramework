@@ -7,6 +7,27 @@ namespace EntadFramework
 {
     public static class EntadMeals
     {
+        public static Thing SurfaceThing(Pawn pawn)
+        {
+            Map map = pawn?.MapHeld;
+            if (map == null || !pawn.Spawned) return null;
+
+            Thing surface = FindSurface(pawn.Position + pawn.Rotation.FacingCell, map);
+            if (surface != null) return surface;
+            foreach (IntVec3 c in GenAdj.CellsAdjacentCardinal(pawn))
+            {
+                surface = FindSurface(c, map);
+                if (surface != null) return surface;
+            }
+            return null;
+        }
+
+        public static IEnumerable<Thing> SurfaceThings(Pawn pawn)
+        {
+            Thing t = SurfaceThing(pawn);
+            if (t != null) yield return t;
+        }
+
         // Entad modifiers of the eating surface the pawn is using (the one they face, else any adjacent one)
         public static IEnumerable<AppliedEntadModifier> SurfaceModifiers(Pawn pawn)
         {
