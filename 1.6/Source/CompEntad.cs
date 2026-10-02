@@ -12,6 +12,7 @@ namespace EntadFramework
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
         public float thoughtHours;
+        public float mealNutritionFactor = 1f;
 
         public void ExposeData()
         {
@@ -19,6 +20,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
+            Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 offsetValues = offsetValues ?? new List<float>();
@@ -32,6 +34,7 @@ namespace EntadFramework
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
             if (def.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
+            applied.mealNutritionFactor = def.mealNutritionFactor.RandomInRange;
             return applied;
         }
 
@@ -50,6 +53,8 @@ namespace EntadFramework
             if (def.statFactors != null)
                 for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
             if (def.thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
+            var f = def.mealNutritionFactor;
+            if (f.max - f.min > 0.0001f) { sum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); n++; }
             return n == 0 ? 0.5f : sum / n;
         }
 
@@ -136,6 +141,13 @@ namespace EntadFramework
                 if (m.def.thought != null)
                 {
                     sb.AppendLine($" - Mood: {m.def.thought.stages?.FirstOrDefault()?.LabelCap ?? m.def.thought.defName} ({m.thoughtHours:0.#}h)");
+                }
+                if (m.def.HasMealEffect)
+                {
+                    if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)
+                        sb.AppendLine($" - Meal nutrition x{m.mealNutritionFactor.ToStringPercent()}");
+                    if (m.def.mealThought != null)
+                        sb.AppendLine($" - Meals give: {m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName}");
                 }
                 sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }

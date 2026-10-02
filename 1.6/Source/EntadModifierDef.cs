@@ -43,6 +43,13 @@ namespace EntadFramework
         public ThoughtDef thought;
         public FloatRange thoughtHours = new FloatRange(1f, 1f);
 
+        // Table effects on meals eaten off this furniture. Nutrition is multiplied by a factor rolled in
+        // mealNutritionFactor; mealThought is added to the thoughts the eater gets from the meal (e.g. a fine meal).
+        public FloatRange mealNutritionFactor = new FloatRange(1f, 1f);
+        public ThoughtDef mealThought;
+
+        public bool HasMealEffect => mealThought != null || mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f;
+
         public string discoveryMessage;
 
         // Base market value contributed by this modifier, by rarity
@@ -69,6 +76,7 @@ namespace EntadFramework
             foreach (var r in Ranges(statFactors))
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat factor range";
             if (thought != null && !thought.IsMemory) yield return $"{defName}: thought {thought.defName} is not a memory thought";
+            if (mealNutritionFactor.min > mealNutritionFactor.max) yield return $"{defName}: mealNutritionFactor min is greater than max";
             if (thought != null && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
         }
 
@@ -77,6 +85,8 @@ namespace EntadFramework
         {
             ThingDef td = thing?.def;
             if (td == null) return false;
+
+            if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
 
             if (!categories.NullOrEmpty())
             {
