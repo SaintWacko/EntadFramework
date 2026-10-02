@@ -102,6 +102,7 @@ namespace EntadFramework
             if (activeModifiers.NullOrEmpty() || !parent.IsHashIntervalTick(150)) return;
             Pawn holder = Holder;
             if (holder == null) return;
+            EntadAbilities.Grant(holder, this);
             foreach (var m in activeModifiers)
                 if (m.def.thought != null) EntadMoods.Give(holder, m.def.thought, 600);
         }
@@ -142,6 +143,8 @@ namespace EntadFramework
                 {
                     sb.AppendLine($" - Mood: {m.def.thought.stages?.FirstOrDefault()?.LabelCap ?? m.def.thought.defName} ({m.thoughtHours:0.#}h)");
                 }
+                if (!m.def.abilities.NullOrEmpty())
+                    sb.AppendLine($" - Grants ability: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
                 if (m.def.HasMealEffect)
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)

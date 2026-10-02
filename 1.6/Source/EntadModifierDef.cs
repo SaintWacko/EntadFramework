@@ -50,6 +50,9 @@ namespace EntadFramework
 
         public bool HasMealEffect => mealThought != null || mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f;
 
+        // Abilities granted to the pawn wearing/wielding the item (weapons and apparel only)
+        public List<AbilityDef> abilities;
+
         public string discoveryMessage;
 
         // Base market value contributed by this modifier, by rarity
@@ -86,6 +89,7 @@ namespace EntadFramework
             ThingDef td = thing?.def;
             if (td == null) return false;
 
+            if (!abilities.NullOrEmpty() && (EntadUtility.KindOf(td) & (EntadItemKind.Weapon | EntadItemKind.Apparel)) == EntadItemKind.None) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
 
             if (!categories.NullOrEmpty())
