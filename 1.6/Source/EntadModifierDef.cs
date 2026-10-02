@@ -51,6 +51,12 @@ namespace EntadFramework
         // Mood effect: while equipped (weapons/apparel) or after use (furniture) the wearer/user gets this thought.
         // The lifetime in hours is rolled in thoughtHours when the modifier is applied.
         public ThoughtDef thought;
+        // Alternative to a fixed thought: when the modifier is applied, a random existing memory thought whose
+        // mood effect lies within this range is picked. A range of 0..0 means unused.
+        public FloatRange thoughtMoodRange = new FloatRange(0f, 0f);
+
+        public bool HasMoodRange => thought == null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f);
+        public bool HasMood => thought != null || HasMoodRange;
         public FloatRange thoughtHours = new FloatRange(1f, 1f);
 
         // Table effects on meals eaten off this furniture. Nutrition is multiplied by a factor rolled in
@@ -81,13 +87,26 @@ namespace EntadFramework
             }
         }
 
+        public static float MoodEffectOf(ThoughtDef t) => t.stages[0].baseMoodEffect;
+
+        // Plain memory thoughts with a single stage, usable on any pawn without extra context
+        public IEnumerable<ThoughtDef> MoodCandidates()
+        {
+            if (!HasMoodRange) return Enumerable.Empty<ThoughtDef>();
+            return DefDatabase<ThoughtDef>.AllDefsListForReading.Where(t =>
+                t.IsMemory && t.thoughtClass == typeof(Thought_Memory) && t.stages != null && t.stages.Count == 1
+                && t.stages[0] != null && t.requiredTraits.NullOrEmpty() && t.requiredGenes.NullOrEmpty()
+                && t.nextThought == null && t.stages[0].baseMoodEffect != 0f
+                && thoughtMoodRange.Includes(MoodEffectOf(t)));
+        }
+
         public EntadEffectKind EffectKinds
         {
             get
             {
                 EntadEffectKind kinds = EntadEffectKind.None;
                 if (AllRanges().Any()) kinds |= EntadEffectKind.Stat;
-                if (thought != null) kinds |= EntadEffectKind.Mood;
+                if (HasMood) kinds |= EntadEffectKind.Mood;
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
@@ -103,7 +122,9 @@ namespace EntadFramework
                 if (r.stat == null || r.min > r.max) yield return $"{defName}: invalid stat factor range";
             if (thought != null && !thought.IsMemory) yield return $"{defName}: thought {thought.defName} is not a memory thought";
             if (mealNutritionFactor.min > mealNutritionFactor.max) yield return $"{defName}: mealNutritionFactor min is greater than max";
-            if (thought != null && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
+            if (thought != null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f)) yield return $"{defName}: specify either thought or thoughtMoodRange, not both";
+            if (thoughtMoodRange.min > thoughtMoodRange.max) yield return $"{defName}: thoughtMoodRange min is greater than max";
+            if (HasMood && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -113,6 +134,7 @@ namespace EntadFramework
             if (td == null) return false;
 
             if (!abilities.NullOrEmpty() && (EntadUtility.KindOf(td) & (EntadItemKind.Weapon | EntadItemKind.Apparel)) == EntadItemKind.None) return false;
+            if (HasMoodRange && !MoodCandidates().Any()) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
 
             if (!categories.NullOrEmpty())

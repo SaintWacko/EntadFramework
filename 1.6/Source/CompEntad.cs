@@ -11,6 +11,7 @@ namespace EntadFramework
         public EntadModifierDef def;
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
+        public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
 
@@ -19,6 +20,7 @@ namespace EntadFramework
             Scribe_Defs.Look(ref def, "def");
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
+            Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -33,7 +35,9 @@ namespace EntadFramework
             var applied = new AppliedEntadModifier { def = def };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
-            if (def.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
+            applied.thought = def.thought;
+            if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
+            if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
             applied.mealNutritionFactor = def.mealNutritionFactor.RandomInRange;
             return applied;
         }
@@ -52,7 +56,9 @@ namespace EntadFramework
                 for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
             if (def.statFactors != null)
                 for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
-            if (def.thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
+            if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
+            { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadModifierDef.MoodEffectOf(thought)); n++; }
+            if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
             var f = def.mealNutritionFactor;
             if (f.max - f.min > 0.0001f) { sum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); n++; }
             return n == 0 ? 0.5f : sum / n;
@@ -104,7 +110,7 @@ namespace EntadFramework
             if (holder == null) return;
             EntadAbilities.Grant(holder, this);
             foreach (var m in activeModifiers)
-                if (m.def.thought != null) EntadMoods.Give(holder, m.def.thought, 600);
+                if (m.thought != null) EntadMoods.Give(holder, m.thought, 600);
         }
 
         public override string TransformLabel(string label)
@@ -139,9 +145,9 @@ namespace EntadFramework
                     var s = m.def.statFactors[i].stat;
                     sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
                 }
-                if (m.def.thought != null)
+                if (m.thought != null)
                 {
-                    sb.AppendLine($" - Mood: {m.def.thought.stages?.FirstOrDefault()?.LabelCap ?? m.def.thought.defName} ({m.thoughtHours:0.#}h)");
+                    sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
                 if (!m.def.abilities.NullOrEmpty())
                     sb.AppendLine($" - Grants ability: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");

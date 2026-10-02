@@ -22,7 +22,7 @@ namespace EntadFramework
             var comp = furniture?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
             foreach (var m in comp.activeModifiers)
-                if (m.def.thought != null) Give(pawn, m.def.thought, m.ThoughtDurationTicks);
+                if (m.thought != null) Give(pawn, m.thought, m.ThoughtDurationTicks);
         }
     }
 
