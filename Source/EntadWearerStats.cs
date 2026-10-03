@@ -65,7 +65,7 @@ namespace EntadFramework
         }
     }
 
-    [HarmonyPatch(typeof(StatWorker), "StatWorker.GearAffectsStat")]
+    [HarmonyPatch(typeof(StatWorker), "GearAffectsStat")]
     public static class Patch_GearAffectsStat
     {
         public static void Postfix(ThingDef gearDef, StatDef stat, ref bool __result)
@@ -86,7 +86,7 @@ namespace EntadFramework
     }
 
     // Hidden offsets still apply but are not listed in the stat explanation
-    [HarmonyPatch(typeof(StatWorker), "StatWorker.InfoTextLineFromGear")]
+    [HarmonyPatch(typeof(StatWorker), "InfoTextLineFromGear")]
     public static class Patch_InfoTextLineFromGear
     {
         public static void Postfix(Thing gear, StatDef stat, ref string __result)
