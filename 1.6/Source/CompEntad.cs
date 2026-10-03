@@ -146,6 +146,8 @@ namespace EntadFramework
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)
                         sb.AppendLine($" - Meal nutrition x{m.mealNutritionFactor.ToStringPercent()}");
+                    if (m.def.mealQualityOffset != 0)
+                        sb.AppendLine($" - Meal quality {(m.def.mealQualityOffset > 0 ? "+" : "")}{m.def.mealQualityOffset}");
                     if (m.def.mealThought != null)
                         sb.AppendLine($" - Meals give: {m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName}");
                 }

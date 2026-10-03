@@ -72,13 +72,58 @@ namespace EntadFramework
     [HarmonyPatch(typeof(FoodUtility), nameof(FoodUtility.ThoughtsFromIngesting))]
     public static class Patch_ThoughtsFromIngesting_Meal
     {
-        public static void Postfix(Pawn ingester, ref List<FoodUtility.ThoughtFromIngesting> __result)
+        // Meal quality ladder, lowest first; a simple meal gives no quality thought (null)
+        private static ThoughtDef[] ladder;
+
+        private static ThoughtDef[] Ladder => ladder ?? (ladder = new[]
         {
+            null,
+            DefDatabase<ThoughtDef>.GetNamedSilentFail("AteFineMeal"),
+            DefDatabase<ThoughtDef>.GetNamedSilentFail("AteLavishMeal"),
+        });
+
+        private static bool IsQualityMeal(ThingDef foodDef)
+        {
+            if (foodDef?.ingestible == null || (foodDef.ingestible.foodType & FoodTypeFlags.Meal) == 0) return false;
+            return foodDef.defName != "MealNutrientPaste" && foodDef.defName != "MealSurvivalPack";
+        }
+
+        public static void Postfix(Pawn ingester, ThingDef foodDef, ref List<FoodUtility.ThoughtFromIngesting> __result)
+        {
+            int qualityOffset = 0;
             foreach (var m in EntadMeals.SurfaceModifiers(ingester))
             {
+                qualityOffset += m.def.mealQualityOffset;
                 if (m.def.mealThought == null) continue;
                 __result = __result ?? new List<FoodUtility.ThoughtFromIngesting>();
                 __result.Add(new FoodUtility.ThoughtFromIngesting { thought = m.def.mealThought });
+            }
+
+            if (qualityOffset != 0 && IsQualityMeal(foodDef)) ShiftQuality(ref __result, qualityOffset);
+        }
+
+        private static void ShiftQuality(ref List<FoodUtility.ThoughtFromIngesting> thoughts, int offset)
+        {
+            var steps = Ladder;
+            int current = 0;
+            int found = -1;
+            if (thoughts != null)
+            {
+                for (int i = 0; i < thoughts.Count && found < 0; i++)
+                {
+                    int rung = System.Array.IndexOf(steps, thoughts[i].thought);
+                    if (rung > 0) { current = rung; found = i; }
+                }
+            }
+
+            int target = UnityEngine.Mathf.Clamp(current + offset, 0, steps.Length - 1);
+            if (target == current || (target > 0 && steps[target] == null)) return;
+
+            if (found >= 0) thoughts.RemoveAt(found);
+            if (target > 0)
+            {
+                thoughts = thoughts ?? new List<FoodUtility.ThoughtFromIngesting>();
+                thoughts.Add(new FoodUtility.ThoughtFromIngesting { thought = steps[target] });
             }
         }
     }

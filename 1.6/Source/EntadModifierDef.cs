@@ -64,7 +64,11 @@ namespace EntadFramework
         public FloatRange mealNutritionFactor = new FloatRange(1f, 1f);
         public ThoughtDef mealThought;
 
-        public bool HasMealEffect => mealThought != null || mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f;
+        // Shifts the quality of meals eaten here along simple -> fine -> lavish (e.g. +1: simple becomes fine,
+        // -1: lavish becomes fine). Applied to the thoughts the meal gives, clamped to the ends of that ladder.
+        public int mealQualityOffset;
+
+        public bool HasMealEffect => mealThought != null || mealQualityOffset != 0 || mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f;
 
         // Abilities granted to the pawn wearing/wielding the item (weapons and apparel only)
         public List<AbilityDef> abilities;
