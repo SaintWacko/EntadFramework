@@ -56,15 +56,6 @@
     <statOffsets><li><stat>AccuracyShort</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyMedium</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyLong</stat><min>0.03</min><max>0.07</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.1</min><max>1.25</max></li></statFactors>
   </EntadFramework.EntadModifierDef>
   <EntadFramework.EntadModifierDef>
-    <defName>Entad_Duelist</defName>
-    <label>duelist</label>
-    <description>It guides the hand toward an opening.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statOffsets><li><stat>MeleeHitChance</stat><min>0.04</min><max>0.12</max></li></statOffsets>
-  </EntadFramework.EntadModifierDef>
-  <EntadFramework.EntadModifierDef>
     <defName>Entad_Parrying</defName>
     <label>parrying</label>
     <description>It always seems to be in the way of incoming blows.</description>
