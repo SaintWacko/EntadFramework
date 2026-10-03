@@ -36,7 +36,6 @@ namespace EntadFramework
         // def has its own equippedStatOffset for that stat, so adding them here too would count them twice.
         // Only gear defers: a building's own Meditation-category stat (MeditationFocusStrength on a focus object)
         // is a stat of the building, never reaches the wearer path, and must still be offset here.
-        // Shared by TransformValue and ExplanationPart so the number and its explanation agree.
         private bool OffsetsViaWearer(StatRequest req)
         {
             var td = req.Thing.def;
@@ -48,7 +47,8 @@ namespace EntadFramework
         {
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
             if (comp == null || comp.activeTraits.NullOrEmpty()) return null;
-            bool offsetsViaWearer = OffsetsViaWearer(req);
+            // No OffsetsViaWearer gate here: where this explains gear (the item card's equipped-offset row), the value
+            // already includes the entad offset via the StatOffsetFromGear postfix, so the line must stay.
 
             string explanation = "";
             bool unidentified = false;
@@ -62,7 +62,7 @@ namespace EntadFramework
                     else explanation += $"\n{def.LabelCap} ({m.Rarity}): +{m.MarketValueOffset().ToStringMoney()}";
                     continue;
                 }
-                for (int i = 0; known && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
+                for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(parentStat.toStringStyle)}";
                 for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
