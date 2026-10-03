@@ -18,6 +18,9 @@ namespace EntadFramework
         // Relative weights for choosing a modifier's rarity; used by EntadRarityChances.Default
         public static readonly Dictionary<EntadRarity, float> Weights = new Dictionary<EntadRarity, float>(DefaultWeights);
 
+        // When on, a modifier's details stay hidden ("???") until something it affects actually happens
+        public static bool HideModifiers = true;
+
         public static void ResetRarityWeights()
         {
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
@@ -26,6 +29,7 @@ namespace EntadFramework
         public override void ExposeData()
         {
             base.ExposeData();
+            Scribe_Values.Look(ref HideModifiers, "hideModifiers", true);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -49,6 +53,9 @@ namespace EntadFramework
             var list = new Listing_Standard();
             list.Begin(inRect);
 
+            list.CheckboxLabeled("Hide modifiers until revealed", ref EntadSettings.HideModifiers,
+                "Newly generated entad items show \"???\" for their modifiers until something the modifier affects happens. Existing items keep their current state.");
+            list.GapLine();
             list.Label("Rarity curve: relative chance of each rarity when a modifier is picked. Rarities with no eligible modifier are skipped and the rest are renormalised.");
             list.Gap(6f);
 

@@ -16,6 +16,19 @@ namespace EntadFramework
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
 
+        // Hidden modifiers show as "???" until something they affect happens; see Reveal
+        public bool revealed = true;
+        public CompEntad owner;
+
+        public bool IsHidden => !revealed;
+
+        public void Reveal()
+        {
+            if (revealed) return;
+            revealed = true;
+            owner?.RevealedChanged(this);
+        }
+
         // Furniture abilities: game tick each ability is ready again, parallel to def.abilities
         public List<int> abilityReadyTicks = new List<int>();
 
@@ -28,6 +41,7 @@ namespace EntadFramework
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
+            Scribe_Values.Look(ref revealed, "revealed", true);
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -40,7 +54,7 @@ namespace EntadFramework
 
         public static AppliedEntadModifier Roll(EntadModifierDef def)
         {
-            var applied = new AppliedEntadModifier { def = def };
+            var applied = new AppliedEntadModifier { def = def, revealed = !EntadSettings.HideModifiers };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
             if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.Roll());
@@ -97,6 +111,40 @@ namespace EntadFramework
         public bool HasModifier(EntadModifierDef def) => activeModifiers.Any(m => m.def == def);
 
         private float[] propertyFactors;
+        private int spawnedTick;
+        private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
+
+        public bool HasHidden
+        {
+            get
+            {
+                if (hiddenState == 0) hiddenState = activeModifiers.Any(m => m.IsHidden) ? 1 : 2;
+                return hiddenState == 1;
+            }
+        }
+
+        public void RevealedChanged(AppliedEntadModifier m)
+        {
+            hiddenState = 0;
+            Messages.Message($"The {m.def.label} modifier of {parent.LabelNoCount} has revealed itself!", parent, MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        public void RevealWhere(System.Func<AppliedEntadModifier, bool> predicate)
+        {
+            if (!HasHidden) return;
+            foreach (var m in activeModifiers.ToList())
+                if (m.IsHidden && predicate(m)) m.Reveal();
+        }
+
+        // Building properties are read while the building is in play, so only count it once it has been
+        // around a while (not when it spawns or a save loads)
+        public void RevealProperty(EntadBuildingProperty property)
+        {
+            if (Find.TickManager.TicksGame - spawnedTick < 2500) return;
+            RevealWhere(m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
+        }
+
+        public void RevealStatEffects() => RevealWhere(m => !m.def.statOffsets.NullOrEmpty() || !m.def.statFactors.NullOrEmpty());
 
         // Product of this item's factors for a building property; cached since it's read from hot paths
         public float PropertyFactor(EntadBuildingProperty property)
@@ -118,6 +166,7 @@ namespace EntadFramework
         private void ModifiersChanged()
         {
             propertyFactors = null;
+            hiddenState = 0;
             if (!parent.Spawned) return;
             parent.GetComp<CompGlower>()?.RefreshGlower();
             EntadFuel.Refresh(parent, this);
@@ -126,7 +175,9 @@ namespace EntadFramework
 
         public void AddModifier(EntadModifierDef def)
         {
-            activeModifiers.Add(AppliedEntadModifier.Roll(def));
+            var applied = AppliedEntadModifier.Roll(def);
+            applied.owner = this;
+            activeModifiers.Add(applied);
             ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
@@ -135,6 +186,7 @@ namespace EntadFramework
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
+            spawnedTick = Find.TickManager.TicksGame;
             if (!activeModifiers.NullOrEmpty()) EntadFuel.Refresh(parent, this);
         }
 
@@ -164,6 +216,8 @@ namespace EntadFramework
                 activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
                 activeModifiers.RemoveAll(m => m == null || m.def == null);
                 propertyFactors = null;
+                hiddenState = 0;
+                foreach (var m in activeModifiers) m.owner = this;
             }
         }
 
@@ -185,7 +239,7 @@ namespace EntadFramework
         public override string CompInspectStringExtra()
         {
             if (activeModifiers.NullOrEmpty()) return null;
-            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.def.LabelCap.ToString()));
+            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.IsHidden ? "???" : m.def.LabelCap.ToString()));
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -196,6 +250,11 @@ namespace EntadFramework
             var sb = new System.Text.StringBuilder("This item's entad modifiers.\n");
             foreach (var m in activeModifiers)
             {
+                if (m.IsHidden)
+                {
+                    sb.Append("\n").AppendLine("???".Colorize(ColoredText.TipSectionTitleColor));
+                    continue;
+                }
                 sb.Append("\n").AppendLine(m.def.LabelCap.Resolve().Colorize(ColoredText.TipSectionTitleColor));
                 sb.AppendLine(m.def.description);
                 for (int i = 0; m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
@@ -231,7 +290,7 @@ namespace EntadFramework
                 sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }
 
-            string label = string.Join(", ", activeModifiers.Select(m => m.def.label));
+            string label = string.Join(", ", activeModifiers.Select(m => m.IsHidden ? "???" : m.def.label));
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
         }
     }

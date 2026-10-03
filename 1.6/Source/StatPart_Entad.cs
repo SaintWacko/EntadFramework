@@ -32,6 +32,7 @@ namespace EntadFramework
             string explanation = "";
             foreach (var m in comp.activeModifiers)
             {
+                if (m.IsHidden) continue;
                 var def = m.def;
                 for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)

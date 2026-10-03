@@ -16,7 +16,9 @@ namespace EntadFramework
         {
             Thing thing = owner as Thing ?? (owner as ThingComp)?.parent;
             var entad = thing?.TryGetComp<CompEntad>();
-            return entad == null || entad.activeModifiers.Count == 0 ? value : value * entad.PropertyFactor((EntadBuildingProperty)property);
+            if (entad == null || entad.activeModifiers.Count == 0) return value;
+            if (entad.HasHidden) entad.RevealProperty((EntadBuildingProperty)property);
+            return value * entad.PropertyFactor((EntadBuildingProperty)property);
         }
 
         private static readonly MethodInfo scale = AccessTools.Method(typeof(EntadBuildingProperties), nameof(Scale));
@@ -169,5 +171,17 @@ namespace EntadFramework
 
         private static readonly MethodInfo memberwiseClone = AccessTools.Method(typeof(object), "MemberwiseClone");
         private static object Clone(object o) => memberwiseClone.Invoke(o, null);
+    }
+
+    // Burning one of an item's entad fuel types reveals the modifier that allows it
+    [HarmonyPatch(typeof(CompRefuelable), nameof(CompRefuelable.Refuel), new[] { typeof(List<Thing>) })]
+    public static class Patch_Refuel_Reveal
+    {
+        public static void Prefix(CompRefuelable __instance, List<Thing> fuelThings)
+        {
+            var entad = __instance.parent.TryGetComp<CompEntad>();
+            if (entad == null || !entad.HasHidden || fuelThings == null) return;
+            entad.RevealWhere(m => !m.def.fuelTypes.NullOrEmpty() && fuelThings.Any(t => m.def.fuelTypes.Contains(t.def)));
+        }
     }
 }

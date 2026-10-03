@@ -65,7 +65,10 @@ namespace EntadFramework
         public static void Postfix(Pawn ingester, ref float __result)
         {
             foreach (var m in EntadMeals.SurfaceModifiers(ingester))
+            {
                 __result *= m.mealNutritionFactor;
+                if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f) m.Reveal();
+            }
         }
     }
 
@@ -94,7 +97,9 @@ namespace EntadFramework
             foreach (var m in EntadMeals.SurfaceModifiers(ingester))
             {
                 qualityOffset += m.def.mealQualityOffset;
+                if (m.def.mealQualityOffset != 0 && IsQualityMeal(foodDef)) m.Reveal();
                 if (m.def.mealThought == null) continue;
+                m.Reveal();
                 __result = __result ?? new List<FoodUtility.ThoughtFromIngesting>();
                 __result.Add(new FoodUtility.ThoughtFromIngesting { thought = m.def.mealThought });
             }

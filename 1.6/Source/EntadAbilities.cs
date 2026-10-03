@@ -11,7 +11,9 @@ namespace EntadFramework
     {
         public static void Grant(Pawn pawn, CompEntad comp)
         {
-            if (pawn?.abilities == null || comp == null) return;
+            if (comp == null) return;
+            comp.RevealStatEffects();
+            if (pawn?.abilities == null) return;
             foreach (var m in comp.activeModifiers)
             {
                 if (m.def.abilities == null) continue;
@@ -41,6 +43,18 @@ namespace EntadFramework
                 foreach (AbilityDef ability in m.def.abilities)
                     if (!stillGranted.Contains(ability) && pawn.abilities.GetAbility(ability) != null)
                         pawn.abilities.RemoveAbility(ability);
+            }
+        }
+
+        public static IEnumerable<AppliedEntadModifier> ModifiersGranting(Pawn pawn, AbilityDef ability)
+        {
+            if (pawn == null) yield break;
+            foreach (Thing item in Equipped(pawn))
+            {
+                var comp = item.TryGetComp<CompEntad>();
+                if (comp == null) continue;
+                foreach (var m in comp.activeModifiers)
+                    if (m.def.abilities != null && m.def.abilities.Contains(ability)) yield return m;
             }
         }
 
@@ -88,6 +102,40 @@ namespace EntadFramework
         {
             EntadAbilities.Revoke(__instance.pawn, apparel);
             EntadMoods.SyncEquipped(__instance.pawn, apparel);
+        }
+    }
+
+    // Equipped abilities reveal their modifier when cast, and show as "???" until then
+    [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
+    public static class Patch_Ability_Activate_Reveal
+    {
+        public static void Postfix(Ability __instance)
+        {
+            foreach (var m in EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def))
+                m.Reveal();
+        }
+    }
+
+    [HarmonyPatch(typeof(Ability), nameof(Ability.GetGizmos))]
+    public static class Patch_Ability_GetGizmos_Hide
+    {
+        public static void Postfix(Ability __instance, ref IEnumerable<Gizmo> __result)
+        {
+            if (!EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def).Any(m => m.IsHidden)) return;
+            __result = Hide(__result);
+        }
+
+        private static IEnumerable<Gizmo> Hide(IEnumerable<Gizmo> gizmos)
+        {
+            foreach (Gizmo g in gizmos)
+            {
+                if (g is Command c)
+                {
+                    c.defaultLabel = "???";
+                    c.defaultDesc = "The effect of this ability is not yet known.";
+                }
+                yield return g;
+            }
         }
     }
 }

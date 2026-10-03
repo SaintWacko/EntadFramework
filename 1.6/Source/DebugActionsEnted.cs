@@ -105,5 +105,13 @@ namespace EntadFramework
             comp.ClearModifiers();
             Messages.Message($"Removed {n} modifier(s) from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
         }
+
+        [DebugAction(category = "Entad Framework", name = "Reveal all Entad modifiers", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void RevealAllEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            foreach (var m in comp.activeModifiers.ToList()) m.Reveal();
+        }
     }
 }
