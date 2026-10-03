@@ -13,14 +13,7 @@ namespace EntadFramework
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
 
-            // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
-            // postfix in EntadWearerStats. Vanilla StatOffsetFromGear also runs stat.parts over the gear whenever the
-            // def has its own equippedStatOffset for that stat, so adding them here too would count them twice.
-            // Only gear defers: a building's own Meditation-category stat (MeditationFocusStrength on a focus object)
-            // is a stat of the building, never reaches the wearer path, and must still be offset here.
-            var td = req.Thing.def;
-            bool offsetsViaWearer = EntadTraitDef.IsWearerStat(parentStat) && !(req.Thing is Pawn)
-                && (td.IsApparel || td.equipmentType != EquipmentType.None);
+            bool offsetsViaWearer = OffsetsViaWearer(req);
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
@@ -38,10 +31,24 @@ namespace EntadFramework
             if (unidentified) val += EntadTraitDef.UnidentifiedMarketValue;
         }
 
+        // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
+        // postfix in EntadWearerStats. Vanilla StatOffsetFromGear also runs stat.parts over the gear whenever the
+        // def has its own equippedStatOffset for that stat, so adding them here too would count them twice.
+        // Only gear defers: a building's own Meditation-category stat (MeditationFocusStrength on a focus object)
+        // is a stat of the building, never reaches the wearer path, and must still be offset here.
+        // Shared by TransformValue and ExplanationPart so the number and its explanation agree.
+        private bool OffsetsViaWearer(StatRequest req)
+        {
+            var td = req.Thing.def;
+            return EntadTraitDef.IsWearerStat(parentStat) && !(req.Thing is Pawn)
+                && (td.IsApparel || td.equipmentType != EquipmentType.None);
+        }
+
         public override string ExplanationPart(StatRequest req)
         {
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
             if (comp == null || comp.activeTraits.NullOrEmpty()) return null;
+            bool offsetsViaWearer = OffsetsViaWearer(req);
 
             string explanation = "";
             bool unidentified = false;
@@ -55,7 +62,7 @@ namespace EntadFramework
                     else explanation += $"\n{def.LabelCap} ({m.Rarity}): +{m.MarketValueOffset().ToStringMoney()}";
                     continue;
                 }
-                for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
+                for (int i = 0; known && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(parentStat.toStringStyle)}";
                 for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
