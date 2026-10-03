@@ -344,7 +344,7 @@ namespace EntadFramework
                 activeModifiers.RemoveAll(m => m == null || m.def == null);
                 propertyFactors = null;
                 wearerOffsets = null;
-            wearerOffsets = null;
+                wearerOffsets = null;
                 hiddenState = 0;
                 foreach (var m in activeModifiers) m.owner = this;
             }
@@ -406,7 +406,7 @@ namespace EntadFramework
                     sb.Append("\n").AppendLine("???".Colorize(ColoredText.TipSectionTitleColor));
                     continue;
                 }
-                sb.Append("\n").AppendLine(m.def.LabelCap.Resolve().Colorize(ColoredText.TipSectionTitleColor));
+                sb.Append("\n").AppendLine($"{m.def.LabelCap.Resolve()} ({m.Rarity})".Colorize(ColoredText.TipSectionTitleColor));
                 if (!m.AnyHidden) sb.AppendLine(m.def.description);
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
