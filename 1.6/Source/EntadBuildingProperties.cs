@@ -143,8 +143,8 @@ namespace EntadFramework
             bool replace = false;
             foreach (var m in entad.activeModifiers)
             {
-                if (m.def.fuelTypes.NullOrEmpty()) continue;
-                extra.AddRange(m.def.fuelTypes);
+                if (m.def.AllFuelTypes.NullOrEmpty()) continue;
+                extra.AddRange(m.def.AllFuelTypes);
                 replace |= m.def.replaceFuel;
             }
 
@@ -193,7 +193,7 @@ namespace EntadFramework
         {
             var entad = __instance.parent.TryGetComp<CompEntad>();
             if (entad == null || !entad.HasHidden || fuelThings == null) return;
-            entad.RevealWhere(EntadEffectKind.Fuel, m => !m.def.fuelTypes.NullOrEmpty() && fuelThings.Any(t => m.def.fuelTypes.Contains(t.def)));
+            entad.RevealWhere(EntadEffectKind.Fuel, m => !m.def.AllFuelTypes.NullOrEmpty() && fuelThings.Any(t => m.def.AllFuelTypes.Contains(t.def)));
         }
     }
 

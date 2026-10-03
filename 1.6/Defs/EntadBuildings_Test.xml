@@ -120,8 +120,8 @@
     </categories>
     <rarity>Epic</rarity>
     <replaceFuel>true</replaceFuel>
-    <fuelTypes>
-      <li>BlocksGranite</li>
-    </fuelTypes>
+    <fuelCategories>
+      <li>StoneBlocks</li>
+    </fuelCategories>
   </EntadFramework.EntadModifierDef>
 </Defs>

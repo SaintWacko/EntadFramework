@@ -246,7 +246,7 @@ namespace EntadFramework
             RevealWhere(EntadEffectKind.Building, m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
         }
 
-        public bool FuelHidden => activeModifiers.Any(m => !m.def.fuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
+        public bool FuelHidden => activeModifiers.Any(m => !m.def.AllFuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
 
         // Product of this item's factors for a building property; cached since it's read from hot paths
         public float PropertyFactor(EntadBuildingProperty property)
@@ -429,8 +429,8 @@ namespace EntadFramework
                     for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
                         sb.AppendLine($" - Extra {m.def.extraDamage[i].damageType.label} damage +{m.ExtraDamageFor(i):0.#}");
                 }
-                if (!m.def.fuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
-                    sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.fuelTypes.Select(f => f.LabelCap.ToString()))}");
+                if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
+                    sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))}");
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
                     sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
                 if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))

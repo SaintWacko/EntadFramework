@@ -228,6 +228,26 @@ namespace EntadFramework
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
         // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
         public List<ThingDef> fuelTypes;
+        // Every thing in these categories is also accepted, including modded things added to them (e.g. all stone blocks)
+        public List<ThingCategoryDef> fuelCategories;
+
+        private List<ThingDef> allFuelTypes;
+
+        // fuelTypes plus everything in fuelCategories, resolved on first use because categories fill up after loading
+        public List<ThingDef> AllFuelTypes
+        {
+            get
+            {
+                if (allFuelTypes == null)
+                {
+                    var set = new HashSet<ThingDef>();
+                    if (fuelTypes != null) foreach (var t in fuelTypes) if (t != null) set.Add(t);
+                    if (fuelCategories != null) foreach (var c in fuelCategories) if (c != null) foreach (var t in c.DescendantThingDefs) set.Add(t);
+                    allFuelTypes = set.ToList();
+                }
+                return allFuelTypes;
+            }
+        }
         public bool replaceFuel;
 
         // Mood effect: while equipped (weapons/apparel) or after use (furniture) the wearer/user gets this thought.
@@ -286,7 +306,7 @@ namespace EntadFramework
             if (mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f)
                 if (other.mealNutritionFactor.min != 1f || other.mealNutritionFactor.max != 1f) return true;
             if (mealQualityOffset != 0 && other.mealQualityOffset != 0) return true;
-            if (!fuelTypes.NullOrEmpty() && !other.fuelTypes.NullOrEmpty()) return true;
+            if (!AllFuelTypes.NullOrEmpty() && !other.AllFuelTypes.NullOrEmpty()) return true;
             if (changeDamageType != null && other.changeDamageType != null) return true;
             if (!buildingFactors.NullOrEmpty() && !other.buildingFactors.NullOrEmpty()
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
@@ -347,7 +367,7 @@ namespace EntadFramework
                 if (HasMood) kinds |= EntadEffectKind.Mood;
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
                 if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
-                if (!fuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
+                if (!AllFuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
                 if (HasDamageEffect) kinds |= EntadEffectKind.Damage;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
@@ -366,6 +386,7 @@ namespace EntadFramework
                 foreach (var b in buildingFactors)
                     if (b.min > b.max || b.min < 0f) yield return $"{defName}: invalid building factor range for {b.property}";
             if (extraDamage != null && extraDamage.Any(e => e.damageType == null || e.min > e.max)) yield return $"{defName}: invalid extraDamage entry";
+            if (fuelCategories != null && fuelCategories.Any(c => c == null)) yield return $"{defName}: fuelCategories contains an unknown def";
             if (fuelTypes != null && fuelTypes.Any(f => f == null)) yield return $"{defName}: fuelTypes contains an unknown def";
             if (mealNutritionFactor.min > mealNutritionFactor.max) yield return $"{defName}: mealNutritionFactor min is greater than max";
             if (thought != null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f)) yield return $"{defName}: specify either thought or thoughtMoodRange, not both";
@@ -391,7 +412,7 @@ namespace EntadFramework
             if (HasDamageEffect && !td.IsWeapon) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
-            if (!fuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
+            if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())
             {

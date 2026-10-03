@@ -104,7 +104,7 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
-            if (d.fuelTypes != null) foreach (var f in d.fuelTypes) sb.Append(' ').Append(f.label);
+            if (d.AllFuelTypes != null) foreach (var f in d.AllFuelTypes) sb.Append(' ').Append(f.label);
             if (d.changeDamageType != null) sb.Append(' ').Append(d.changeDamageType.label);
             if (d.extraDamage != null) foreach (var e in d.extraDamage) sb.Append(' ').Append(e.damageType?.label);
             return sb.ToString();
@@ -162,7 +162,7 @@ namespace EntadFramework
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
             if (d.HasDamageEffect) parts.Add("Damage");
-            if (!d.fuelTypes.NullOrEmpty()) parts.Add("Fuel");
+            if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("Fuel");
             return string.Join(", ", parts.Distinct());
         }
 
