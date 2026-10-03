@@ -82,7 +82,6 @@ namespace EntadFramework
                 Fire(pawn, EntadStatTrigger.Work);
                 switch (job.workGiverDef.workType?.defName)
                 {
-                    case "Hauling": case "Cleaning": Fire(pawn, EntadStatTrigger.GeneralLabor); break;
                     case "Mining": Fire(pawn, EntadStatTrigger.Mining); break;
                     case "Construction": Fire(pawn, EntadStatTrigger.Construction); break;
                     case "Growing": Fire(pawn, EntadStatTrigger.Plant); break;
@@ -91,6 +90,9 @@ namespace EntadFramework
                     case "Handling": Fire(pawn, EntadStatTrigger.Animals); break;
                 }
             }
+            // Crafting recipes (stonecutting, chemfuel, burning items, tailoring, art, smithing, smelting...) are
+            // paced by whichever stat the recipe names, so ask the recipe rather than guessing from work types
+            if (job.bill?.recipe?.workSpeedStat == StatDefOf.GeneralLaborSpeed) Fire(pawn, EntadStatTrigger.GeneralLabor);
             switch (job.def.defName)
             {
                 case "Ingest": Fire(pawn, EntadStatTrigger.Eat); break;
