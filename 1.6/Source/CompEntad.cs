@@ -11,6 +11,7 @@ namespace EntadFramework
         public EntadModifierDef def;
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
+        public List<float> buildingValues = new List<float>();
         public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
@@ -23,6 +24,7 @@ namespace EntadFramework
             Scribe_Defs.Look(ref def, "def");
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
+            Scribe_Collections.Look(ref buildingValues, "buildingValues", LookMode.Value);
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
@@ -32,6 +34,7 @@ namespace EntadFramework
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
                 offsetValues = offsetValues ?? new List<float>();
                 factorValues = factorValues ?? new List<float>();
+                buildingValues = buildingValues ?? new List<float>();
             }
         }
 
@@ -40,6 +43,7 @@ namespace EntadFramework
             var applied = new AppliedEntadModifier { def = def };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
+            if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.Roll());
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
@@ -58,6 +62,7 @@ namespace EntadFramework
         public int ThoughtDurationTicks => UnityEngine.Mathf.Max(1, (int)(thoughtHours * GenDate.TicksPerHour));
 
         public float OffsetFor(int i) => i < offsetValues.Count ? offsetValues[i] : 0f;
+        public float BuildingFactorFor(int i) => i < buildingValues.Count ? buildingValues[i] : 1f;
         public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
 
         // Average position (0..1) of the rolled values within their ranges
@@ -69,6 +74,8 @@ namespace EntadFramework
                 for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
             if (def.statFactors != null)
                 for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
+            if (def.buildingFactors != null)
+                for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].Normalize(BuildingFactorFor(i)); n++; }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadModifierDef.MoodEffectOf(thought)); n++; }
             if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
@@ -89,9 +96,35 @@ namespace EntadFramework
 
         public bool HasModifier(EntadModifierDef def) => activeModifiers.Any(m => m.def == def);
 
+        private float[] propertyFactors;
+
+        // Product of this item's factors for a building property; cached since it's read from hot paths
+        public float PropertyFactor(EntadBuildingProperty property)
+        {
+            if (propertyFactors == null)
+            {
+                propertyFactors = new float[System.Enum.GetValues(typeof(EntadBuildingProperty)).Length];
+                for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
+                foreach (var m in activeModifiers)
+                {
+                    if (m.def.buildingFactors == null) continue;
+                    for (int i = 0; i < m.def.buildingFactors.Count; i++)
+                        propertyFactors[(int)m.def.buildingFactors[i].property] *= m.BuildingFactorFor(i);
+                }
+            }
+            return propertyFactors[(int)property];
+        }
+
+        private void ModifiersChanged()
+        {
+            propertyFactors = null;
+            if (parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
+        }
+
         public void AddModifier(EntadModifierDef def)
         {
             activeModifiers.Add(AppliedEntadModifier.Roll(def));
+            ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
         }
@@ -99,6 +132,7 @@ namespace EntadFramework
         public void RemoveModifier(AppliedEntadModifier modifier)
         {
             if (!activeModifiers.Remove(modifier)) return;
+            ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
             if (modifier.def.abilities != null && holder != null)
@@ -120,6 +154,7 @@ namespace EntadFramework
             {
                 activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
                 activeModifiers.RemoveAll(m => m == null || m.def == null);
+                propertyFactors = null;
             }
         }
 
@@ -169,6 +204,8 @@ namespace EntadFramework
                 {
                     sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
+                for (int i = 0; m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
+                    sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
                 if (!m.def.abilities.NullOrEmpty())
                     sb.AppendLine($" - {(parent.def.building != null ? "Activatable ability" : "Grants ability")}: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
                 if (m.def.HasMealEffect)
