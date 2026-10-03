@@ -101,6 +101,9 @@ namespace EntadFramework
             var harmony = new Harmony("saintwacko.entadframework");
             foreach (var type in AccessTools.GetTypesFromAssembly(typeof(EntadStatPartInjector).Assembly))
             {
+                // Only real patch classes: the class processor invokes any static method named Prepare as a Harmony
+                // lifecycle hook, and EntadAbilityPrep.Prepare(EntadTraitDef) got called with null.
+                if (!type.IsDefined(typeof(HarmonyPatch), false)) continue;
                 try { harmony.CreateClassProcessor(type).Patch(); }
                 catch (System.Exception e) { Log.Error($"[Entad Framework] Patch {type.FullName} failed; that one feature is off, the rest still works: {e}"); }
             }
