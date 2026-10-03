@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "backfill": {
+    "launched": 0,
+    "completed": 0,
+    "through": 1791061358656
+  },
+  "runs": [
+    {
+      "startedAt": 1791061708860,
+      "endedAt": 1791062113912,
+      "reason": "game-closed",
+      "errorClasses": 3,
+      "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b"
+    },
+    {
+      "startedAt": 1791062113983,
+      "endedAt": 1791063117673,
+      "reason": "game-closed",
+      "errorClasses": 0,
+      "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b"
+    },
+    {
+      "startedAt": 1791063567100,
+      "endedAt": null,
+      "reason": null,
+      "errorClasses": 0,
+      "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LudeonTK;
@@ -93,10 +94,16 @@ namespace EntadFramework
             if (comp == null) return;
 
             var options = new List<DebugMenuOption>();
-            foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading.OrderBy(d => d.defName))
+            // Applicable traits first, then alphabetical by defName within each group.
+            // CanApplyTo is evaluated once per def so the sort and the label agree.
+            var sorted = DefDatabase<EntadTraitDef>.AllDefsListForReading
+                .Select(d => (def: d, ok: d.CanApplyTo(thing)))
+                .OrderByDescending(p => p.ok)
+                .ThenBy(p => p.def.defName, StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in sorted)
             {
-                var d = def;
-                bool ok = d.CanApplyTo(thing);
+                var d = pair.def;
+                bool ok = pair.ok;
                 options.Add(new DebugMenuOption(d.defName + (ok ? "" : " (not applicable)"), DebugMenuOptionMode.Action, () =>
                 {
                     comp.AddTrait(d, null, true);
