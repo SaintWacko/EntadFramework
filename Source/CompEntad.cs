@@ -169,15 +169,17 @@ namespace EntadFramework
 
         private float[] propertyFactors;
 
-        // Total offset (and whether any part of it is still hidden) this item gives its holder per pawn stat.
+        // Total offset this item gives its holder per pawn stat, and how much of that total comes from traits whose
+        // stat effect is still unrevealed. The hidden part is kept as a sum (not a flag) so the stat explanation can
+        // show the vanilla + revealed part of the line and leave only the hidden part out.
         // Built lazily and dropped whenever the traits change, so the stat-offset hook is a single lookup.
-        private Dictionary<StatDef, KeyValuePair<float, bool>> wearerOffsets;
+        private Dictionary<StatDef, KeyValuePair<float, float>> wearerOffsets;
 
-        public float WearerOffset(StatDef stat, out bool hidden)
+        public float WearerOffset(StatDef stat, out float hiddenPart)
         {
             if (wearerOffsets == null)
             {
-                wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, bool>>();
+                wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, float>>();
                 foreach (var m in activeTraits)
                 {
                     var offsets = m.def.statOffsets;
@@ -187,12 +189,13 @@ namespace EntadFramework
                         StatDef s = offsets[i].stat;
                         if (s == null || !EntadTraitDef.IsWearerStat(s)) continue;
                         wearerOffsets.TryGetValue(s, out var cur);
-                        wearerOffsets[s] = new KeyValuePair<float, bool>(cur.Key + m.OffsetFor(i), cur.Value || !m.IsRevealed(EntadEffectKind.Stat));
+                        float v = m.OffsetFor(i);
+                        wearerOffsets[s] = new KeyValuePair<float, float>(cur.Key + v, cur.Value + (m.IsRevealed(EntadEffectKind.Stat) ? 0f : v));
                     }
                 }
             }
-            if (wearerOffsets.Count > 0 && wearerOffsets.TryGetValue(stat, out var e)) { hidden = e.Value; return e.Key; }
-            hidden = false;
+            if (wearerOffsets.Count > 0 && wearerOffsets.TryGetValue(stat, out var e)) { hiddenPart = e.Value; return e.Key; }
+            hiddenPart = 0f;
             return 0f;
         }
         private int spawnedTick;
@@ -343,7 +346,6 @@ namespace EntadFramework
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
                 activeTraits.RemoveAll(m => m == null || m.def == null);
                 propertyFactors = null;
-                wearerOffsets = null;
                 wearerOffsets = null;
                 hiddenState = 0;
                 foreach (var m in activeTraits) m.owner = this;

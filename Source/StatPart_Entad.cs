@@ -13,12 +13,17 @@ namespace EntadFramework
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
 
+            // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
+            // postfix in EntadWearerStats. Vanilla StatOffsetFromGear also runs stat.parts over the gear whenever the
+            // def has its own equippedStatOffset for that stat, so adding them here too would count them twice.
+            bool offsetsViaWearer = EntadTraitDef.IsWearerStat(parentStat) && !(req.Thing is Pawn);
+
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
                 // Stat effects apply whether or not they've been revealed; only their explanations are hidden
-                for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++)
+                for (int i = 0; !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
                 for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
