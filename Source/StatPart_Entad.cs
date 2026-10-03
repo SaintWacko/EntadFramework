@@ -14,11 +14,16 @@ namespace EntadFramework
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
 
             bool offsetsViaWearer = OffsetsViaWearer(req);
+            // Set only while the pawn's "Relevant gear" line is being built (Patch_InfoTextLineFromGear), so the
+            // number on that line leaves out unrevealed traits. Read after the early return, so items without
+            // traits never pay for the thread-static read.
+            bool skipHidden = EntadWearerStats.displayExcludesHidden;
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
+                if (skipHidden && !m.IsRevealed(EntadEffectKind.Stat)) continue;
                 // Stat effects apply whether or not they've been revealed; only their explanations are hidden
                 for (int i = 0; !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
@@ -80,8 +85,25 @@ namespace EntadFramework
     {
         static EntadStatPartInjector()
         {
-            new Harmony("saintwacko.entadframework").PatchAll();
+            // Stat injection runs first and patching is isolated per class: previously one PatchAll() call sat ahead of
+            // the injection, so a single patch whose runtime TargetMethods failed to bind threw out of this static
+            // constructor and every trait's stat offsets, factors and market value silently stopped applying.
+            InjectStatParts();
+            PatchEachClass();
+        }
 
+        private static void PatchEachClass()
+        {
+            var harmony = new Harmony("saintwacko.entadframework");
+            foreach (var type in AccessTools.GetTypesFromAssembly(typeof(EntadStatPartInjector).Assembly))
+            {
+                try { harmony.CreateClassProcessor(type).Patch(); }
+                catch (System.Exception e) { Log.Error($"[Entad Framework] Patch {type.FullName} failed; that one feature is off, the rest still works: {e}"); }
+            }
+        }
+
+        private static void InjectStatParts()
+        {
             var stats = new HashSet<StatDef> { StatDefOf.MarketValue };
             foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 foreach (var r in def.AllRanges())

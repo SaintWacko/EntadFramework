@@ -71,6 +71,10 @@ namespace EntadFramework
         // in which case the postfix leaves vanilla's answer alone.
         [System.ThreadStatic] internal static Pawn explainingPawn;
 
+        // True only inside InfoTextLineFromGear: stat math then leaves out unrevealed traits so the displayed gear
+        // line doesn't give them away. Never set around StatWorker.GetValue, whose results are cached.
+        [System.ThreadStatic] internal static bool displayExcludesHidden;
+
         // True when this pawn holds an item of gearDef whose revealed entad offset for stat is non-zero.
         // Hidden-only effects deliberately don't count: they still apply, but listing the item would give them away.
         public static bool PawnHasVisibleEntadOffset(Pawn pawn, ThingDef gearDef, StatDef stat)
@@ -157,24 +161,28 @@ namespace EntadFramework
         public static void Postfix(Thing gear, StatDef stat, ref float __result)
         {
             if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
-            __result += EntadWearerStats.OffsetFrom(gear, stat, out _);
+            float total = EntadWearerStats.OffsetFrom(gear, stat, out float hiddenPart);
+            __result += EntadWearerStats.displayExcludesHidden ? total - hiddenPart : total;
         }
     }
 
-    // Hidden offsets still apply but are left out of the number on the gear line: the line shows the vanilla
-    // offset plus revealed traits only. (Gear whose only effect is hidden never gets a line: see GearAffectsStat.)
+    // Hidden effects still apply but are left out of the number on the gear line. The flag makes both halves of
+    // StatOffsetFromGear skip unrevealed traits: the entad offset (postfix above) and any entad statFactors that
+    // StatPart_Entad applies to the def's own equipped offset. Safe to do here because StatOffsetFromGear runs the
+    // parts directly and never goes through StatWorker.GetValue, so nothing computed under the flag is cached.
+    // (Gear whose only effect is hidden never gets a line at all: see GearAffectsStat.)
     [HarmonyPatch(typeof(StatWorker), "InfoTextLineFromGear")]
     public static class Patch_InfoTextLineFromGear
     {
-        public static void Postfix(Thing gear, StatDef stat, ref string __result)
+        public static void Prefix(out bool __state)
         {
-            if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
-            EntadWearerStats.OffsetFrom(gear, stat, out float hiddenPart);
-            if (System.Math.Abs(hiddenPart) <= float.Epsilon) return;
-            float shown = StatWorker.StatOffsetFromGear(gear, stat) - hiddenPart;
-            // Same format vanilla's InfoTextLineFromGear uses
-            __result = "    " + gear.LabelCap + ": " + shown.ToStringByStyle(
-                stat.finalizeEquippedStatOffset ? stat.toStringStyle : stat.ToStringStyleUnfinalized, ToStringNumberSense.Offset);
+            __state = EntadWearerStats.displayExcludesHidden;
+            EntadWearerStats.displayExcludesHidden = true;
+        }
+
+        public static void Finalizer(bool __state)
+        {
+            EntadWearerStats.displayExcludesHidden = __state;
         }
     }
 }
