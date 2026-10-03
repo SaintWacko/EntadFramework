@@ -159,6 +159,33 @@ namespace EntadFramework
         public bool HasModifier(EntadModifierDef def) => activeModifiers.Any(m => m.def == def);
 
         private float[] propertyFactors;
+
+        // Total offset (and whether any part of it is still hidden) this item gives its holder per pawn stat.
+        // Built lazily and dropped whenever the modifiers change, so the stat-offset hook is a single lookup.
+        private Dictionary<StatDef, KeyValuePair<float, bool>> wearerOffsets;
+
+        public float WearerOffset(StatDef stat, out bool hidden)
+        {
+            if (wearerOffsets == null)
+            {
+                wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, bool>>();
+                foreach (var m in activeModifiers)
+                {
+                    var offsets = m.def.statOffsets;
+                    if (offsets == null) continue;
+                    for (int i = 0; i < offsets.Count; i++)
+                    {
+                        StatDef s = offsets[i].stat;
+                        if (s == null || !EntadModifierDef.IsWearerStat(s)) continue;
+                        wearerOffsets.TryGetValue(s, out var cur);
+                        wearerOffsets[s] = new KeyValuePair<float, bool>(cur.Key + m.OffsetFor(i), cur.Value || !m.IsRevealed(EntadEffectKind.Stat));
+                    }
+                }
+            }
+            if (wearerOffsets.Count > 0 && wearerOffsets.TryGetValue(stat, out var e)) { hidden = e.Value; return e.Key; }
+            hidden = false;
+            return 0f;
+        }
         private int spawnedTick;
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
 
@@ -175,6 +202,7 @@ namespace EntadFramework
         {
             hiddenState = 0;
             propertyFactors = null;
+            wearerOffsets = null;
             ClearStatCaches();
             if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
@@ -231,6 +259,7 @@ namespace EntadFramework
         private void ModifiersChanged()
         {
             propertyFactors = null;
+            wearerOffsets = null;
             hiddenState = 0;
             if (!parent.Spawned) return;
             parent.GetComp<CompGlower>()?.RefreshGlower();
@@ -301,6 +330,8 @@ namespace EntadFramework
                 activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
                 activeModifiers.RemoveAll(m => m == null || m.def == null);
                 propertyFactors = null;
+                wearerOffsets = null;
+            wearerOffsets = null;
                 hiddenState = 0;
                 foreach (var m in activeModifiers) m.owner = this;
             }

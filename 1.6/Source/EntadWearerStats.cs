@@ -32,21 +32,8 @@ namespace EntadFramework
         public static float OffsetFrom(Thing gear, StatDef stat, out bool hidden)
         {
             hidden = false;
-            var comp = gear?.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeModifiers.Count == 0) return 0f;
-            float total = 0f;
-            foreach (var m in comp.activeModifiers)
-            {
-                var offsets = m.def.statOffsets;
-                if (offsets == null) continue;
-                for (int i = 0; i < offsets.Count; i++)
-                {
-                    if (offsets[i].stat != stat) continue;
-                    total += m.OffsetFor(i);
-                    if (!m.IsRevealed(EntadEffectKind.Stat)) hidden = true;
-                }
-            }
-            return total;
+            var comp = (gear as ThingWithComps)?.GetComp<CompEntad>();
+            return comp == null ? 0f : comp.WearerOffset(stat, out hidden);
         }
     }
 
