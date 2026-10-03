@@ -88,7 +88,7 @@ namespace EntadFramework
                 bool ok = d.CanApplyTo(thing);
                 options.Add(new DebugMenuOption(d.defName + (ok ? "" : " (not applicable)"), DebugMenuOptionMode.Action, () =>
                 {
-                    comp.AddModifier(d);
+                    comp.AddModifier(d, null, true);
                     Messages.Message($"Applied '{d.LabelCap}' to {thing.Label}.", MessageTypeDefOf.PositiveEvent, false);
                 }));
             }

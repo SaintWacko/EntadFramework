@@ -22,6 +22,11 @@ namespace EntadFramework
         public EntadEffectKind revealedKinds = EntadEffectKind.All;
         public CompEntad owner;
 
+        // Rarity this modifier was rolled at (the def's own rarity unless it scales with rarity). Saved as an int so
+        // saves from before rarity scaling load with the def's rarity.
+        private int rarityValue = -1;
+        public EntadRarity Rarity => rarityValue < 0 ? def.rarity : (EntadRarity)rarityValue;
+
         public bool IsRevealed(EntadEffectKind kind) => (def.EffectKinds & kind & ~revealedKinds) == EntadEffectKind.None;
 
         // No part of the modifier is known yet, so even its name is hidden
@@ -44,6 +49,7 @@ namespace EntadFramework
         public void ExposeData()
         {
             Scribe_Defs.Look(ref def, "def");
+            Scribe_Values.Look(ref rarityValue, "rarity", -1);
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
             Scribe_Collections.Look(ref buildingValues, "buildingValues", LookMode.Value);
@@ -68,13 +74,15 @@ namespace EntadFramework
             }
         }
 
-        public static AppliedEntadModifier Roll(EntadModifierDef def)
+        public static AppliedEntadModifier Roll(EntadModifierDef def, EntadRarity? rarity = null)
         {
-            var applied = new AppliedEntadModifier { def = def, revealedKinds = EntadSettings.HideModifiers ? EntadEffectKind.None : EntadEffectKind.All };
-            if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
-            if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
-            if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.Roll());
-            if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.Roll());
+            EntadRarity at = def.ClampRarity(rarity ?? def.rarity);
+            float scale = def.RarityScale(at);
+            var applied = new AppliedEntadModifier { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideModifiers ? EntadEffectKind.None : EntadEffectKind.All };
+            if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.RollScaled(scale, false));
+            if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.RollScaled(scale, true));
+            if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));
+            if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.RollScaled(scale));
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
@@ -127,14 +135,15 @@ namespace EntadFramework
         {
             float sum = 0f;
             int n = 0;
+            float scale = def.RarityScale(Rarity);
             if (def.statOffsets != null)
-                for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
+                for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].NormalizeScaled(OffsetFor(i), scale, false); n++; }
             if (def.statFactors != null)
-                for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
+                for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].NormalizeScaled(FactorFor(i), scale, true); n++; }
             if (def.extraDamage != null)
-                for (int i = 0; i < def.extraDamage.Count; i++) { sum += def.extraDamage[i].Normalize(ExtraDamageFor(i)); n++; }
+                for (int i = 0; i < def.extraDamage.Count; i++) { sum += def.extraDamage[i].NormalizeScaled(ExtraDamageFor(i), scale); n++; }
             if (def.buildingFactors != null)
-                for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].Normalize(BuildingFactorFor(i)); n++; }
+                for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); n++; }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadModifierDef.MoodEffectOf(thought)); n++; }
             if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
@@ -144,7 +153,7 @@ namespace EntadFramework
         }
 
         // Market value added by this modifier: scales with rarity and where the roll landed
-        public float MarketValueOffset() => def.BaseMarketValue * (0.5f + RollQuality());
+        public float MarketValueOffset() => EntadModifierDef.BaseMarketValueAt(Rarity) * (0.5f + RollQuality());
     }
 
     public partial class CompEntad : ThingComp, IRenameable
@@ -280,17 +289,21 @@ namespace EntadFramework
             parent.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(fraction * parent.MaxHitPoints), 1, parent.MaxHitPoints);
         }
 
-        public void AddModifier(EntadModifierDef def)
+        // Modifiers the player switched off in the settings are refused here too, so other mods can't add them either.
+        // Only developer tools pass ignoreDisabled.
+        public bool AddModifier(EntadModifierDef def, EntadRarity? rarity = null, bool ignoreDisabled = false)
         {
+            if (!ignoreDisabled && EntadSettings.IsDisabled(def)) return false;
             bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(def);
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
-            var applied = AppliedEntadModifier.Roll(def);
+            var applied = AppliedEntadModifier.Roll(def, rarity);
             applied.owner = this;
             activeModifiers.Add(applied);
             if (scaleHp) RescaleHitPoints(hpFraction);
             ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
+            return true;
         }
 
         public override void PostSpawnSetup(bool respawningAfterLoad)

@@ -43,7 +43,7 @@ namespace EntadFramework
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;
-                    else explanation += $"\n{def.LabelCap} ({def.rarity}): +{m.MarketValueOffset().ToStringMoney()}";
+                    else explanation += $"\n{def.LabelCap} ({m.Rarity}): +{m.MarketValueOffset().ToStringMoney()}";
                     continue;
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)

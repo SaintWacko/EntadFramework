@@ -28,7 +28,7 @@ namespace EntadFramework
         {
             if (defWhitelist.Count > 0 && !defWhitelist.Contains(def)) return false;
             if (defBlacklist.Contains(def)) return false;
-            if (rarities.Count > 0 && !rarities.Contains(def.rarity)) return false;
+            if (rarities.Count > 0 && !rarities.Any(def.CanAppearAt)) return false;
             if (categories.Count > 0 && (def.categories == null || !def.categories.Any(categories.Contains))) return false;
 
             if (effectKinds != EntadEffectKind.None && (def.EffectKinds & effectKinds) == EntadEffectKind.None) return false;
@@ -72,7 +72,7 @@ namespace EntadFramework
             if (comp == null) return new List<EntadModifierDef>();
 
             return DefDatabase<EntadModifierDef>.AllDefsListForReading
-                .Where(d => !comp.HasModifier(d) && d.CanApplyTo(thing) && (filter == null || filter.Allows(d)))
+                .Where(d => !EntadSettings.IsDisabled(d) && !comp.HasModifier(d) && d.CanApplyTo(thing) && (filter == null || filter.Allows(d)))
                 .ToList();
         }
 
@@ -88,13 +88,12 @@ namespace EntadFramework
             for (int i = 0; i < count; i++)
             {
                 var candidates = GetApplicableModifiers(thing, request.modifierFilter);
-                candidates.RemoveAll(EntadSettings.IsDisabled);
                 System.Func<EntadModifierDef, float> weight = null;
                 if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
                     weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
-                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight);
+                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight, request.modifierFilter?.rarities, out EntadRarity rolled);
                 if (pick == null) break;
-                comp.AddModifier(pick);
+                if (!comp.AddModifier(pick, rolled)) break;
                 added.Add(pick);
             }
             return added;

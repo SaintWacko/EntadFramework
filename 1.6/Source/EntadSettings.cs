@@ -17,6 +17,20 @@ namespace EntadFramework
         };
 
         // Relative weights for choosing a modifier's rarity; used by EntadRarityChances.Default
+        // Multiplier on the ranges of rarity-scaling modifiers at each rarity (relative to the modifier's own rarity)
+        public static readonly Dictionary<EntadRarity, float> DefaultMultipliers = new Dictionary<EntadRarity, float>
+        {
+            { EntadRarity.Common, 1f },
+            { EntadRarity.Uncommon, 1.25f },
+            { EntadRarity.Rare, 1.5f },
+            { EntadRarity.Epic, 2f },
+            { EntadRarity.Legendary, 3f },
+        };
+
+        public static readonly Dictionary<EntadRarity, float> Multipliers = new Dictionary<EntadRarity, float>(DefaultMultipliers);
+
+        public static float RarityMultiplier(EntadRarity r) => Multipliers[r];
+
         public static readonly Dictionary<EntadRarity, float> Weights = new Dictionary<EntadRarity, float>(DefaultWeights);
 
         // When on, a modifier's details stay hidden ("???") until something it affects actually happens
@@ -33,6 +47,7 @@ namespace EntadFramework
         public static void ResetRarityWeights()
         {
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
+            foreach (var kv in DefaultMultipliers) Multipliers[kv.Key] = kv.Value;
         }
 
         public override void ExposeData()
@@ -48,6 +63,9 @@ namespace EntadFramework
                 float w = Weights[r];
                 Scribe_Values.Look(ref w, "weight" + r, DefaultWeights[r]);
                 Weights[r] = Mathf.Max(0f, w);
+                float mult = Multipliers[r];
+                Scribe_Values.Look(ref mult, "multiplier" + r, DefaultMultipliers[r]);
+                Multipliers[r] = Mathf.Max(0.1f, mult);
             }
         }
     }
@@ -148,10 +166,14 @@ namespace EntadFramework
             return string.Join(", ", parts.Distinct());
         }
 
+        private Vector2 generalScroll;
+
         private void DoGeneral(Rect inRect)
         {
+            var view = new Rect(0f, 0f, inRect.width - 20f, 1250f);
+            Widgets.BeginScrollView(inRect, ref generalScroll, view);
             var list = new Listing_Standard();
-            list.Begin(inRect);
+            list.Begin(view);
 
             list.CheckboxLabeled("Hide modifiers until revealed", ref EntadSettings.HideModifiers,
                 "Newly generated entad items show \"???\" for their modifiers until something the modifier affects happens. Existing items keep their current state.");
@@ -174,10 +196,21 @@ namespace EntadFramework
                 EntadSettings.Weights[r] = Mathf.Round(list.Slider(w, 0f, 100f) * 2f) / 2f;
             }
 
+            list.GapLine();
+            list.Label("Rarity multipliers: how much a rarity widens the min/max of modifiers that scale with rarity. Offsets are multiplied; factors scale their distance from 100%. A modifier is capped at the highest rarity where its values stay valid (for example a factor never drops to zero).");
+            list.Gap(6f);
+            foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
+            {
+                float m = EntadSettings.Multipliers[r];
+                list.Label($"{r}: x{m:0.##}");
+                EntadSettings.Multipliers[r] = Mathf.Round(list.Slider(m, 0.5f, 6f) * 20f) / 20f;
+            }
+
             list.Gap(6f);
             if (list.ButtonText("Reset to defaults")) EntadSettings.ResetRarityWeights();
 
             list.End();
+            Widgets.EndScrollView();
         }
     }
 }

@@ -28,6 +28,15 @@ namespace EntadFramework
         {
             return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
         }
+
+        // Rarity scaling widens the whole range: offsets multiply, factors scale their distance from 1
+        public float RollScaled(float scale, bool factor) => EntadModifierDef.Scale(Roll(), scale, factor);
+
+        public float NormalizeScaled(float value, float scale, bool factor)
+        {
+            float lo = EntadModifierDef.Scale(min, scale, factor), hi = EntadModifierDef.Scale(max, scale, factor);
+            return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
+        }
     }
 
     // Building properties that aren't stats (they live in comp properties) and can be scaled by a modifier
@@ -54,6 +63,14 @@ namespace EntadFramework
         public float Normalize(float value)
         {
             return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
+        }
+
+        public float RollScaled(float scale) => EntadModifierDef.Scale(Roll(), scale, true);
+
+        public float NormalizeScaled(float value, float scale)
+        {
+            float lo = EntadModifierDef.Scale(min, scale, true), hi = EntadModifierDef.Scale(max, scale, true);
+            return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
         }
 
         public bool AppliesTo(ThingDef td)
@@ -107,6 +124,14 @@ namespace EntadFramework
         {
             return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
         }
+
+        public float RollScaled(float scale) => Roll() * scale;
+
+        public float NormalizeScaled(float value, float scale)
+        {
+            float lo = min * scale, hi = max * scale;
+            return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
+        }
     }
 
     [System.Flags]
@@ -127,6 +152,64 @@ namespace EntadFramework
     {
         public List<string> categories = new List<string>();
         public EntadRarity rarity = EntadRarity.Common;
+
+        // When true, "rarity" is the lowest rarity this modifier appears at. It can also appear at every higher
+        // rarity up to MaxRarity, with its min/max scaled by the rarity multipliers in the mod settings (relative to
+        // this def's own rarity). When false the modifier only ever appears at "rarity".
+        public bool scalesWithRarity;
+
+        public const float MinScaledFactor = 0.05f;
+
+        public static float Scale(float value, float scale, bool factor)
+        {
+            return factor ? UnityEngine.Mathf.Max(MinScaledFactor, 1f + (value - 1f) * scale) : value * scale;
+        }
+
+        // Multiplier applied to this def's ranges when rolled at the given rarity (1 at its own rarity)
+        public float RarityScale(EntadRarity at)
+        {
+            if (!scalesWithRarity) return 1f;
+            float baseMult = EntadSettings.RarityMultiplier(rarity);
+            return baseMult > 0.0001f ? EntadSettings.RarityMultiplier(at) / baseMult : 1f;
+        }
+
+        // Whether the scaled ranges still make sense at this rarity: a factor can't be pushed to or below zero, and an
+        // offset can't exceed what its stat allows. Rarities past the first one that fails are not offered.
+        private bool FitsAt(EntadRarity at)
+        {
+            float scale = RarityScale(at);
+            foreach (var r in Ranges(statFactors))
+                if (1f + (UnityEngine.Mathf.Min(r.min, r.max) - 1f) * scale < MinScaledFactor) return false;
+            if (buildingFactors != null)
+                foreach (var b in buildingFactors)
+                    if (1f + (UnityEngine.Mathf.Min(b.min, b.max) - 1f) * scale < MinScaledFactor) return false;
+            foreach (var r in Ranges(statOffsets))
+                if (r.stat != null && UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(r.min), UnityEngine.Mathf.Abs(r.max)) * scale > r.stat.maxValue) return false;
+            return true;
+        }
+
+        public EntadRarity MaxRarity
+        {
+            get
+            {
+                if (!scalesWithRarity) return rarity;
+                EntadRarity best = rarity;
+                for (var r = rarity + 1; r <= EntadRarity.Legendary; r++)
+                {
+                    if (!FitsAt(r)) break;
+                    best = r;
+                }
+                return best;
+            }
+        }
+
+        public bool CanAppearAt(EntadRarity at) => scalesWithRarity ? at >= rarity && at <= MaxRarity : at == rarity;
+
+        public EntadRarity ClampRarity(EntadRarity at)
+        {
+            if (!scalesWithRarity) return rarity;
+            return at < rarity ? rarity : (at > MaxRarity ? MaxRarity : at);
+        }
 
         public List<StatModifierRange> statOffsets;
         public List<StatModifierRange> statFactors;
@@ -219,16 +302,15 @@ namespace EntadFramework
             return false;
         }
 
-        // Base market value contributed by this modifier, by rarity
         // Flat value added once to an item with any unidentified modifier, instead of those modifiers' own value
         // (between a common and an uncommon modifier)
         public const float UnidentifiedMarketValue = 60f;
 
-        public float BaseMarketValue
+        // Base market value contributed by a modifier of this rarity
+        public static float BaseMarketValueAt(EntadRarity at)
         {
-            get
             {
-                switch (rarity)
+                switch (at)
                 {
                     case EntadRarity.Uncommon: return 100f;
                     case EntadRarity.Rare: return 300f;
@@ -238,6 +320,8 @@ namespace EntadFramework
                 }
             }
         }
+
+        public float BaseMarketValue => BaseMarketValueAt(rarity);
 
         public static float MoodEffectOf(ThoughtDef t) => t.stages[0].baseMoodEffect;
 
