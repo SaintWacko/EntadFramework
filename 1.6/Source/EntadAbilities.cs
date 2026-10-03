@@ -120,27 +120,44 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Ability), nameof(Ability.GetGizmos))]
     public static class Patch_Ability_GetGizmos_Hide
     {
-        public static void Postfix(Ability __instance, ref IEnumerable<Gizmo> __result)
-        {
-            if (!EntadAbilities.TraitsGranting(__instance.pawn, __instance.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability))) return;
-            __result = Hide(__result);
-        }
+        private static readonly AccessTools.FieldRef<Command_Ability, string> OriginalLabel = AccessTools.FieldRefAccess<Command_Ability, string>("originalLabel");
+        private static readonly AccessTools.FieldRef<Command_Ability, string> PawnLabel = AccessTools.FieldRefAccess<Command_Ability, string>("pawnLabel");
 
-        private static IEnumerable<Gizmo> Hide(IEnumerable<Gizmo> gizmos)
+        public static bool IsHidden(Ability ability) =>
+            EntadAbilities.TraitsGranting(ability.pawn, ability.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability));
+
+        // The game caches the gizmo, so it is updated in place each time it is requested (hiding it, or restoring it once revealed).
+        // Command_Ability rebuilds its label from the fields below every frame, so they have to be changed too.
+        public static void Postfix(Ability __instance, ref IEnumerable<Command> __result)
         {
-            foreach (Gizmo g in gizmos)
+            if (!EntadAbilities.TraitsGranting(__instance.pawn, __instance.def).Any()) return;
+            bool hidden = IsHidden(__instance);
+            var list = __result.ToList();
+            foreach (Command c in list)
             {
-                if (g is Command c)
-                {
-                    c.defaultLabel = "???";
-                    c.defaultDesc = "The effect of this ability is not yet known.";
-                    c.icon = TexButton.Info;
-                    c.iconAngle = 0f;
-                    c.iconOffset = UnityEngine.Vector2.zero;
-                    c.iconDrawScale = 1f;
-                }
-                yield return g;
+                if (!(c is Command_Ability ca)) continue;
+                string label = hidden ? "???" : __instance.def.LabelCap.ToString();
+                ca.defaultLabel = label;
+                OriginalLabel(ca) = label;
+                PawnLabel(ca) = label;
+                ca.icon = hidden ? TexButton.Info : __instance.def.uiIcon;
+                ca.iconAngle = 0f;
+                ca.iconOffset = UnityEngine.Vector2.zero;
+                ca.iconDrawScale = 1f;
             }
+            __result = list;
+        }
+    }
+
+    // The tooltip is read straight from the ability, so veil it while the trait is unrevealed
+    [HarmonyPatch(typeof(Command_Ability), nameof(Command_Ability.Tooltip), MethodType.Getter)]
+    public static class Patch_CommandAbility_Tooltip_Hide
+    {
+        public static void Postfix(Command_Ability __instance, ref string __result)
+        {
+            if (__instance.Ability != null && Patch_Ability_GetGizmos_Hide.IsHidden(__instance.Ability))
+                // Command_Ability inserts the pawn's name after the (colored) title when it is built, so keep this longer than any title
+                __result = "???".Colorize(ColoredText.TipSectionTitleColor) + "\n\nThe effect of this ability is not yet known.";
         }
     }
 }

@@ -16,5 +16,6 @@
     </abilities>
     <abilityCharges>2</abilityCharges>
     <abilityCooldownTicks>30000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
   </EntadFramework.EntadTraitDef>
 </Defs>

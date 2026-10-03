@@ -297,6 +297,9 @@ namespace EntadFramework
         // the ability can be used that many times in a row, and gains a charge back at the end of each cooldown.
         public int abilityCharges;
         public int abilityCooldownTicks;
+        // How long using the ability takes (ticks). Equipped abilities use it as their warmup; furniture abilities make
+        // the pawn work at the furniture for this long. 0 keeps the ability's own casting time.
+        public int abilityCastTicks;
 
         // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadTraitDef> exclusiveWith;

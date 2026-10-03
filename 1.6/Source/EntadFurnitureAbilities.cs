@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using RimWorld;
 using Verse;
+using UnityEngine;
 using Verse.AI;
 
 namespace EntadFramework
@@ -48,6 +49,13 @@ namespace EntadFramework
             else trait.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + def.cooldownTicksRange.RandomInRange);
         }
 
+        // Ticks a pawn works at the furniture before the ability goes off
+        public static int CastTicks(AppliedEntadTrait trait, AbilityDef def)
+        {
+            if (trait.def.abilityCastTicks > 0) return trait.def.abilityCastTicks;
+            return def.verbProperties != null ? Mathf.RoundToInt(def.verbProperties.warmupTime * 60f) : 0;
+        }
+
         public static int Cooldown(AppliedEntadTrait trait, AbilityDef def)
         {
             int c = trait.def.abilityCooldownTicks > 0 ? trait.def.abilityCooldownTicks : (int)def.cooldownTicksRange.Average;
@@ -66,6 +74,16 @@ namespace EntadFramework
         {
             this.FailOnDespawnedOrNull(TargetIndex.A);
             yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
+
+            var comp0 = job.targetA.Thing?.TryGetComp<CompEntad>();
+            int castTicks = comp0 != null && EntadFurnitureAbilities.TryGet(comp0, job.count, out var trait, out int idx)
+                ? EntadFurnitureAbilities.CastTicks(trait, trait.def.abilities[idx]) : 0;
+            if (castTicks > 0)
+            {
+                Toil wait = Toils_General.Wait(castTicks).WithProgressBarToilDelay(TargetIndex.A);
+                wait.FailOnDespawnedOrNull(TargetIndex.A);
+                yield return wait;
+            }
 
             Toil use = ToilMaker.MakeToil("UseEntadFurniture");
             use.initAction = () =>

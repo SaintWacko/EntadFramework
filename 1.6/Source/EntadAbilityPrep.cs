@@ -10,7 +10,7 @@ namespace EntadFramework
     // Runs once at startup, after defs load:
     // Gives every trait ability its own copy of the AbilityDef when it needs one: psycasts lose their psyfocus
     // and heat cost (they become plain abilities limited by cooldown/charges), and traits with abilityCharges
-    //     or abilityCooldownTicks get that cooldown/charge setup. Copies are per trait so the same ability can be
+    //     or abilityCooldownTicks get that cooldown/charge setup, and abilityCastTicks sets the casting time. Copies are per trait so the same ability can be
     //     limited differently by different traits.
     [StaticConstructorOnStartup]
     public static class EntadAbilityPrep
@@ -27,7 +27,7 @@ namespace EntadFramework
         private static void Prepare(EntadTraitDef m)
         {
             if (m.abilities.NullOrEmpty()) return;
-            bool custom = m.abilityCharges > 0 || m.abilityCooldownTicks > 0;
+            bool custom = m.abilityCharges > 0 || m.abilityCooldownTicks > 0 || m.abilityCastTicks > 0;
             for (int i = 0; i < m.abilities.Count; i++)
             {
                 AbilityDef src = m.abilities[i];
@@ -58,6 +58,11 @@ namespace EntadFramework
                 copy.cooldownPerCharge = true;
             }
             if (m.abilityCooldownTicks > 0) copy.cooldownTicksRange = new IntRange(m.abilityCooldownTicks, m.abilityCooldownTicks);
+            if (m.abilityCastTicks > 0 && src.verbProperties != null)
+            {
+                copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);
+                copy.verbProperties.warmupTime = m.abilityCastTicks / 60f;
+            }
             copy.cachedTooltip = null;
             copy.cachedTargets = null;
             if (!copy.iconPath.NullOrEmpty())
