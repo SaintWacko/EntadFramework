@@ -54,28 +54,38 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.Notify_EquipmentAdded))]
     public static class Patch_EquipmentAdded_Abilities
     {
-        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq) =>
+        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
+        {
             EntadAbilities.Grant(__instance.pawn, eq.GetComp<CompEntad>());
+            EntadMoods.SyncEquipped(__instance.pawn, eq);
+        }
     }
 
     [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.Notify_EquipmentRemoved))]
     public static class Patch_EquipmentRemoved_Abilities
     {
-        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq) =>
+        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
+        {
             EntadAbilities.Revoke(__instance.pawn, eq);
+        }
     }
 
     [HarmonyPatch(typeof(Pawn_ApparelTracker), nameof(Pawn_ApparelTracker.Notify_ApparelAdded))]
     public static class Patch_ApparelAdded_Abilities
     {
-        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel) =>
+        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
+        {
             EntadAbilities.Grant(__instance.pawn, apparel.GetComp<CompEntad>());
+            EntadMoods.SyncEquipped(__instance.pawn, apparel);
+        }
     }
 
     [HarmonyPatch(typeof(Pawn_ApparelTracker), nameof(Pawn_ApparelTracker.Notify_ApparelRemoved))]
     public static class Patch_ApparelRemoved_Abilities
     {
-        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel) =>
+        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
+        {
             EntadAbilities.Revoke(__instance.pawn, apparel);
+        }
     }
 }

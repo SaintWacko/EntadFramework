@@ -79,6 +79,8 @@ namespace EntadFramework
         public void AddModifier(EntadModifierDef def)
         {
             activeModifiers.Add(AppliedEntadModifier.Roll(def));
+            Pawn holder = Holder;
+            if (holder != null) EntadMoods.SyncEquipped(holder, parent);
         }
 
         public override void PostExposeData()
