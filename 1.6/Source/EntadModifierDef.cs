@@ -223,6 +223,11 @@ namespace EntadFramework
         public DamageDef changeDamageType;
         public List<ExtraDamageRange> extraDamage;
 
+        // Weapons whose projectiles explode (incinerators, launchers...) deal their damage through the explosion,
+        // so damage added to a direct hit would never apply
+        public static bool IsAreaWeapon(ThingDef td) =>
+            td.Verbs != null && td.Verbs.Any(v => v.defaultProjectile?.projectile != null && v.defaultProjectile.projectile.explosionRadius > 0f);
+
         public bool HasDamageEffect => changeDamageType != null || !extraDamage.NullOrEmpty();
 
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
@@ -409,7 +414,7 @@ namespace EntadFramework
             // Furniture moods and abilities need a pawn to use the building; heaters, generators etc. have no such interaction
             bool furnitureOnly = HasMood || !abilities.NullOrEmpty();
             if (furnitureOnly && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
-            if (HasDamageEffect && !td.IsWeapon) return false;
+            if (HasDamageEffect && (!td.IsWeapon || IsAreaWeapon(td))) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
