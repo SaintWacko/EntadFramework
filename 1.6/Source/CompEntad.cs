@@ -96,6 +96,22 @@ namespace EntadFramework
             if (holder != null) EntadMoods.SyncEquipped(holder);
         }
 
+        public void RemoveModifier(AppliedEntadModifier modifier)
+        {
+            if (!activeModifiers.Remove(modifier)) return;
+            Pawn holder = Holder;
+            if (holder != null) EntadMoods.SyncEquipped(holder);
+            if (modifier.def.abilities != null && holder != null)
+                foreach (var a in modifier.def.abilities)
+                    if (!activeModifiers.Any(m => m.def.abilities != null && m.def.abilities.Contains(a)) && holder.abilities?.GetAbility(a) != null)
+                        holder.abilities.RemoveAbility(a);
+        }
+
+        public void ClearModifiers()
+        {
+            foreach (var m in activeModifiers.ToList()) RemoveModifier(m);
+        }
+
         public override void PostExposeData()
         {
             base.PostExposeData();
