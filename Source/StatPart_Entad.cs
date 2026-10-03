@@ -92,7 +92,8 @@ namespace EntadFramework
             // Stat injection runs first and patching is isolated per class: previously one PatchAll() call sat ahead of
             // the injection, so a single patch whose runtime TargetMethods failed to bind threw out of this static
             // constructor and every trait's stat offsets, factors and market value silently stopped applying.
-            InjectStatParts();
+            try { InjectStatParts(); }
+            catch (System.Exception e) { Log.Error($"[Entad Framework] Stat injection failed; trait stat effects are off, patches still apply: {e}"); }
             PatchEachClass();
         }
 
@@ -103,7 +104,7 @@ namespace EntadFramework
             {
                 // Only real patch classes: the class processor invokes any static method named Prepare as a Harmony
                 // lifecycle hook, and EntadAbilityPrep.Prepare(EntadTraitDef) got called with null.
-                if (!type.IsDefined(typeof(HarmonyPatch), false)) continue;
+                if (!type.IsDefined(typeof(HarmonyPatch), true)) continue;
                 try { harmony.CreateClassProcessor(type).Patch(); }
                 catch (System.Exception e) { Log.Error($"[Entad Framework] Patch {type.FullName} failed; that one feature is off, the rest still works: {e}"); }
             }
