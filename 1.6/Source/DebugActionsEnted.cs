@@ -41,6 +41,29 @@ namespace EntadFramework
             Messages.Message($"Applied '{applied[0].LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
         }
 
+        [DebugAction(
+            category = "Entad Framework",
+            name = "Generate Random Entad Item",
+            actionType = DebugActionType.ToolMap,
+            allowedGameStates = AllowedGameStates.PlayingOnMap
+        )]
+        private static void GenerateRandomEntadItem()
+        {
+            IntVec3 cell = UI.MouseCell();
+            Map map = Find.CurrentMap;
+            if (map == null || !cell.InBounds(map)) return;
+
+            Thing thing = EntadApi.GenerateEntadItem();
+            if (thing == null)
+            {
+                Messages.Message("Could not generate an entad item.", MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+
+            GenPlace.TryPlaceThing(thing, cell, map, ThingPlaceMode.Near);
+            Messages.Message($"Generated {thing.LabelCap}.", thing, MessageTypeDefOf.PositiveEvent, false);
+        }
+
         private static CompEntad EntadAtMouse(out Thing thing)
         {
             thing = null;

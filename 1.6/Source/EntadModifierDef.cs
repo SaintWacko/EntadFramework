@@ -315,6 +315,9 @@ namespace EntadFramework
                 if (!match) return false;
             }
 
+            foreach (var r in Ranges(statFactors))
+                if (r.stat != null && IsWearerStat(r.stat) && !(td.statBases?.Any(m => m.stat == r.stat) ?? false)) return false;
+
             foreach (var r in AllRanges())
             {
                 if (r.stat == null) continue;
@@ -330,10 +333,20 @@ namespace EntadFramework
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
+            if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
         }
+
+        private static readonly HashSet<string> WearerCategories = new HashSet<string>
+        {
+            "EquippedStatOffsets", "BasicsPawn", "PawnWork", "PawnCombat", "PawnSocial", "PawnMisc",
+            "PawnHealth", "PawnFood", "PawnResistances", "PawnPsyfocus", "Meditation"
+        };
+
+        // Stats of the pawn carrying a weapon or apparel. Entad modifiers add to these as equipped stat offsets.
+        public static bool IsWearerStat(StatDef stat) => stat.category != null && WearerCategories.Contains(stat.category.defName);
 
         // Stats such as equipped offsets work on any equippable item
         private static bool StatDefHasEquippedOrBase(StatDef stat, ThingDef td)
