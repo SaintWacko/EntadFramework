@@ -13,16 +13,20 @@ namespace EntadFramework
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
             if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
 
+            bool unidentified = false;
             foreach (var m in comp.activeModifiers)
             {
                 var def = m.def;
-                bool known = m.IsRevealed(EntadEffectKind.Stat);
-                for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
+                // Stat effects apply whether or not they've been revealed; only their explanations are hidden
+                for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
-                for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
+                for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
-                if (parentStat == StatDefOf.MarketValue) val += m.MarketValueOffset();
+                // Identified modifiers add their normal value; unidentified ones share one fixed bonus (below)
+                if (parentStat == StatDefOf.MarketValue && !m.AnyHidden) val += m.MarketValueOffset();
+                else if (parentStat == StatDefOf.MarketValue) unidentified = true;
             }
+            if (unidentified) val += EntadModifierDef.UnidentifiedMarketValue;
         }
 
         public override string ExplanationPart(StatRequest req)
@@ -31,15 +35,15 @@ namespace EntadFramework
             if (comp == null || comp.activeModifiers.NullOrEmpty()) return null;
 
             string explanation = "";
+            bool unidentified = false;
             foreach (var m in comp.activeModifiers)
             {
                 var def = m.def;
                 bool known = m.IsRevealed(EntadEffectKind.Stat);
                 if (parentStat == StatDefOf.MarketValue)
                 {
-                    explanation += m.NameHidden
-                        ? $"\nUnidentified entad properties: +{m.MarketValueOffset().ToStringMoney()}"
-                        : $"\n{def.LabelCap} ({def.rarity}): +{m.MarketValueOffset().ToStringMoney()}";
+                    if (m.AnyHidden) unidentified = true;
+                    else explanation += $"\n{def.LabelCap} ({def.rarity}): +{m.MarketValueOffset().ToStringMoney()}";
                     continue;
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
@@ -49,6 +53,7 @@ namespace EntadFramework
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
+            if (unidentified) explanation += $"\nUnidentified entad properties: +{EntadModifierDef.UnidentifiedMarketValue.ToStringMoney()}";
             return explanation.NullOrEmpty() ? null : explanation;
         }
     }

@@ -191,6 +191,10 @@ namespace EntadFramework
         }
 
         // Base market value contributed by this modifier, by rarity
+        // Flat value added once to an item with any unidentified modifier, instead of those modifiers' own value
+        // (between a common and an uncommon modifier)
+        public const float UnidentifiedMarketValue = 60f;
+
         public float BaseMarketValue
         {
             get

@@ -138,7 +138,7 @@ namespace EntadFramework
         {
             hiddenState = 0;
             propertyFactors = null;
-            if ((kind & EntadEffectKind.Stat) != 0) ClearStatCaches();
+            ClearStatCaches();
             if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
@@ -183,7 +183,7 @@ namespace EntadFramework
                 for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
                 foreach (var m in activeModifiers)
                 {
-                    if (m.def.buildingFactors == null || !m.IsRevealed(EntadEffectKind.Building)) continue;
+                    if (m.def.buildingFactors == null) continue;
                     for (int i = 0; i < m.def.buildingFactors.Count; i++)
                         propertyFactors[(int)m.def.buildingFactors[i].property] *= m.BuildingFactorFor(i);
                 }
@@ -281,7 +281,6 @@ namespace EntadFramework
                 if (m.NameHidden)
                 {
                     sb.Append("\n").AppendLine("???".Colorize(ColoredText.TipSectionTitleColor));
-                    sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
                     continue;
                 }
                 sb.Append("\n").AppendLine(m.def.LabelCap.Resolve().Colorize(ColoredText.TipSectionTitleColor));
@@ -317,8 +316,10 @@ namespace EntadFramework
                         sb.AppendLine($" - Meals give: {m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName}");
                 }
                 if (m.AnyHidden) sb.AppendLine(" - ???");
-                sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
+                if (!m.AnyHidden) sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }
+            if (activeModifiers.Any(m => m.AnyHidden))
+                sb.Append("\nUnidentified properties: market value +").AppendLine(EntadModifierDef.UnidentifiedMarketValue.ToStringMoney());
 
             string label = string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.label));
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
