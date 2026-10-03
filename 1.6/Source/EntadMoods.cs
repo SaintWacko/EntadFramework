@@ -111,33 +111,38 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
     public static class Patch_CleanupCurrentJob_FurnitureMood
     {
+        // Runs on every job end of every pawn, so it must stay allocation-free and bail out early.
         public static void Prefix(Pawn_JobTracker __instance, JobCondition condition)
         {
             Job job = __instance.curJob;
-            Pawn pawn = __instance.pawn;
-            if (job == null || pawn == null || pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
-            if (condition == JobCondition.Errored || condition == JobCondition.ErroredPather) return;
+            if (job == null || condition == JobCondition.Errored || condition == JobCondition.ErroredPather) return;
             if (job.def == JobDefOf.Goto) return;
+
+            Pawn pawn = __instance.pawn;
+            if (pawn == null || pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
 
             Map map = pawn.MapHeld;
             if (map == null) return;
 
-            var used = new HashSet<Thing>();
-            foreach (LocalTargetInfo target in new[] { job.targetA, job.targetB, job.targetC })
-            {
-                Thing t = target.Thing;
-                if (t != null && t.def.building != null) used.Add(t);
-            }
+            Check(pawn, job.targetA.Thing, null);
+            Check(pawn, job.targetB.Thing, job.targetA.Thing);
+            Check(pawn, job.targetC.Thing, job.targetA.Thing, job.targetB.Thing);
 
             // Chairs, beds etc. the pawn is sitting/lying on
-            foreach (Thing t in pawn.Position.GetThingList(map))
-                if (t.def.building != null) used.Add(t);
+            List<Thing> here = pawn.Position.GetThingList(map);
+            for (int i = 0; i < here.Count; i++) Check(pawn, here[i], job.targetA.Thing, job.targetB.Thing, job.targetC.Thing);
 
             // Tables the pawn is eating at
             if (job.def == JobDefOf.Ingest)
-                foreach (Thing t in EntadMeals.SurfaceThings(pawn)) used.Add(t);
+                foreach (Thing t in EntadMeals.SurfaceThings(pawn)) Check(pawn, t, job.targetA.Thing, job.targetB.Thing, job.targetC.Thing);
+        }
 
-            foreach (Thing t in used) EntadMoods.OnFurnitureUsed(pawn, t);
+        // Applies the furniture's mood unless it was already handled via one of the earlier targets (skip1..3)
+        private static void Check(Pawn pawn, Thing t, Thing skip1, Thing skip2 = null, Thing skip3 = null)
+        {
+            if (t == null || t.def.building == null) return;
+            if (t == skip1 || t == skip2 || t == skip3) return;
+            EntadMoods.OnFurnitureUsed(pawn, t);
         }
     }
 }
