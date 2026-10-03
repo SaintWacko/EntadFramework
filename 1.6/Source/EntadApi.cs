@@ -88,7 +88,10 @@ namespace EntadFramework
             for (int i = 0; i < count; i++)
             {
                 var candidates = GetApplicableModifiers(thing, request.modifierFilter);
-                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates);
+                System.Func<EntadModifierDef, float> weight = null;
+                if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
+                    weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
+                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight);
                 if (pick == null) break;
                 comp.AddModifier(pick);
                 added.Add(pick);

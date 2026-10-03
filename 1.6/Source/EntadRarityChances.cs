@@ -31,8 +31,23 @@ namespace EntadFramework
             return this;
         }
 
+        private static EntadModifierDef PickWithin(List<EntadModifierDef> list, System.Func<EntadModifierDef, float> weightOf)
+        {
+            if (weightOf == null) return list.RandomElement();
+            float total = 0f;
+            foreach (var d in list) total += weightOf(d);
+            if (total <= 0f) return list.RandomElement();
+            float roll = Rand.Value * total;
+            foreach (var d in list)
+            {
+                roll -= weightOf(d);
+                if (roll <= 0f) return d;
+            }
+            return list[list.Count - 1];
+        }
+
         // Picks a modifier from the candidates: first a rarity by weight, then uniformly within it.
-        public EntadModifierDef Pick(IList<EntadModifierDef> candidates)
+        public EntadModifierDef Pick(IList<EntadModifierDef> candidates, System.Func<EntadModifierDef, float> weightOf = null)
         {
             if (candidates.NullOrEmpty()) return null;
 
@@ -44,9 +59,9 @@ namespace EntadFramework
             foreach (var group in available)
             {
                 roll -= weights[group.Key];
-                if (roll <= 0f) return group.RandomElement();
+                if (roll <= 0f) return PickWithin(group.ToList(), weightOf);
             }
-            return available.Last().RandomElement();
+            return PickWithin(available.Last().ToList(), weightOf);
         }
     }
 }

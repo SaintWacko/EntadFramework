@@ -330,6 +330,11 @@ namespace EntadFramework
         private static bool StatAppliesTo(StatDef stat, Thing thing)
         {
             ThingDef td = thing.def;
+            if (td.IsWeapon)
+            {
+                if (IsRangedOnlyStat(stat) && !td.IsRangedWeapon) return false;
+                if (IsMeleeOnlyStat(stat) && !td.IsMeleeWeapon) return false;
+            }
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
@@ -337,6 +342,29 @@ namespace EntadFramework
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        public static bool IsRangedOnlyStat(StatDef stat) =>
+            stat.category == StatCategoryDefOf.Weapon_Ranged || stat.defName.StartsWith("RangedWeapon_") || stat.defName.StartsWith("Accuracy");
+
+        public static bool IsMeleeOnlyStat(StatDef stat) =>
+            stat.category == StatCategoryDefOf.Weapon_Melee || stat.defName.StartsWith("MeleeWeapon_");
+
+        // Modifiers made for weapons (weapon-only categories, damage effects or weapon stats) rather than general ones
+        public bool IsWeaponSpecific
+        {
+            get
+            {
+                if (HasDamageEffect) return true;
+                if (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon)) return true;
+                return AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
+            }
+        }
+
+        public override void PostLoad()
+        {
+            base.PostLoad();
+            if (!label.NullOrEmpty()) label = GenText.ToTitleCaseSmart(label);
         }
 
         private static readonly HashSet<string> WearerCategories = new HashSet<string>

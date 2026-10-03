@@ -21,6 +21,10 @@ namespace EntadFramework
         // When on, a modifier's details stay hidden ("???") until something it affects actually happens
         public static bool HideModifiers = true;
 
+        // Selection weight of weapon-specific modifiers relative to general ones when picking for a weapon
+        public const float DefaultWeaponSpecificWeight = 3f;
+        public static float WeaponSpecificWeight = DefaultWeaponSpecificWeight;
+
         public static void ResetRarityWeights()
         {
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
@@ -30,6 +34,7 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Values.Look(ref HideModifiers, "hideModifiers", true);
+            Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -55,6 +60,10 @@ namespace EntadFramework
 
             list.CheckboxLabeled("Hide modifiers until revealed", ref EntadSettings.HideModifiers,
                 "Newly generated entad items show \"???\" for their modifiers until something the modifier affects happens. Existing items keep their current state.");
+            list.GapLine();
+            list.Label($"Weapon-specific modifier weight: x{EntadSettings.WeaponSpecificWeight:0.#}");
+            EntadSettings.WeaponSpecificWeight = Mathf.Round(list.Slider(EntadSettings.WeaponSpecificWeight, 1f, 10f) * 2f) / 2f;
+            list.Label("How much more likely modifiers made for weapons (damage, accuracy, ...) are than general ones when generating for a weapon. 1 = no preference.");
             list.GapLine();
             list.Label("Rarity curve: relative chance of each rarity when a modifier is picked. Rarities with no eligible modifier are skipped and the rest are renormalised.");
             list.Gap(6f);
