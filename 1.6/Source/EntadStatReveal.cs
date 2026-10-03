@@ -12,7 +12,7 @@ namespace EntadFramework
     public enum EntadStatTrigger
     {
         Equip, Use, Hit, Armor,
-        Work, Mining, Construction, Plant, Research, Doctor, Animals, Trade, Social, Eat, Rest, Learn,
+        Work, GeneralLabor, Mining, Construction, Plant, Research, Doctor, Animals, Trade, Social, Eat, Rest, Learn,
         Shoot, MeleeAttack, MeleeDodge, Damage, Toxic
     }
 
@@ -24,7 +24,8 @@ namespace EntadFramework
             {
                 switch (stat.defName)
                 {
-                    case "WorkSpeedGlobal": case "GeneralLaborSpeed": return EntadStatTrigger.Work;
+                    case "WorkSpeedGlobal": return EntadStatTrigger.Work;
+                    case "GeneralLaborSpeed": return EntadStatTrigger.GeneralLabor;
                     case "MiningSpeed": return EntadStatTrigger.Mining;
                     case "ConstructionSpeed": case "SmoothingSpeed": return EntadStatTrigger.Construction;
                     case "PlantWorkSpeed": case "PlantHarvestYield": return EntadStatTrigger.Plant;
@@ -81,6 +82,7 @@ namespace EntadFramework
                 Fire(pawn, EntadStatTrigger.Work);
                 switch (job.workGiverDef.workType?.defName)
                 {
+                    case "Hauling": case "Cleaning": Fire(pawn, EntadStatTrigger.GeneralLabor); break;
                     case "Mining": Fire(pawn, EntadStatTrigger.Mining); break;
                     case "Construction": Fire(pawn, EntadStatTrigger.Construction); break;
                     case "Growing": Fire(pawn, EntadStatTrigger.Plant); break;

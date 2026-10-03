@@ -173,6 +173,14 @@ namespace EntadFramework
         // actions that a pawn walks over and performs (with a per-item cooldown)
         public List<AbilityDef> abilities;
 
+        // Optional limits on the abilities above. Cooldown (ticks) overrides the ability's own cooldown. With charges,
+        // the ability can be used that many times in a row, and gains a charge back at the end of each cooldown.
+        public int abilityCharges;
+        public int abilityCooldownTicks;
+
+        // Set for modifiers generated from vanilla psycasts at startup
+        public bool generatedFromPsycast;
+
         // Modifiers that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadModifierDef> exclusiveWith;
 

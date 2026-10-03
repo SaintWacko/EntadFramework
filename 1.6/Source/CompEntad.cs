@@ -56,9 +56,11 @@ namespace EntadFramework
             Scribe_Values.Look(ref legacyRevealed, "revealed", true);
             if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyRevealed && revealedKinds == EntadEffectKind.All) revealedKinds = EntadEffectKind.None;
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
+            Scribe_Collections.Look(ref abilityCharges, "abilityCharges", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
+                abilityCharges = abilityCharges ?? new List<int>();
                 offsetValues = offsetValues ?? new List<float>();
                 factorValues = factorValues ?? new List<float>();
                 buildingValues = buildingValues ?? new List<float>();
@@ -78,6 +80,31 @@ namespace EntadFramework
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
             applied.mealNutritionFactor = def.mealNutritionFactor.RandomInRange;
             return applied;
+        }
+
+        // Furniture abilities with charges: charges left, and the tick the next one comes back
+        public List<int> abilityCharges = new List<int>();
+
+        // Returns the charges currently available for ability i, adding any that have come back by now
+        public int ChargesLeft(int i, int max, int cooldown)
+        {
+            while (abilityCharges.Count <= i) abilityCharges.Add(max);
+            int c = abilityCharges[i];
+            int now = Find.TickManager.TicksGame;
+            while (c < max && now >= AbilityReadyTick(i))
+            {
+                c++;
+                SetAbilityReadyTick(i, c < max ? AbilityReadyTick(i) + cooldown : 0);
+            }
+            abilityCharges[i] = c;
+            return c;
+        }
+
+        public void UseCharge(int i, int max, int cooldown)
+        {
+            int c = ChargesLeft(i, max, cooldown);
+            if (c >= max) SetAbilityReadyTick(i, Find.TickManager.TicksGame + cooldown);
+            abilityCharges[i] = c - 1;
         }
 
         public int AbilityReadyTick(int i) => i < abilityReadyTicks.Count ? abilityReadyTicks[i] : 0;
