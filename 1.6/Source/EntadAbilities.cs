@@ -57,7 +57,7 @@ namespace EntadFramework
         public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
         {
             EntadAbilities.Grant(__instance.pawn, eq.GetComp<CompEntad>());
-            EntadMoods.SyncEquipped(__instance.pawn, eq);
+            EntadMoods.SyncEquipped(__instance.pawn);
         }
     }
 
@@ -67,6 +67,7 @@ namespace EntadFramework
         public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
         {
             EntadAbilities.Revoke(__instance.pawn, eq);
+            EntadMoods.SyncEquipped(__instance.pawn, eq);
         }
     }
 
@@ -76,7 +77,7 @@ namespace EntadFramework
         public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
         {
             EntadAbilities.Grant(__instance.pawn, apparel.GetComp<CompEntad>());
-            EntadMoods.SyncEquipped(__instance.pawn, apparel);
+            EntadMoods.SyncEquipped(__instance.pawn);
         }
     }
 
@@ -86,6 +87,7 @@ namespace EntadFramework
         public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
         {
             EntadAbilities.Revoke(__instance.pawn, apparel);
+            EntadMoods.SyncEquipped(__instance.pawn, apparel);
         }
     }
 }

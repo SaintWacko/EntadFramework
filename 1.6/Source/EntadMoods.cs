@@ -38,18 +38,62 @@ namespace EntadFramework
             return false;
         }
 
-        // Gives the pawn one persistent memory per thought used by their equipped items
-        public static void SyncEquipped(Pawn pawn, Thing item)
+        // Brings the pawn's persistent equipment memories in line with what they currently wear or wield:
+        // one memory per modifier using a thought, up to that thought's stack limit.
+        // 'removing' is excluded from the count, for use while an item is being taken off.
+        public static void SyncEquipped(Pawn pawn, Thing removing = null)
         {
             var memories = pawn?.needs?.mood?.thoughts?.memories;
-            var comp = item?.TryGetComp<CompEntad>();
-            if (memories == null || comp == null) return;
-            foreach (var m in comp.activeModifiers)
+            if (memories == null) return;
+
+            var wanted = new Dictionary<ThoughtDef, int>();
+            Count(pawn.apparel?.WornApparel, removing, wanted);
+            Count(pawn.equipment?.AllEquipmentListForReading, removing, wanted);
+
+            var present = new Dictionary<ThoughtDef, List<Thought_EntadEquipped>>();
+            var list = memories.Memories;
+            for (int i = 0; i < list.Count; i++)
             {
-                if (m.thought == null || memories.GetFirstMemoryOfDef(m.thought) != null) continue;
-                var memory = new Thought_EntadEquipped { def = m.thought, pawn = pawn };
-                memory.Init();
-                memories.TryGainMemory(memory);
+                if (!(list[i] is Thought_EntadEquipped e)) continue;
+                if (!present.TryGetValue(e.def, out var l)) present[e.def] = l = new List<Thought_EntadEquipped>();
+                l.Add(e);
+            }
+
+            foreach (var kv in present)
+            {
+                wanted.TryGetValue(kv.Key, out int want);
+                want = System.Math.Min(want, kv.Key.stackLimit);
+                for (int i = kv.Value.Count - 1; i >= want; i--) memories.RemoveMemory(kv.Value[i]);
+            }
+
+            foreach (var kv in wanted)
+            {
+                int have = present.TryGetValue(kv.Key, out var l) ? System.Math.Min(l.Count, kv.Key.stackLimit) : 0;
+                int want = System.Math.Min(kv.Value, kv.Key.stackLimit);
+                for (int i = have; i < want; i++)
+                {
+                    var memory = new Thought_EntadEquipped { def = kv.Key, pawn = pawn, permanent = true };
+                    memory.Init();
+                    memories.Memories.Add(memory);
+                }
+            }
+        }
+
+        private static void Count<T>(List<T> items, Thing removing, Dictionary<ThoughtDef, int> wanted) where T : Thing
+        {
+            if (items == null) return;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] == removing) continue;
+                var mods = items[i].TryGetComp<CompEntad>()?.activeModifiers;
+                if (mods == null) continue;
+                for (int j = 0; j < mods.Count; j++)
+                {
+                    ThoughtDef t = mods[j].thought;
+                    if (t == null) continue;
+                    wanted.TryGetValue(t, out int n);
+                    wanted[t] = n + 1;
+                }
             }
         }
 
@@ -103,6 +147,7 @@ namespace EntadFramework
     // A memory thought that lasts exactly as long as an equipped entad item uses it, and shows under its own name
     public class Thought_EntadEquipped : Thought_Memory
     {
-        public override bool ShouldDiscard => !EntadMoods.IsBackedByEquipment(pawn, def);
+        // Normally removed explicitly when equipment changes; this is only a cheap periodic safety net
+        public override bool ShouldDiscard => pawn != null && pawn.IsHashIntervalTick(250) && !EntadMoods.IsBackedByEquipment(pawn, def);
     }
 }
