@@ -426,9 +426,8 @@ namespace EntadFramework
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
-            // Furniture moods and abilities need a pawn to use the building; heaters, generators etc. have no such interaction
-            bool furnitureOnly = HasMood || !abilities.NullOrEmpty();
-            if (furnitureOnly && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
+            // Furniture moods need a pawn to use the building (abilities work from the right-click menu on any furniture)
+            if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || IsAreaWeapon(td))) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;

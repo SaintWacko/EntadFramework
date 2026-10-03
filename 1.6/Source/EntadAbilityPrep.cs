@@ -49,6 +49,12 @@ namespace EntadFramework
             if (IsPsycast(src))
             {
                 copy.abilityClass = typeof(Ability);
+                // Verb_CastPsycast casts its ability to Psycast, which the plain Ability copy is not
+                if (copy.verbProperties != null && typeof(Verb_CastPsycast).IsAssignableFrom(copy.verbProperties.verbClass))
+                {
+                    copy.verbProperties = (VerbProperties)Clone.Invoke(copy.verbProperties, null);
+                    copy.verbProperties.verbClass = typeof(Verb_CastAbility);
+                }
                 if (copy.statBases != null)
                     copy.statBases = copy.statBases.Where(s => s.stat != null && !s.stat.defName.Contains("Psyfocus") && !s.stat.defName.Contains("Entropy")).ToList();
             }
@@ -60,7 +66,7 @@ namespace EntadFramework
             if (m.abilityCooldownTicks > 0) copy.cooldownTicksRange = new IntRange(m.abilityCooldownTicks, m.abilityCooldownTicks);
             if (m.abilityCastTicks > 0 && src.verbProperties != null)
             {
-                copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);
+                if (copy.verbProperties == src.verbProperties) copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);
                 copy.verbProperties.warmupTime = m.abilityCastTicks / 60f;
             }
             copy.cachedTooltip = null;

@@ -50,6 +50,8 @@ namespace EntadFramework
         }
 
         // Ticks a pawn works at the furniture before the ability goes off
+        public static PathEndMode PathMode(ThingDef def) => def.hasInteractionCell ? PathEndMode.InteractionCell : PathEndMode.Touch;
+
         public static int CastTicks(AppliedEntadTrait trait, AbilityDef def)
         {
             if (trait.def.abilityCastTicks > 0) return trait.def.abilityCastTicks;
@@ -73,7 +75,7 @@ namespace EntadFramework
         public override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedOrNull(TargetIndex.A);
-            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
+            yield return Toils_Goto.GotoThing(TargetIndex.A, EntadFurnitureAbilities.PathMode(job.targetA.Thing.def));
 
             var comp0 = job.targetA.Thing?.TryGetComp<CompEntad>();
             int castTicks = comp0 != null && EntadFurnitureAbilities.TryGet(comp0, job.count, out var trait, out int idx)
@@ -118,7 +120,7 @@ namespace EntadFramework
                 if (maxCharges > 0 && trait.IsRevealed(EntadEffectKind.Ability)) label += " [" + charges + "/" + maxCharges + "]";
                 if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled)
                     continue;
-                if (!selPawn.CanReach(parent, PathEndMode.InteractionCell, Danger.Deadly))
+                if (!selPawn.CanReach(parent, EntadFurnitureAbilities.PathMode(parent.def), Danger.Deadly))
                 {
                     yield return new FloatMenuOption(label + " (" + "NoPath".Translate() + ")", null);
                     continue;
