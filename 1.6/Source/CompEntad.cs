@@ -211,11 +211,27 @@ namespace EntadFramework
             parent.GetComp<CompPowerTrader>()?.SetUpPowerVars();
         }
 
+        private static bool AffectsMaxHitPoints(EntadModifierDef def)
+        {
+            foreach (var r in def.AllRanges()) if (r.stat == StatDefOf.MaxHitPoints) return true;
+            return false;
+        }
+
+        // Keeps the item's hit point fraction when its maximum changes, so a sturdier item starts at full health
+        private void RescaleHitPoints(float fraction)
+        {
+            ClearStatCaches();
+            parent.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(fraction * parent.MaxHitPoints), 1, parent.MaxHitPoints);
+        }
+
         public void AddModifier(EntadModifierDef def)
         {
+            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(def);
+            float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
             var applied = AppliedEntadModifier.Roll(def);
             applied.owner = this;
             activeModifiers.Add(applied);
+            if (scaleHp) RescaleHitPoints(hpFraction);
             ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
@@ -230,7 +246,10 @@ namespace EntadFramework
 
         public void RemoveModifier(AppliedEntadModifier modifier)
         {
+            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(modifier.def);
+            float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
             if (!activeModifiers.Remove(modifier)) return;
+            if (scaleHp) RescaleHitPoints(hpFraction);
             ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
@@ -322,7 +341,7 @@ namespace EntadFramework
                 {
                     var s = m.def.statOffsets[i].stat;
                     float v = m.OffsetFor(i);
-                    sb.AppendLine($" - {s.LabelCap} {(v >= 0 ? "+" : "")}{v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
+                    sb.AppendLine($" - {s.LabelCap} {v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
                 }
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
