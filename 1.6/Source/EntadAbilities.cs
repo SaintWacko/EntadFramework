@@ -55,7 +55,7 @@ namespace EntadFramework
     public static class Patch_EquipmentAdded_Abilities
     {
         public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq) =>
-            EntadMoods.ApplyEquipped(__instance.pawn, eq);
+            EntadAbilities.Grant(__instance.pawn, eq.GetComp<CompEntad>());
     }
 
     [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.Notify_EquipmentRemoved))]
@@ -69,7 +69,7 @@ namespace EntadFramework
     public static class Patch_ApparelAdded_Abilities
     {
         public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel) =>
-            EntadMoods.ApplyEquipped(__instance.pawn, apparel);
+            EntadAbilities.Grant(__instance.pawn, apparel.GetComp<CompEntad>());
     }
 
     [HarmonyPatch(typeof(Pawn_ApparelTracker), nameof(Pawn_ApparelTracker.Notify_ApparelRemoved))]
