@@ -20,8 +20,15 @@ namespace EntadFramework
     {
         public static bool IsFurniture(ThingDef def)
         {
-            return def.building != null && def.designationCategory != null && def.designationCategory.defName == "Furniture";
+            if (def.building == null || def.designationCategory == null) return false;
+            // Quality is not required: workbenches, lights, heaters etc. count too
+            return FurnitureCategories.Contains(def.designationCategory.defName);
         }
+
+        private static readonly HashSet<string> FurnitureCategories = new HashSet<string>
+        {
+            "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship"
+        };
 
         public static EntadItemKind KindOf(ThingDef def)
         {
