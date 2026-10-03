@@ -120,8 +120,11 @@ namespace EntadFramework
         public float MarketValueOffset() => def.BaseMarketValue * (0.5f + RollQuality());
     }
 
-    public partial class CompEntad : ThingComp
+    public partial class CompEntad : ThingComp, IRenameable
     {
+        // Player-chosen name; the surrounding entad markers are kept
+        public string customName;
+
         public List<AppliedEntadModifier> activeModifiers = new List<AppliedEntadModifier>();
 
         public CompProperties_Entad Props => (CompProperties_Entad)props;
@@ -245,6 +248,7 @@ namespace EntadFramework
         public override void PostExposeData()
         {
             base.PostExposeData();
+            Scribe_Values.Look(ref customName, "customName");
             Scribe_Collections.Look(ref activeModifiers, "activeModifiers", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -268,7 +272,29 @@ namespace EntadFramework
 
         public override string TransformLabel(string label)
         {
-            return activeModifiers.NullOrEmpty() ? label : "\u263C" + label + "\u263C";
+            if (activeModifiers.NullOrEmpty()) return label;
+            return "\u263C" + (customName.NullOrEmpty() ? label : customName) + "\u263C";
+        }
+
+        public string RenamableLabel
+        {
+            get => customName;
+            set => customName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        public string BaseLabel => parent.def.LabelCap;
+        public string InspectLabel => parent.LabelCap;
+
+        public override IEnumerable<Gizmo> CompGetGizmosExtra()
+        {
+            if (activeModifiers.NullOrEmpty()) yield break;
+            yield return new Command_Action
+            {
+                defaultLabel = "Rename",
+                defaultDesc = "Give this entad a name.",
+                icon = TexButton.Rename,
+                action = () => Find.WindowStack.Add(new Dialog_RenameEntad(this))
+            };
         }
 
         public override string CompInspectStringExtra()
@@ -334,8 +360,45 @@ namespace EntadFramework
             if (activeModifiers.Any(m => m.AnyHidden))
                 sb.Append("\nUnidentified properties: market value +").AppendLine(EntadModifierDef.UnidentifiedMarketValue.ToStringMoney());
 
+            foreach (var e in DamageDisplayStats()) yield return e;
+
             string label = string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.label));
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
+        }
+    }
+
+    public class Dialog_RenameEntad : Dialog_Rename<CompEntad>
+    {
+        public Dialog_RenameEntad(CompEntad comp) : base(comp) { }
+    }
+
+    public partial class CompEntad
+    {
+        // Revealed damage effects get their own rows in the weapon section of the info card
+        private IEnumerable<StatDrawEntry> DamageDisplayStats()
+        {
+            if (!parent.def.IsWeapon) yield break;
+            var cat = parent.def.IsRangedWeapon ? StatCategoryDefOf.Weapon_Ranged : StatCategoryDefOf.Weapon_Melee;
+            int order = 5500;
+            float total = 0f;
+            foreach (var m in activeModifiers)
+            {
+                if (!m.def.HasDamageEffect || !m.IsRevealed(EntadEffectKind.Damage)) continue;
+                if (m.def.changeDamageType != null)
+                    yield return new StatDrawEntry(cat, "Entad damage type", m.def.changeDamageType.LabelCap,
+                        $"{m.def.LabelCap}: this weapon's attacks deal {m.def.changeDamageType.label} damage instead of their usual type.", order++);
+                for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
+                {
+                    float v = m.ExtraDamageFor(i);
+                    total += v;
+                    var d = m.def.extraDamage[i].damageType;
+                    yield return new StatDrawEntry(cat, $"Entad {d.label} damage", "+" + v.ToString("0.#"),
+                        $"{m.def.LabelCap}: each hit deals this much additional {d.label} damage, on top of the weapon's normal damage. It is not reduced by or added to the Damage stat above.", order++);
+                }
+            }
+            if (total > 0f)
+                yield return new StatDrawEntry(cat, "Entad extra damage per hit", "+" + total.ToString("0.#"),
+                    "Total additional damage, of other damage types, dealt with every hit by this weapon's entad modifiers.", order);
         }
     }
 
