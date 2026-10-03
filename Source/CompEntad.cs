@@ -177,6 +177,9 @@ namespace EntadFramework
 
         public float WearerOffset(StatDef stat, out float hiddenPart)
         {
+            // Nearly all gear carries this comp but most has no traits; this runs for every worn item on every
+            // affected stat evaluation, so bail before allocating the (empty) cache dictionary.
+            if (activeTraits.NullOrEmpty()) { hiddenPart = 0f; return 0f; }
             if (wearerOffsets == null)
             {
                 wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, float>>();

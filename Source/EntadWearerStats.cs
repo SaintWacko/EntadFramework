@@ -75,6 +75,29 @@ namespace EntadFramework
         // line doesn't give them away. Never set around StatWorker.GetValue, whose results are cached.
         [System.ThreadStatic] internal static bool displayExcludesHidden;
 
+        // True while ThingDef.SpecialDisplayStats builds an entad item's info card. Narrower than the flag above: it
+        // only drops the hidden part of the entad offset in the StatOffsetFromGear postfix (the item's own
+        // "equipped stat offsets" rows), and is NOT honoured by StatPart_Entad, because other rows in that iterator
+        // call GetStatValue and a hidden-free value computed there would be written to the stat cache.
+        [System.ThreadStatic] internal static bool buildingGearCard;
+
+        public static IEnumerable<T> WithGearCard<T>(IEnumerable<T> source)
+        {
+            using (var e = source.GetEnumerator())
+            {
+                while (true)
+                {
+                    var prev = buildingGearCard;
+                    buildingGearCard = true;
+                    bool more;
+                    try { more = e.MoveNext(); }
+                    finally { buildingGearCard = prev; }
+                    if (!more) yield break;
+                    yield return e.Current;
+                }
+            }
+        }
+
         // True when this pawn holds an item of gearDef whose revealed entad offset for stat is non-zero.
         // Hidden-only effects deliberately don't count: they still apply, but listing the item would give them away.
         public static bool PawnHasVisibleEntadOffset(Pawn pawn, ThingDef gearDef, StatDef stat)
@@ -162,7 +185,19 @@ namespace EntadFramework
         {
             if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
             float total = EntadWearerStats.OffsetFrom(gear, stat, out float hiddenPart);
-            __result += EntadWearerStats.displayExcludesHidden ? total - hiddenPart : total;
+            __result += EntadWearerStats.displayExcludesHidden || EntadWearerStats.buildingGearCard ? total - hiddenPart : total;
+        }
+    }
+
+    // The item's own info card: its equipped-offset rows call StatOffsetFromGear directly for the "Final value",
+    // which would otherwise include unrevealed traits while the explanation above it lists only revealed ones.
+    [HarmonyPatch(typeof(ThingDef), nameof(ThingDef.SpecialDisplayStats))]
+    public static class Patch_ThingDefSpecialDisplayStats
+    {
+        public static void Postfix(StatRequest req, ref IEnumerable<StatDrawEntry> __result)
+        {
+            if (__result != null && req.Thing != null && EntadWearerStats.IsEntadGear(req.Thing))
+                __result = EntadWearerStats.WithGearCard(__result);
         }
     }
 
