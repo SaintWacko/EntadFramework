@@ -147,7 +147,25 @@ namespace EntadFramework
     // A memory thought that lasts exactly as long as an equipped entad item uses it, and shows under its own name
     public class Thought_EntadEquipped : Thought_Memory
     {
+        private bool computingMood;
+
         // Normally removed explicitly when equipment changes; this is only a cheap periodic safety net
         public override bool ShouldDiscard => pawn != null && pawn.IsHashIntervalTick(250) && !EntadMoods.IsBackedByEquipment(pawn, def);
+
+        // The mood tab shows "expires in" whenever this is above a few ticks, ignoring the permanent flag,
+        // so report no duration. Mood calculation still sees the real one (for lerpMoodToZero thoughts).
+        public override int DurationTicks => computingMood ? def.DurationTicks : 0;
+
+        // Never ages, so a lerpMoodToZero thought stays at full strength
+        public override void ThoughtInterval()
+        {
+        }
+
+        public override float MoodOffset()
+        {
+            computingMood = true;
+            try { return base.MoodOffset(); }
+            finally { computingMood = false; }
+        }
     }
 }
