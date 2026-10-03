@@ -30,6 +30,13 @@ namespace EntadFramework
             "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship"
         };
 
+        // Buildings pawns actually use: seats, beds, eating surfaces, and anything with an interaction cell (workbenches etc.)
+        public static bool IsPawnUsable(ThingDef def)
+        {
+            return def.building != null
+                && (def.hasInteractionCell || def.building.isSittable || def.IsBed || def.surfaceType == SurfaceType.Eat);
+        }
+
         public static EntadItemKind KindOf(ThingDef def)
         {
             EntadItemKind kind = EntadItemKind.None;
