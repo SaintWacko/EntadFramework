@@ -73,7 +73,42 @@ namespace EntadFramework
         // Abilities granted to the pawn wearing/wielding the item (weapons and apparel only)
         public List<AbilityDef> abilities;
 
+        // Modifiers that can never share an item with this one (symmetric: listing it on either def is enough)
+        public List<EntadModifierDef> exclusiveWith;
+
+        // Tags shared with other modifiers that mean "only one of us per item"
+        public List<string> exclusivityTags;
+
+        // By default two modifiers that affect the same thing (a stat, meal nutrition, meal quality, an ability)
+        // can't share an item. Set to true to opt this modifier out of that implicit check; explicit
+        // exclusiveWith / exclusivityTags still apply.
+        public bool allowOverlap;
+
         public string discoveryMessage;
+
+        public bool ConflictsWith(EntadModifierDef other)
+        {
+            if (other == null) return false;
+            if (other == this) return true;
+            if (exclusiveWith != null && exclusiveWith.Contains(other)) return true;
+            if (other.exclusiveWith != null && other.exclusiveWith.Contains(this)) return true;
+            if (exclusivityTags != null && other.exclusivityTags != null && exclusivityTags.Any(t => other.exclusivityTags.Contains(t))) return true;
+            if (allowOverlap || other.allowOverlap) return false;
+
+            if (mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f)
+                if (other.mealNutritionFactor.min != 1f || other.mealNutritionFactor.max != 1f) return true;
+            if (mealQualityOffset != 0 && other.mealQualityOffset != 0) return true;
+            if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
+            if (thought != null && thought == other.thought) return true;
+
+            foreach (var a in AllRanges())
+            {
+                if (a.stat == null) continue;
+                foreach (var b in other.AllRanges())
+                    if (a.stat == b.stat) return true;
+            }
+            return false;
+        }
 
         // Base market value contributed by this modifier, by rarity
         public float BaseMarketValue
@@ -138,6 +173,11 @@ namespace EntadFramework
         {
             ThingDef td = thing?.def;
             if (td == null) return false;
+
+            var existing = thing.TryGetComp<CompEntad>();
+            if (existing != null)
+                foreach (var m in existing.activeModifiers)
+                    if (m.def == this || ConflictsWith(m.def)) return false;
 
             if (!abilities.NullOrEmpty() && (EntadUtility.KindOf(td) & (EntadItemKind.Weapon | EntadItemKind.Apparel)) == EntadItemKind.None) return false;
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
