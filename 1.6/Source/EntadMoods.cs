@@ -17,6 +17,33 @@ namespace EntadFramework
             pawn.needs.mood.thoughts.memories.TryGainMemory(memory);
         }
 
+        // Equipped items keep one memory alive: renew an existing one rather than stacking a new one
+        public static void Refresh(Pawn pawn, ThoughtDef def, int durationTicks)
+        {
+            var memories = pawn?.needs?.mood?.thoughts?.memories;
+            if (memories == null || def == null) return;
+            var existing = memories.GetFirstMemoryOfDef(def);
+            if (existing != null)
+            {
+                existing.age = 0;
+                existing.durationTicksOverride = durationTicks;
+                return;
+            }
+            Give(pawn, def, durationTicks);
+        }
+
+        // Applies thoughts and abilities of one equipped item
+        public static void ApplyEquipped(Pawn pawn, Thing item)
+        {
+            var comp = item?.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeModifiers.Count == 0) return;
+            EntadAbilities.Grant(pawn, comp);
+            foreach (var m in comp.activeModifiers)
+                if (m.thought != null) Refresh(pawn, m.thought, EquippedRefreshTicks * 4);
+        }
+
+        public const int EquippedRefreshTicks = 150;
+
         public static void OnFurnitureUsed(Pawn pawn, Thing furniture)
         {
             var comp = furniture?.TryGetComp<CompEntad>();
@@ -62,26 +89,22 @@ namespace EntadFramework
     }
 
     // Weapons and apparel: refresh thoughts and abilities for equipped entad items.
-    // Driven from the pawn so it doesn't depend on the item itself being ticked.
+    // Driven from the pawn so it doesn't depend on the item itself being ticked; renews rather than stacks.
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.Tick))]
     public static class Patch_PawnTick_EquippedEntad
     {
         public static void Postfix(Pawn __instance)
         {
-            if (!__instance.IsHashIntervalTick(150)) return;
-            if (__instance.apparel != null)
-                foreach (Apparel a in __instance.apparel.WornApparel) Apply(__instance, a);
-            if (__instance.equipment != null)
-                foreach (ThingWithComps e in __instance.equipment.AllEquipmentListForReading) Apply(__instance, e);
-        }
+            if (!__instance.IsHashIntervalTick(EntadMoods.EquippedRefreshTicks)) return;
+            if (__instance.needs?.mood == null) return;
 
-        private static void Apply(Pawn pawn, Thing item)
-        {
-            var comp = item.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
-            EntadAbilities.Grant(pawn, comp);
-            foreach (var m in comp.activeModifiers)
-                if (m.thought != null) EntadMoods.Give(pawn, m.thought, 600);
+            var apparel = __instance.apparel?.WornApparel;
+            if (apparel != null)
+                for (int i = 0; i < apparel.Count; i++) EntadMoods.ApplyEquipped(__instance, apparel[i]);
+
+            var equipment = __instance.equipment?.AllEquipmentListForReading;
+            if (equipment != null)
+                for (int i = 0; i < equipment.Count; i++) EntadMoods.ApplyEquipped(__instance, equipment[i]);
         }
     }
 }

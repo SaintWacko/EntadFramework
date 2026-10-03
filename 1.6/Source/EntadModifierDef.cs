@@ -90,14 +90,16 @@ namespace EntadFramework
         public static float MoodEffectOf(ThoughtDef t) => t.stages[0].baseMoodEffect;
 
         // Plain memory thoughts with a single stage, usable on any pawn without extra context
-        public IEnumerable<ThoughtDef> MoodCandidates()
+        private List<ThoughtDef> moodCandidates;
+
+        public List<ThoughtDef> MoodCandidates()
         {
-            if (!HasMoodRange) return Enumerable.Empty<ThoughtDef>();
-            return DefDatabase<ThoughtDef>.AllDefsListForReading.Where(t =>
+            if (!HasMoodRange) return new List<ThoughtDef>();
+            return moodCandidates ?? (moodCandidates = DefDatabase<ThoughtDef>.AllDefsListForReading.Where(t =>
                 t.IsMemory && t.thoughtClass == typeof(Thought_Memory) && t.stages != null && t.stages.Count == 1
                 && t.stages[0] != null && t.requiredTraits.NullOrEmpty() && t.requiredGenes.NullOrEmpty()
                 && t.nextThought == null && t.stages[0].baseMoodEffect != 0f
-                && thoughtMoodRange.Includes(MoodEffectOf(t)));
+                && thoughtMoodRange.Includes(MoodEffectOf(t))).ToList());
         }
 
         public EntadEffectKind EffectKinds
@@ -134,7 +136,7 @@ namespace EntadFramework
             if (td == null) return false;
 
             if (!abilities.NullOrEmpty() && (EntadUtility.KindOf(td) & (EntadItemKind.Weapon | EntadItemKind.Apparel)) == EntadItemKind.None) return false;
-            if (HasMoodRange && !MoodCandidates().Any()) return false;
+            if (HasMoodRange && MoodCandidates().Count == 0) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
 
             if (!categories.NullOrEmpty())
