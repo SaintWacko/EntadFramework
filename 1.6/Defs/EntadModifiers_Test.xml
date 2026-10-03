@@ -15,4 +15,32 @@
       </li>
     </statOffsets>
   </EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_AcceleratedRounds</defName>
+    <label>accelerated rounds</label>
+    <description>Projectiles leave this weapon with far more force.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <statFactors>
+      <li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.6</max></li>
+    </statFactors>
+  </EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_Cinderstrike</defName>
+    <label>cinderstrike</label>
+    <description>Every hit scorches the target.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <extraDamage>
+      <li><damageType>Flame</damageType><min>2</min><max>6</max></li>
+    </extraDamage>
+  </EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_Frostbite</defName>
+    <label>frostbite</label>
+    <description>This weapon's attacks are bitterly cold.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <changeDamageType>Frostbite</changeDamageType>
+  </EntadFramework.EntadModifierDef>
 </Defs>
