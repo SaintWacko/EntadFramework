@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "buildId": 4,
+  "buildIdNote": null,
+  "reviewedAt": "2026-10-03T22:08:23.299Z",
+  "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b",
+  "focus": "pawn context for GearAffectsStat (prefix/finalizer + hyperlink enumerator wrapper), hidden-part line rebuild, wearer-offset double-count skip",
+  "diffSource": "since the oldest restore point still kept (2026-10-03T21:08:30Z); older ones were pruned, so the chat's first changes may be missing",
+  "parsed": true,
+  "problem": null,
+  "stoppedBecause": null,
+  "counts": {
+    "must": 0,
+    "should": 2,
+    "note": 5
+  },
+  "findings": [
+    {
+      "severity": "should",
+      "title": "Double-count skip also drops building-side offsets: Entad_SerenityFocus (MeditationFocusStrength) now does nothing",
+      "detail": "StatPart_Entad.cs:19 sets offsetsViaWearer = IsWearerStat(parentStat) && !(req.Thing is Pawn). IsWearerStat counts the 'Meditation' category as a wearer category (EntadTraitDef.cs:506-513), and MeditationFocusStrength is category Meditation (Core Stats_Basics_Special.xml). It is a stat of the focus object itself, though. The Furniture trait Entad_SerenityFocus (Defs/EntadBuildings.xml:73) offsets it, and the wearer path (the StatOffsetFromGear postfix) never reaches a building, so the rolled +0.1..0.3 no longer applies anywhere. ExplanationPart (StatPart_Entad.cs:54-56) has no matching skip, so the building's psyfocus explanation still shows the +X the value lacks. Fix at line 19: also require the thing to be equippable, e.g. `&& (req.Thing.def.IsApparel || req.Thing.def.equipmentType != EquipmentType.None)`, so only gear defers to the wearer path.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/StatPart_Entad.cs:19"
+      }
+    },
+    {
+      "severity": "should",
+      "title": "Hidden entad offsets show on the gear's own info card through StatOffsetFromGear",
+      "detail": "ThingDef.SpecialDisplayStats shows StatOffsetFromGear(req.Thing, stat) as the value and 'Final value' of each EquippedStatOffsets entry. Patch_StatOffsetFromGear adds the full entad total there, hidden part included. StatPart_Entad.ExplanationPart hides unrevealed traits in the breakdown, but the number gives the effect away. This happens whenever the item's def has its own equippedStatOffsets entry for a stat a hidden trait also offsets. The postfix can't subtract the hidden part because it also feeds the real pawn value (StatWorker.cs:214). Add a postfix on ThingDef.SpecialDisplayStats that rewrites that entry's value as total minus hiddenPart, as InfoTextLineFromGear already does.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Assembly-CSharp/Verse/ThingDef.cs:2418"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "Hidden stat factors on wearer stats are not part of hiddenPart, so the rebuilt gear line can still reveal them",
+      "detail": "CompEntad.WearerOffset (CompEntad.cs:178-200) only adds up statOffsets into the hidden part. StatPart_Entad still multiplies the gear's vanilla equipped offset by statFactors inside StatOffsetFromGear (StatPart_Entad.cs:27-28), revealed or not. The InfoTextLineFromGear line, which subtracts only hiddenPart, therefore shows a hidden factor's effect. This is narrow: wearer-stat factors are only allowed where the item's statBases list the stat (EntadTraitDef.cs:448).",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/CompEntad.cs:193"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "AddTrait/RemoveTrait on a held item do not clear the holder's stat caches",
+      "detail": "TraitsChanged (CompEntad.cs:271-280) drops wearerOffsets but calls ClearStatCaches only when MaxHitPoints rescales (RescaleHitPoints). Pawn stats read with a cacheStaleAfterTicks window can keep the old wearer offset for a short while after a trait is added to equipped gear. RevealedChanged does clear them. Opinion on how much it matters: it is cosmetic and short-lived.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/CompEntad.cs:271"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "GearAffectsStat is per def, so a hidden-only sibling of the same def still gets a gear line",
+      "detail": "PawnHasVisibleEntadOffset returns true if any held item of gearDef has a visible offset. The explanation loop at StatWorker.cs:487 then prints a line for every item of that def, so a hidden-only sibling shows vanilla + 0, the '+0.00' symptom this work fixes. Rare given apparel layers and a single primary weapon.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/EntadWearerStats.cs:150"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "Explanation lines no longer add up to the pawn's final value while a trait is hidden",
+      "detail": "The rebuilt gear line leaves out hiddenPart, but GetValueUnfinalized adds the full StatOffsetFromGear (hidden included) to the pawn's value. This is intended but visible to players comparing the breakdown with the total.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Assembly-CSharp/RimWorld/StatWorker.cs:214"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "InfoTextLineFromGear postfix replaces __result whole",
+      "detail": "When hiddenPart is non-zero the postfix rebuilds the string from scratch, so an earlier postfix from another mod that edited the line would be lost. None of the 14 scanned trees patches this method, so there's no precedent and no conflict today.",
+      "evidence": {
+        "kind": "precedent",
+        "ref": "StatWorker.InfoTextLineFromGear"
+      }
+    }
+  ],
+  "checked": [
+    "every [HarmonyPatch] attribute target binds (verify_patches: 31 resolved, 5 runtime TargetMethod), including GetExplanationUnfinalized prefix+finalizer, GetInfoCardHyperlinks, GearAffectsStat, StatOf…",
+    "PatchAll is called exactly once (StatPart_Entad.cs:72), from a StaticConstructorOnStartup after defs load, so the DefDatabase/StatDefOf use there is safe (defof-in-mod-ctor not violated)",
+    "vanilla StatWorker.StatOffsetFromGear runs stat.parts over the gear when its own offset is non-zero, so the double-count skip is justified for equippable gear",
+    "CompEntad.WearerOffset cache is invalidated on reveal, hide, AddTrait/RemoveTrait (TraitsChanged) and PostLoadInit, and the hidden sum is consistent with HasVisibleOffset/InfoTextLineFromGear",
+    "vanilla item-card EquippedStatOffsets rows use StatRequest.ForEmpty (ThingDef.cs:2434), so StatPart_Entad.ExplanationPart does not add a second line there",
+    "Pawn-category wearer stats are not shown on item info cards (StatWorker.ShouldShowFor), so the skipped offsets do not leave a mismatched item-card value for gear",
+    "AppliedEntadTrait.ExposeData legacy 'revealed' migration and PostLoadInit null-guards",
+    "Roslyn: no errors or warnings in Source/CompEntad.cs",
+    "all 6 [HarmonyPatch] targets in Source/EntadWearerStats.cs bind (verify_patches: 6 of 6 resolved)",
+    "GearAffectsStat is only reached from GetExplanationUnfinalized and RelevantGear (StatWorker.cs:479-495, 1180-1203, 1316), so the prefix/finalizer plus WithPawn wrapper cover both vanilla callers and …",
+    "GetInfoCardHyperlinks is lazy (StatWorker.cs:1287); WithPawn sets/restores explainingPawn around each MoveNext and disposes the inner enumerator, which handles the iterator warning from verify_patches",
+    "subclass overrides of GetExplanationUnfinalized call base (CaravanRidingSpeedFactor, PsyfocusCost, MarketValue, MeleeDamageAmount...), so the base patch still sets context; GetInfoCardHyperlinks over…",
+    "Prefix returns void (lint prefix-returns-void) and the finalizer restores the previous pawn, so nested explanations (MeleeDPS -> MeleeHitChance) unwind correctly",
+    "InfoTextLineFromGear rebuild: vanilla + entad total - hidden = vanilla + revealed, same format string as vanilla (StatWorker.cs:1152-1156)",
+    "StatOffsetFromGear postfix on the hot path is gated by array lookups by def index with bounds checks; caches are built lazily after PatchAll runs in the StaticConstructorOnStartup",
+    "wearer-offset double-count: StatPart_Entad skips offsets on non-pawn requests for wearer stats; StatPart_GearStatOffset's apparelStat (PsychicSensitivityOffset) is category Basics, not a wearer stat,…",
+    "PawnHasVisibleEntadOffset scans AllEquipmentListForReading, consistent with RelevantGear's equipment loop",
+    "precedents for all six targets: no corpus mod patches any of them, so there is no conflicting approach",
+    "pyxis_mod_errors could not run: no Pyxis token is configured"
+  ],
+  "unreviewed": [],
+  "outOfScope": [
+    "1.6/Source/CompEntad.cs",
+    "1.6/Source/DebugActionsEnted.cs",
+    "1.6/Source/EntadAbilities.cs",
+    "1.6/Source/EntadAbilityPrep.cs",
+    "1.6/Source/EntadApi.cs",
+    "1.6/Source/EntadBuildingProperties.cs",
+    "1.6/Source/EntadFurnitureAbilities.cs",
+    "1.6/Source/EntadMeals.cs",
+    "1.6/Source/EntadMoods.cs",
+    "1.6/Source/EntadRarityChances.cs",
+    "1.6/Source/EntadSettings.cs",
+    "1.6/Source/EntadStatReveal.cs",
+    "1.6/Source/EntadTraitDef.cs",
+    "1.6/Source/EntadUtility.cs",
+    "1.6/Source/EntadWeaponDamage.cs",
+    "1.6/Source/EntadWearerStats.cs",
+    "1.6/Source/StatPart_Entad.cs",
+    "Source/DebugActionsEnted.cs",
+    "Source/EntadAbilities.cs",
+    "Source/EntadAbilityPrep.cs",
+    "Source/EntadApi.cs",
+    "Source/EntadBuildingProperties.cs",
+    "Source/EntadFurnitureAbilities.cs",
+    "Source/EntadMeals.cs",
+    "Source/EntadMoods.cs",
+    "Source/EntadRarityChances.cs",
+    "Source/EntadSettings.cs",
+    "Source/EntadStatReveal.cs",
+    "Source/EntadTraitDef.cs",
+    "Source/EntadUtility.cs",
+    "Source/EntadWeaponDamage.cs",
+    "1.6/Defs/EntadBuildings.xml",
+    "1.6/Defs/EntadFurnitureAbilities_Test.xml",
+    "1.6/Defs/EntadJobs.xml",
+    "1.6/Defs/EntadMoods.xml",
+    "1.6/Defs/EntadTables.xml",
+    "1.6/Defs/EntadTraits_Psycasts.xml",
+    "1.6/Defs/EntadTraits_Stats.xml",
+    "1.6/Defs/EntadTraits_Test.xml",
+    "1.6/Defs/EntadTraits_Weapons.xml",
+    "About/About.xml",
+    "Defs/EntadBuildings.xml",
+    "Defs/EntadFurnitureAbilities_Test.xml",
+    "Defs/EntadJobs.xml",
+    "Defs/EntadMoods.xml",
+    "Defs/EntadTables.xml",
+    "Defs/EntadTraits_Psycasts.xml",
+    "Defs/EntadTraits_Stats.xml",
+    "Defs/EntadTraits_Test.xml",
+    "Defs/EntadTraits_Weapons.xml",
+    "1.6/Source/EntadFramework.csproj",
+    "Source/EntadFramework.csproj"
+  ],
+  "reviewed": [
+    "Source/CompEntad.cs",
+    "Source/EntadWearerStats.cs",
+    "Source/StatPart_Entad.cs"
+  ],
+  "parts": 2,
+  "buildCommit": "be06f8312453b1b488085100b6a8d347eb280ab4",
+  "partial": false
+}

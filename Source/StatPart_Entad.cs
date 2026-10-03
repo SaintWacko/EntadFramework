@@ -16,7 +16,11 @@ namespace EntadFramework
             // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
             // postfix in EntadWearerStats. Vanilla StatOffsetFromGear also runs stat.parts over the gear whenever the
             // def has its own equippedStatOffset for that stat, so adding them here too would count them twice.
-            bool offsetsViaWearer = EntadTraitDef.IsWearerStat(parentStat) && !(req.Thing is Pawn);
+            // Only gear defers: a building's own Meditation-category stat (MeditationFocusStrength on a focus object)
+            // is a stat of the building, never reaches the wearer path, and must still be offset here.
+            var td = req.Thing.def;
+            bool offsetsViaWearer = EntadTraitDef.IsWearerStat(parentStat) && !(req.Thing is Pawn)
+                && (td.IsApparel || td.equipmentType != EquipmentType.None);
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
