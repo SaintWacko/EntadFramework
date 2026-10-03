@@ -13,4 +13,14 @@
     </mealNutritionFactor>
     <mealThought>AteFineMeal</mealThought>
   </EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_GildedTable</defName>
+    <label>gilded table</label>
+    <description>Food served here tastes one notch better than it was prepared.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <mealQualityOffset>1</mealQualityOffset>
+  </EntadFramework.EntadModifierDef>
 </Defs>
