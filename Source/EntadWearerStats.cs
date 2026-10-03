@@ -19,11 +19,13 @@ namespace EntadFramework
             {
                 if (stats == null)
                 {
-                    stats = new HashSet<StatDef>();
+                    // Built in a local and published at the end, like the flag tables below
+                    var set = new HashSet<StatDef>();
                     foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                         if (d.statOffsets != null)
                             foreach (var r in d.statOffsets)
-                                if (r.stat != null && EntadTraitDef.IsWearerStat(r.stat)) stats.Add(r.stat);
+                                if (r.stat != null && EntadTraitDef.IsWearerStat(r.stat)) set.Add(r.stat);
+                    stats = set;
                 }
                 return stats;
             }
@@ -44,9 +46,10 @@ namespace EntadFramework
             return stat.index < statFlags.Length && statFlags[stat.index];
         }
 
-        public static bool IsEntadGear(Thing gear)
+        public static bool IsEntadGear(Thing gear) => gear is ThingWithComps twc && IsEntadGearDef(twc.def);
+
+        public static bool IsEntadGearDef(ThingDef def)
         {
-            if (!(gear is ThingWithComps twc)) return false;
             if (gearFlags == null)
             {
                 var flags = new bool[DefDatabase<ThingDef>.DefCount];
@@ -54,7 +57,7 @@ namespace EntadFramework
                     flags[d.index] = d.GetCompProperties<CompProperties_Entad>() != null;
                 gearFlags = flags;
             }
-            return twc.def.index < gearFlags.Length && gearFlags[twc.def.index];
+            return def.index < gearFlags.Length && gearFlags[def.index];
         }
 
         public static float OffsetFrom(Thing gear, StatDef stat, out float hiddenPart)
@@ -120,7 +123,9 @@ namespace EntadFramework
         {
             if (!IsEntadGear(gear)) return false;
             float total = OffsetFrom(gear, stat, out float hiddenPart);
-            return System.Math.Abs(total - hiddenPart) > float.Epsilon;
+            // Real tolerance, not float.Epsilon: total and hiddenPart are separate float sums, so revealed traits that
+            // cancel out leave rounding noise that would otherwise list the item as +0.00
+            return System.Math.Abs(total - hiddenPart) > 1e-4f;
         }
 
         // Runs an enumerable with explainingPawn set during each MoveNext, for vanilla iterators (GetInfoCardHyperlinks)
@@ -176,7 +181,7 @@ namespace EntadFramework
         {
             if (__result || !EntadWearerStats.AffectsStat(stat)) return;
             var pawn = EntadWearerStats.explainingPawn;
-            if (pawn == null || gearDef.GetCompProperties<CompProperties_Entad>() == null) return;
+            if (pawn == null || !EntadWearerStats.IsEntadGearDef(gearDef)) return;
             __result = EntadWearerStats.PawnHasVisibleEntadOffset(pawn, gearDef, stat);
         }
     }
@@ -206,8 +211,9 @@ namespace EntadFramework
 
     // Hidden effects still apply but are left out of the number on the gear line. The flag makes both halves of
     // StatOffsetFromGear skip unrevealed traits: the entad offset (postfix above) and any entad statFactors that
-    // StatPart_Entad applies to the def's own equipped offset. Safe to do here because StatOffsetFromGear runs the
-    // parts directly and never goes through StatWorker.GetValue, so nothing computed under the flag is cached.
+    // StatPart_Entad applies to the def's own equipped offset. StatOffsetFromGear runs the parts directly, never
+    // through StatWorker.GetValue, so its result isn't cached. Other stats read meanwhile (LabelCap reads
+    // MaxHitPoints) do go through the cache, which is why StatPart_Entad honours the flag on wearer stats only.
     // (Gear whose only effect is hidden never gets a line at all: see GearAffectsStat.)
     [HarmonyPatch(typeof(StatWorker), "InfoTextLineFromGear")]
     public static class Patch_InfoTextLineFromGear

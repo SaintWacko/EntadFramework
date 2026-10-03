@@ -278,6 +278,9 @@ namespace EntadFramework
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;
+            // Trait changes are rare (generation, dev tools), so clearing every affected stat here is cheap and keeps
+            // the game's stat caches for the item and its holder from serving a pre-change value.
+            ClearStatCaches();
             if (!parent.Spawned) return;
             parent.GetComp<CompGlower>()?.RefreshGlower();
             EntadFuel.Refresh(parent, this);
@@ -325,7 +328,11 @@ namespace EntadFramework
         {
             bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(trait.def);
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
-            if (!activeTraits.Remove(trait)) return;
+            if (!activeTraits.Contains(trait)) return;
+            // Clear while the trait is still listed: ClearStatCaches walks activeTraits, so after removal the
+            // removed trait's own stats would never be cleared.
+            ClearStatCaches();
+            activeTraits.Remove(trait);
             if (scaleHp) RescaleHitPoints(hpFraction);
             TraitsChanged();
             Pawn holder = Holder;

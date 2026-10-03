@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "buildId": 10,
+  "buildIdNote": null,
+  "reviewedAt": "2026-10-03T22:26:32.287Z",
+  "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b",
+  "focus": "gearCardThing scoping and the skipHidden condition in StatPart_Entad; cache safety",
+  "diffSource": "since the oldest restore point still kept (2026-10-03T21:08:30Z); older ones were pruned, so the chat's first changes may be missing",
+  "parsed": true,
+  "problem": null,
+  "stoppedBecause": null,
+  "counts": {
+    "must": 0,
+    "should": 5,
+    "note": 2
+  },
+  "findings": [
+    {
+      "severity": "should",
+      "title": "displayExcludesHidden skips hidden traits on every stat, so MaxHitPoints is cached without its hidden factors",
+      "detail": "skipHidden is true for any stat while displayExcludesHidden is set. Vanilla InfoTextLineFromGear calls gear.LabelCap under that flag. GenLabel reads t.MaxHitPoints, which is GetStatValue(MaxHitPoints, cacheStaleAfterTicks 10) on a cacheable stat (Stats_Basics_General.xml:18). So hovering a pawn stat stores a MaxHitPoints that leaves out hidden trait factors and offsets, and the game reads it for up to 10 ticks. The label also shows a wrong HP percentage, which reveals the hidden trait. MarketValue also loses UnidentifiedMarketValue under the flag. One change at StatPart_Entad.cs:21: `bool skipHidden = offsetsViaWearer && (EntadWearerStats.displayExcludesHidden || EntadWearerStats.gearCardThing == req.Thing);`. StatOffsetFromGear, the only call the flag is meant for, always has offsetsViaWearer true, so nothing intended is lost. The 'nothing computed under the flag is cached' comment on Patch_InfoTextLineFromGear is wrong for the same reason.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/StatPart_Entad.cs:21"
+      }
+    },
+    {
+      "severity": "should",
+      "title": "StatPart_Entad is added after StatDef.SetImmutability, so some affected stats stay immutable",
+      "detail": "PlayDataLoader calls ResetStaticDataPost (StatDef.SetImmutability) at line 276, before StaticConstructorOnStartupUtility.CallAll at line 346. A stat with no parts that is not in mutableStats keeps immutable=true and its immutableStatCache after InjectStatParts adds the part. Items cache their first value permanently, and a pawn wearer stat ignores entad gear being put on or taken off. After stat.parts.Add(part) in InjectStatParts, set stat.immutable = false and call stat.Worker.SetCacheability(false).",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/StatPart_Entad.cs:118"
+      }
+    },
+    {
+      "severity": "should",
+      "title": "TraitsChanged clears the comp caches but not the game's stat caches; RemoveTrait misses the removed trait's stats",
+      "detail": "TraitsChanged drops propertyFactors and wearerOffsets but never calls ClearStatCaches, so an AddTrait or RemoveTrait that doesn't touch MaxHitPoints leaves cached values for the item and its holder stale. Permanently so for immutable stats (see the previous finding), since ClearCacheForThing is the only thing that clears immutableStatCache (StatWorker.cs:1373). In RemoveTrait the trait is removed from activeTraits before RescaleHitPoints calls ClearStatCaches, so its own stats are never cleared. Call ClearStatCaches() in RemoveTrait before activeTraits.Remove(trait), and in TraitsChanged.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/CompEntad.cs:332"
+      }
+    },
+    {
+      "severity": "should",
+      "title": "HasVisibleOffset compares (total - hiddenPart) against float.Epsilon",
+      "detail": "CompEntad.WearerOffset builds total and hiddenPart as two separate float sums. When the revealed traits cancel out (for example +0.1 and -0.1) on top of a hidden one, total - hiddenPart can leave rounding noise far above float.Epsilon (1.4e-45). GearAffectsStat then returns true and the gear shows up under 'Relevant gear' as +0.00, the exact symptom this file exists to remove. Use a tolerance at EntadWearerStats.cs:125, e.g. !Mathf.Approximately(total, hiddenPart) or a 1e-4 threshold.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/EntadWearerStats.cs:125"
+      }
+    },
+    {
+      "severity": "should",
+      "title": "Stats getter publishes the HashSet before filling it",
+      "detail": "The getter assigns stats = new HashSet<StatDef>() and only then fills it, so a re-entrant or concurrent first call can see an empty set. statFlags would then be built from it once and stay wrong for the whole session. AffectsStat and IsEntadGear already build into a local and publish at the end; doing the same here (build a local set, then assign stats) makes all three caches consistent.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Source/EntadWearerStats.cs:21"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "gearCardThing also covers def-level comp rows inside ThingDef.SpecialDisplayStats",
+      "detail": "WithGearCard sets the flag around every MoveNext, and that includes comps[i].SpecialDisplayStats(req). Vanilla never computes a wearer pawn stat there: ThingDef.SpecialDisplayStats only calls GetStatValue for RangedWeapon_WarmupMultiplier and RangedWeapon_RangeMultiplier, which are not wearer stats. But if a third-party CompProperties row calls the wearer's GetStatValue, StatWorker.GetValue writes that pawn's temporaryStatCache with HidingFor(gear) true, so the cached number lacks the hidden offset. Nothing in the corpus does this today; worth one comment line so a later change keeps the scope narrow.",
+      "evidence": {
+        "kind": "index",
+        "ref": "Assembly-CSharp/Verse/ThingDef.cs:2318"
+      }
+    },
+    {
+      "severity": "note",
+      "title": "GearAffectsStat postfix scans comps instead of using the IsEntadGear flag table",
+      "detail": "Patch_GearAffectsStat calls gearDef.GetCompProperties<CompProperties_Entad>(), a list scan, when the gearFlags index lookup is right there. It only runs while an explanation or hyperlink list is being built, so the cost is small; this is a consistency point, not a performance one.",
+      "evidence": {
+        "kind": "opinion",
+        "ref": "Source/EntadWearerStats.cs:178"
+      }
+    }
+  ],
+  "checked": [
+    "gearCardThing scoping: WithGearCard sets it only during each MoveNext and restores it in finally; inside ThingDef.SpecialDisplayStats the only GetStatValue calls are RangedWeapon_WarmupMultiplier/Ran…",
+    "Item card equipped-offset row: StatOffsetFromGear Final value (with gearCardThing set) and StatPart_Entad.ExplanationPart both leave out the same unrevealed traits, so the row and its explanation agr…",
+    "OffsetsViaWearer stops double-counting with vanilla StatOffsetFromGear running stat.parts over gear (StatWorker.cs:1158-1178)",
+    "CompEntad.WearerOffset cache: built in a local and published at the end; dropped in RevealedChanged, Hide, TraitsChanged and PostLoadInit; the hidden part is recomputed from IsRevealed at rebuild",
+    "hiddenState and propertyFactors are dropped on reveal, trait change and load",
+    "AppliedEntadTrait.ExposeData: legacy 'revealed' mapping, null-list repair in PostLoadInit, owner relinked in CompEntad.PostExposeData",
+    "EntadStatPartInjector: patching each class in its own try/catch after stat injection; StatDefOf use in a StaticConstructorOnStartup is fine (defof-in-mod-ctor not triggered)",
+    "No Harmony patches declared in the reviewed files (nothing for verify_patches/precedents)",
+    "pyxis_mod_errors: not reachable (no Pyxis token configured)",
+    "verify_patches: all 8 Harmony targets in EntadWearerStats.cs bind",
+    "Postfix and prefix parameter names match the vanilla signatures: GetExplanationUnfinalized(StatRequest req, ...), GetInfoCardHyperlinks(StatRequest statRequest), GearAffectsStat(ThingDef gearDef, Sta…",
+    "No prefix returns bool, and no transpiler: no other mod's patch on these methods can be skipped (prefix-returns-void)",
+    "Corpus precedents: no scanned mod patches any of the 7 target methods, so there is no competing approach",
+    "GetInfoCardHyperlinks and RelevantGear are lazy iterators that call GearAffectsStat; the WithPawn enumerator wrapper (setting the flag around each step) is the right fix, not a postfix-only flag",
+    "gearCardThing / skipHidden in vanilla: the only wearer-stat call on the item inside its card is StatOffsetFromGear at ThingDef.cs:2418, which runs parts directly and is never cached",
+    "displayExcludesHidden: InfoTextLineFromGear only calls StatOffsetFromGear; the vanilla parts it runs that call GetStatValue (StatPart_GearStatOffset, StatPart_GearStatFactor, StatPart_Terror, StatPar…",
+    "StatWorker.GetValue caching: temporaryStatCache is written on every GetValue(Thing) call but read only when cacheStaleAfterTicks is set; no wearer stat reaches it under either flag in vanilla",
+    "Every flag is restored after each step (try/finally in the wrappers, Finalizer on the two prefix patches), including when an exception is thrown or a loop is abandoned",
+    "No double count: StatPart_Entad skips offsets when OffsetsViaWearer is true, and the StatOffsetFromGear postfix adds them exactly once",
+    "statFlags/gearFlags: bounds-checked against def index, built after defs load (StaticConstructorOnStartup), and later-added defs safely read as false",
+    "pyxis_mod_errors: could not run (no Pyxis token configured), so there are no community error classes to cross-check"
+  ],
+  "unreviewed": [],
+  "outOfScope": [
+    "1.6/Source/CompEntad.cs",
+    "1.6/Source/DebugActionsEnted.cs",
+    "1.6/Source/EntadAbilities.cs",
+    "1.6/Source/EntadAbilityPrep.cs",
+    "1.6/Source/EntadApi.cs",
+    "1.6/Source/EntadBuildingProperties.cs",
+    "1.6/Source/EntadFurnitureAbilities.cs",
+    "1.6/Source/EntadMeals.cs",
+    "1.6/Source/EntadMoods.cs",
+    "1.6/Source/EntadRarityChances.cs",
+    "1.6/Source/EntadSettings.cs",
+    "1.6/Source/EntadStatReveal.cs",
+    "1.6/Source/EntadTraitDef.cs",
+    "1.6/Source/EntadUtility.cs",
+    "1.6/Source/EntadWeaponDamage.cs",
+    "1.6/Source/EntadWearerStats.cs",
+    "1.6/Source/StatPart_Entad.cs",
+    "Source/DebugActionsEnted.cs",
+    "Source/EntadAbilities.cs",
+    "Source/EntadAbilityPrep.cs",
+    "Source/EntadApi.cs",
+    "Source/EntadBuildingProperties.cs",
+    "Source/EntadFurnitureAbilities.cs",
+    "Source/EntadMeals.cs",
+    "Source/EntadMoods.cs",
+    "Source/EntadRarityChances.cs",
+    "Source/EntadSettings.cs",
+    "Source/EntadStatReveal.cs",
+    "Source/EntadTraitDef.cs",
+    "Source/EntadUtility.cs",
+    "Source/EntadWeaponDamage.cs",
+    "1.6/Defs/EntadBuildings.xml",
+    "1.6/Defs/EntadFurnitureAbilities_Test.xml",
+    "1.6/Defs/EntadJobs.xml",
+    "1.6/Defs/EntadMoods.xml",
+    "1.6/Defs/EntadTables.xml",
+    "1.6/Defs/EntadTraits_Psycasts.xml",
+    "1.6/Defs/EntadTraits_Stats.xml",
+    "1.6/Defs/EntadTraits_Test.xml",
+    "1.6/Defs/EntadTraits_Weapons.xml",
+    "About/About.xml",
+    "Defs/EntadBuildings.xml",
+    "Defs/EntadFurnitureAbilities_Test.xml",
+    "Defs/EntadJobs.xml",
+    "Defs/EntadMoods.xml",
+    "Defs/EntadTables.xml",
+    "Defs/EntadTraits_Psycasts.xml",
+    "Defs/EntadTraits_Stats.xml",
+    "Defs/EntadTraits_Test.xml",
+    "Defs/EntadTraits_Weapons.xml",
+    "1.6/Source/EntadFramework.csproj",
+    "Source/EntadFramework.csproj"
+  ],
+  "reviewed": [
+    "Source/CompEntad.cs",
+    "Source/EntadWearerStats.cs",
+    "Source/StatPart_Entad.cs"
+  ],
+  "parts": 2,
+  "buildCommit": "9c4cd0468120ca3818fbe30ed7bf12305ff8b5b4",
+  "partial": false
+}

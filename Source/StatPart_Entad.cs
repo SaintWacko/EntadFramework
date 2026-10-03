@@ -17,9 +17,11 @@ namespace EntadFramework
             // Set only while the pawn's "Relevant gear" line is being built (Patch_InfoTextLineFromGear), so the
             // number on that line leaves out unrevealed traits. Read after the early return, so items without
             // traits never pay for the thread-static read.
-            // Also on the item's own info card, but only for wearer stats (see EntadWearerStats.gearCardThing).
-            bool skipHidden = EntadWearerStats.displayExcludesHidden
-                || (offsetsViaWearer && EntadWearerStats.gearCardThing == req.Thing);
+            // Wearer stats only: both flags exist for StatOffsetFromGear, which always has offsetsViaWearer true.
+            // Without that gate the flag leaked into other stats read while the gear line is built (LabelCap reads
+            // MaxHitPoints through GetStatValue), caching a value without the hidden traits.
+            bool skipHidden = offsetsViaWearer
+                && (EntadWearerStats.displayExcludesHidden || EntadWearerStats.gearCardThing == req.Thing);
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
@@ -117,6 +119,14 @@ namespace EntadFramework
                 if (stat.parts.Any(p => p is StatPart_Entad)) continue;
                 var part = new StatPart_Entad { parentStat = stat };
                 stat.parts.Add(part);
+                // StatDef.SetImmutability already ran during def loading, before static constructors. A stat that had
+                // no parts may have been marked immutable, which caches each thing's first value forever: entad
+                // items would keep their pre-trait value and a wearer stat would ignore entad gear changes.
+                if (stat.immutable)
+                {
+                    stat.immutable = false;
+                    stat.Worker.SetCacheability(false);
+                }
             }
         }
     }
