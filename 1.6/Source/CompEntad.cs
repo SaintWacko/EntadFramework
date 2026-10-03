@@ -337,7 +337,7 @@ namespace EntadFramework
         {
             base.PostExposeData();
             Scribe_Values.Look(ref customName, "customName");
-            Scribe_Collections.Look(ref activeTraits, "activeModifiers", LookMode.Deep);
+            Scribe_Collections.Look(ref activeTraits, "activeTraits", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();

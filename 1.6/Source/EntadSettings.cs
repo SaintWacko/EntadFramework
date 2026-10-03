@@ -53,9 +53,9 @@ namespace EntadFramework
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref HideTraits, "hideModifiers", true);
+            Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             var disabled = DisabledTraits.ToList();
-            Scribe_Collections.Look(ref disabled, "disabledModifiers", LookMode.Value);
+            Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
