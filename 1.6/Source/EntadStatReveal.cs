@@ -118,18 +118,31 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Pawn_InteractionsTracker), nameof(Pawn_InteractionsTracker.TryInteractWith))]
     public static class Patch_Interact_StatReveal
     {
+        private static readonly AccessTools.FieldRef<Pawn_InteractionsTracker, Pawn> PawnField = AccessTools.FieldRefAccess<Pawn_InteractionsTracker, Pawn>("pawn");
+
         public static void Postfix(Pawn_InteractionsTracker __instance, bool __result)
         {
-            if (__result) EntadStatReveal.Fire(Traverse.Create(__instance).Field("pawn").GetValue<Pawn>(), EntadStatTrigger.Social);
+            if (__result) EntadStatReveal.Fire(PawnField(__instance), EntadStatTrigger.Social);
         }
     }
 
     [HarmonyPatch(typeof(SkillRecord), nameof(SkillRecord.Learn))]
     public static class Patch_Learn_StatReveal
     {
+        private static readonly AccessTools.FieldRef<SkillRecord, Pawn> PawnField = AccessTools.FieldRefAccess<SkillRecord, Pawn>("pawn");
+        private static readonly Dictionary<int, int> lastCheck = new Dictionary<int, int>();
+        private const int CheckInterval = 250;
+
+        // Learn fires on every xp gain, so each pawn is only checked a few times a minute
         public static void Postfix(SkillRecord __instance, float xp)
         {
-            if (xp > 0f) EntadStatReveal.Fire(Traverse.Create(__instance).Field("pawn").GetValue<Pawn>(), EntadStatTrigger.Learn);
+            if (xp <= 0f) return;
+            Pawn pawn = PawnField(__instance);
+            if (pawn == null) return;
+            int now = Find.TickManager.TicksGame;
+            if (lastCheck.TryGetValue(pawn.thingIDNumber, out int last) && now - last < CheckInterval) return;
+            lastCheck[pawn.thingIDNumber] = now;
+            EntadStatReveal.Fire(pawn, EntadStatTrigger.Learn);
         }
     }
 

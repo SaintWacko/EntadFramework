@@ -440,13 +440,20 @@ namespace EntadFramework
             stat.category == StatCategoryDefOf.Weapon_Melee || stat.defName.StartsWith("MeleeWeapon_");
 
         // Modifiers made for weapons (weapon-only categories, damage effects or weapon stats) rather than general ones
+        private int weaponSpecific = -1;
+
         public bool IsWeaponSpecific
         {
             get
             {
-                if (HasDamageEffect) return true;
-                if (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon)) return true;
-                return AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
+                if (weaponSpecific < 0)
+                {
+                    bool result = HasDamageEffect
+                        || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
+                        || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
+                    weaponSpecific = result ? 1 : 0;
+                }
+                return weaponSpecific == 1;
             }
         }
 
