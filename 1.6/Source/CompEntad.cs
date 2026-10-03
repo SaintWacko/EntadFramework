@@ -118,7 +118,10 @@ namespace EntadFramework
         private void ModifiersChanged()
         {
             propertyFactors = null;
-            if (parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
+            if (!parent.Spawned) return;
+            parent.GetComp<CompGlower>()?.RefreshGlower();
+            EntadFuel.Refresh(parent, this);
+            parent.GetComp<CompPowerTrader>()?.SetUpPowerVars();
         }
 
         public void AddModifier(EntadModifierDef def)
@@ -127,6 +130,12 @@ namespace EntadFramework
             ModifiersChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
+        }
+
+        public override void PostSpawnSetup(bool respawningAfterLoad)
+        {
+            base.PostSpawnSetup(respawningAfterLoad);
+            if (!activeModifiers.NullOrEmpty()) EntadFuel.Refresh(parent, this);
         }
 
         public void RemoveModifier(AppliedEntadModifier modifier)
@@ -204,6 +213,8 @@ namespace EntadFramework
                 {
                     sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
+                if (!m.def.fuelTypes.NullOrEmpty())
+                    sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.fuelTypes.Select(f => f.LabelCap.ToString()))}");
                 for (int i = 0; m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
                     sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
                 if (!m.def.abilities.NullOrEmpty())

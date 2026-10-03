@@ -12,9 +12,10 @@ namespace EntadFramework
     // editing them we scale the value where each component reads it.
     public static class EntadBuildingProperties
     {
-        public static float Scale(float value, ThingComp comp, int property)
+        public static float Scale(float value, object owner, int property)
         {
-            var entad = comp?.parent?.GetComp<CompEntad>();
+            Thing thing = owner as Thing ?? (owner as ThingComp)?.parent;
+            var entad = thing?.TryGetComp<CompEntad>();
             return entad == null || entad.activeModifiers.Count == 0 ? value : value * entad.PropertyFactor((EntadBuildingProperty)property);
         }
 
@@ -99,5 +100,74 @@ namespace EntadFramework
         {
             __result = EntadBuildingProperties.Scale(__result, __instance, (int)EntadBuildingProperty.PowerGeneration);
         }
+    }
+
+    [HarmonyPatch]
+    public static class Patch_TemperatureControlPower
+    {
+        private static readonly FieldInfo field = AccessTools.Field(typeof(CompProperties_TempControl), nameof(CompProperties_TempControl.energyPerSecond));
+
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            foreach (var m in EntadBuildingProperties.InstanceMethodsReading(typeof(Building_Heater), field)) yield return m;
+            foreach (var m in EntadBuildingProperties.InstanceMethodsReading(typeof(Building_Cooler), field)) yield return m;
+        }
+
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> ins) => EntadBuildingProperties.ScaleFieldReads(ins, field, EntadBuildingProperty.TemperatureControlPower);
+    }
+
+    // Power use is stored as a negative output; scale it whenever the trader sets it
+    [HarmonyPatch(typeof(CompPowerTrader), nameof(CompPowerTrader.PowerOutput), MethodType.Setter)]
+    public static class Patch_PowerConsumption
+    {
+        public static void Prefix(CompPowerTrader __instance, ref float value)
+        {
+            if (value < 0f) value = EntadBuildingProperties.Scale(value, __instance, (int)EntadBuildingProperty.PowerConsumption);
+        }
+    }
+
+    // Per-item fuel types. Instead of patching every place that reads the fuel filter, an affected item gets its
+    // own copy of the refuelable properties with a different filter, so all the vanilla code just sees it.
+    public static class EntadFuel
+    {
+        private static readonly Dictionary<CompRefuelable, CompProperties> originals = new Dictionary<CompRefuelable, CompProperties>();
+
+        public static void Refresh(Thing thing, CompEntad entad)
+        {
+            var refuelable = thing.TryGetComp<CompRefuelable>();
+            if (refuelable == null) return;
+
+            var extra = new List<ThingDef>();
+            bool replace = false;
+            foreach (var m in entad.activeModifiers)
+            {
+                if (m.def.fuelTypes.NullOrEmpty()) continue;
+                extra.AddRange(m.def.fuelTypes);
+                replace |= m.def.replaceFuel;
+            }
+
+            if (!originals.TryGetValue(refuelable, out var original))
+            {
+                if (extra.Count == 0) return;
+                originals[refuelable] = original = refuelable.props;
+            }
+            else if (extra.Count == 0)
+            {
+                refuelable.props = original;
+                originals.Remove(refuelable);
+                return;
+            }
+
+            var baseProps = (CompProperties_Refuelable)original;
+            var copy = (CompProperties_Refuelable)Clone(baseProps);
+            var filter = new ThingFilter();
+            if (!replace) filter.CopyAllowancesFrom(baseProps.fuelFilter);
+            foreach (var d in extra) filter.SetAllow(d, true);
+            copy.fuelFilter = filter;
+            refuelable.props = copy;
+        }
+
+        private static readonly MethodInfo memberwiseClone = AccessTools.Method(typeof(object), "MemberwiseClone");
+        private static object Clone(object o) => memberwiseClone.Invoke(o, null);
     }
 }

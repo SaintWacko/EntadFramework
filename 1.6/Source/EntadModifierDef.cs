@@ -37,7 +37,9 @@ namespace EntadFramework
         HeatOutput,
         FuelConsumptionRate,
         FuelCapacity,
-        PowerGeneration
+        PowerGeneration,
+        PowerConsumption,
+        TemperatureControlPower
     }
 
     // A multiplier on a building property, rolled between min and max when applied to an item
@@ -65,6 +67,9 @@ namespace EntadFramework
                     case EntadBuildingProperty.HeatOutput: if (c is CompProperties_HeatPusher) return true; break;
                     case EntadBuildingProperty.FuelConsumptionRate:
                     case EntadBuildingProperty.FuelCapacity: if (c is CompProperties_Refuelable) return true; break;
+                    case EntadBuildingProperty.TemperatureControlPower: if (c is CompProperties_TempControl) return true; break;
+                    case EntadBuildingProperty.PowerConsumption:
+                        if (c is CompProperties_Power pp && pp.compClass != null && !typeof(CompPowerPlant).IsAssignableFrom(pp.compClass) && pp.basePowerConsumption > 0f) return true; break;
                     case EntadBuildingProperty.PowerGeneration: if (c.compClass != null && typeof(CompPowerPlant).IsAssignableFrom(c.compClass)) return true; break;
                 }
             }
@@ -81,6 +86,8 @@ namespace EntadFramework
                     case EntadBuildingProperty.HeatOutput: return "Heat output";
                     case EntadBuildingProperty.FuelConsumptionRate: return "Fuel consumption rate";
                     case EntadBuildingProperty.FuelCapacity: return "Fuel capacity";
+                    case EntadBuildingProperty.PowerConsumption: return "Power consumption";
+                    case EntadBuildingProperty.TemperatureControlPower: return "Heating/cooling power";
                     default: return "Power generation";
                 }
             }
@@ -109,6 +116,11 @@ namespace EntadFramework
         // Multipliers on building properties that aren't stats: light radius, heat output, fuel consumption
         // rate, fuel capacity, power generation. Only applies to buildings that have the matching component.
         public List<BuildingPropertyRange> buildingFactors;
+
+        // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
+        // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
+        public List<ThingDef> fuelTypes;
+        public bool replaceFuel;
 
         // Mood effect: while equipped (weapons/apparel) or after use (furniture) the wearer/user gets this thought.
         // The lifetime in hours is rolled in thoughtHours when the modifier is applied.
@@ -161,6 +173,7 @@ namespace EntadFramework
             if (mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f)
                 if (other.mealNutritionFactor.min != 1f || other.mealNutritionFactor.max != 1f) return true;
             if (mealQualityOffset != 0 && other.mealQualityOffset != 0) return true;
+            if (!fuelTypes.NullOrEmpty() && !other.fuelTypes.NullOrEmpty()) return true;
             if (!buildingFactors.NullOrEmpty() && !other.buildingFactors.NullOrEmpty()
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
@@ -214,7 +227,7 @@ namespace EntadFramework
                 if (AllRanges().Any()) kinds |= EntadEffectKind.Stat;
                 if (HasMood) kinds |= EntadEffectKind.Mood;
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
-                if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
+                if (!buildingFactors.NullOrEmpty() || !fuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Building;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
             }
@@ -231,6 +244,7 @@ namespace EntadFramework
             if (buildingFactors != null)
                 foreach (var b in buildingFactors)
                     if (b.min > b.max || b.min < 0f) yield return $"{defName}: invalid building factor range for {b.property}";
+            if (fuelTypes != null && fuelTypes.Any(f => f == null)) yield return $"{defName}: fuelTypes contains an unknown def";
             if (mealNutritionFactor.min > mealNutritionFactor.max) yield return $"{defName}: mealNutritionFactor min is greater than max";
             if (thought != null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f)) yield return $"{defName}: specify either thought or thoughtMoodRange, not both";
             if (thoughtMoodRange.min > thoughtMoodRange.max) yield return $"{defName}: thoughtMoodRange min is greater than max";
@@ -254,6 +268,7 @@ namespace EntadFramework
             if (furnitureOnly && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
+            if (!fuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())
             {
