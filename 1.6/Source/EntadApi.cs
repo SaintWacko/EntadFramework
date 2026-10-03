@@ -112,6 +112,20 @@ namespace EntadFramework
 
         // Generates an unspawned item with entad modifiers, or null if no item/modifier combination fits the request.
         // Item defs are tried in random order until one can receive at least one modifier.
+        public static Thing GenerateEntadItem(int modifierCount, EntadItemRequest request = null)
+        {
+            request = request ?? new EntadItemRequest();
+            request.modifierCount = new IntRange(modifierCount, modifierCount);
+            return GenerateEntadItem(request);
+        }
+
+        public static List<EntadModifierDef> ApplyRandomModifiers(Thing thing, int modifierCount, EntadApplyRequest request = null)
+        {
+            request = request ?? new EntadApplyRequest();
+            request.modifierCount = new IntRange(modifierCount, modifierCount);
+            return ApplyRandomModifiers(thing, request);
+        }
+
         public static Thing GenerateEntadItem(EntadItemRequest request = null)
         {
             request = request ?? new EntadItemRequest();

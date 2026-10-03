@@ -29,6 +29,34 @@ namespace EntadFramework
             }
         }
 
+        // Flat lookups by def index keep the per-call cost of the stat hooks tiny; they run for every gear piece on every stat evaluation.
+        private static bool[] statFlags;
+        private static bool[] gearFlags;
+
+        public static bool AffectsStat(StatDef stat)
+        {
+            if (statFlags == null)
+            {
+                var flags = new bool[DefDatabase<StatDef>.DefCount];
+                foreach (var s in Stats) flags[s.index] = true;
+                statFlags = flags;
+            }
+            return stat.index < statFlags.Length && statFlags[stat.index];
+        }
+
+        public static bool IsEntadGear(Thing gear)
+        {
+            if (!(gear is ThingWithComps twc)) return false;
+            if (gearFlags == null)
+            {
+                var flags = new bool[DefDatabase<ThingDef>.DefCount];
+                foreach (var d in DefDatabase<ThingDef>.AllDefsListForReading)
+                    flags[d.index] = d.GetCompProperties<CompProperties_Entad>() != null;
+                gearFlags = flags;
+            }
+            return twc.def.index < gearFlags.Length && gearFlags[twc.def.index];
+        }
+
         public static float OffsetFrom(Thing gear, StatDef stat, out bool hidden)
         {
             hidden = false;
@@ -52,7 +80,7 @@ namespace EntadFramework
     {
         public static void Postfix(Thing gear, StatDef stat, ref float __result)
         {
-            if (!EntadWearerStats.Stats.Contains(stat)) return;
+            if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
             __result += EntadWearerStats.OffsetFrom(gear, stat, out _);
         }
     }
@@ -63,7 +91,7 @@ namespace EntadFramework
     {
         public static void Postfix(Thing gear, StatDef stat, ref string __result)
         {
-            if (!EntadWearerStats.Stats.Contains(stat)) return;
+            if (!EntadWearerStats.AffectsStat(stat)) return;
             EntadWearerStats.OffsetFrom(gear, stat, out bool hidden);
             if (hidden) __result = "";
         }

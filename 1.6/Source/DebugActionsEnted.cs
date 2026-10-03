@@ -53,7 +53,18 @@ namespace EntadFramework
             Map map = Find.CurrentMap;
             if (map == null || !cell.InBounds(map)) return;
 
-            Thing thing = EntadApi.GenerateEntadItem();
+            var options = new List<DebugMenuOption>();
+            for (int n = 1; n <= 8; n++)
+            {
+                int count = n;
+                options.Add(new DebugMenuOption(count + (count == 1 ? " modifier" : " modifiers"), DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, count)));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        private static void PlaceGenerated(IntVec3 cell, Map map, int count)
+        {
+            Thing thing = EntadApi.GenerateEntadItem(count);
             if (thing == null)
             {
                 Messages.Message("Could not generate an entad item.", MessageTypeDefOf.RejectInput, false);
