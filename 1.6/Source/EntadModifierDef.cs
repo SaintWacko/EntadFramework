@@ -178,9 +178,6 @@ namespace EntadFramework
         public int abilityCharges;
         public int abilityCooldownTicks;
 
-        // Set for modifiers generated from vanilla psycasts at startup
-        public bool generatedFromPsycast;
-
         // Modifiers that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadModifierDef> exclusiveWith;
 
