@@ -76,4 +76,52 @@
       </li>
     </statOffsets>
   </EntadFramework.EntadModifierDef>
+
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_PotentCooling</defName>
+    <label>potent</label>
+    <description>Heats or cools much harder than it should.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <buildingFactors>
+      <li>
+        <property>TemperatureControlPower</property>
+        <min>1.25</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadModifierDef>
+
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_ThriftyDevice</defName>
+    <label>thrifty</label>
+    <description>Draws less power than it should.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <buildingFactors>
+      <li>
+        <property>PowerConsumption</property>
+        <min>0.4</min>
+        <max>0.8</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadModifierDef>
+
+  <EntadFramework.EntadModifierDef>
+    <defName>Entad_StoneBurner</defName>
+    <label>stone-burning</label>
+    <description>Somehow burns rock instead of wood.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Epic</rarity>
+    <replaceFuel>true</replaceFuel>
+    <fuelTypes>
+      <li>BlocksGranite</li>
+    </fuelTypes>
+  </EntadFramework.EntadModifierDef>
 </Defs>
