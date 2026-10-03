@@ -182,7 +182,8 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) { hiddenPart = 0f; return 0f; }
             if (wearerOffsets == null)
             {
-                wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, float>>();
+                // Filled in a local and published at the end, so a throw mid-build can't leave a half-built cache
+                var built = new Dictionary<StatDef, KeyValuePair<float, float>>();
                 foreach (var m in activeTraits)
                 {
                     var offsets = m.def.statOffsets;
@@ -191,11 +192,12 @@ namespace EntadFramework
                     {
                         StatDef s = offsets[i].stat;
                         if (s == null || !EntadTraitDef.IsWearerStat(s)) continue;
-                        wearerOffsets.TryGetValue(s, out var cur);
+                        built.TryGetValue(s, out var cur);
                         float v = m.OffsetFor(i);
-                        wearerOffsets[s] = new KeyValuePair<float, float>(cur.Key + v, cur.Value + (m.IsRevealed(EntadEffectKind.Stat) ? 0f : v));
+                        built[s] = new KeyValuePair<float, float>(cur.Key + v, cur.Value + (m.IsRevealed(EntadEffectKind.Stat) ? 0f : v));
                     }
                 }
+                wearerOffsets = built;
             }
             if (wearerOffsets.Count > 0 && wearerOffsets.TryGetValue(stat, out var e)) { hiddenPart = e.Value; return e.Key; }
             hiddenPart = 0f;
@@ -416,12 +418,14 @@ namespace EntadFramework
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
                     var s = m.def.statOffsets[i].stat;
+                    if (s == null) continue;
                     float v = m.OffsetFor(i);
                     sb.AppendLine($" - {s.LabelCap} {v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
                 }
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
                     var s = m.def.statFactors[i].stat;
+                    if (s == null) continue;
                     sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
                 }
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))

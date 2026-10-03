@@ -75,23 +75,26 @@ namespace EntadFramework
         // line doesn't give them away. Never set around StatWorker.GetValue, whose results are cached.
         [System.ThreadStatic] internal static bool displayExcludesHidden;
 
-        // True while ThingDef.SpecialDisplayStats builds an entad item's info card. Narrower than the flag above: it
-        // only drops the hidden part of the entad offset in the StatOffsetFromGear postfix (the item's own
-        // "equipped stat offsets" rows), and is NOT honoured by StatPart_Entad, because other rows in that iterator
-        // call GetStatValue and a hidden-free value computed there would be written to the stat cache.
-        [System.ThreadStatic] internal static bool buildingGearCard;
+        // The entad item whose info card ThingDef.SpecialDisplayStats is building right now. Narrower than the flag
+        // above: only StatOffsetFromGear for THIS item (its own "equipped stat offsets" rows) and StatPart_Entad on
+        // wearer stats of this item drop hidden traits. Item stats the card reads through GetStatValue (warmup,
+        // damage...) are not wearer stats, so their cached values keep the hidden effects. Storing the Thing rather
+        // than a bool keeps any other mod's comp row that computes some other gear's offset unaffected.
+        [System.ThreadStatic] internal static Thing gearCardThing;
 
-        public static IEnumerable<T> WithGearCard<T>(IEnumerable<T> source)
+        public static bool HidingFor(Thing gear) => displayExcludesHidden || (gearCardThing != null && gearCardThing == gear);
+
+        public static IEnumerable<T> WithGearCard<T>(IEnumerable<T> source, Thing gear)
         {
             using (var e = source.GetEnumerator())
             {
                 while (true)
                 {
-                    var prev = buildingGearCard;
-                    buildingGearCard = true;
+                    var prev = gearCardThing;
+                    gearCardThing = gear;
                     bool more;
                     try { more = e.MoveNext(); }
-                    finally { buildingGearCard = prev; }
+                    finally { gearCardThing = prev; }
                     if (!more) yield break;
                     yield return e.Current;
                 }
@@ -185,7 +188,7 @@ namespace EntadFramework
         {
             if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
             float total = EntadWearerStats.OffsetFrom(gear, stat, out float hiddenPart);
-            __result += EntadWearerStats.displayExcludesHidden || EntadWearerStats.buildingGearCard ? total - hiddenPart : total;
+            __result += EntadWearerStats.HidingFor(gear) ? total - hiddenPart : total;
         }
     }
 
@@ -197,7 +200,7 @@ namespace EntadFramework
         public static void Postfix(StatRequest req, ref IEnumerable<StatDrawEntry> __result)
         {
             if (__result != null && req.Thing != null && EntadWearerStats.IsEntadGear(req.Thing))
-                __result = EntadWearerStats.WithGearCard(__result);
+                __result = EntadWearerStats.WithGearCard(__result, req.Thing);
         }
     }
 

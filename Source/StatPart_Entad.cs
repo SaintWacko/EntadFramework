@@ -17,7 +17,9 @@ namespace EntadFramework
             // Set only while the pawn's "Relevant gear" line is being built (Patch_InfoTextLineFromGear), so the
             // number on that line leaves out unrevealed traits. Read after the early return, so items without
             // traits never pay for the thread-static read.
-            bool skipHidden = EntadWearerStats.displayExcludesHidden;
+            // Also on the item's own info card, but only for wearer stats (see EntadWearerStats.gearCardThing).
+            bool skipHidden = EntadWearerStats.displayExcludesHidden
+                || (offsetsViaWearer && EntadWearerStats.gearCardThing == req.Thing);
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
