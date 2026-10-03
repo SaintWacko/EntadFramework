@@ -239,7 +239,18 @@ namespace EntadFramework
     {
         public static void Prefix(Projectile __instance, Thing hitThing)
         {
-            if (hitThing != null) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn, false);
+            // Area weapons (incinerators, grenade launchers...) explode on the ground without hitting a thing
+            if (hitThing != null || __instance.def.projectile.explosionRadius > 0f) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn, false);
+        }
+    }
+
+    // Beam weapons never create a projectile, so a successful shot counts as a hit
+    [HarmonyPatch(typeof(Verb_ShootBeam), "TryCastShot")]
+    public static class Patch_BeamShot_Reveal
+    {
+        public static void Postfix(Verb_ShootBeam __instance, bool __result)
+        {
+            if (__result) EntadWeaponReveal.Hit(__instance.CasterPawn, false);
         }
     }
 }
