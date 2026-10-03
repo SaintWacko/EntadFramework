@@ -223,10 +223,22 @@ namespace EntadFramework
         public DamageDef changeDamageType;
         public List<ExtraDamageRange> extraDamage;
 
-        // Weapons whose projectiles explode (incinerators, launchers...) deal their damage through the explosion,
-        // so damage added to a direct hit would never apply
-        public static bool IsAreaWeapon(ThingDef td) =>
-            td.Verbs != null && td.Verbs.Any(v => v.defaultProjectile?.projectile != null && v.defaultProjectile.projectile.explosionRadius > 0f);
+        // Ranged weapons that don't fire a plain direct-hit projectile (explosive projectiles, beams, flame streams...)
+        // deal their damage some other way, so damage added to a hit would never apply. Melee weapons are never area weapons.
+        public static bool IsAreaWeapon(ThingDef td)
+        {
+            if (!td.IsRangedWeapon) return false;
+            if (td.Verbs != null)
+                foreach (var v in td.Verbs)
+                {
+                    var proj = v.defaultProjectile;
+                    if (proj?.projectile == null) continue;
+                    if (typeof(Verb_ShootBeam).IsAssignableFrom(v.verbClass)) continue;
+                    if (proj.projectile.explosionRadius > 0f || typeof(Projectile_Explosive).IsAssignableFrom(proj.thingClass)) continue;
+                    return false;
+                }
+            return true;
+        }
 
         public bool HasDamageEffect => changeDamageType != null || !extraDamage.NullOrEmpty();
 
