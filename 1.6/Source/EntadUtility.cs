@@ -21,8 +21,21 @@ namespace EntadFramework
         public static bool IsFurniture(ThingDef def)
         {
             if (def.building == null || def.designationCategory == null) return false;
+            if (IsSingleUse(def)) return false;
             // Quality is not required: workbenches, lights, heaters etc. count too
             return FurnitureCategories.Contains(def.designationCategory.defName);
+        }
+
+        // Traps and explosive buildings (mines, firefoam poppers, ...) are used up when they trigger, so they never
+        // become entads. Detected from the def itself so buildings from other mods are covered too.
+        public static bool IsSingleUse(ThingDef def)
+        {
+            if (def.building == null) return false;
+            if (def.building.isTrap) return true;
+            if (def.comps != null)
+                foreach (var c in def.comps)
+                    if (c is CompProperties_Explosive) return true;
+            return false;
         }
 
         private static readonly HashSet<string> FurnitureCategories = new HashSet<string>
