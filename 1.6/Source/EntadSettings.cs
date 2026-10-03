@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -21,6 +22,10 @@ namespace EntadFramework
         // When on, a modifier's details stay hidden ("???") until something it affects actually happens
         public static bool HideModifiers = true;
 
+        // defNames of modifiers the player has switched off; they are never picked when generating
+        public static HashSet<string> DisabledModifiers = new HashSet<string>();
+        public static bool IsDisabled(EntadModifierDef def) => DisabledModifiers.Contains(def.defName);
+
         // Selection weight of weapon-specific modifiers relative to general ones when picking for a weapon
         public const float DefaultWeaponSpecificWeight = 3f;
         public static float WeaponSpecificWeight = DefaultWeaponSpecificWeight;
@@ -34,6 +39,9 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Values.Look(ref HideModifiers, "hideModifiers", true);
+            var disabled = DisabledModifiers.ToList();
+            Scribe_Collections.Look(ref disabled, "disabledModifiers", LookMode.Value);
+            DisabledModifiers = new HashSet<string>(disabled ?? new List<string>());
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
@@ -53,7 +61,94 @@ namespace EntadFramework
 
         public override string SettingsCategory() => "Entad Framework";
 
+        private enum Tab { General, Modifiers }
+        private Tab tab;
+        private string search = "";
+        private Vector2 scroll;
+
         public override void DoSettingsWindowContents(Rect inRect)
+        {
+            var tabRect = new Rect(inRect.x, inRect.y, 140f, 30f);
+            if (Widgets.ButtonText(tabRect, "General", tab != Tab.General)) tab = Tab.General;
+            tabRect.x += 150f;
+            if (Widgets.ButtonText(tabRect, "Modifiers", tab != Tab.Modifiers)) tab = Tab.Modifiers;
+
+            var body = new Rect(inRect.x, inRect.y + 40f, inRect.width, inRect.height - 40f);
+            if (tab == Tab.General) DoGeneral(body);
+            else DoModifiers(body);
+        }
+
+        // Everything a modifier does that can be searched for
+        private static string SearchText(EntadModifierDef d)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(d.label).Append(' ').Append(d.defName).Append(' ').Append(d.rarity);
+            foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
+            if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
+            if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
+            if (d.fuelTypes != null) foreach (var f in d.fuelTypes) sb.Append(' ').Append(f.label);
+            if (d.changeDamageType != null) sb.Append(' ').Append(d.changeDamageType.label);
+            if (d.extraDamage != null) foreach (var e in d.extraDamage) sb.Append(' ').Append(e.damageType?.label);
+            return sb.ToString();
+        }
+
+        private void DoModifiers(Rect rect)
+        {
+            var all = DefDatabase<EntadModifierDef>.AllDefsListForReading;
+            var top = new Rect(rect.x, rect.y, rect.width, 30f);
+            Widgets.Label(new Rect(top.x, top.y, 70f, 30f), "Search:");
+            search = Widgets.TextField(new Rect(top.x + 75f, top.y, 300f, 30f), search);
+            string[] terms = search.ToLowerInvariant().Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+            var shown = all.Where(d =>
+            {
+                if (terms.Length == 0) return true;
+                string text = SearchText(d).ToLowerInvariant();
+                return terms.All(t => text.Contains(t));
+            }).OrderBy(d => d.label).ToList();
+
+            if (Widgets.ButtonText(new Rect(top.x + 390f, top.y, 120f, 30f), "Enable shown"))
+                foreach (var d in shown) EntadSettings.DisabledModifiers.Remove(d.defName);
+            if (Widgets.ButtonText(new Rect(top.x + 520f, top.y, 120f, 30f), "Disable shown"))
+                foreach (var d in shown) EntadSettings.DisabledModifiers.Add(d.defName);
+
+            int off = all.Count(EntadSettings.IsDisabled);
+            Widgets.Label(new Rect(rect.x, rect.y + 34f, rect.width, 24f), $"{shown.Count} of {all.Count} modifiers shown, {off} disabled. Disabled modifiers are never picked when generating items.");
+
+            var outRect = new Rect(rect.x, rect.y + 62f, rect.width, rect.height - 62f);
+            const float rowH = 28f;
+            var view = new Rect(0f, 0f, outRect.width - 20f, shown.Count * rowH);
+            Widgets.BeginScrollView(outRect, ref scroll, view);
+            int first = Mathf.Max(0, (int)(scroll.y / rowH));
+            int last = Mathf.Min(shown.Count, first + (int)(outRect.height / rowH) + 2);
+            for (int i = first; i < last; i++)
+            {
+                var d = shown[i];
+                var row = new Rect(0f, i * rowH, view.width, rowH);
+                if (i % 2 == 0) Widgets.DrawLightHighlight(row);
+                bool on = !EntadSettings.IsDisabled(d);
+                bool was = on;
+                Widgets.Checkbox(row.x + 4f, row.y + 2f, ref on, 24f);
+                if (on != was) { if (on) EntadSettings.DisabledModifiers.Remove(d.defName); else EntadSettings.DisabledModifiers.Add(d.defName); }
+                Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), d.LabelCap + " (" + d.rarity + ")");
+                Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), Summary(d));
+                TooltipHandler.TipRegion(row, d.description);
+            }
+            Widgets.EndScrollView();
+        }
+
+        private static string Summary(EntadModifierDef d)
+        {
+            var parts = new List<string>();
+            foreach (var r in d.AllRanges()) if (r.stat != null) parts.Add(r.stat.LabelCap);
+            if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
+            if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
+            if (d.HasDamageEffect) parts.Add("Damage");
+            if (!d.fuelTypes.NullOrEmpty()) parts.Add("Fuel");
+            return string.Join(", ", parts.Distinct());
+        }
+
+        private void DoGeneral(Rect inRect)
         {
             var list = new Listing_Standard();
             list.Begin(inRect);

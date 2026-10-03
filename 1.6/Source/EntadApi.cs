@@ -88,6 +88,7 @@ namespace EntadFramework
             for (int i = 0; i < count; i++)
             {
                 var candidates = GetApplicableModifiers(thing, request.modifierFilter);
+                candidates.RemoveAll(EntadSettings.IsDisabled);
                 System.Func<EntadModifierDef, float> weight = null;
                 if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
                     weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
