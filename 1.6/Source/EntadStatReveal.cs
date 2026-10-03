@@ -73,7 +73,7 @@ namespace EntadFramework
             if (worn != null) for (int i = 0; i < worn.Count; i++) Fire(worn[i].TryGetComp<CompEntad>(), trigger);
         }
 
-        public static void OnJobStarted(Pawn pawn, Job job)
+        public static void OnJobFinished(Pawn pawn, Job job)
         {
             if (job == null) return;
             if (job.workGiverDef != null)
@@ -101,12 +101,13 @@ namespace EntadFramework
         }
     }
 
-    [HarmonyPatch(typeof(Pawn_JobTracker), nameof(Pawn_JobTracker.StartJob))]
-    public static class Patch_StartJob_StatReveal
+    // Revealed when the job is completed, not while the pawn is still walking to it
+    [HarmonyPatch(typeof(Pawn_JobTracker), nameof(Pawn_JobTracker.EndCurrentJob))]
+    public static class Patch_EndCurrentJob_StatReveal
     {
-        public static void Postfix(Pawn_JobTracker __instance, Job newJob)
+        public static void Prefix(Pawn_JobTracker __instance, JobCondition condition)
         {
-            EntadStatReveal.OnJobStarted(__instance.pawn, newJob);
+            if (condition == JobCondition.Succeeded) EntadStatReveal.OnJobFinished(__instance.pawn, __instance.curJob);
         }
     }
 
