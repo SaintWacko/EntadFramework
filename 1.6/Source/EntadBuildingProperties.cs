@@ -211,23 +211,26 @@ namespace EntadFramework
     // Weapon effects (damage, accuracy...) reveal when the weapon hits something
     public static class EntadWeaponReveal
     {
-        public static void Hit(Pawn pawn)
+        public static void Hit(Pawn pawn, bool melee)
         {
-            var comp = pawn?.equipment?.Primary?.TryGetComp<CompEntad>();
+            if (pawn == null) return;
+            var comp = pawn.equipment?.Primary?.TryGetComp<CompEntad>();
             if (comp != null && comp.HasHidden)
             {
-                comp.RevealWhere(EntadEffectKind.Stat);
+                EntadStatReveal.Fire(comp, EntadStatTrigger.Hit);
                 comp.RevealWhere(EntadEffectKind.Damage);
             }
+            EntadStatReveal.Fire(pawn, melee ? EntadStatTrigger.MeleeAttack : EntadStatTrigger.Shoot);
         }
     }
 
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
     public static class Patch_MeleeHit_Reveal
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, DamageWorker.DamageResult __result)
+        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, DamageWorker.DamageResult __result)
         {
-            if (__result != null && __result.totalDamageDealt > 0f) EntadWeaponReveal.Hit(__instance.CasterPawn);
+            if (target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
+            if (__result != null && __result.totalDamageDealt > 0f) EntadWeaponReveal.Hit(__instance.CasterPawn, true);
         }
     }
 
@@ -236,7 +239,7 @@ namespace EntadFramework
     {
         public static void Prefix(Projectile __instance, Thing hitThing)
         {
-            if (hitThing != null) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn);
+            if (hitThing != null) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn, false);
         }
     }
 }

@@ -12,8 +12,8 @@ namespace EntadFramework
         public static void Grant(Pawn pawn, CompEntad comp)
         {
             if (comp == null) return;
-            // Apparel stats are in effect once worn; weapon stats reveal when it hits something
-            if (comp.parent.def.IsApparel) comp.RevealWhere(EntadEffectKind.Stat);
+            // Stats that are always in effect (move speed, carrying capacity...) are noticed once the item is carried
+            EntadStatReveal.Fire(comp, EntadStatTrigger.Equip);
             if (pawn?.abilities == null) return;
             foreach (var m in comp.activeModifiers)
             {

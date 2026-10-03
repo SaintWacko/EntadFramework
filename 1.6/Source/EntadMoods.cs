@@ -103,7 +103,7 @@ namespace EntadFramework
         {
             var comp = furniture?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
-            comp.RevealWhere(EntadEffectKind.Stat);
+            EntadStatReveal.Fire(comp, EntadStatTrigger.Use);
             foreach (var m in comp.activeModifiers)
             {
                 if (m.thought == null) continue;
