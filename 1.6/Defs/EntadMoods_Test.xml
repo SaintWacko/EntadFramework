@@ -2,7 +2,7 @@
   <ThoughtDef>
     <defName>Entad_Thought_Contentment</defName>
     <durationDays>1</durationDays>
-    <stackLimit>1</stackLimit>
+    <stackLimit>5</stackLimit>
     <stages>
       <li>
         <label>entad contentment</label>
