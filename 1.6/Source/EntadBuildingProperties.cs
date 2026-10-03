@@ -166,8 +166,20 @@ namespace EntadFramework
             if (!replace) filter.CopyAllowancesFrom(baseProps.fuelFilter);
             foreach (var d in extra) filter.SetAllow(d, true);
             copy.fuelFilter = filter;
+            hiddenFuel.Remove(filter);
+            hiddenFuel.Add(filter, new HiddenFuel { comp = entad, baseFilter = baseProps.fuelFilter });
             refuelable.props = copy;
         }
+
+        public class HiddenFuel
+        {
+            public CompEntad comp;
+            public ThingFilter baseFilter;
+        }
+
+        // Filters we created, so their summary can be kept to the building's normal fuel while the modifier is hidden
+        public static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ThingFilter, HiddenFuel> hiddenFuel =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<ThingFilter, HiddenFuel>();
 
         private static readonly MethodInfo memberwiseClone = AccessTools.Method(typeof(object), "MemberwiseClone");
         private static object Clone(object o) => memberwiseClone.Invoke(o, null);
@@ -181,7 +193,46 @@ namespace EntadFramework
         {
             var entad = __instance.parent.TryGetComp<CompEntad>();
             if (entad == null || !entad.HasHidden || fuelThings == null) return;
-            entad.RevealWhere(m => !m.def.fuelTypes.NullOrEmpty() && fuelThings.Any(t => m.def.fuelTypes.Contains(t.def)));
+            entad.RevealWhere(EntadEffectKind.Fuel, m => !m.def.fuelTypes.NullOrEmpty() && fuelThings.Any(t => m.def.fuelTypes.Contains(t.def)));
+        }
+    }
+
+    // "Need granite blocks" and similar messages use the filter summary; show only the normal fuel until revealed
+    [HarmonyPatch(typeof(ThingFilter), nameof(ThingFilter.Summary), MethodType.Getter)]
+    public static class Patch_ThingFilter_Summary_HideFuel
+    {
+        public static void Postfix(ThingFilter __instance, ref string __result)
+        {
+            if (EntadFuel.hiddenFuel.TryGetValue(__instance, out var info) && info.comp.FuelHidden)
+                __result = info.baseFilter.Summary;
+        }
+    }
+
+    // Weapon effects (damage, accuracy...) reveal when the weapon hits something
+    public static class EntadWeaponReveal
+    {
+        public static void Hit(Pawn pawn)
+        {
+            var comp = pawn?.equipment?.Primary?.TryGetComp<CompEntad>();
+            if (comp != null && comp.HasHidden) comp.RevealWhere(EntadEffectKind.Stat);
+        }
+    }
+
+    [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
+    public static class Patch_MeleeHit_Reveal
+    {
+        public static void Postfix(Verb_MeleeAttackDamage __instance, DamageWorker.DamageResult __result)
+        {
+            if (__result != null && __result.totalDamageDealt > 0f) EntadWeaponReveal.Hit(__instance.CasterPawn);
+        }
+    }
+
+    [HarmonyPatch(typeof(Projectile), "Impact")]
+    public static class Patch_ProjectileHit_Reveal
+    {
+        public static void Prefix(Projectile __instance, Thing hitThing)
+        {
+            if (hitThing != null) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn);
         }
     }
 }

@@ -12,7 +12,8 @@ namespace EntadFramework
         public static void Grant(Pawn pawn, CompEntad comp)
         {
             if (comp == null) return;
-            comp.RevealStatEffects();
+            // Apparel stats are in effect once worn; weapon stats reveal when it hits something
+            if (comp.parent.def.IsApparel) comp.RevealWhere(EntadEffectKind.Stat);
             if (pawn?.abilities == null) return;
             foreach (var m in comp.activeModifiers)
             {
@@ -112,7 +113,7 @@ namespace EntadFramework
         public static void Postfix(Ability __instance)
         {
             foreach (var m in EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def))
-                m.Reveal();
+                m.Reveal(EntadEffectKind.Ability);
         }
     }
 
@@ -121,7 +122,7 @@ namespace EntadFramework
     {
         public static void Postfix(Ability __instance, ref IEnumerable<Gizmo> __result)
         {
-            if (!EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def).Any(m => m.IsHidden)) return;
+            if (!EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability))) return;
             __result = Hide(__result);
         }
 
@@ -133,6 +134,10 @@ namespace EntadFramework
                 {
                     c.defaultLabel = "???";
                     c.defaultDesc = "The effect of this ability is not yet known.";
+                    c.icon = TexButton.Info;
+                    c.iconAngle = 0f;
+                    c.iconOffset = UnityEngine.Vector2.zero;
+                    c.iconDrawScale = 1f;
                 }
                 yield return g;
             }

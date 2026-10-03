@@ -16,9 +16,10 @@ namespace EntadFramework
             foreach (var m in comp.activeModifiers)
             {
                 var def = m.def;
-                for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++)
+                bool known = m.IsRevealed(EntadEffectKind.Stat);
+                for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
-                for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
+                for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
                 if (parentStat == StatDefOf.MarketValue) val += m.MarketValueOffset();
             }
@@ -32,16 +33,21 @@ namespace EntadFramework
             string explanation = "";
             foreach (var m in comp.activeModifiers)
             {
-                if (m.IsHidden) continue;
                 var def = m.def;
-                for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++)
+                bool known = m.IsRevealed(EntadEffectKind.Stat);
+                if (parentStat == StatDefOf.MarketValue)
+                {
+                    explanation += m.NameHidden
+                        ? $"\nUnidentified entad properties: +{m.MarketValueOffset().ToStringMoney()}"
+                        : $"\n{def.LabelCap} ({def.rarity}): +{m.MarketValueOffset().ToStringMoney()}";
+                    continue;
+                }
+                for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(parentStat.toStringStyle)}";
-                for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
+                for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
-                if (parentStat == StatDefOf.MarketValue)
-                    explanation += $"\n{def.LabelCap} ({def.rarity}): +{m.MarketValueOffset().ToStringMoney()}";
             }
             return explanation.NullOrEmpty() ? null : explanation;
         }

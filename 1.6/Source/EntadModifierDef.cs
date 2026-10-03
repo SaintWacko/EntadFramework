@@ -102,7 +102,9 @@ namespace EntadFramework
         Mood = 2,
         Meal = 4,
         Ability = 8,
-        Building = 16
+        Building = 16,
+        Fuel = 32,
+        All = Stat | Mood | Meal | Ability | Building | Fuel
     }
 
     public class EntadModifierDef : Def
@@ -227,7 +229,8 @@ namespace EntadFramework
                 if (AllRanges().Any()) kinds |= EntadEffectKind.Stat;
                 if (HasMood) kinds |= EntadEffectKind.Mood;
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
-                if (!buildingFactors.NullOrEmpty() || !fuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Building;
+                if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
+                if (!fuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
             }

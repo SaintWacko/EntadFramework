@@ -67,7 +67,7 @@ namespace EntadFramework
             foreach (var m in EntadMeals.SurfaceModifiers(ingester))
             {
                 __result *= m.mealNutritionFactor;
-                if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f) m.Reveal();
+                if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f) m.Reveal(EntadEffectKind.Meal);
             }
         }
     }
@@ -97,9 +97,9 @@ namespace EntadFramework
             foreach (var m in EntadMeals.SurfaceModifiers(ingester))
             {
                 qualityOffset += m.def.mealQualityOffset;
-                if (m.def.mealQualityOffset != 0 && IsQualityMeal(foodDef)) m.Reveal();
+                if (m.def.mealQualityOffset != 0 && IsQualityMeal(foodDef)) m.Reveal(EntadEffectKind.Meal);
                 if (m.def.mealThought == null) continue;
-                m.Reveal();
+                m.Reveal(EntadEffectKind.Meal);
                 __result = __result ?? new List<FoodUtility.ThoughtFromIngesting>();
                 __result.Add(new FoodUtility.ThoughtFromIngesting { thought = m.def.mealThought });
             }

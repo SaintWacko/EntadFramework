@@ -40,7 +40,7 @@ namespace EntadFramework
             Ability ability = AbilityUtility.MakeAbility(def, pawn);
             LocalTargetInfo t = target.IsValid ? target : (LocalTargetInfo)pawn;
             ability.Activate(t, t);
-            modifier.Reveal();
+            modifier.Reveal(EntadEffectKind.Ability);
 
             int cooldown = def.cooldownTicksRange.RandomInRange;
             modifier.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + cooldown);
@@ -83,7 +83,7 @@ namespace EntadFramework
                 AppliedEntadModifier modifier = entry.Key;
                 int idx = entry.Value;
                 AbilityDef def = modifier.def.abilities[idx];
-                string label = "Activate " + (modifier.IsHidden ? "???" : def.LabelCap.ToString()) + " (" + parent.LabelNoCount + ")";
+                string label = "Activate " + (!modifier.IsRevealed(EntadEffectKind.Ability) ? "???" : def.LabelCap.ToString()) + " (" + parent.LabelNoCount + ")";
 
                 int ready = modifier.AbilityReadyTick(idx);
                 if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled)

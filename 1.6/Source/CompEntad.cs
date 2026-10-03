@@ -16,18 +16,26 @@ namespace EntadFramework
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
 
-        // Hidden modifiers show as "???" until something they affect happens; see Reveal
-        public bool revealed = true;
+        // Which kinds of this modifier's effects have been revealed. Each kind reveals on its own, e.g. using an
+        // ability doesn't reveal a damage bonus. Hidden effects are shown as "???" and don't affect displayed stats.
+        public EntadEffectKind revealedKinds = EntadEffectKind.All;
         public CompEntad owner;
 
-        public bool IsHidden => !revealed;
+        public bool IsRevealed(EntadEffectKind kind) => (def.EffectKinds & kind & ~revealedKinds) == EntadEffectKind.None;
 
-        public void Reveal()
+        // No part of the modifier is known yet, so even its name is hidden
+        public bool NameHidden => def.EffectKinds != EntadEffectKind.None && (def.EffectKinds & revealedKinds) == EntadEffectKind.None;
+
+        public bool AnyHidden => (def.EffectKinds & ~revealedKinds) != EntadEffectKind.None;
+
+        public void Reveal(EntadEffectKind kind)
         {
-            if (revealed) return;
-            revealed = true;
-            owner?.RevealedChanged(this);
+            if (IsRevealed(kind)) return;
+            revealedKinds |= kind;
+            owner?.RevealedChanged(this, kind);
         }
+
+        public void Hide() { revealedKinds = EntadEffectKind.None; owner?.RevealedChanged(this, EntadEffectKind.All, false); }
 
         // Furniture abilities: game tick each ability is ready again, parallel to def.abilities
         public List<int> abilityReadyTicks = new List<int>();
@@ -41,7 +49,10 @@ namespace EntadFramework
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
-            Scribe_Values.Look(ref revealed, "revealed", true);
+            Scribe_Values.Look(ref revealedKinds, "revealedKinds", EntadEffectKind.All);
+            bool legacyRevealed = true;
+            Scribe_Values.Look(ref legacyRevealed, "revealed", true);
+            if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyRevealed && revealedKinds == EntadEffectKind.All) revealedKinds = EntadEffectKind.None;
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -54,7 +65,7 @@ namespace EntadFramework
 
         public static AppliedEntadModifier Roll(EntadModifierDef def)
         {
-            var applied = new AppliedEntadModifier { def = def, revealed = !EntadSettings.HideModifiers };
+            var applied = new AppliedEntadModifier { def = def, revealedKinds = EntadSettings.HideModifiers ? EntadEffectKind.None : EntadEffectKind.All };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
             if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.Roll());
@@ -118,22 +129,39 @@ namespace EntadFramework
         {
             get
             {
-                if (hiddenState == 0) hiddenState = activeModifiers.Any(m => m.IsHidden) ? 1 : 2;
+                if (hiddenState == 0) hiddenState = activeModifiers.Any(m => m.AnyHidden) ? 1 : 2;
                 return hiddenState == 1;
             }
         }
 
-        public void RevealedChanged(AppliedEntadModifier m)
+        public void RevealedChanged(AppliedEntadModifier m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
-            Messages.Message($"The {m.def.label} modifier of {parent.LabelNoCount} has revealed itself!", parent, MessageTypeDefOf.NeutralEvent, false);
+            propertyFactors = null;
+            if ((kind & EntadEffectKind.Stat) != 0) ClearStatCaches();
+            if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
+            if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
-        public void RevealWhere(System.Func<AppliedEntadModifier, bool> predicate)
+        private void ClearStatCaches()
+        {
+            Pawn holder = Holder;
+            foreach (var m in activeModifiers)
+                foreach (var r in m.def.AllRanges())
+                {
+                    if (r.stat == null) continue;
+                    r.stat.Worker.ClearCacheForThing(parent);
+                    if (holder != null) r.stat.Worker.ClearCacheForThing(holder);
+                }
+            StatDefOf.MarketValue.Worker.ClearCacheForThing(parent);
+        }
+
+        // Reveals the given kind of effect on every modifier that has it and for which the predicate holds
+        public void RevealWhere(EntadEffectKind kind, System.Func<AppliedEntadModifier, bool> predicate = null)
         {
             if (!HasHidden) return;
             foreach (var m in activeModifiers.ToList())
-                if (m.IsHidden && predicate(m)) m.Reveal();
+                if (!m.IsRevealed(kind) && (predicate == null || predicate(m))) m.Reveal(kind);
         }
 
         // Building properties are read while the building is in play, so only count it once it has been
@@ -141,10 +169,10 @@ namespace EntadFramework
         public void RevealProperty(EntadBuildingProperty property)
         {
             if (Find.TickManager.TicksGame - spawnedTick < 2500) return;
-            RevealWhere(m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
+            RevealWhere(EntadEffectKind.Building, m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
         }
 
-        public void RevealStatEffects() => RevealWhere(m => !m.def.statOffsets.NullOrEmpty() || !m.def.statFactors.NullOrEmpty());
+        public bool FuelHidden => activeModifiers.Any(m => !m.def.fuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
 
         // Product of this item's factors for a building property; cached since it's read from hot paths
         public float PropertyFactor(EntadBuildingProperty property)
@@ -155,7 +183,7 @@ namespace EntadFramework
                 for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
                 foreach (var m in activeModifiers)
                 {
-                    if (m.def.buildingFactors == null) continue;
+                    if (m.def.buildingFactors == null || !m.IsRevealed(EntadEffectKind.Building)) continue;
                     for (int i = 0; i < m.def.buildingFactors.Count; i++)
                         propertyFactors[(int)m.def.buildingFactors[i].property] *= m.BuildingFactorFor(i);
                 }
@@ -239,7 +267,7 @@ namespace EntadFramework
         public override string CompInspectStringExtra()
         {
             if (activeModifiers.NullOrEmpty()) return null;
-            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.IsHidden ? "???" : m.def.LabelCap.ToString()));
+            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.LabelCap.ToString()));
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -250,35 +278,36 @@ namespace EntadFramework
             var sb = new System.Text.StringBuilder("This item's entad modifiers.\n");
             foreach (var m in activeModifiers)
             {
-                if (m.IsHidden)
+                if (m.NameHidden)
                 {
                     sb.Append("\n").AppendLine("???".Colorize(ColoredText.TipSectionTitleColor));
+                    sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
                     continue;
                 }
                 sb.Append("\n").AppendLine(m.def.LabelCap.Resolve().Colorize(ColoredText.TipSectionTitleColor));
-                sb.AppendLine(m.def.description);
-                for (int i = 0; m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
+                if (!m.AnyHidden) sb.AppendLine(m.def.description);
+                for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
                     var s = m.def.statOffsets[i].stat;
                     float v = m.OffsetFor(i);
                     sb.AppendLine($" - {s.LabelCap} {(v >= 0 ? "+" : "")}{v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
                 }
-                for (int i = 0; m.def.statFactors != null && i < m.def.statFactors.Count; i++)
+                for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
                     var s = m.def.statFactors[i].stat;
                     sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
                 }
-                if (m.thought != null)
+                if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
                 {
                     sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
-                if (!m.def.fuelTypes.NullOrEmpty())
+                if (!m.def.fuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
                     sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.fuelTypes.Select(f => f.LabelCap.ToString()))}");
-                for (int i = 0; m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
+                for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
                     sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
-                if (!m.def.abilities.NullOrEmpty())
+                if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
                     sb.AppendLine($" - {(parent.def.building != null ? "Activatable ability" : "Grants ability")}: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
-                if (m.def.HasMealEffect)
+                if (m.def.HasMealEffect && m.IsRevealed(EntadEffectKind.Meal))
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)
                         sb.AppendLine($" - Meal nutrition x{m.mealNutritionFactor.ToStringPercent()}");
@@ -287,10 +316,11 @@ namespace EntadFramework
                     if (m.def.mealThought != null)
                         sb.AppendLine($" - Meals give: {m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName}");
                 }
+                if (m.AnyHidden) sb.AppendLine(" - ???");
                 sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }
 
-            string label = string.Join(", ", activeModifiers.Select(m => m.IsHidden ? "???" : m.def.label));
+            string label = string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.label));
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
         }
     }

@@ -111,7 +111,15 @@ namespace EntadFramework
         {
             CompEntad comp = EntadAtMouse(out Thing thing);
             if (comp == null) return;
-            foreach (var m in comp.activeModifiers.ToList()) m.Reveal();
+            foreach (var m in comp.activeModifiers.ToList()) m.Reveal(EntadEffectKind.All);
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Hide all Entad modifiers", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void HideAllEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            foreach (var m in comp.activeModifiers.ToList()) m.Hide();
         }
     }
 }

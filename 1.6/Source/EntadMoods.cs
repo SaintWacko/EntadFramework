@@ -92,7 +92,7 @@ namespace EntadFramework
                 {
                     ThoughtDef t = mods[j].thought;
                     if (t == null) continue;
-                    mods[j].Reveal();
+                    mods[j].Reveal(EntadEffectKind.Mood);
                     wanted.TryGetValue(t, out int n);
                     wanted[t] = n + 1;
                 }
@@ -103,12 +103,12 @@ namespace EntadFramework
         {
             var comp = furniture?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
-            comp.RevealStatEffects();
+            comp.RevealWhere(EntadEffectKind.Stat);
             foreach (var m in comp.activeModifiers)
             {
                 if (m.thought == null) continue;
                 Give(pawn, m.thought, m.ThoughtDurationTicks);
-                m.Reveal();
+                m.Reveal(EntadEffectKind.Mood);
             }
         }
     }
