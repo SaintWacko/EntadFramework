@@ -12,6 +12,7 @@ namespace EntadFramework
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
         public List<float> buildingValues = new List<float>();
+        public List<float> extraDamageValues = new List<float>();
         public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
@@ -46,6 +47,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
             Scribe_Collections.Look(ref buildingValues, "buildingValues", LookMode.Value);
+            Scribe_Collections.Look(ref extraDamageValues, "extraDamageValues", LookMode.Value);
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
@@ -60,6 +62,7 @@ namespace EntadFramework
                 offsetValues = offsetValues ?? new List<float>();
                 factorValues = factorValues ?? new List<float>();
                 buildingValues = buildingValues ?? new List<float>();
+                extraDamageValues = extraDamageValues ?? new List<float>();
             }
         }
 
@@ -68,6 +71,7 @@ namespace EntadFramework
             var applied = new AppliedEntadModifier { def = def, revealedKinds = EntadSettings.HideModifiers ? EntadEffectKind.None : EntadEffectKind.All };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.Roll());
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.Roll());
+            if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.Roll());
             if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.Roll());
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
@@ -87,6 +91,7 @@ namespace EntadFramework
         public int ThoughtDurationTicks => UnityEngine.Mathf.Max(1, (int)(thoughtHours * GenDate.TicksPerHour));
 
         public float OffsetFor(int i) => i < offsetValues.Count ? offsetValues[i] : 0f;
+        public float ExtraDamageFor(int i) => i < extraDamageValues.Count ? extraDamageValues[i] : 0f;
         public float BuildingFactorFor(int i) => i < buildingValues.Count ? buildingValues[i] : 1f;
         public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
 
@@ -99,6 +104,8 @@ namespace EntadFramework
                 for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].Normalize(OffsetFor(i)); n++; }
             if (def.statFactors != null)
                 for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].Normalize(FactorFor(i)); n++; }
+            if (def.extraDamage != null)
+                for (int i = 0; i < def.extraDamage.Count; i++) { sum += def.extraDamage[i].Normalize(ExtraDamageFor(i)); n++; }
             if (def.buildingFactors != null)
                 for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].Normalize(BuildingFactorFor(i)); n++; }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
@@ -299,6 +306,12 @@ namespace EntadFramework
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
                 {
                     sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
+                }
+                if (m.def.HasDamageEffect && m.IsRevealed(EntadEffectKind.Damage))
+                {
+                    if (m.def.changeDamageType != null) sb.AppendLine($" - Damage type: {m.def.changeDamageType.LabelCap}");
+                    for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
+                        sb.AppendLine($" - Extra {m.def.extraDamage[i].damageType.label} damage +{m.ExtraDamageFor(i):0.#}");
                 }
                 if (!m.def.fuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
                     sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.fuelTypes.Select(f => f.LabelCap.ToString()))}");

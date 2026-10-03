@@ -94,6 +94,21 @@ namespace EntadFramework
         }
     }
 
+    // Extra damage dealt alongside a weapon's normal damage on each hit; amount is rolled when applied
+    public class ExtraDamageRange
+    {
+        public DamageDef damageType;
+        public float min = 1f;
+        public float max = 1f;
+
+        public float Roll() => Rand.Range(min, max);
+
+        public float Normalize(float value)
+        {
+            return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
+        }
+    }
+
     [System.Flags]
     public enum EntadEffectKind
     {
@@ -104,7 +119,8 @@ namespace EntadFramework
         Ability = 8,
         Building = 16,
         Fuel = 32,
-        All = Stat | Mood | Meal | Ability | Building | Fuel
+        Damage = 64,
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage
     }
 
     public class EntadModifierDef : Def
@@ -118,6 +134,13 @@ namespace EntadFramework
         // Multipliers on building properties that aren't stats: light radius, heat output, fuel consumption
         // rate, fuel capacity, power generation. Only applies to buildings that have the matching component.
         public List<BuildingPropertyRange> buildingFactors;
+
+        // Weapons only. changeDamageType replaces the damage type of the weapon's attacks (melee and ranged);
+        // extraDamage adds more damage of other types to each hit.
+        public DamageDef changeDamageType;
+        public List<ExtraDamageRange> extraDamage;
+
+        public bool HasDamageEffect => changeDamageType != null || !extraDamage.NullOrEmpty();
 
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
         // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
@@ -176,6 +199,7 @@ namespace EntadFramework
                 if (other.mealNutritionFactor.min != 1f || other.mealNutritionFactor.max != 1f) return true;
             if (mealQualityOffset != 0 && other.mealQualityOffset != 0) return true;
             if (!fuelTypes.NullOrEmpty() && !other.fuelTypes.NullOrEmpty()) return true;
+            if (changeDamageType != null && other.changeDamageType != null) return true;
             if (!buildingFactors.NullOrEmpty() && !other.buildingFactors.NullOrEmpty()
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
@@ -235,6 +259,7 @@ namespace EntadFramework
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
                 if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
                 if (!fuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
+                if (HasDamageEffect) kinds |= EntadEffectKind.Damage;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
             }
@@ -251,6 +276,7 @@ namespace EntadFramework
             if (buildingFactors != null)
                 foreach (var b in buildingFactors)
                     if (b.min > b.max || b.min < 0f) yield return $"{defName}: invalid building factor range for {b.property}";
+            if (extraDamage != null && extraDamage.Any(e => e.damageType == null || e.min > e.max)) yield return $"{defName}: invalid extraDamage entry";
             if (fuelTypes != null && fuelTypes.Any(f => f == null)) yield return $"{defName}: fuelTypes contains an unknown def";
             if (mealNutritionFactor.min > mealNutritionFactor.max) yield return $"{defName}: mealNutritionFactor min is greater than max";
             if (thought != null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f)) yield return $"{defName}: specify either thought or thoughtMoodRange, not both";
@@ -273,6 +299,7 @@ namespace EntadFramework
             // Furniture moods and abilities need a pawn to use the building; heaters, generators etc. have no such interaction
             bool furnitureOnly = HasMood || !abilities.NullOrEmpty();
             if (furnitureOnly && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
+            if (HasDamageEffect && !td.IsWeapon) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!fuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
@@ -301,6 +328,10 @@ namespace EntadFramework
         {
             ThingDef td = thing.def;
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
+            // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
+            if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
+            if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
         }
 

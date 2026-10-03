@@ -214,7 +214,11 @@ namespace EntadFramework
         public static void Hit(Pawn pawn)
         {
             var comp = pawn?.equipment?.Primary?.TryGetComp<CompEntad>();
-            if (comp != null && comp.HasHidden) comp.RevealWhere(EntadEffectKind.Stat);
+            if (comp != null && comp.HasHidden)
+            {
+                comp.RevealWhere(EntadEffectKind.Stat);
+                comp.RevealWhere(EntadEffectKind.Damage);
+            }
         }
     }
 
