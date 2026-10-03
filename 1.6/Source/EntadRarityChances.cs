@@ -4,17 +4,17 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Relative weights for picking a modifier rarity. Rarities with no eligible modifier are skipped
+    // Relative weights for picking (defaults come from the mod settings) a modifier rarity. Rarities with no eligible modifier are skipped
     // and the remaining weights are renormalised.
     public class EntadRarityChances
     {
         private readonly Dictionary<EntadRarity, float> weights = new Dictionary<EntadRarity, float>
         {
-            { EntadRarity.Common, 0.50f },
-            { EntadRarity.Uncommon, 0.25f },
-            { EntadRarity.Rare, 0.12f },
-            { EntadRarity.Epic, 0.05f },
-            { EntadRarity.Legendary, 0.03f },
+            { EntadRarity.Common, EntadSettings.Weights[EntadRarity.Common] },
+            { EntadRarity.Uncommon, EntadSettings.Weights[EntadRarity.Uncommon] },
+            { EntadRarity.Rare, EntadSettings.Weights[EntadRarity.Rare] },
+            { EntadRarity.Epic, EntadSettings.Weights[EntadRarity.Epic] },
+            { EntadRarity.Legendary, EntadSettings.Weights[EntadRarity.Legendary] },
         };
 
         public static EntadRarityChances Default => new EntadRarityChances();
