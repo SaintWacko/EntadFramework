@@ -15,6 +15,9 @@ namespace EntadFramework
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
 
+        // Furniture abilities: game tick each ability is ready again, parallel to def.abilities
+        public List<int> abilityReadyTicks = new List<int>();
+
         public void ExposeData()
         {
             Scribe_Defs.Look(ref def, "def");
@@ -23,8 +26,10 @@ namespace EntadFramework
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
+            Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                abilityReadyTicks = abilityReadyTicks ?? new List<int>();
                 offsetValues = offsetValues ?? new List<float>();
                 factorValues = factorValues ?? new List<float>();
             }
@@ -40,6 +45,14 @@ namespace EntadFramework
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
             applied.mealNutritionFactor = def.mealNutritionFactor.RandomInRange;
             return applied;
+        }
+
+        public int AbilityReadyTick(int i) => i < abilityReadyTicks.Count ? abilityReadyTicks[i] : 0;
+
+        public void SetAbilityReadyTick(int i, int tick)
+        {
+            while (abilityReadyTicks.Count <= i) abilityReadyTicks.Add(0);
+            abilityReadyTicks[i] = tick;
         }
 
         public int ThoughtDurationTicks => UnityEngine.Mathf.Max(1, (int)(thoughtHours * GenDate.TicksPerHour));
@@ -68,7 +81,7 @@ namespace EntadFramework
         public float MarketValueOffset() => def.BaseMarketValue * (0.5f + RollQuality());
     }
 
-    public class CompEntad : ThingComp
+    public partial class CompEntad : ThingComp
     {
         public List<AppliedEntadModifier> activeModifiers = new List<AppliedEntadModifier>();
 
@@ -141,7 +154,7 @@ namespace EntadFramework
                     sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
                 if (!m.def.abilities.NullOrEmpty())
-                    sb.AppendLine($" - Grants ability: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
+                    sb.AppendLine($" - {(parent.def.building != null ? "Activatable ability" : "Grants ability")}: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
                 if (m.def.HasMealEffect)
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)

@@ -70,7 +70,8 @@ namespace EntadFramework
 
         public bool HasMealEffect => mealThought != null || mealQualityOffset != 0 || mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f;
 
-        // Abilities granted to the pawn wearing/wielding the item (weapons and apparel only)
+        // Weapons and apparel grant these to the pawn using them; furniture offers them as right-click
+        // actions that a pawn walks over and performs (with a per-item cooldown)
         public List<AbilityDef> abilities;
 
         // Modifiers that can never share an item with this one (symmetric: listing it on either def is enough)
@@ -179,7 +180,6 @@ namespace EntadFramework
                 foreach (var m in existing.activeModifiers)
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
-            if (!abilities.NullOrEmpty() && (EntadUtility.KindOf(td) & (EntadItemKind.Weapon | EntadItemKind.Apparel)) == EntadItemKind.None) return false;
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
 
