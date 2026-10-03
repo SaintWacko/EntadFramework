@@ -1,0 +1,26 @@
+<Defs>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BountifulTable</defName>
+    <label>bountiful table</label>
+    <description>Meals eaten at this table are somehow more filling and feel finer than they have any right to be.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <mealNutritionFactor>
+      <min>1.1</min>
+      <max>1.5</max>
+    </mealNutritionFactor>
+    <mealThought>AteFineMeal</mealThought>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_GildedTable</defName>
+    <label>gilded table</label>
+    <description>Food served here tastes one notch better than it was prepared.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <mealQualityOffset>1</mealQualityOffset>
+  </EntadFramework.EntadTraitDef>
+</Defs>

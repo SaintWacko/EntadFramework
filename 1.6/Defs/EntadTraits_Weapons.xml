@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weapon-specific entad traits (ranged, melee, and damage effects). -->
+<Defs>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_HairTrigger</defName>
+    <label>hair trigger</label>
+    <description>The slightest touch sets it off.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors><li><stat>RangedWeapon_Cooldown</stat><min>0.8</min><max>0.92</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_HeavySlugs</defName>
+    <label>heavy slugs</label>
+    <description>Ammunition fired from this weapon hits a little harder.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.08</min><max>1.2</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SteadyBarrel</defName>
+    <label>steady barrel</label>
+    <description>There is almost no recoil.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets><li><stat>AccuracyShort</stat><min>0.02</min><max>0.06</max></li><li><stat>AccuracyMedium</stat><min>0.02</min><max>0.06</max></li></statOffsets>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_MarksmansEye</defName>
+    <label>marksman's eye</label>
+    <description>Whoever holds it sees exactly where the shot will land.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets><li><stat>ShootingAccuracyPawn</stat><min>0.03</min><max>0.1</max></li></statOffsets>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stormfeed</defName>
+    <label>stormfeed</label>
+    <description>It never seems to run out of momentum.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors><li><stat>RangedWeapon_Cooldown</stat><min>0.4</min><max>0.6</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sharpshooter</defName>
+    <label>sharpshooter</label>
+    <description>Every shot is placed with uncanny care and force.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets><li><stat>AccuracyShort</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyMedium</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyLong</stat><min>0.03</min><max>0.07</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.1</min><max>1.25</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Parrying</defName>
+    <label>parrying</label>
+    <description>It always seems to be in the way of incoming blows.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets><li><stat>MeleeDodgeChance</stat><min>0.04</min><max>0.12</max></li></statOffsets>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_HeavyHitter</defName>
+    <label>heavy hitter</label>
+    <description>It carries more weight than it should.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors><li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.08</min><max>1.2</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RecklessEdge</defName>
+    <label>reckless edge</label>
+    <description>Hits hard, but leaves the wielder off balance.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors><li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.3</min><max>1.7</max></li><li><stat>MeleeWeapon_CooldownMultiplier</stat><min>1.1</min><max>1.3</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Bruising</defName>
+    <label>bruising</label>
+    <description>Blows leave deep bruises.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>Blunt</damageType><min>1</min><max>4</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Razoredge</defName>
+    <label>razor-edged</label>
+    <description>Cuts far deeper than the blade should.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>Cut</damageType><min>1</min><max>4</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Piercing</defName>
+    <label>piercing</label>
+    <description>Finds the gaps in anything.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>Stab</damageType><min>1</min><max>4</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Searing</defName>
+    <label>searing</label>
+    <description>Leaves burns wherever it strikes.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>Burn</damageType><min>1</min><max>4</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stunning</defName>
+    <label>stunning</label>
+    <description>Targets reel from every hit.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>Stun</damageType><min>2</min><max>6</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Shocking</defName>
+    <label>shocking</label>
+    <description>Crackles with static, and wrecks machinery.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <extraDamage><li><damageType>EMP</damageType><min>2</min><max>6</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+</Defs>

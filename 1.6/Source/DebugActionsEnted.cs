@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using LudeonTK;
 using Verse;
 using RimWorld;
@@ -30,25 +31,129 @@ namespace EntadFramework
                 return;
             }
 
-            CompEntad comp = targetThing.TryGetComp<CompEntad>();
-
-            List<EntadModifierDef> allMods = DefDatabase<EntadModifierDef>.AllDefsListForReading;
-            if (allMods.NullOrEmpty())
+            var applied = EntadApi.ApplyRandomTraits(targetThing);
+            if (applied.Count == 0)
             {
-                Messages.Message("No EntadModifierDefs found in database!", MessageTypeDefOf.RejectInput, false);
+                Messages.Message("No applicable EntadTraitDefs for this item!", MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
-            EntadModifierDef randomMod = allMods.RandomElement();
-            if (!comp.activeModifiers.Contains(randomMod))
+            Messages.Message($"Applied '{applied[0].LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
+        }
+
+        [DebugAction(
+            category = "Entad Framework",
+            name = "Generate Random Entad Item",
+            actionType = DebugActionType.ToolMap,
+            allowedGameStates = AllowedGameStates.PlayingOnMap
+        )]
+        private static void GenerateRandomEntadItem()
+        {
+            IntVec3 cell = UI.MouseCell();
+            Map map = Find.CurrentMap;
+            if (map == null || !cell.InBounds(map)) return;
+
+            var options = new List<DebugMenuOption>();
+            for (int n = 1; n <= 8; n++)
             {
-                comp.activeModifiers.Add(randomMod);
-                Messages.Message($"Applied '{randomMod.LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
+                int count = n;
+                options.Add(new DebugMenuOption(count + (count == 1 ? " trait" : " traits"), DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, count)));
             }
-            else
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        private static void PlaceGenerated(IntVec3 cell, Map map, int count)
+        {
+            Thing thing = EntadApi.GenerateEntadItem(count);
+            if (thing == null)
             {
-                Messages.Message($"{targetThing.LabelCap} already has '{randomMod.LabelCap}'.", MessageTypeDefOf.RejectInput, false);
+                Messages.Message("Could not generate an entad item.", MessageTypeDefOf.RejectInput, false);
+                return;
             }
+
+            GenPlace.TryPlaceThing(thing, cell, map, ThingPlaceMode.Near);
+            Messages.Message($"Generated {thing.LabelCap}.", thing, MessageTypeDefOf.PositiveEvent, false);
+        }
+
+        private static CompEntad EntadAtMouse(out Thing thing)
+        {
+            thing = null;
+            Map map = Find.CurrentMap;
+            IntVec3 cell = UI.MouseCell();
+            if (map == null || !cell.InBounds(map)) return null;
+            thing = cell.GetThingList(map).Find(t => t.TryGetComp<CompEntad>() != null);
+            if (thing == null) Messages.Message("No valid Entad-compatible item found at clicked cell.", MessageTypeDefOf.RejectInput, false);
+            return thing?.TryGetComp<CompEntad>();
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Add specific Entad trait", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void AddSpecificEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+
+            var options = new List<DebugMenuOption>();
+            foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading.OrderBy(d => d.defName))
+            {
+                var d = def;
+                bool ok = d.CanApplyTo(thing);
+                options.Add(new DebugMenuOption(d.defName + (ok ? "" : " (not applicable)"), DebugMenuOptionMode.Action, () =>
+                {
+                    comp.AddTrait(d, null, true);
+                    Messages.Message($"Applied '{d.LabelCap}' to {thing.Label}.", MessageTypeDefOf.PositiveEvent, false);
+                }));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Remove specific Entad trait", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void RemoveSpecificEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            if (comp.activeTraits.Count == 0)
+            {
+                Messages.Message("That item has no entad traits.", MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+
+            var options = new List<DebugMenuOption>();
+            foreach (var applied in comp.activeTraits.ToList())
+            {
+                var a = applied;
+                options.Add(new DebugMenuOption(a.def.defName, DebugMenuOptionMode.Action, () =>
+                {
+                    comp.RemoveTrait(a);
+                    Messages.Message($"Removed '{a.def.LabelCap}' from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
+                }));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Remove all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void RemoveAllEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            int n = comp.activeTraits.Count;
+            comp.ClearTraits();
+            Messages.Message($"Removed {n} trait(s) from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Reveal all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void RevealAllEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Hide all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void HideAllEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            foreach (var m in comp.activeTraits.ToList()) m.Hide();
         }
     }
 }

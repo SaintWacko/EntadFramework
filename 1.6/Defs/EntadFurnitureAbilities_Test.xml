@@ -1,0 +1,39 @@
+<Defs>
+  <AbilityDef>
+    <defName>Entad_RestfulSigh</defName>
+    <label>restful sigh</label>
+    <description>Briefly numbs the user's pain.</description>
+    <iconPath>UI/Commands/Draft</iconPath>
+    <cooldownTicksRange>60000~60000</cooldownTicksRange>
+    <targetRequired>false</targetRequired>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <label>restful sigh</label>
+      <range>0</range>
+      <targetable>false</targetable>
+      <targetParams>
+        <canTargetSelf>true</canTargetSelf>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="CompProperties_AbilityGiveHediff">
+        <compClass>CompAbilityEffect_GiveHediff</compClass>
+        <hediffDef>Anesthetic</hediffDef>
+        <onlyApplyToSelf>true</onlyApplyToSelf>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RestfulChair</defName>
+    <label>restful</label>
+    <description>Sitting and sighing here once in a while numbs the user's pain.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <abilities>
+      <li>Entad_RestfulSigh</li>
+    </abilities>
+  </EntadFramework.EntadTraitDef>
+</Defs>

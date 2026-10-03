@@ -1,0 +1,46 @@
+<Defs>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BlessedComfort</defName>
+    <label>blessed comfort</label>
+    <description>An ethereal warmth radiates from this object, easing the mind of anyone using it.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <statOffsets>
+      <li>
+        <stat>Comfort</stat>
+        <min>0.05</min>
+        <max>0.25</max>
+      </li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_AcceleratedRounds</defName>
+    <label>accelerated rounds</label>
+    <description>Projectiles leave this weapon with far more force.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <statFactors>
+      <li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.6</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Cinderstrike</defName>
+    <label>cinderstrike</label>
+    <description>Every hit scorches the target.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <extraDamage>
+      <li><damageType>Flame</damageType><min>2</min><max>6</max></li>
+    </extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Frostbite</defName>
+    <label>frostbite</label>
+    <description>This weapon's attacks are bitterly cold.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <changeDamageType>Frostbite</changeDamageType>
+  </EntadFramework.EntadTraitDef>
+</Defs>
