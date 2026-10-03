@@ -5,10 +5,10 @@ using RimWorld;
 
 namespace EntadFramework
 {
-    // A modifier applied to a specific item, with the values rolled for it
-    public class AppliedEntadModifier : IExposable
+    // A trait applied to a specific item, with the values rolled for it
+    public class AppliedEntadTrait : IExposable
     {
-        public EntadModifierDef def;
+        public EntadTraitDef def;
         public List<float> offsetValues = new List<float>();
         public List<float> factorValues = new List<float>();
         public List<float> buildingValues = new List<float>();
@@ -17,19 +17,19 @@ namespace EntadFramework
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
 
-        // Which kinds of this modifier's effects have been revealed. Each kind reveals on its own, e.g. using an
+        // Which kinds of this trait's effects have been revealed. Each kind reveals on its own, e.g. using an
         // ability doesn't reveal a damage bonus. Hidden effects are shown as "???" and don't affect displayed stats.
         public EntadEffectKind revealedKinds = EntadEffectKind.All;
         public CompEntad owner;
 
-        // Rarity this modifier was rolled at (the def's own rarity unless it scales with rarity). Saved as an int so
+        // Rarity this trait was rolled at (the def's own rarity unless it scales with rarity). Saved as an int so
         // saves from before rarity scaling load with the def's rarity.
         private int rarityValue = -1;
         public EntadRarity Rarity => rarityValue < 0 ? def.rarity : (EntadRarity)rarityValue;
 
         public bool IsRevealed(EntadEffectKind kind) => (def.EffectKinds & kind & ~revealedKinds) == EntadEffectKind.None;
 
-        // No part of the modifier is known yet, so even its name is hidden
+        // No part of the trait is known yet, so even its name is hidden
         public bool NameHidden => def.EffectKinds != EntadEffectKind.None && (def.EffectKinds & revealedKinds) == EntadEffectKind.None;
 
         public bool AnyHidden => (def.EffectKinds & ~revealedKinds) != EntadEffectKind.None;
@@ -74,11 +74,11 @@ namespace EntadFramework
             }
         }
 
-        public static AppliedEntadModifier Roll(EntadModifierDef def, EntadRarity? rarity = null)
+        public static AppliedEntadTrait Roll(EntadTraitDef def, EntadRarity? rarity = null)
         {
             EntadRarity at = def.ClampRarity(rarity ?? def.rarity);
             float scale = def.RarityScale(at);
-            var applied = new AppliedEntadModifier { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideModifiers ? EntadEffectKind.None : EntadEffectKind.All };
+            var applied = new AppliedEntadTrait { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideTraits ? EntadEffectKind.None : EntadEffectKind.All };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.RollScaled(scale, false));
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.RollScaled(scale, true));
             if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));
@@ -145,15 +145,15 @@ namespace EntadFramework
             if (def.buildingFactors != null)
                 for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); n++; }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
-            { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadModifierDef.MoodEffectOf(thought)); n++; }
+            { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); n++; }
             if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
             var f = def.mealNutritionFactor;
             if (f.max - f.min > 0.0001f) { sum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); n++; }
             return n == 0 ? 0.5f : sum / n;
         }
 
-        // Market value added by this modifier: scales with rarity and where the roll landed
-        public float MarketValueOffset() => EntadModifierDef.BaseMarketValueAt(Rarity) * (0.5f + RollQuality());
+        // Market value added by this trait: scales with rarity and where the roll landed
+        public float MarketValueOffset() => EntadTraitDef.BaseMarketValueAt(Rarity) * (0.5f + RollQuality());
     }
 
     public partial class CompEntad : ThingComp, IRenameable
@@ -161,16 +161,16 @@ namespace EntadFramework
         // Player-chosen name; the surrounding entad markers are kept
         public string customName;
 
-        public List<AppliedEntadModifier> activeModifiers = new List<AppliedEntadModifier>();
+        public List<AppliedEntadTrait> activeTraits = new List<AppliedEntadTrait>();
 
         public CompProperties_Entad Props => (CompProperties_Entad)props;
 
-        public bool HasModifier(EntadModifierDef def) => activeModifiers.Any(m => m.def == def);
+        public bool HasTrait(EntadTraitDef def) => activeTraits.Any(m => m.def == def);
 
         private float[] propertyFactors;
 
         // Total offset (and whether any part of it is still hidden) this item gives its holder per pawn stat.
-        // Built lazily and dropped whenever the modifiers change, so the stat-offset hook is a single lookup.
+        // Built lazily and dropped whenever the traits change, so the stat-offset hook is a single lookup.
         private Dictionary<StatDef, KeyValuePair<float, bool>> wearerOffsets;
 
         public float WearerOffset(StatDef stat, out bool hidden)
@@ -178,14 +178,14 @@ namespace EntadFramework
             if (wearerOffsets == null)
             {
                 wearerOffsets = new Dictionary<StatDef, KeyValuePair<float, bool>>();
-                foreach (var m in activeModifiers)
+                foreach (var m in activeTraits)
                 {
                     var offsets = m.def.statOffsets;
                     if (offsets == null) continue;
                     for (int i = 0; i < offsets.Count; i++)
                     {
                         StatDef s = offsets[i].stat;
-                        if (s == null || !EntadModifierDef.IsWearerStat(s)) continue;
+                        if (s == null || !EntadTraitDef.IsWearerStat(s)) continue;
                         wearerOffsets.TryGetValue(s, out var cur);
                         wearerOffsets[s] = new KeyValuePair<float, bool>(cur.Key + m.OffsetFor(i), cur.Value || !m.IsRevealed(EntadEffectKind.Stat));
                     }
@@ -202,12 +202,12 @@ namespace EntadFramework
         {
             get
             {
-                if (hiddenState == 0) hiddenState = activeModifiers.Any(m => m.AnyHidden) ? 1 : 2;
+                if (hiddenState == 0) hiddenState = activeTraits.Any(m => m.AnyHidden) ? 1 : 2;
                 return hiddenState == 1;
             }
         }
 
-        public void RevealedChanged(AppliedEntadModifier m, EntadEffectKind kind, bool announce = true)
+        public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
             propertyFactors = null;
@@ -220,7 +220,7 @@ namespace EntadFramework
         private void ClearStatCaches()
         {
             Pawn holder = Holder;
-            foreach (var m in activeModifiers)
+            foreach (var m in activeTraits)
                 foreach (var r in m.def.AllRanges())
                 {
                     if (r.stat == null) continue;
@@ -230,11 +230,11 @@ namespace EntadFramework
             StatDefOf.MarketValue.Worker.ClearCacheForThing(parent);
         }
 
-        // Reveals the given kind of effect on every modifier that has it and for which the predicate holds
-        public void RevealWhere(EntadEffectKind kind, System.Func<AppliedEntadModifier, bool> predicate = null)
+        // Reveals the given kind of effect on every trait that has it and for which the predicate holds
+        public void RevealWhere(EntadEffectKind kind, System.Func<AppliedEntadTrait, bool> predicate = null)
         {
             if (!HasHidden) return;
-            foreach (var m in activeModifiers.ToList())
+            foreach (var m in activeTraits.ToList())
                 if (!m.IsRevealed(kind) && (predicate == null || predicate(m))) m.Reveal(kind);
         }
 
@@ -246,7 +246,7 @@ namespace EntadFramework
             RevealWhere(EntadEffectKind.Building, m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
         }
 
-        public bool FuelHidden => activeModifiers.Any(m => !m.def.AllFuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
+        public bool FuelHidden => activeTraits.Any(m => !m.def.AllFuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
 
         // Product of this item's factors for a building property; cached since it's read from hot paths
         public float PropertyFactor(EntadBuildingProperty property)
@@ -255,7 +255,7 @@ namespace EntadFramework
             {
                 propertyFactors = new float[System.Enum.GetValues(typeof(EntadBuildingProperty)).Length];
                 for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
-                foreach (var m in activeModifiers)
+                foreach (var m in activeTraits)
                 {
                     if (m.def.buildingFactors == null) continue;
                     for (int i = 0; i < m.def.buildingFactors.Count; i++)
@@ -265,7 +265,7 @@ namespace EntadFramework
             return propertyFactors[(int)property];
         }
 
-        private void ModifiersChanged()
+        private void TraitsChanged()
         {
             propertyFactors = null;
             wearerOffsets = null;
@@ -276,7 +276,7 @@ namespace EntadFramework
             parent.GetComp<CompPowerTrader>()?.SetUpPowerVars();
         }
 
-        private static bool AffectsMaxHitPoints(EntadModifierDef def)
+        private static bool AffectsMaxHitPoints(EntadTraitDef def)
         {
             foreach (var r in def.AllRanges()) if (r.stat == StatDefOf.MaxHitPoints) return true;
             return false;
@@ -289,18 +289,18 @@ namespace EntadFramework
             parent.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(fraction * parent.MaxHitPoints), 1, parent.MaxHitPoints);
         }
 
-        // Modifiers the player switched off in the settings are refused here too, so other mods can't add them either.
+        // Traits the player switched off in the settings are refused here too, so other mods can't add them either.
         // Only developer tools pass ignoreDisabled.
-        public bool AddModifier(EntadModifierDef def, EntadRarity? rarity = null, bool ignoreDisabled = false)
+        public bool AddTrait(EntadTraitDef def, EntadRarity? rarity = null, bool ignoreDisabled = false)
         {
             if (!ignoreDisabled && EntadSettings.IsDisabled(def)) return false;
             bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(def);
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
-            var applied = AppliedEntadModifier.Roll(def, rarity);
+            var applied = AppliedEntadTrait.Roll(def, rarity);
             applied.owner = this;
-            activeModifiers.Add(applied);
+            activeTraits.Add(applied);
             if (scaleHp) RescaleHitPoints(hpFraction);
-            ModifiersChanged();
+            TraitsChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
             return true;
@@ -310,43 +310,43 @@ namespace EntadFramework
         {
             base.PostSpawnSetup(respawningAfterLoad);
             spawnedTick = Find.TickManager.TicksGame;
-            if (!activeModifiers.NullOrEmpty()) EntadFuel.Refresh(parent, this);
+            if (!activeTraits.NullOrEmpty()) EntadFuel.Refresh(parent, this);
         }
 
-        public void RemoveModifier(AppliedEntadModifier modifier)
+        public void RemoveTrait(AppliedEntadTrait trait)
         {
-            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(modifier.def);
+            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(trait.def);
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
-            if (!activeModifiers.Remove(modifier)) return;
+            if (!activeTraits.Remove(trait)) return;
             if (scaleHp) RescaleHitPoints(hpFraction);
-            ModifiersChanged();
+            TraitsChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
-            if (modifier.def.abilities != null && holder != null)
-                foreach (var a in modifier.def.abilities)
-                    if (!activeModifiers.Any(m => m.def.abilities != null && m.def.abilities.Contains(a)) && holder.abilities?.GetAbility(a) != null)
+            if (trait.def.abilities != null && holder != null)
+                foreach (var a in trait.def.abilities)
+                    if (!activeTraits.Any(m => m.def.abilities != null && m.def.abilities.Contains(a)) && holder.abilities?.GetAbility(a) != null)
                         holder.abilities.RemoveAbility(a);
         }
 
-        public void ClearModifiers()
+        public void ClearTraits()
         {
-            foreach (var m in activeModifiers.ToList()) RemoveModifier(m);
+            foreach (var m in activeTraits.ToList()) RemoveTrait(m);
         }
 
         public override void PostExposeData()
         {
             base.PostExposeData();
             Scribe_Values.Look(ref customName, "customName");
-            Scribe_Collections.Look(ref activeModifiers, "activeModifiers", LookMode.Deep);
+            Scribe_Collections.Look(ref activeTraits, "activeModifiers", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                activeModifiers = activeModifiers ?? new List<AppliedEntadModifier>();
-                activeModifiers.RemoveAll(m => m == null || m.def == null);
+                activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
+                activeTraits.RemoveAll(m => m == null || m.def == null);
                 propertyFactors = null;
                 wearerOffsets = null;
                 wearerOffsets = null;
                 hiddenState = 0;
-                foreach (var m in activeModifiers) m.owner = this;
+                foreach (var m in activeTraits) m.owner = this;
             }
         }
 
@@ -362,7 +362,7 @@ namespace EntadFramework
 
         public override string TransformLabel(string label)
         {
-            if (activeModifiers.NullOrEmpty()) return label;
+            if (activeTraits.NullOrEmpty()) return label;
             return "\u263C" + (customName.NullOrEmpty() ? label : customName) + "\u263C";
         }
 
@@ -377,7 +377,7 @@ namespace EntadFramework
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            if (activeModifiers.NullOrEmpty()) yield break;
+            if (activeTraits.NullOrEmpty()) yield break;
             yield return new Command_Action
             {
                 defaultLabel = "Rename",
@@ -389,17 +389,17 @@ namespace EntadFramework
 
         public override string CompInspectStringExtra()
         {
-            if (activeModifiers.NullOrEmpty()) return null;
-            return "Entad Modifiers: " + string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.LabelCap.ToString()));
+            if (activeTraits.NullOrEmpty()) return null;
+            return "Entad Traits: " + string.Join(", ", activeTraits.Select(m => m.NameHidden ? "???" : m.def.LabelCap.ToString()));
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
         public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
         {
-            if (activeModifiers.NullOrEmpty()) yield break;
+            if (activeTraits.NullOrEmpty()) yield break;
 
-            var sb = new System.Text.StringBuilder("This item's entad modifiers.\n");
-            foreach (var m in activeModifiers)
+            var sb = new System.Text.StringBuilder("This item's entad traits.\n");
+            foreach (var m in activeTraits)
             {
                 if (m.NameHidden)
                 {
@@ -421,7 +421,7 @@ namespace EntadFramework
                 }
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
                 {
-                    sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadModifierDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
+                    sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadTraitDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
                 }
                 if (m.def.HasDamageEffect && m.IsRevealed(EntadEffectKind.Damage))
                 {
@@ -447,13 +447,13 @@ namespace EntadFramework
                 if (m.AnyHidden) sb.AppendLine(" - ???");
                 if (!m.AnyHidden) sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
             }
-            if (activeModifiers.Any(m => m.AnyHidden))
-                sb.Append("\nUnidentified properties: market value +").AppendLine(EntadModifierDef.UnidentifiedMarketValue.ToStringMoney());
+            if (activeTraits.Any(m => m.AnyHidden))
+                sb.Append("\nUnidentified properties: market value +").AppendLine(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney());
 
             foreach (var e in DamageDisplayStats()) yield return e;
 
-            string label = string.Join(", ", activeModifiers.Select(m => m.NameHidden ? "???" : m.def.label));
-            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad modifiers", label, sb.ToString().TrimEnd(), 4000);
+            string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? "???" : m.def.label));
+            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad traits", label, sb.ToString().TrimEnd(), 4000);
         }
     }
 
@@ -471,7 +471,7 @@ namespace EntadFramework
             var cat = parent.def.IsRangedWeapon ? StatCategoryDefOf.Weapon_Ranged : StatCategoryDefOf.Weapon_Melee;
             int order = 5500;
             float total = 0f;
-            foreach (var m in activeModifiers)
+            foreach (var m in activeTraits)
             {
                 if (!m.def.HasDamageEffect || !m.IsRevealed(EntadEffectKind.Damage)) continue;
                 if (m.def.changeDamageType != null)
@@ -488,7 +488,7 @@ namespace EntadFramework
             }
             if (total > 0f)
                 yield return new StatDrawEntry(cat, "Entad extra damage per hit", "+" + total.ToString("0.#"),
-                    "Total additional damage, of other damage types, dealt with every hit by this weapon's entad modifiers.", order);
+                    "Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.", order);
         }
     }
 

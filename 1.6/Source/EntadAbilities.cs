@@ -6,7 +6,7 @@ using RimWorld;
 
 namespace EntadFramework
 {
-    // Abilities from entad modifiers are held by the pawn only while the item is worn/wielded
+    // Abilities from entad traits are held by the pawn only while the item is worn/wielded
     public static class EntadAbilities
     {
         public static void Grant(Pawn pawn, CompEntad comp)
@@ -15,7 +15,7 @@ namespace EntadFramework
             // Stats that are always in effect (move speed, carrying capacity...) are noticed once the item is carried
             EntadStatReveal.Fire(comp, EntadStatTrigger.Equip);
             if (pawn?.abilities == null) return;
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 if (m.def.abilities == null) continue;
                 foreach (AbilityDef ability in m.def.abilities)
@@ -34,11 +34,11 @@ namespace EntadFramework
                 if (other == removed) continue;
                 var otherComp = other.TryGetComp<CompEntad>();
                 if (otherComp == null) continue;
-                foreach (var m in otherComp.activeModifiers)
+                foreach (var m in otherComp.activeTraits)
                     if (m.def.abilities != null) stillGranted.UnionWith(m.def.abilities);
             }
 
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 if (m.def.abilities == null) continue;
                 foreach (AbilityDef ability in m.def.abilities)
@@ -47,14 +47,14 @@ namespace EntadFramework
             }
         }
 
-        public static IEnumerable<AppliedEntadModifier> ModifiersGranting(Pawn pawn, AbilityDef ability)
+        public static IEnumerable<AppliedEntadTrait> TraitsGranting(Pawn pawn, AbilityDef ability)
         {
             if (pawn == null) yield break;
             foreach (Thing item in Equipped(pawn))
             {
                 var comp = item.TryGetComp<CompEntad>();
                 if (comp == null) continue;
-                foreach (var m in comp.activeModifiers)
+                foreach (var m in comp.activeTraits)
                     if (m.def.abilities != null && m.def.abilities.Contains(ability)) yield return m;
             }
         }
@@ -106,13 +106,13 @@ namespace EntadFramework
         }
     }
 
-    // Equipped abilities reveal their modifier when cast, and show as "???" until then
+    // Equipped abilities reveal their trait when cast, and show as "???" until then
     [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
     public static class Patch_Ability_Activate_Reveal
     {
         public static void Postfix(Ability __instance)
         {
-            foreach (var m in EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def))
+            foreach (var m in EntadAbilities.TraitsGranting(__instance.pawn, __instance.def))
                 m.Reveal(EntadEffectKind.Ability);
         }
     }
@@ -122,7 +122,7 @@ namespace EntadFramework
     {
         public static void Postfix(Ability __instance, ref IEnumerable<Gizmo> __result)
         {
-            if (!EntadAbilities.ModifiersGranting(__instance.pawn, __instance.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability))) return;
+            if (!EntadAbilities.TraitsGranting(__instance.pawn, __instance.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability))) return;
             __result = Hide(__result);
         }
 

@@ -12,12 +12,12 @@ namespace EntadFramework
         public static CompEntad CompOf(Thing weapon)
         {
             var comp = weapon?.TryGetComp<CompEntad>();
-            return comp == null || comp.activeModifiers.Count == 0 ? null : comp;
+            return comp == null || comp.activeTraits.Count == 0 ? null : comp;
         }
 
         public static DamageDef TypeOverride(CompEntad comp)
         {
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
                 if (m.def.changeDamageType != null) return m.def.changeDamageType;
             return null;
         }
@@ -51,7 +51,7 @@ namespace EntadFramework
                 // Extra damage rides along with the first (main) blow only
                 if (!first) continue;
                 first = false;
-                foreach (var m in comp.activeModifiers)
+                foreach (var m in comp.activeTraits)
                 {
                     if (m.def.extraDamage == null) continue;
                     for (int i = 0; i < m.def.extraDamage.Count; i++)
@@ -91,7 +91,7 @@ namespace EntadFramework
 
             Thing launcher = trav.Field("launcher").GetValue<Thing>();
             var intended = trav.Field("intendedTarget").GetValue<LocalTargetInfo>();
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 if (m.def.extraDamage == null) continue;
                 for (int i = 0; i < m.def.extraDamage.Count; i++)

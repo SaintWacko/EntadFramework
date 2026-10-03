@@ -1,5 +1,5 @@
 <Defs>
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_BrightHearth</defName>
     <label>bright</label>
     <description>Burns with a wider, warmer glow than it should.</description>
@@ -19,9 +19,9 @@
         <max>1.5</max>
       </li>
     </buildingFactors>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_FrugalBurner</defName>
     <label>frugal</label>
     <description>Needs less fuel to run and holds more of it.</description>
@@ -41,9 +41,9 @@
         <max>2</max>
       </li>
     </buildingFactors>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_OverflowingGenerator</defName>
     <label>overflowing</label>
     <description>Generates more power than it has any right to.</description>
@@ -58,9 +58,9 @@
         <max>2</max>
       </li>
     </buildingFactors>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_SerenityFocus</defName>
     <label>serene</label>
     <description>A stronger meditation focus.</description>
@@ -75,9 +75,9 @@
         <max>0.3</max>
       </li>
     </statOffsets>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_PotentCooling</defName>
     <label>potent</label>
     <description>Heats or cools much harder than it should.</description>
@@ -92,9 +92,9 @@
         <max>2</max>
       </li>
     </buildingFactors>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_ThriftyDevice</defName>
     <label>thrifty</label>
     <description>Draws less power than it should.</description>
@@ -109,9 +109,9 @@
         <max>0.8</max>
       </li>
     </buildingFactors>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_StoneBurner</defName>
     <label>stone-burning</label>
     <description>Somehow burns rock instead of wood.</description>
@@ -123,5 +123,5 @@
     <fuelCategories>
       <li>StoneBlocks</li>
     </fuelCategories>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 </Defs>

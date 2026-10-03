@@ -28,8 +28,8 @@ namespace EntadFramework
             if (t != null) yield return t;
         }
 
-        // Entad modifiers of the eating surface the pawn is using (the one they face, else any adjacent one)
-        public static IEnumerable<AppliedEntadModifier> SurfaceModifiers(Pawn pawn)
+        // Entad traits of the eating surface the pawn is using (the one they face, else any adjacent one)
+        public static IEnumerable<AppliedEntadTrait> SurfaceTraits(Pawn pawn)
         {
             Map map = pawn?.MapHeld;
             if (map == null || !pawn.Spawned) yield break;
@@ -46,7 +46,7 @@ namespace EntadFramework
 
             var comp = surface?.TryGetComp<CompEntad>();
             if (comp == null) yield break;
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
                 if (m.def.HasMealEffect) yield return m;
         }
 
@@ -64,7 +64,7 @@ namespace EntadFramework
     {
         public static void Postfix(Pawn ingester, ref float __result)
         {
-            foreach (var m in EntadMeals.SurfaceModifiers(ingester))
+            foreach (var m in EntadMeals.SurfaceTraits(ingester))
             {
                 __result *= m.mealNutritionFactor;
                 if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f) m.Reveal(EntadEffectKind.Meal);
@@ -94,7 +94,7 @@ namespace EntadFramework
         public static void Postfix(Pawn ingester, ThingDef foodDef, ref List<FoodUtility.ThoughtFromIngesting> __result)
         {
             int qualityOffset = 0;
-            foreach (var m in EntadMeals.SurfaceModifiers(ingester))
+            foreach (var m in EntadMeals.SurfaceTraits(ingester))
             {
                 qualityOffset += m.def.mealQualityOffset;
                 if (m.def.mealQualityOffset != 0 && IsQualityMeal(foodDef)) m.Reveal(EntadEffectKind.Meal);

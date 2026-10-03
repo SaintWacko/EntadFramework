@@ -8,5 +8,5 @@
   <loadAfter>
     <li>Ludeon.RimWorld</li>
   </loadAfter>
-  <description>Core framework for dynamic, randomized item modifiers and abilities.</description>
+  <description>Core framework for dynamic, randomized item traits and abilities.</description>
 </ModMetaData>

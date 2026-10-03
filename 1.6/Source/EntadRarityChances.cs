@@ -4,7 +4,7 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Relative weights for picking (defaults come from the mod settings) a modifier rarity. Rarities with no eligible modifier are skipped
+    // Relative weights for picking (defaults come from the mod settings) a trait rarity. Rarities with no eligible trait are skipped
     // and the remaining weights are renormalised.
     public class EntadRarityChances
     {
@@ -31,27 +31,27 @@ namespace EntadFramework
             return this;
         }
 
-        // Picks a modifier from the candidates: first a rarity by weight, then uniformly among the modifiers that can appear
+        // Picks a trait from the candidates: first a rarity by weight, then uniformly among the traits that can appear
         // at that rarity (fixed-rarity ones at exactly that level, rarity-scaling ones whose range includes it).
         // "allowed" optionally limits the rarities considered.
-        public EntadModifierDef Pick(IList<EntadModifierDef> candidates, System.Func<EntadModifierDef, float> weightOf = null)
+        public EntadTraitDef Pick(IList<EntadTraitDef> candidates, System.Func<EntadTraitDef, float> weightOf = null)
         {
             return Pick(candidates, weightOf, null, out _);
         }
 
-        public EntadModifierDef Pick(IList<EntadModifierDef> candidates, System.Func<EntadModifierDef, float> weightOf, ICollection<EntadRarity> allowed, out EntadRarity rarity)
+        public EntadTraitDef Pick(IList<EntadTraitDef> candidates, System.Func<EntadTraitDef, float> weightOf, ICollection<EntadRarity> allowed, out EntadRarity rarity)
         {
             rarity = EntadRarity.Common;
             if (candidates.NullOrEmpty()) return null;
 
-            var byRarity = new List<EntadModifierDef>[5];
+            var byRarity = new List<EntadTraitDef>[5];
             foreach (var d in candidates)
             {
                 EntadRarity hi = d.MaxRarity;
                 for (var r = d.rarity; r <= hi; r++)
                 {
                     if (allowed != null && allowed.Count > 0 && !allowed.Contains(r)) continue;
-                    (byRarity[(int)r] ?? (byRarity[(int)r] = new List<EntadModifierDef>())).Add(d);
+                    (byRarity[(int)r] ?? (byRarity[(int)r] = new List<EntadTraitDef>())).Add(d);
                 }
             }
 
@@ -82,7 +82,7 @@ namespace EntadFramework
             return PickWithin(byRarity[(int)chosen], weightOf);
         }
 
-        private static EntadModifierDef PickWithin(List<EntadModifierDef> list, System.Func<EntadModifierDef, float> weightOf)
+        private static EntadTraitDef PickWithin(List<EntadTraitDef> list, System.Func<EntadTraitDef, float> weightOf)
         {
             if (weightOf == null) return list.RandomElement();
             float total = 0f;

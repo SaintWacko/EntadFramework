@@ -17,7 +17,7 @@ namespace EntadFramework
             pawn.needs.mood.thoughts.memories.TryGainMemory(memory);
         }
 
-        // True while the pawn wears or wields an entad item whose modifier uses this thought
+        // True while the pawn wears or wields an entad item whose trait uses this thought
         public static bool IsBackedByEquipment(Pawn pawn, ThoughtDef def)
         {
             var apparel = pawn.apparel?.WornApparel;
@@ -33,13 +33,13 @@ namespace EntadFramework
         {
             var comp = item.TryGetComp<CompEntad>();
             if (comp == null) return false;
-            var mods = comp.activeModifiers;
+            var mods = comp.activeTraits;
             for (int i = 0; i < mods.Count; i++) if (mods[i].thought == def) return true;
             return false;
         }
 
         // Brings the pawn's persistent equipment memories in line with what they currently wear or wield:
-        // one memory per modifier using a thought, up to that thought's stack limit.
+        // one memory per trait using a thought, up to that thought's stack limit.
         // 'removing' is excluded from the count, for use while an item is being taken off.
         public static void SyncEquipped(Pawn pawn, Thing removing = null)
         {
@@ -86,7 +86,7 @@ namespace EntadFramework
             {
                 if (items[i] == removing) continue;
                 var entad = items[i].TryGetComp<CompEntad>();
-                var mods = entad?.activeModifiers;
+                var mods = entad?.activeTraits;
                 if (mods == null) continue;
                 for (int j = 0; j < mods.Count; j++)
                 {
@@ -102,9 +102,9 @@ namespace EntadFramework
         public static void OnFurnitureUsed(Pawn pawn, Thing furniture)
         {
             var comp = furniture?.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
+            if (comp == null || comp.activeTraits.NullOrEmpty()) return;
             EntadStatReveal.Fire(comp, EntadStatTrigger.Use);
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 if (m.thought == null) continue;
                 Give(pawn, m.thought, m.ThoughtDurationTicks);

@@ -16,7 +16,7 @@ namespace EntadFramework
         {
             Thing thing = owner as Thing ?? (owner as ThingComp)?.parent;
             var entad = thing?.TryGetComp<CompEntad>();
-            if (entad == null || entad.activeModifiers.Count == 0) return value;
+            if (entad == null || entad.activeTraits.Count == 0) return value;
             if (entad.HasHidden) entad.RevealProperty((EntadBuildingProperty)property);
             return value * entad.PropertyFactor((EntadBuildingProperty)property);
         }
@@ -141,7 +141,7 @@ namespace EntadFramework
 
             var extra = new List<ThingDef>();
             bool replace = false;
-            foreach (var m in entad.activeModifiers)
+            foreach (var m in entad.activeTraits)
             {
                 if (m.def.AllFuelTypes.NullOrEmpty()) continue;
                 extra.AddRange(m.def.AllFuelTypes);
@@ -177,7 +177,7 @@ namespace EntadFramework
             public ThingFilter baseFilter;
         }
 
-        // Filters we created, so their summary can be kept to the building's normal fuel while the modifier is hidden
+        // Filters we created, so their summary can be kept to the building's normal fuel while the trait is hidden
         public static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ThingFilter, HiddenFuel> hiddenFuel =
             new System.Runtime.CompilerServices.ConditionalWeakTable<ThingFilter, HiddenFuel>();
 
@@ -185,7 +185,7 @@ namespace EntadFramework
         private static object Clone(object o) => memberwiseClone.Invoke(o, null);
     }
 
-    // Burning one of an item's entad fuel types reveals the modifier that allows it
+    // Burning one of an item's entad fuel types reveals the trait that allows it
     [HarmonyPatch(typeof(CompRefuelable), nameof(CompRefuelable.Refuel), new[] { typeof(List<Thing>) })]
     public static class Patch_Refuel_Reveal
     {

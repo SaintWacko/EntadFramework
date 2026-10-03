@@ -12,7 +12,7 @@
     </stages>
   </ThoughtDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_Contentment</defName>
     <label>contentment</label>
     <description>Whoever holds or uses this item feels strangely at ease.</description>
@@ -27,9 +27,9 @@
       <min>6</min>
       <max>24</max>
     </thoughtHours>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_RandomGoodMood</defName>
     <label>fickle cheer</label>
     <description>Whoever holds or uses this item is overcome by a random good feeling.</description>
@@ -47,5 +47,5 @@
       <min>4</min>
       <max>12</max>
     </thoughtHours>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 </Defs>

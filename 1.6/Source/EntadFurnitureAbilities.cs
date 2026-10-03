@@ -9,48 +9,48 @@ namespace EntadFramework
     // The pawn walks to the furniture and performs the ability; the cooldown belongs to the furniture.
     public static class EntadFurnitureAbilities
     {
-        public static IEnumerable<KeyValuePair<AppliedEntadModifier, int>> Entries(CompEntad comp)
+        public static IEnumerable<KeyValuePair<AppliedEntadTrait, int>> Entries(CompEntad comp)
         {
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 if (m.def.abilities == null) continue;
                 for (int i = 0; i < m.def.abilities.Count; i++)
-                    yield return new KeyValuePair<AppliedEntadModifier, int>(m, i);
+                    yield return new KeyValuePair<AppliedEntadTrait, int>(m, i);
             }
         }
 
-        public static bool TryGet(CompEntad comp, int flatIndex, out AppliedEntadModifier modifier, out int abilityIndex)
+        public static bool TryGet(CompEntad comp, int flatIndex, out AppliedEntadTrait trait, out int abilityIndex)
         {
             int n = 0;
             foreach (var e in Entries(comp))
             {
-                if (n++ == flatIndex) { modifier = e.Key; abilityIndex = e.Value; return true; }
+                if (n++ == flatIndex) { trait = e.Key; abilityIndex = e.Value; return true; }
             }
-            modifier = null;
+            trait = null;
             abilityIndex = -1;
             return false;
         }
 
         public static void Perform(Pawn pawn, CompEntad comp, int flatIndex, LocalTargetInfo target)
         {
-            if (!TryGet(comp, flatIndex, out var modifier, out int idx)) return;
-            AbilityDef def = modifier.def.abilities[idx];
-            int maxCharges = modifier.def.abilityCharges;
-            int cooldown = Cooldown(modifier, def);
-            if (maxCharges > 0 ? modifier.ChargesLeft(idx, maxCharges, cooldown) <= 0 : Find.TickManager.TicksGame < modifier.AbilityReadyTick(idx)) return;
+            if (!TryGet(comp, flatIndex, out var trait, out int idx)) return;
+            AbilityDef def = trait.def.abilities[idx];
+            int maxCharges = trait.def.abilityCharges;
+            int cooldown = Cooldown(trait, def);
+            if (maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, cooldown) <= 0 : Find.TickManager.TicksGame < trait.AbilityReadyTick(idx)) return;
 
             Ability ability = AbilityUtility.MakeAbility(def, pawn);
             LocalTargetInfo t = target.IsValid ? target : (LocalTargetInfo)pawn;
             ability.Activate(t, t);
-            modifier.Reveal(EntadEffectKind.Ability);
+            trait.Reveal(EntadEffectKind.Ability);
 
-            if (maxCharges > 0) modifier.UseCharge(idx, maxCharges, cooldown);
-            else modifier.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + def.cooldownTicksRange.RandomInRange);
+            if (maxCharges > 0) trait.UseCharge(idx, maxCharges, cooldown);
+            else trait.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + def.cooldownTicksRange.RandomInRange);
         }
 
-        public static int Cooldown(AppliedEntadModifier modifier, AbilityDef def)
+        public static int Cooldown(AppliedEntadTrait trait, AbilityDef def)
         {
-            int c = modifier.def.abilityCooldownTicks > 0 ? modifier.def.abilityCooldownTicks : (int)def.cooldownTicksRange.Average;
+            int c = trait.def.abilityCooldownTicks > 0 ? trait.def.abilityCooldownTicks : (int)def.cooldownTicksRange.Average;
             return System.Math.Max(1, c);
         }
     }
@@ -82,22 +82,22 @@ namespace EntadFramework
     {
         public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
         {
-            if (parent.def.building == null || !parent.Spawned || activeModifiers.NullOrEmpty()) yield break;
+            if (parent.def.building == null || !parent.Spawned || activeTraits.NullOrEmpty()) yield break;
 
             int flat = 0;
             foreach (var entry in EntadFurnitureAbilities.Entries(this))
             {
                 int flatIndex = flat++;
-                AppliedEntadModifier modifier = entry.Key;
+                AppliedEntadTrait trait = entry.Key;
                 int idx = entry.Value;
-                AbilityDef def = modifier.def.abilities[idx];
-                string label = "Activate " + (!modifier.IsRevealed(EntadEffectKind.Ability) ? "???" : def.LabelCap.ToString()) + " (" + parent.LabelNoCount + ")";
+                AbilityDef def = trait.def.abilities[idx];
+                string label = "Activate " + (!trait.IsRevealed(EntadEffectKind.Ability) ? "???" : def.LabelCap.ToString()) + " (" + parent.LabelNoCount + ")";
 
-                int maxCharges = modifier.def.abilityCharges;
-                int ready = modifier.AbilityReadyTick(idx);
-                int charges = maxCharges > 0 ? modifier.ChargesLeft(idx, maxCharges, EntadFurnitureAbilities.Cooldown(modifier, def)) : 1;
-                if (maxCharges > 0) ready = charges > 0 ? 0 : modifier.AbilityReadyTick(idx);
-                if (maxCharges > 0 && modifier.IsRevealed(EntadEffectKind.Ability)) label += " [" + charges + "/" + maxCharges + "]";
+                int maxCharges = trait.def.abilityCharges;
+                int ready = trait.AbilityReadyTick(idx);
+                int charges = maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, EntadFurnitureAbilities.Cooldown(trait, def)) : 1;
+                if (maxCharges > 0) ready = charges > 0 ? 0 : trait.AbilityReadyTick(idx);
+                if (maxCharges > 0 && trait.IsRevealed(EntadEffectKind.Ability)) label += " [" + charges + "/" + maxCharges + "]";
                 if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled)
                     continue;
                 if (!selPawn.CanReach(parent, PathEndMode.InteractionCell, Danger.Deadly))

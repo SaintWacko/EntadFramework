@@ -24,7 +24,7 @@
     </comps>
   </AbilityDef>
 
-  <EntadFramework.EntadModifierDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_RestfulChair</defName>
     <label>restful</label>
     <description>Sitting and sighing here once in a while numbs the user's pain.</description>
@@ -35,5 +35,5 @@
     <abilities>
       <li>Entad_RestfulSigh</li>
     </abilities>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 </Defs>

@@ -6,25 +6,25 @@ using RimWorld;
 
 namespace EntadFramework
 {
-    // Limits which entad modifiers may be applied. Every set left null/empty imposes no restriction.
-    public class EntadModifierFilter
+    // Limits which entad traits may be applied. Every set left null/empty imposes no restriction.
+    public class EntadTraitFilter
     {
-        // Modifier must change at least one of these stats (when non-empty)
+        // Trait must change at least one of these stats (when non-empty)
         public HashSet<StatDef> statWhitelist = new HashSet<StatDef>();
-        // Modifier must not change any of these stats
+        // Trait must not change any of these stats
         public HashSet<StatDef> statBlacklist = new HashSet<StatDef>();
-        public HashSet<EntadModifierDef> defWhitelist = new HashSet<EntadModifierDef>();
-        public HashSet<EntadModifierDef> defBlacklist = new HashSet<EntadModifierDef>();
+        public HashSet<EntadTraitDef> defWhitelist = new HashSet<EntadTraitDef>();
+        public HashSet<EntadTraitDef> defBlacklist = new HashSet<EntadTraitDef>();
         // Allowed rarities (all when empty)
         public HashSet<EntadRarity> rarities = new HashSet<EntadRarity>();
-        // Only modifiers declaring one of these categories (all when empty)
+        // Only traits declaring one of these categories (all when empty)
         public HashSet<string> categories = new HashSet<string>();
-        // Modifier must have at least one of these kinds of effect (all when None)
+        // Trait must have at least one of these kinds of effect (all when None)
         public EntadEffectKind effectKinds = EntadEffectKind.None;
         // Additional arbitrary check
-        public Predicate<EntadModifierDef> predicate;
+        public Predicate<EntadTraitDef> predicate;
 
-        public bool Allows(EntadModifierDef def)
+        public bool Allows(EntadTraitDef def)
         {
             if (defWhitelist.Count > 0 && !defWhitelist.Contains(def)) return false;
             if (defBlacklist.Contains(def)) return false;
@@ -41,13 +41,13 @@ namespace EntadFramework
         }
     }
 
-    // Options for choosing and applying modifiers to an existing thing
+    // Options for choosing and applying traits to an existing thing
     public class EntadApplyRequest
     {
-        public EntadModifierFilter modifierFilter = new EntadModifierFilter();
+        public EntadTraitFilter traitFilter = new EntadTraitFilter();
         public EntadRarityChances rarityChances = EntadRarityChances.Default;
-        // Number of modifiers to add (inclusive range)
-        public IntRange modifierCount = new IntRange(1, 1);
+        // Number of traits to add (inclusive range)
+        public IntRange traitCount = new IntRange(1, 1);
     }
 
     // Options for generating a brand new entad item
@@ -66,34 +66,34 @@ namespace EntadFramework
     // Entry points intended for use by other mods
     public static class EntadApi
     {
-        public static List<EntadModifierDef> GetApplicableModifiers(Thing thing, EntadModifierFilter filter = null)
+        public static List<EntadTraitDef> GetApplicableTraits(Thing thing, EntadTraitFilter filter = null)
         {
             var comp = thing?.TryGetComp<CompEntad>();
-            if (comp == null) return new List<EntadModifierDef>();
+            if (comp == null) return new List<EntadTraitDef>();
 
-            return DefDatabase<EntadModifierDef>.AllDefsListForReading
-                .Where(d => !EntadSettings.IsDisabled(d) && !comp.HasModifier(d) && d.CanApplyTo(thing) && (filter == null || filter.Allows(d)))
+            return DefDatabase<EntadTraitDef>.AllDefsListForReading
+                .Where(d => !EntadSettings.IsDisabled(d) && !comp.HasTrait(d) && d.CanApplyTo(thing) && (filter == null || filter.Allows(d)))
                 .ToList();
         }
 
-        // Applies random modifiers to the thing; returns the ones added (possibly fewer than requested)
-        public static List<EntadModifierDef> ApplyRandomModifiers(Thing thing, EntadApplyRequest request = null)
+        // Applies random traits to the thing; returns the ones added (possibly fewer than requested)
+        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
-            var added = new List<EntadModifierDef>();
+            var added = new List<EntadTraitDef>();
             var comp = thing?.TryGetComp<CompEntad>();
             if (comp == null) return added;
 
-            int count = request.modifierCount.RandomInRange;
+            int count = request.traitCount.RandomInRange;
             for (int i = 0; i < count; i++)
             {
-                var candidates = GetApplicableModifiers(thing, request.modifierFilter);
-                System.Func<EntadModifierDef, float> weight = null;
+                var candidates = GetApplicableTraits(thing, request.traitFilter);
+                System.Func<EntadTraitDef, float> weight = null;
                 if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
                     weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
-                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight, request.modifierFilter?.rarities, out EntadRarity rolled);
+                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight, request.traitFilter?.rarities, out EntadRarity rolled);
                 if (pick == null) break;
-                if (!comp.AddModifier(pick, rolled)) break;
+                if (!comp.AddTrait(pick, rolled)) break;
                 added.Add(pick);
             }
             return added;
@@ -110,20 +110,20 @@ namespace EntadFramework
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 
-        // Generates an unspawned item with entad modifiers, or null if no item/modifier combination fits the request.
-        // Item defs are tried in random order until one can receive at least one modifier.
-        public static Thing GenerateEntadItem(int modifierCount, EntadItemRequest request = null)
+        // Generates an unspawned item with entad traits, or null if no item/trait combination fits the request.
+        // Item defs are tried in random order until one can receive at least one trait.
+        public static Thing GenerateEntadItem(int traitCount, EntadItemRequest request = null)
         {
             request = request ?? new EntadItemRequest();
-            request.modifierCount = new IntRange(modifierCount, modifierCount);
+            request.traitCount = new IntRange(traitCount, traitCount);
             return GenerateEntadItem(request);
         }
 
-        public static List<EntadModifierDef> ApplyRandomModifiers(Thing thing, int modifierCount, EntadApplyRequest request = null)
+        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
-            request.modifierCount = new IntRange(modifierCount, modifierCount);
-            return ApplyRandomModifiers(thing, request);
+            request.traitCount = new IntRange(traitCount, traitCount);
+            return ApplyRandomTraits(thing, request);
         }
 
         public static Thing GenerateEntadItem(EntadItemRequest request = null)
@@ -139,7 +139,7 @@ namespace EntadFramework
                 if (quality != null && request.quality.HasValue)
                     quality.SetQuality(request.quality.Value, ArtGenerationContext.Outsider);
 
-                if (ApplyRandomModifiers(thing, request).Count > 0) return thing;
+                if (ApplyRandomTraits(thing, request).Count > 0) return thing;
                 thing.Destroy();
             }
             return null;

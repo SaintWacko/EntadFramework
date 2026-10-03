@@ -12,7 +12,7 @@ namespace EntadFramework
     {
         private static HashSet<StatDef> stats;
 
-        // Pawn stats that at least one entad modifier offsets
+        // Pawn stats that at least one entad trait offsets
         public static HashSet<StatDef> Stats
         {
             get
@@ -20,10 +20,10 @@ namespace EntadFramework
                 if (stats == null)
                 {
                     stats = new HashSet<StatDef>();
-                    foreach (var d in DefDatabase<EntadModifierDef>.AllDefsListForReading)
+                    foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                         if (d.statOffsets != null)
                             foreach (var r in d.statOffsets)
-                                if (r.stat != null && EntadModifierDef.IsWearerStat(r.stat)) stats.Add(r.stat);
+                                if (r.stat != null && EntadTraitDef.IsWearerStat(r.stat)) stats.Add(r.stat);
                 }
                 return stats;
             }

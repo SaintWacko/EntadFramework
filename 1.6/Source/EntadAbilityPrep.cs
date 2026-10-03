@@ -8,10 +8,10 @@ using Verse;
 namespace EntadFramework
 {
     // Runs once at startup, after defs load:
-    // Gives every modifier ability its own copy of the AbilityDef when it needs one: psycasts lose their psyfocus
-    // and heat cost (they become plain abilities limited by cooldown/charges), and modifiers with abilityCharges
-    //     or abilityCooldownTicks get that cooldown/charge setup. Copies are per modifier so the same ability can be
-    //     limited differently by different modifiers.
+    // Gives every trait ability its own copy of the AbilityDef when it needs one: psycasts lose their psyfocus
+    // and heat cost (they become plain abilities limited by cooldown/charges), and traits with abilityCharges
+    //     or abilityCooldownTicks get that cooldown/charge setup. Copies are per trait so the same ability can be
+    //     limited differently by different traits.
     [StaticConstructorOnStartup]
     public static class EntadAbilityPrep
     {
@@ -19,12 +19,12 @@ namespace EntadFramework
 
         static EntadAbilityPrep()
         {
-            foreach (var m in DefDatabase<EntadModifierDef>.AllDefsListForReading) Prepare(m);
+            foreach (var m in DefDatabase<EntadTraitDef>.AllDefsListForReading) Prepare(m);
         }
 
         private static bool IsPsycast(AbilityDef a) => a.abilityClass != null && typeof(Psycast).IsAssignableFrom(a.abilityClass);
 
-        private static void Prepare(EntadModifierDef m)
+        private static void Prepare(EntadTraitDef m)
         {
             if (m.abilities.NullOrEmpty()) return;
             bool custom = m.abilityCharges > 0 || m.abilityCooldownTicks > 0;
@@ -36,7 +36,7 @@ namespace EntadFramework
             }
         }
 
-        private static AbilityDef MakeCopy(EntadModifierDef m, AbilityDef src)
+        private static AbilityDef MakeCopy(EntadTraitDef m, AbilityDef src)
         {
             string name = "Entad_" + m.defName + "_" + src.defName;
             var existing = DefDatabase<AbilityDef>.GetNamedSilentFail(name);

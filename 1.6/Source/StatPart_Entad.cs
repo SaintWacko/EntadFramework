@@ -11,10 +11,10 @@ namespace EntadFramework
         public override void TransformValue(StatRequest req, ref float val)
         {
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
-            if (comp == null || comp.activeModifiers.NullOrEmpty()) return;
+            if (comp == null || comp.activeTraits.NullOrEmpty()) return;
 
             bool unidentified = false;
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
                 // Stat effects apply whether or not they've been revealed; only their explanations are hidden
@@ -22,21 +22,21 @@ namespace EntadFramework
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
                 for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
-                // Identified modifiers add their normal value; unidentified ones share one fixed bonus (below)
+                // Identified traits add their normal value; unidentified ones share one fixed bonus (below)
                 if (parentStat == StatDefOf.MarketValue && !m.AnyHidden) val += m.MarketValueOffset();
                 else if (parentStat == StatDefOf.MarketValue) unidentified = true;
             }
-            if (unidentified) val += EntadModifierDef.UnidentifiedMarketValue;
+            if (unidentified) val += EntadTraitDef.UnidentifiedMarketValue;
         }
 
         public override string ExplanationPart(StatRequest req)
         {
             var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
-            if (comp == null || comp.activeModifiers.NullOrEmpty()) return null;
+            if (comp == null || comp.activeTraits.NullOrEmpty()) return null;
 
             string explanation = "";
             bool unidentified = false;
-            foreach (var m in comp.activeModifiers)
+            foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
                 bool known = m.IsRevealed(EntadEffectKind.Stat);
@@ -53,12 +53,12 @@ namespace EntadFramework
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
-            if (unidentified) explanation += $"\nUnidentified entad properties: +{EntadModifierDef.UnidentifiedMarketValue.ToStringMoney()}";
+            if (unidentified) explanation += $"\nUnidentified entad properties: +{EntadTraitDef.UnidentifiedMarketValue.ToStringMoney()}";
             return explanation.NullOrEmpty() ? null : explanation;
         }
     }
 
-    // Dynamically attaches StatPart_Entad to every stat referenced by any EntadModifierDef (and MarketValue)
+    // Dynamically attaches StatPart_Entad to every stat referenced by any EntadTraitDef (and MarketValue)
     [StaticConstructorOnStartup]
     public static class EntadStatPartInjector
     {
@@ -67,7 +67,7 @@ namespace EntadFramework
             new Harmony("saintwacko.entadframework").PatchAll();
 
             var stats = new HashSet<StatDef> { StatDefOf.MarketValue };
-            foreach (var def in DefDatabase<EntadModifierDef>.AllDefsListForReading)
+            foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 foreach (var r in def.AllRanges())
                     if (r.stat != null) stats.Add(r.stat);
 

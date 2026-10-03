@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
   <!-- Vanilla psycasts as limited-use abilities. Psyfocus and heat costs are removed; use is limited by charges and cooldown instead. Requires Royalty. -->
-  <EntadFramework.EntadModifierDef MayRequire="Ludeon.RimWorld.Royalty">
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_ChaosSkip</defName>
     <label>Chaos Skip</label>
     <description>Grants the ability to skip a target, and anyone near it, to a random nearby location.</description>
@@ -16,5 +16,5 @@
     </abilities>
     <abilityCharges>2</abilityCharges>
     <abilityCooldownTicks>30000</abilityCooldownTicks>
-  </EntadFramework.EntadModifierDef>
+  </EntadFramework.EntadTraitDef>
 </Defs>

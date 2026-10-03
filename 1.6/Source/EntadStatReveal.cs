@@ -6,7 +6,7 @@ using Verse.AI;
 
 namespace EntadFramework
 {
-    // What has to happen before a stat modifier is noticed. Each stat belongs to one trigger, and a modifier
+    // What has to happen before a stat trait is noticed. Each stat belongs to one trigger, and a trait
     // is revealed when any of its stats' triggers fires. Triggers are fired from a few cheap game events
     // (job start, hits, damage...) rather than by watching stat lookups, which would be far too hot a path.
     public enum EntadStatTrigger
@@ -20,7 +20,7 @@ namespace EntadFramework
     {
         public static EntadStatTrigger Classify(StatDef stat, ThingDef td)
         {
-            if (EntadModifierDef.IsWearerStat(stat))
+            if (EntadTraitDef.IsWearerStat(stat))
             {
                 switch (stat.defName)
                 {
@@ -50,7 +50,7 @@ namespace EntadFramework
             return EntadStatTrigger.Use;
         }
 
-        private static bool Has(AppliedEntadModifier m, ThingDef td, EntadStatTrigger trigger)
+        private static bool Has(AppliedEntadTrait m, ThingDef td, EntadStatTrigger trigger)
         {
             foreach (var r in m.def.AllRanges())
                 if (r.stat != null && r.stat != StatDefOf.MarketValue && Classify(r.stat, td) == trigger) return true;

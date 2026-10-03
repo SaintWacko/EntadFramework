@@ -14,8 +14,8 @@ namespace EntadFramework
         Legendary
     }
 
-    // A stat modifier whose value is rolled between min and max when applied to an item
-    public class StatModifierRange
+    // A stat trait whose value is rolled between min and max when applied to an item
+    public class StatTraitRange
     {
         public StatDef stat;
         public float min;
@@ -30,16 +30,16 @@ namespace EntadFramework
         }
 
         // Rarity scaling widens the whole range: offsets multiply, factors scale their distance from 1
-        public float RollScaled(float scale, bool factor) => EntadModifierDef.Scale(Roll(), scale, factor);
+        public float RollScaled(float scale, bool factor) => EntadTraitDef.Scale(Roll(), scale, factor);
 
         public float NormalizeScaled(float value, float scale, bool factor)
         {
-            float lo = EntadModifierDef.Scale(min, scale, factor), hi = EntadModifierDef.Scale(max, scale, factor);
+            float lo = EntadTraitDef.Scale(min, scale, factor), hi = EntadTraitDef.Scale(max, scale, factor);
             return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
         }
     }
 
-    // Building properties that aren't stats (they live in comp properties) and can be scaled by a modifier
+    // Building properties that aren't stats (they live in comp properties) and can be scaled by a trait
     public enum EntadBuildingProperty
     {
         LightRadius,
@@ -65,11 +65,11 @@ namespace EntadFramework
             return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
         }
 
-        public float RollScaled(float scale) => EntadModifierDef.Scale(Roll(), scale, true);
+        public float RollScaled(float scale) => EntadTraitDef.Scale(Roll(), scale, true);
 
         public float NormalizeScaled(float value, float scale)
         {
-            float lo = EntadModifierDef.Scale(min, scale, true), hi = EntadModifierDef.Scale(max, scale, true);
+            float lo = EntadTraitDef.Scale(min, scale, true), hi = EntadTraitDef.Scale(max, scale, true);
             return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
         }
 
@@ -148,14 +148,14 @@ namespace EntadFramework
         All = Stat | Mood | Meal | Ability | Building | Fuel | Damage
     }
 
-    public class EntadModifierDef : Def
+    public class EntadTraitDef : Def
     {
         public List<string> categories = new List<string>();
         public EntadRarity rarity = EntadRarity.Common;
 
-        // When true, "rarity" is the lowest rarity this modifier appears at. It can also appear at every higher
+        // When true, "rarity" is the lowest rarity this trait appears at. It can also appear at every higher
         // rarity up to MaxRarity, with its min/max scaled by the rarity multipliers in the mod settings (relative to
-        // this def's own rarity). When false the modifier only ever appears at "rarity".
+        // this def's own rarity). When false the trait only ever appears at "rarity".
         public bool scalesWithRarity;
 
         public const float MinScaledFactor = 0.05f;
@@ -211,8 +211,8 @@ namespace EntadFramework
             return at < rarity ? rarity : (at > MaxRarity ? MaxRarity : at);
         }
 
-        public List<StatModifierRange> statOffsets;
-        public List<StatModifierRange> statFactors;
+        public List<StatTraitRange> statOffsets;
+        public List<StatTraitRange> statFactors;
 
         // Multipliers on building properties that aren't stats: light radius, heat output, fuel consumption
         // rate, fuel capacity, power generation. Only applies to buildings that have the matching component.
@@ -268,9 +268,9 @@ namespace EntadFramework
         public bool replaceFuel;
 
         // Mood effect: while equipped (weapons/apparel) or after use (furniture) the wearer/user gets this thought.
-        // The lifetime in hours is rolled in thoughtHours when the modifier is applied.
+        // The lifetime in hours is rolled in thoughtHours when the trait is applied.
         public ThoughtDef thought;
-        // Alternative to a fixed thought: when the modifier is applied, a random existing memory thought whose
+        // Alternative to a fixed thought: when the trait is applied, a random existing memory thought whose
         // mood effect lies within this range is picked. A range of 0..0 means unused.
         public FloatRange thoughtMoodRange = new FloatRange(0f, 0f);
 
@@ -298,20 +298,20 @@ namespace EntadFramework
         public int abilityCharges;
         public int abilityCooldownTicks;
 
-        // Modifiers that can never share an item with this one (symmetric: listing it on either def is enough)
-        public List<EntadModifierDef> exclusiveWith;
+        // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
+        public List<EntadTraitDef> exclusiveWith;
 
-        // Tags shared with other modifiers that mean "only one of us per item"
+        // Tags shared with other traits that mean "only one of us per item"
         public List<string> exclusivityTags;
 
-        // By default two modifiers that affect the same thing (a stat, meal nutrition, meal quality, an ability)
-        // can't share an item. Set to true to opt this modifier out of that implicit check; explicit
+        // By default two traits that affect the same thing (a stat, meal nutrition, meal quality, an ability)
+        // can't share an item. Set to true to opt this trait out of that implicit check; explicit
         // exclusiveWith / exclusivityTags still apply.
         public bool allowOverlap;
 
         public string discoveryMessage;
 
-        public bool ConflictsWith(EntadModifierDef other)
+        public bool ConflictsWith(EntadTraitDef other)
         {
             if (other == null) return false;
             if (other == this) return true;
@@ -339,11 +339,11 @@ namespace EntadFramework
             return false;
         }
 
-        // Flat value added once to an item with any unidentified modifier, instead of those modifiers' own value
-        // (between a common and an uncommon modifier)
+        // Flat value added once to an item with any unidentified trait, instead of those traits' own value
+        // (between a common and an uncommon trait)
         public const float UnidentifiedMarketValue = 60f;
 
-        // Base market value contributed by a modifier of this rarity
+        // Base market value contributed by a trait of this rarity
         public static float BaseMarketValueAt(EntadRarity at)
         {
             {
@@ -419,7 +419,7 @@ namespace EntadFramework
 
             var existing = thing.TryGetComp<CompEntad>();
             if (existing != null)
-                foreach (var m in existing.activeModifiers)
+                foreach (var m in existing.activeTraits)
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
@@ -477,7 +477,7 @@ namespace EntadFramework
         public static bool IsMeleeOnlyStat(StatDef stat) =>
             stat.category == StatCategoryDefOf.Weapon_Melee || stat.defName.StartsWith("MeleeWeapon_");
 
-        // Modifiers made for weapons (weapon-only categories, damage effects or weapon stats) rather than general ones
+        // Traits made for weapons (weapon-only categories, damage effects or weapon stats) rather than general ones
         private int weaponSpecific = -1;
 
         public bool IsWeaponSpecific
@@ -507,7 +507,7 @@ namespace EntadFramework
             "PawnHealth", "PawnFood", "PawnResistances", "PawnPsyfocus", "Meditation"
         };
 
-        // Stats of the pawn carrying a weapon or apparel. Entad modifiers add to these as equipped stat offsets.
+        // Stats of the pawn carrying a weapon or apparel. Entad traits add to these as equipped stat offsets.
         public static bool IsWearerStat(StatDef stat) => stat.category != null && WearerCategories.Contains(stat.category.defName);
 
         // Stats such as equipped offsets work on any equippable item
@@ -516,13 +516,13 @@ namespace EntadFramework
             return stat.category == StatCategoryDefOf.EquippedStatOffsets && (td.IsWeapon || td.IsApparel);
         }
 
-        public IEnumerable<StatModifierRange> AllRanges()
+        public IEnumerable<StatTraitRange> AllRanges()
         {
             foreach (var r in Ranges(statOffsets)) yield return r;
             foreach (var r in Ranges(statFactors)) yield return r;
         }
 
-        private static IEnumerable<StatModifierRange> Ranges(List<StatModifierRange> l)
+        private static IEnumerable<StatTraitRange> Ranges(List<StatTraitRange> l)
         {
             if (l != null) foreach (var r in l) yield return r;
         }
