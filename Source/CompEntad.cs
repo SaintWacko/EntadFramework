@@ -363,7 +363,9 @@ namespace EntadFramework
             int newMax = parent.MaxHitPoints;
             int oldMax = UnityEngine.Mathf.RoundToInt(newMax * scaledDurability / now);
             // Slack for MaxHitPoints' own rounding (to 5 above 200), so a full item isn't read as slightly damaged
-            int slack = oldMax > 200 ? 5 : 1;
+            // plus newMax's own rounding error, which the division above magnifies by scaledDurability / now
+            float ratio = scaledDurability / now;
+            int slack = (oldMax > 200 ? 5 : 1) + UnityEngine.Mathf.CeilToInt((newMax > 200 ? 2.5f : 0.5f) * ratio);
             parent.HitPoints = parent.HitPoints >= oldMax - slack
                 ? newMax
                 : UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(parent.HitPoints * now / scaledDurability), 1, newMax);
