@@ -26,11 +26,19 @@ namespace EntadFramework
             foreach (var kv in previous) if (EntadSettings.Durability[kv.Key] != kv.Value) changed = true;
             if (!changed) return;
 
+            // GetAllThingsRecursively clears its output list on every call, so collect each into a scratch list
             var things = new List<Thing>();
+            var scratch = new List<Thing>();
             foreach (var map in Find.Maps)
-                ThingOwnerUtility.GetAllThingsRecursively(map, ThingRequest.ForGroup(ThingRequestGroup.Everything), things);
+            {
+                ThingOwnerUtility.GetAllThingsRecursively(map, ThingRequest.ForGroup(ThingRequestGroup.Everything), scratch);
+                things.AddRange(scratch);
+            }
             foreach (var caravan in Find.WorldObjects.Caravans)
-                ThingOwnerUtility.GetAllThingsRecursively(caravan, things);
+            {
+                ThingOwnerUtility.GetAllThingsRecursively(caravan, scratch);
+                things.AddRange(scratch);
+            }
 
             // Each item knows the factor its HP was scaled to, so it rescales itself. Anything not reached here
             // (world pawns, pods in flight) catches up the next time the save loads.

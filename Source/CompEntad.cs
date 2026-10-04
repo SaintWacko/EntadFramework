@@ -362,7 +362,9 @@ namespace EntadFramework
             StatDefOf.MaxHitPoints.Worker.ClearCacheForThing(parent);
             int newMax = parent.MaxHitPoints;
             int oldMax = UnityEngine.Mathf.RoundToInt(newMax * scaledDurability / now);
-            parent.HitPoints = parent.HitPoints >= oldMax
+            // Slack for MaxHitPoints' own rounding (to 5 above 200), so a full item isn't read as slightly damaged
+            int slack = oldMax > 200 ? 5 : 1;
+            parent.HitPoints = parent.HitPoints >= oldMax - slack
                 ? newMax
                 : UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(parent.HitPoints * now / scaledDurability), 1, newMax);
             scaledDurability = now;
