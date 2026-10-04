@@ -225,15 +225,38 @@ namespace EntadFramework
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
-        // Just this item's cached values for the stats its traits touch (and market value). Called every frame the
-        // item's info card draws, after it computed those stats without hidden traits; the holder isn't touched
-        // because the card never computes the holder's stats under that flag.
-        internal void ClearOwnStatCaches()
+        // True when some trait's stat effect is still unrevealed (HasHidden also counts mood, fuel, building...).
+        public bool HasHiddenStat
         {
-            foreach (var m in activeTraits)
-                foreach (var r in m.def.AllRanges())
-                    if (r.stat != null) r.stat.Worker.ClearCacheForThing(parent);
+            get
+            {
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (!activeTraits[i].IsRevealed(EntadEffectKind.Stat)) return true;
+                return false;
+            }
+        }
+
+        // Called every frame this item's info card draws, after the card computed its stats without hidden traits.
+        // Clears the item and its holder: an equipped weapon's card (melee DPS) reads holder stats, which run
+        // StatOffsetFromGear over this item under the same flag. Plain loops, no AllRanges iterator, since it is
+        // per frame.
+        internal void ClearCardStatCaches()
+        {
+            Pawn holder = Holder;
+            for (int t = 0; t < activeTraits.Count; t++)
+            {
+                var def = activeTraits[t].def;
+                for (int i = 0; def.statOffsets != null && i < def.statOffsets.Count; i++) ClearFor(def.statOffsets[i].stat, holder);
+                for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++) ClearFor(def.statFactors[i].stat, holder);
+            }
             StatDefOf.MarketValue.Worker.ClearCacheForThing(parent);
+        }
+
+        private void ClearFor(StatDef stat, Pawn holder)
+        {
+            if (stat == null) return;
+            stat.Worker.ClearCacheForThing(parent);
+            if (holder != null) stat.Worker.ClearCacheForThing(holder);
         }
 
         private void ClearStatCaches()

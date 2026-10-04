@@ -228,7 +228,7 @@ namespace EntadFramework
         {
             __state = null;
             var comp = (thing as ThingWithComps)?.GetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden) return;
+            if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden || !comp.HasHiddenStat) return;
             __state = comp;
             EntadWearerStats.infoCardThing = thing;
         }
@@ -238,7 +238,7 @@ namespace EntadFramework
         {
             if (__state == null) return;
             EntadWearerStats.infoCardThing = null;
-            __state.ClearOwnStatCaches();
+            __state.ClearCardStatCaches();
         }
     }
 

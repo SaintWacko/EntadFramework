@@ -25,7 +25,9 @@ namespace EntadFramework
             // nothing computed here survives into gameplay.
             bool skipHidden = (offsetsViaWearer
                     && (EntadWearerStats.displayExcludesHidden || EntadWearerStats.gearCardThing == req.Thing))
-                || EntadWearerStats.infoCardThing == req.Thing;
+                || (EntadWearerStats.infoCardThing == req.Thing && parentStat != StatDefOf.MaxHitPoints);
+            // MaxHitPoints stays real on the card: its HP row is "HitPoints / MaxHitPoints", and HitPoints is the
+            // real stored value (already scaled by the trait), so a hidden-free maximum would read e.g. 150 / 100.
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
