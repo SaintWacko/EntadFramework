@@ -140,7 +140,11 @@ namespace EntadFramework
                 // StatDef.SetImmutability already ran during def loading, before static constructors. A stat that had
                 // no parts may have been marked immutable, which caches each thing's first value forever: entad
                 // items would keep their pre-trait value and a wearer stat would ignore entad gear changes.
-                if (stat.immutable)
+                // MaxHitPoints is the exception: every Thing reads it constantly, so it keeps vanilla's permanent cache.
+                // That's safe because its value never changes for display only (the info card leaves it real), and
+                // every real change (trait add/remove/reveal, durability sync) clears it with ClearCacheForThing,
+                // which empties the immutable cache too.
+                if (stat.immutable && stat != StatDefOf.MaxHitPoints)
                 {
                     stat.immutable = false;
                     stat.Worker.SetCacheability(false);

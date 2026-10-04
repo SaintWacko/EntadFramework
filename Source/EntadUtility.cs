@@ -32,16 +32,10 @@ namespace EntadFramework
             foreach (var caravan in Find.WorldObjects.Caravans)
                 ThingOwnerUtility.GetAllThingsRecursively(caravan, things);
 
+            // Each item knows the factor its HP was scaled to, so it rescales itself. Anything not reached here
+            // (world pawns, pods in flight) catches up the next time the save loads.
             foreach (var t in things.Distinct())
-            {
-                var comp = (t as ThingWithComps)?.GetComp<CompEntad>();
-                if (comp == null || !t.def.useHitPoints || comp.activeTraits.NullOrEmpty()) continue;
-                EntadRarity r = comp.HighestRarity;
-                float before = previous[r], after = EntadSettings.Durability[r];
-                if (before == after) continue;
-                StatDefOf.MaxHitPoints.Worker.ClearCacheForThing(t);
-                t.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(t.HitPoints * after / before), 1, t.MaxHitPoints);
-            }
+                (t as ThingWithComps)?.GetComp<CompEntad>()?.SyncDurability();
         }
 
         public static bool IsFurniture(ThingDef def)

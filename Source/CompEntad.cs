@@ -344,6 +344,28 @@ namespace EntadFramework
         {
             ClearStatCaches();
             parent.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(fraction * parent.MaxHitPoints), 1, parent.MaxHitPoints);
+            scaledDurability = DurabilityFactor;
+        }
+
+        // The durability factor this item's HitPoints were last scaled to. Lets an item catch up when the factor
+        // changed without it being rescaled: a save from before durability existed, a settings change made from the
+        // main menu, or an item the settings-window rescale couldn't reach (world pawns, pods in flight).
+        private float scaledDurability = 1f;
+
+        // Brings HitPoints in line with the current durability factor, keeping the health fraction. A full-health item
+        // snaps to the new maximum, so rounding on MaxHitPoints can't leave it a few points short.
+        public void SyncDurability()
+        {
+            if (!parent.def.useHitPoints) return;
+            float now = DurabilityFactor;
+            if (UnityEngine.Mathf.Approximately(now, scaledDurability)) return;
+            StatDefOf.MaxHitPoints.Worker.ClearCacheForThing(parent);
+            int newMax = parent.MaxHitPoints;
+            int oldMax = UnityEngine.Mathf.RoundToInt(newMax * scaledDurability / now);
+            parent.HitPoints = parent.HitPoints >= oldMax
+                ? newMax
+                : UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(parent.HitPoints * now / scaledDurability), 1, newMax);
+            scaledDurability = now;
         }
 
         // Traits the player switched off in the settings are refused here too, so other mods can't add them either.
@@ -400,6 +422,8 @@ namespace EntadFramework
             base.PostExposeData();
             Scribe_Values.Look(ref customName, "customName");
             Scribe_Collections.Look(ref activeTraits, "activeTraits", LookMode.Deep);
+            // Saves from before durability load as 1 (unscaled), so SyncDurability below brings them up to full scale
+            Scribe_Values.Look(ref scaledDurability, "scaledDurability", 1f);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -408,6 +432,7 @@ namespace EntadFramework
                 wearerOffsets = null;
                 hiddenState = 0;
                 foreach (var m in activeTraits) m.owner = this;
+                SyncDurability();
             }
         }
 
