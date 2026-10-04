@@ -33,6 +33,18 @@ namespace EntadFramework
 
         public static readonly Dictionary<EntadRarity, float> Weights = new Dictionary<EntadRarity, float>(DefaultWeights);
 
+        // Max hit points multiplier for every item with at least one entad trait, by the highest rarity among its traits
+        public static readonly Dictionary<EntadRarity, float> DefaultDurability = new Dictionary<EntadRarity, float>
+        {
+            { EntadRarity.Common, 1.25f },
+            { EntadRarity.Uncommon, 1.5f },
+            { EntadRarity.Rare, 2f },
+            { EntadRarity.Epic, 3f },
+            { EntadRarity.Legendary, 5f },
+        };
+
+        public static readonly Dictionary<EntadRarity, float> Durability = new Dictionary<EntadRarity, float>(DefaultDurability);
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -48,6 +60,7 @@ namespace EntadFramework
         {
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
             foreach (var kv in DefaultMultipliers) Multipliers[kv.Key] = kv.Value;
+            foreach (var kv in DefaultDurability) Durability[kv.Key] = kv.Value;
         }
 
         public override void ExposeData()
@@ -66,6 +79,9 @@ namespace EntadFramework
                 float mult = Multipliers[r];
                 Scribe_Values.Look(ref mult, "multiplier" + r, DefaultMultipliers[r]);
                 Multipliers[r] = Mathf.Max(0.1f, mult);
+                float dur = Durability[r];
+                Scribe_Values.Look(ref dur, "durability" + r, DefaultDurability[r]);
+                Durability[r] = Mathf.Max(0.1f, dur);
             }
         }
     }
@@ -79,6 +95,17 @@ namespace EntadFramework
 
         public override string SettingsCategory() => "Entad Framework";
 
+        // Durability factors that items in the running game are currently scaled to. When the window closes with
+        // different values, items keep their health fraction instead of jumping to "damaged" or over the maximum.
+        private Dictionary<EntadRarity, float> appliedDurability;
+
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+            if (appliedDurability != null && Current.Game != null) EntadUtility.RescaleDurability(appliedDurability);
+            appliedDurability = null;
+        }
+
         private enum Tab { General, Traits }
         private Tab tab;
         private string search = "";
@@ -91,6 +118,7 @@ namespace EntadFramework
             tabRect.x += 150f;
             if (Widgets.ButtonText(tabRect, "Traits", tab != Tab.Traits)) tab = Tab.Traits;
 
+            if (appliedDurability == null) appliedDurability = new Dictionary<EntadRarity, float>(EntadSettings.Durability);
             var body = new Rect(inRect.x, inRect.y + 40f, inRect.width, inRect.height - 40f);
             if (tab == Tab.General) DoGeneral(body);
             else DoTraits(body);
@@ -170,7 +198,7 @@ namespace EntadFramework
 
         private void DoGeneral(Rect inRect)
         {
-            var view = new Rect(0f, 0f, inRect.width - 20f, 1250f);
+            var view = new Rect(0f, 0f, inRect.width - 20f, 1600f);
             Widgets.BeginScrollView(inRect, ref generalScroll, view);
             var list = new Listing_Standard();
             list.Begin(view);
@@ -204,6 +232,16 @@ namespace EntadFramework
                 float m = EntadSettings.Multipliers[r];
                 list.Label($"{r}: x{m:0.##}");
                 EntadSettings.Multipliers[r] = Mathf.Round(list.Slider(m, 0.5f, 6f) * 20f) / 20f;
+            }
+
+            list.GapLine();
+            list.Label("Durability: max hit points multiplier for every item with at least one entad trait, set by the highest rarity among its traits.");
+            list.Gap(6f);
+            foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
+            {
+                float d = EntadSettings.Durability[r];
+                list.Label($"{r}: x{d:0.##}");
+                EntadSettings.Durability[r] = Mathf.Round(list.Slider(d, 1f, 10f) * 20f) / 20f;
             }
 
             list.Gap(6f);

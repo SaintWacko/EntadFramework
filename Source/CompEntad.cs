@@ -225,6 +225,21 @@ namespace EntadFramework
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
+        // Highest rarity among this item's traits (Common when it has none); sets its durability multiplier
+        public EntadRarity HighestRarity
+        {
+            get
+            {
+                EntadRarity best = EntadRarity.Common;
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (activeTraits[i].Rarity > best) best = activeTraits[i].Rarity;
+                return best;
+            }
+        }
+
+        // Max hit points multiplier every entad gets, visible from the start; 1 for an item without traits
+        public float DurabilityFactor => activeTraits.NullOrEmpty() ? 1f : EntadSettings.Durability[HighestRarity];
+
         // True when some trait's stat effect is still unrevealed (HasHidden also counts mood, fuel, building...).
         public bool HasHiddenStat
         {
@@ -270,6 +285,8 @@ namespace EntadFramework
                     if (holder != null) r.stat.Worker.ClearCacheForThing(holder);
                 }
             StatDefOf.MarketValue.Worker.ClearCacheForThing(parent);
+            // Durability depends on the trait list itself (highest rarity), not on any one trait's stats
+            StatDefOf.MaxHitPoints.Worker.ClearCacheForThing(parent);
         }
 
         // Reveals the given kind of effect on every trait that has it and for which the predicate holds
@@ -321,11 +338,6 @@ namespace EntadFramework
             parent.GetComp<CompPowerTrader>()?.SetUpPowerVars();
         }
 
-        private static bool AffectsMaxHitPoints(EntadTraitDef def)
-        {
-            foreach (var r in def.AllRanges()) if (r.stat == StatDefOf.MaxHitPoints) return true;
-            return false;
-        }
 
         // Keeps the item's hit point fraction when its maximum changes, so a sturdier item starts at full health
         private void RescaleHitPoints(float fraction)
@@ -339,7 +351,8 @@ namespace EntadFramework
         public bool AddTrait(EntadTraitDef def, EntadRarity? rarity = null, bool ignoreDisabled = false)
         {
             if (!ignoreDisabled && EntadSettings.IsDisabled(def)) return false;
-            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(def);
+            // Every trait can change durability (it may become the highest rarity), so always rescale
+            bool scaleHp = parent.def.useHitPoints;
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
             var applied = AppliedEntadTrait.Roll(def, rarity);
             applied.owner = this;
@@ -360,7 +373,7 @@ namespace EntadFramework
 
         public void RemoveTrait(AppliedEntadTrait trait)
         {
-            bool scaleHp = parent.def.useHitPoints && AffectsMaxHitPoints(trait.def);
+            bool scaleHp = parent.def.useHitPoints;
             float hpFraction = scaleHp ? (float)parent.HitPoints / parent.MaxHitPoints : 1f;
             if (!activeTraits.Contains(trait)) return;
             // Clear while the trait is still listed: ClearStatCaches walks activeTraits, so after removal the

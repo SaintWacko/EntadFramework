@@ -46,6 +46,8 @@ namespace EntadFramework
                 else if (parentStat == StatDefOf.MarketValue) unidentified = true;
             }
             if (unidentified) val += EntadTraitDef.UnidentifiedMarketValue;
+            // Durability: every entad, by its highest trait rarity. Visible from the start, so never hidden.
+            if (parentStat == StatDefOf.MaxHitPoints) val *= comp.DurabilityFactor;
         }
 
         // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
@@ -87,6 +89,8 @@ namespace EntadFramework
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
             if (unidentified) explanation += $"\nUnidentified entad properties: +{EntadTraitDef.UnidentifiedMarketValue.ToStringMoney()}";
+            if (parentStat == StatDefOf.MaxHitPoints)
+                explanation += $"\nEntad durability ({comp.HighestRarity}): x{comp.DurabilityFactor.ToStringPercent()}";
             return explanation.NullOrEmpty() ? null : explanation;
         }
     }
@@ -121,7 +125,8 @@ namespace EntadFramework
 
         private static void InjectStatParts()
         {
-            var stats = new HashSet<StatDef> { StatDefOf.MarketValue };
+            // MaxHitPoints always: every entad gets the durability multiplier, whatever its traits touch
+            var stats = new HashSet<StatDef> { StatDefOf.MarketValue, StatDefOf.MaxHitPoints };
             foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 foreach (var r in def.AllRanges())
                     if (r.stat != null) stats.Add(r.stat);

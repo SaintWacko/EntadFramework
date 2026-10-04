@@ -18,6 +18,32 @@ namespace EntadFramework
 
     public static class EntadUtility
     {
+        // After the durability settings change: every entad item in the game (on maps, inside containers and pawn
+        // gear, in caravans) keeps its health fraction under the new maximum. One-off, when the settings window closes.
+        public static void RescaleDurability(Dictionary<EntadRarity, float> previous)
+        {
+            bool changed = false;
+            foreach (var kv in previous) if (EntadSettings.Durability[kv.Key] != kv.Value) changed = true;
+            if (!changed) return;
+
+            var things = new List<Thing>();
+            foreach (var map in Find.Maps)
+                ThingOwnerUtility.GetAllThingsRecursively(map, ThingRequest.ForGroup(ThingRequestGroup.Everything), things);
+            foreach (var caravan in Find.WorldObjects.Caravans)
+                ThingOwnerUtility.GetAllThingsRecursively(caravan, things);
+
+            foreach (var t in things.Distinct())
+            {
+                var comp = (t as ThingWithComps)?.GetComp<CompEntad>();
+                if (comp == null || !t.def.useHitPoints || comp.activeTraits.NullOrEmpty()) continue;
+                EntadRarity r = comp.HighestRarity;
+                float before = previous[r], after = EntadSettings.Durability[r];
+                if (before == after) continue;
+                StatDefOf.MaxHitPoints.Worker.ClearCacheForThing(t);
+                t.HitPoints = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.RoundToInt(t.HitPoints * after / before), 1, t.MaxHitPoints);
+            }
+        }
+
         public static bool IsFurniture(ThingDef def)
         {
             if (def.building == null || def.designationCategory == null) return false;
