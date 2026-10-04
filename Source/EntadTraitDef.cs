@@ -378,9 +378,15 @@ namespace EntadFramework
                 && thoughtMoodRange.Includes(MoodEffectOf(t))).ToList());
         }
 
-        public EntadEffectKind EffectKinds
+        // Cached: IsRevealed/AnyHidden read this on stat and draw paths, and computing it allocates AllRanges
+        // iterators. Everything it reads is def data fixed after loading (EntadAbilityPrep swaps ability entries
+        // but never empties the list), and it is first read in play, after every reference has resolved.
+        private EntadEffectKind? effectKinds;
+
+        public EntadEffectKind EffectKinds => effectKinds ?? (effectKinds = ComputeEffectKinds()).Value;
+
+        private EntadEffectKind ComputeEffectKinds()
         {
-            get
             {
                 EntadEffectKind kinds = EntadEffectKind.None;
                 if (AllRanges().Any()) kinds |= EntadEffectKind.Stat;

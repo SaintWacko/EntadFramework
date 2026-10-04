@@ -34,7 +34,8 @@ namespace EntadFramework
             {
                 var def = m.def;
                 // Stat effects apply whether or not they've been revealed; only displays leave them out (skipHidden).
-                // Market value is not gated: unrevealed traits already show as the flat "unidentified" bonus.
+                // The MarketValueOffset/unidentified term below is not gated: unrevealed traits already show as the
+                // flat "unidentified" bonus. (A trait's own statOffsets on MarketValue, if any, are gated like others.)
                 bool apply = !skipHidden || m.IsRevealed(EntadEffectKind.Stat);
                 for (int i = 0; apply && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
@@ -111,6 +112,7 @@ namespace EntadFramework
             {
                 // Only real patch classes: the class processor invokes any static method named Prepare as a Harmony
                 // lifecycle hook, and EntadAbilityPrep.Prepare(EntadTraitDef) got called with null.
+                // A future patch class annotated only on its methods would be skipped here: keep [HarmonyPatch] on the class.
                 if (!type.IsDefined(typeof(HarmonyPatch), true)) continue;
                 try { harmony.CreateClassProcessor(type).Patch(); }
                 catch (System.Exception e) { Log.Error($"[Entad Framework] Patch {type.FullName} failed; that one feature is off, the rest still works: {e}"); }

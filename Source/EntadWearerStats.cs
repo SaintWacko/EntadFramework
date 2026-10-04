@@ -224,21 +224,22 @@ namespace EntadFramework
     [HarmonyPatch(typeof(StatsReportUtility), nameof(StatsReportUtility.DrawStatsReport), new[] { typeof(UnityEngine.Rect), typeof(Thing) })]
     public static class Patch_DrawStatsReport
     {
-        public static void Prefix(Thing thing, out CompEntad __state)
+        public static void Prefix(Thing thing, out KeyValuePair<CompEntad, Thing> __state)
         {
-            __state = null;
+            // Saves the previous value like the other context patches, in case another mod nests a stats report
+            __state = new KeyValuePair<CompEntad, Thing>(null, EntadWearerStats.infoCardThing);
             var comp = (thing as ThingWithComps)?.GetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden || !comp.HasHiddenStat) return;
-            __state = comp;
+            __state = new KeyValuePair<CompEntad, Thing>(comp, __state.Value);
             EntadWearerStats.infoCardThing = thing;
         }
 
-        // Finalizer so the flag is cleared and the caches dropped even if drawing throws
-        public static void Finalizer(CompEntad __state)
+        // Finalizer so the flag is restored and the caches dropped even if drawing throws
+        public static void Finalizer(KeyValuePair<CompEntad, Thing> __state)
         {
-            if (__state == null) return;
-            EntadWearerStats.infoCardThing = null;
-            __state.ClearCardStatCaches();
+            if (__state.Key == null) return;
+            EntadWearerStats.infoCardThing = __state.Value;
+            __state.Key.ClearCardStatCaches();
         }
     }
 
