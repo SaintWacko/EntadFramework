@@ -225,6 +225,17 @@ namespace EntadFramework
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
+        // Just this item's cached values for the stats its traits touch (and market value). Called every frame the
+        // item's info card draws, after it computed those stats without hidden traits; the holder isn't touched
+        // because the card never computes the holder's stats under that flag.
+        internal void ClearOwnStatCaches()
+        {
+            foreach (var m in activeTraits)
+                foreach (var r in m.def.AllRanges())
+                    if (r.stat != null) r.stat.Worker.ClearCacheForThing(parent);
+            StatDefOf.MarketValue.Worker.ClearCacheForThing(parent);
+        }
+
         private void ClearStatCaches()
         {
             Pawn holder = Holder;

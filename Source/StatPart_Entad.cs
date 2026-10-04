@@ -20,18 +20,23 @@ namespace EntadFramework
             // Wearer stats only: both flags exist for StatOffsetFromGear, which always has offsetsViaWearer true.
             // Without that gate the flag leaked into other stats read while the gear line is built (LabelCap reads
             // MaxHitPoints through GetStatValue), caching a value without the hidden traits.
-            bool skipHidden = offsetsViaWearer
-                && (EntadWearerStats.displayExcludesHidden || EntadWearerStats.gearCardThing == req.Thing);
+            // The third case is the item's own info card (Patch_DrawStatsReport): every stat of THAT item leaves out
+            // unrevealed traits, and the patch clears the item's stat caches when the card is done drawing, so
+            // nothing computed here survives into gameplay.
+            bool skipHidden = (offsetsViaWearer
+                    && (EntadWearerStats.displayExcludesHidden || EntadWearerStats.gearCardThing == req.Thing))
+                || EntadWearerStats.infoCardThing == req.Thing;
 
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
-                if (skipHidden && !m.IsRevealed(EntadEffectKind.Stat)) continue;
-                // Stat effects apply whether or not they've been revealed; only their explanations are hidden
-                for (int i = 0; !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
+                // Stat effects apply whether or not they've been revealed; only displays leave them out (skipHidden).
+                // Market value is not gated: unrevealed traits already show as the flat "unidentified" bonus.
+                bool apply = !skipHidden || m.IsRevealed(EntadEffectKind.Stat);
+                for (int i = 0; apply && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
-                for (int i = 0; def.statFactors != null && i < def.statFactors.Count; i++)
+                for (int i = 0; apply && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
                 // Identified traits add their normal value; unidentified ones share one fixed bonus (below)
                 if (parentStat == StatDefOf.MarketValue && !m.AnyHidden) val += m.MarketValueOffset();

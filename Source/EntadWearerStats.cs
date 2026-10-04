@@ -85,6 +85,12 @@ namespace EntadFramework
         // than a bool keeps any other mod's comp row that computes some other gear's offset unaffected.
         [System.ThreadStatic] internal static Thing gearCardThing;
 
+        // The entad item whose info card is drawing right now. StatPart_Entad leaves out unrevealed traits for every
+        // stat of this one item (cooldown, damage, warmup...). Those values do land in the stat cache, so
+        // Patch_DrawStatsReport clears the item's caches when each frame's draw ends. Only set when the item
+        // actually has hidden traits, so ordinary items cost nothing.
+        [System.ThreadStatic] internal static Thing infoCardThing;
+
         public static bool HidingFor(Thing gear) => displayExcludesHidden || (gearCardThing != null && gearCardThing == gear);
 
         public static IEnumerable<T> WithGearCard<T>(IEnumerable<T> source, Thing gear)
@@ -215,6 +221,27 @@ namespace EntadFramework
     // through StatWorker.GetValue, so its result isn't cached. Other stats read meanwhile (LabelCap reads
     // MaxHitPoints) do go through the cache, which is why StatPart_Entad honours the flag on wearer stats only.
     // (Gear whose only effect is hidden never gets a line at all: see GearAffectsStat.)
+    [HarmonyPatch(typeof(StatsReportUtility), nameof(StatsReportUtility.DrawStatsReport), new[] { typeof(UnityEngine.Rect), typeof(Thing) })]
+    public static class Patch_DrawStatsReport
+    {
+        public static void Prefix(Thing thing, out CompEntad __state)
+        {
+            __state = null;
+            var comp = (thing as ThingWithComps)?.GetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden) return;
+            __state = comp;
+            EntadWearerStats.infoCardThing = thing;
+        }
+
+        // Finalizer so the flag is cleared and the caches dropped even if drawing throws
+        public static void Finalizer(CompEntad __state)
+        {
+            if (__state == null) return;
+            EntadWearerStats.infoCardThing = null;
+            __state.ClearOwnStatCaches();
+        }
+    }
+
     [HarmonyPatch(typeof(StatWorker), "InfoTextLineFromGear")]
     public static class Patch_InfoTextLineFromGear
     {
