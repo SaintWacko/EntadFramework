@@ -23,6 +23,11 @@
   <EF_InspectTraits>Entad Traits: {0}</EF_InspectTraits>
   <EF_TraitRevealed>Something about {0} has revealed itself: {1}.</EF_TraitRevealed>
   <EF_BoundTo>Bound to: {0}</EF_BoundTo>
+  <EF_Alert_WrongBloodline>Entad bound to another bloodline</EF_Alert_WrongBloodline>
+  <EF_Alert_WrongBloodlineDesc>These colonists are using entads bound to another bloodline. The items work as ordinary items, but their entad traits do nothing for them:
+
+{0}</EF_Alert_WrongBloodlineDesc>
+  <EF_Alert_WrongBloodlineLine>{0}: {1}</EF_Alert_WrongBloodlineLine>
   <EF_Rename>Rename</EF_Rename>
   <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>
 

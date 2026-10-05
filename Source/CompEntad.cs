@@ -569,7 +569,7 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) return null;
             string unknown = "EF_Unknown".Translate();
             string s = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
-            if (IsBound) s += "\n" + "EF_BoundTo".Translate(BoundNames);
+            if (IsBound) s += "\n" + BoundLine("EF_BoundTo".Translate(BoundNames));
             return s;
         }
 
@@ -643,7 +643,7 @@ namespace EntadFramework
             {
                 Pawn holder = Holder;
                 if (holder != null && !ActiveFor(holder)) sb.Append("\n").AppendLine("EF_Card_InactiveFor".Translate(holder.LabelShort));
-                yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_BoundLabel".Translate(), BoundNames,
+                yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_BoundLabel".Translate(), BoundLine(BoundNames),
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
@@ -661,7 +661,8 @@ namespace EntadFramework
         // Revealed damage effects get their own rows in the weapon section of the info card
         private IEnumerable<StatDrawEntry> DamageDisplayStats()
         {
-            if (!parent.def.IsWeapon) yield break;
+            // A bound weapon held outside the bloodline deals no extra damage (EntadWeaponDamage.CompOf), so don't list it
+            if (!parent.def.IsWeapon || !ActiveForHolder) yield break;
             var cat = parent.def.IsRangedWeapon ? StatCategoryDefOf.Weapon_Ranged : StatCategoryDefOf.Weapon_Melee;
             int order = 5500;
             float total = 0f;

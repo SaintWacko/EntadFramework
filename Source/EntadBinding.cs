@@ -152,7 +152,10 @@ namespace EntadFramework
         }
 
         // "Bound to: A, B" for the inspect pane and the info card
-        public string BoundNames => string.Join(", ", boundPawns.Select(p => p.LabelShort));
+        public string BoundNames => string.Join(", ", boundPawns.Select(p => p.Name?.ToStringFull ?? p.LabelShort));
+
+        // Red when the item is held by someone its traits don't work for
+        public string BoundLine(string text) => ActiveForHolder ? text : text.Colorize(ColorLibrary.RedReadable);
     }
 
     // Every pawn any entad has been bound to. World pawn garbage collection discards dead pawns nobody refers to,
@@ -199,6 +202,50 @@ namespace EntadFramework
         }
 
         public static void Clear() => kept.Clear();
+
+        public static bool Any => kept.Count > 0;
+    }
+
+    // Side alert, like "Need colonist beds": a colonist is using gear bound to another bloodline, so its traits do
+    // nothing for them. Returns at once while no entad in the game is bound.
+    public class Alert_EntadWrongBloodline : Alert
+    {
+        private readonly List<Pawn> culprits = new List<Pawn>();
+        private readonly List<string> lines = new List<string>();
+
+        public Alert_EntadWrongBloodline()
+        {
+            defaultLabel = "EF_Alert_WrongBloodline".Translate();
+            defaultPriority = AlertPriority.Medium;
+        }
+
+        public override AlertReport GetReport()
+        {
+            culprits.Clear();
+            lines.Clear();
+            if (!EntadBindingRegistry.Any) return false;
+            foreach (Pawn p in PawnsFinder.AllMaps_FreeColonistsSpawned)
+            {
+                Check(p, p.equipment?.AllEquipmentListForReading);
+                Check(p, p.apparel?.WornApparel);
+            }
+            return AlertReport.CulpritsAre(culprits);
+        }
+
+        private void Check<T>(Pawn pawn, List<T> items) where T : Thing
+        {
+            if (items == null) return;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var comp = items[i].TryGetComp<CompEntad>();
+                if (comp == null || !comp.IsBound || comp.ActiveFor(pawn)) continue;
+                if (!culprits.Contains(pawn)) culprits.Add(pawn);
+                lines.Add("  - " + "EF_Alert_WrongBloodlineLine".Translate(pawn.LabelShort, items[i].LabelCap));
+            }
+        }
+
+        public override TaggedString GetExplanation() =>
+            "EF_Alert_WrongBloodlineDesc".Translate(string.Join("\n", lines));
     }
 
     // A new game or a loaded one starts with an empty set; items loading afterwards re-register their pawns
