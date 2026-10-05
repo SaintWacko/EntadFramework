@@ -157,7 +157,7 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
-      <li><stat>ShootingAccuracyPawn</stat><min>0.02</min><max>0.06</max></li>
+      <li><stat>ShootingAccuracyPawn</stat><min>1</min><max>4</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>

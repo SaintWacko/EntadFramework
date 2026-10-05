@@ -35,8 +35,9 @@
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
         </PackageReference>
-        <!-- Pinned to the exact 0Harmony.dll that brrainz.harmony ships; a mismatch kills type loading for the whole
-             assembly. Compile-only: the Harmony mod supplies the runtime DLL, so it is never copied to Assemblies/. -->
+        <!-- Pinned to an exact version so builds are reproducible. Compile-only: the Harmony mod (brrainz.harmony,
+             2.4.2 at the time of writing) supplies the runtime DLL, and a 2.4.x reference binds to it fine, so it is
+             never copied to Assemblies/. Shipping our own 0Harmony.dll is what breaks other mods. -->
         <PackageReference Include="Lib.Harmony" Version="2.4.1">
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>

@@ -35,7 +35,7 @@
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
-    <statOffsets><li><stat>ShootingAccuracyPawn</stat><min>0.03</min><max>0.1</max></li></statOffsets>
+    <statOffsets><li><stat>ShootingAccuracyPawn</stat><min>2</min><max>5</max></li></statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Stormfeed</defName>

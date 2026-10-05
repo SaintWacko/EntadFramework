@@ -85,7 +85,7 @@ namespace EntadFramework
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
-                        explanation += $"\n{def.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(parentStat.toStringStyle)}";
+                        explanation += $"\n{def.LabelCap}: {(m.OffsetFor(i) >= 0 ? "+" : "")}{m.OffsetFor(i).ToStringByStyle(parentStat.ToStringStyleUnfinalized)}";
                 for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";

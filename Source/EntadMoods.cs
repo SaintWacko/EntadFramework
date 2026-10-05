@@ -15,7 +15,8 @@ namespace EntadFramework
         {
             if (pawn?.needs?.mood == null || def == null) return;
             Thought_Memory memory;
-            if (source != null && def.thoughtClass == typeof(Thought_Memory))
+            // ThoughtClass, not the raw field: a memory def with no <thoughtClass> leaves the field null
+            if (source != null && def.ThoughtClass == typeof(Thought_Memory))
             {
                 memory = new Thought_EntadFurniture { def = def, sourceId = source.thingIDNumber };
                 memory.Init();
@@ -71,14 +72,14 @@ namespace EntadFramework
             foreach (var kv in present)
             {
                 wanted.TryGetValue(kv.Key, out int want);
-                want = System.Math.Min(want, kv.Key.stackLimit);
+                want = Capped(kv.Key, want);
                 for (int i = kv.Value.Count - 1; i >= want; i--) memories.RemoveMemory(kv.Value[i]);
             }
 
             foreach (var kv in wanted)
             {
-                int have = present.TryGetValue(kv.Key, out var l) ? System.Math.Min(l.Count, kv.Key.stackLimit) : 0;
-                int want = System.Math.Min(kv.Value, kv.Key.stackLimit);
+                int have = present.TryGetValue(kv.Key, out var l) ? Capped(kv.Key, l.Count) : 0;
+                int want = Capped(kv.Key, kv.Value);
                 for (int i = have; i < want; i++)
                 {
                     var memory = new Thought_EntadEquipped { def = kv.Key, pawn = pawn, permanent = true };
@@ -93,6 +94,9 @@ namespace EntadFramework
                         memories.RemoveMemory(f);
             }
         }
+
+        // A stackLimit below 0 means unlimited
+        private static int Capped(ThoughtDef def, int n) => def.stackLimit < 0 ? n : System.Math.Min(n, def.stackLimit);
 
         private static void Count<T>(List<T> items, Thing removing, Dictionary<ThoughtDef, int> wanted) where T : Thing
         {
@@ -154,9 +158,10 @@ namespace EntadFramework
             Check(pawn, used, null);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
-            // seated (a bill, research, recreation or a meal), and a bed only for a job that lies the pawn down. Any
-            // other job that happens to end on the cell (cleaning, hauling) does not count.
-            bool seated = used != null || job.bill != null || job.def.joyKind != null || job.def == JobDefOf.Ingest;
+            // seated at something (a bill, research, recreation at a building, or a meal), and a bed only for a job
+            // that lies the pawn down. Any other job that happens to end on the cell (cleaning, hauling, a walk or
+            // skygazing, whose target is a cell) does not count.
+            bool seated = used != null || job.def == JobDefOf.Ingest;
             bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
             if (seated || lying)
             {

@@ -47,8 +47,9 @@ namespace EntadFramework
 
         public static bool IsEntadGear(Thing gear) => gear is ThingWithComps twc && IsEntadGearDef(twc.def);
 
-        // EntadCompInjector's per-def table, built right after it adds the comps. (A separate lazy table here could be
-        // built before the injector ran and then cache every injected def as false for the session.)
+        // EntadCompInjector's per-def table. Reading it runs the injector's static constructor first if it hasn't run
+        // yet, so the table always includes the injected comps. (The old lazy table here could be built before the
+        // injector ran and then cache every injected def as false for the session.)
         public static bool IsEntadGearDef(ThingDef def) => EntadCompInjector.MayHaveComp(def);
 
         public static float OffsetFrom(Thing gear, StatDef stat, out float hiddenPart)

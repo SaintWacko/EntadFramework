@@ -221,7 +221,9 @@ namespace EntadFramework
             propertyFactors = null;
             wearerOffsets = null;
             ClearStatCaches();
-            if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) RefreshGlower(parent.GetComp<CompGlower>());
+            // No glower refresh here: a reveal never changes the radius (building factors apply whether revealed or
+            // not), and a reveal can be triggered from inside GlowGrid.RegisterGlower (the radius read in the GlowLight
+            // constructor), where re-registering would corrupt the glow grid's light list.
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
