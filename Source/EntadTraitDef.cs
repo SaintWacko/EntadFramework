@@ -73,6 +73,10 @@ namespace EntadFramework
             return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
         }
 
+        // Private on CompProperties_Power; the public PowerConsumption applies research upgrades on top
+        private static readonly HarmonyLib.AccessTools.FieldRef<CompProperties_Power, float> BasePowerConsumption =
+            HarmonyLib.AccessTools.FieldRefAccess<CompProperties_Power, float>("basePowerConsumption");
+
         public bool AppliesTo(ThingDef td)
         {
             if (td?.comps == null) return false;
@@ -86,7 +90,7 @@ namespace EntadFramework
                     case EntadBuildingProperty.FuelCapacity: if (c is CompProperties_Refuelable) return true; break;
                     case EntadBuildingProperty.TemperatureControlPower: if (c is CompProperties_TempControl) return true; break;
                     case EntadBuildingProperty.PowerConsumption:
-                        if (c is CompProperties_Power pp && pp.compClass != null && !typeof(CompPowerPlant).IsAssignableFrom(pp.compClass) && pp.basePowerConsumption > 0f) return true; break;
+                        if (c is CompProperties_Power pp && pp.compClass != null && !typeof(CompPowerPlant).IsAssignableFrom(pp.compClass) && BasePowerConsumption(pp) > 0f) return true; break;
                     case EntadBuildingProperty.PowerGeneration: if (c.compClass != null && typeof(CompPowerPlant).IsAssignableFrom(c.compClass)) return true; break;
                 }
             }

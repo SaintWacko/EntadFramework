@@ -119,13 +119,13 @@ namespace EntadFramework
     public static class Patch_CleanupCurrentJob_FurnitureMood
     {
         // Runs on every job end of every pawn, so it must stay allocation-free and bail out early.
-        public static void Prefix(Pawn_JobTracker __instance, JobCondition condition)
+        public static void Prefix(Pawn_JobTracker __instance, Pawn ___pawn, JobCondition condition)
         {
             Job job = __instance.curJob;
             if (job == null || condition == JobCondition.Errored || condition == JobCondition.ErroredPather) return;
             if (job.def == JobDefOf.Goto) return;
 
-            Pawn pawn = __instance.pawn;
+            Pawn pawn = ___pawn;
             if (pawn == null || pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
 
             Map map = pawn.MapHeld;

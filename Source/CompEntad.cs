@@ -221,8 +221,17 @@ namespace EntadFramework
             propertyFactors = null;
             wearerOffsets = null;
             ClearStatCaches();
-            if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) parent.GetComp<CompGlower>()?.RefreshGlower();
+            if ((kind & EntadEffectKind.Building) != 0 && parent.Spawned) RefreshGlower(parent.GetComp<CompGlower>());
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        // CompGlower.RefreshGlower is private; it re-registers the glower so a changed radius takes effect
+        private static readonly System.Action<CompGlower> RefreshGlowerCall =
+            HarmonyLib.AccessTools.MethodDelegate<System.Action<CompGlower>>(HarmonyLib.AccessTools.Method(typeof(CompGlower), "RefreshGlower"));
+
+        private static void RefreshGlower(CompGlower glower)
+        {
+            if (glower != null) RefreshGlowerCall(glower);
         }
 
         // Highest rarity among this item's traits (Common when it has none); sets its durability multiplier
@@ -333,7 +342,7 @@ namespace EntadFramework
             // the game's stat caches for the item and its holder from serving a pre-change value.
             ClearStatCaches();
             if (!parent.Spawned) return;
-            parent.GetComp<CompGlower>()?.RefreshGlower();
+            RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);
             parent.GetComp<CompPowerTrader>()?.SetUpPowerVars();
         }

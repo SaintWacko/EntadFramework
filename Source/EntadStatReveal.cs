@@ -109,9 +109,9 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Pawn_JobTracker), nameof(Pawn_JobTracker.EndCurrentJob))]
     public static class Patch_EndCurrentJob_StatReveal
     {
-        public static void Prefix(Pawn_JobTracker __instance, JobCondition condition)
+        public static void Prefix(Pawn_JobTracker __instance, Pawn ___pawn, JobCondition condition)
         {
-            if (condition == JobCondition.Succeeded) EntadStatReveal.OnJobFinished(__instance.pawn, __instance.curJob);
+            if (condition == JobCondition.Succeeded) EntadStatReveal.OnJobFinished(___pawn, __instance.curJob);
         }
     }
 
