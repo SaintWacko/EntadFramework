@@ -50,18 +50,20 @@ namespace EntadFramework
             return EntadStatTrigger.Use;
         }
 
-        private static bool Has(AppliedEntadTrait m, ThingDef td, EntadStatTrigger trigger)
+        // Stats a partialStats trait has but that don't apply to this item don't count: they do nothing, so they
+        // can't be what gets noticed
+        private static bool Has(AppliedEntadTrait m, Thing thing, EntadStatTrigger trigger)
         {
             foreach (var r in m.def.AllRanges())
-                if (r.stat != null && r.stat != StatDefOf.MarketValue && Classify(r.stat, td) == trigger) return true;
+                if (r.stat != null && r.stat != StatDefOf.MarketValue && Classify(r.stat, thing.def) == trigger && m.def.UsesStat(r.stat, thing)) return true;
             return false;
         }
 
         public static void Fire(CompEntad comp, EntadStatTrigger trigger)
         {
             if (comp == null || !comp.HasHidden) return;
-            ThingDef td = comp.parent.def;
-            comp.RevealWhere(EntadEffectKind.Stat, m => Has(m, td, trigger));
+            Thing thing = comp.parent;
+            comp.RevealWhere(EntadEffectKind.Stat, m => Has(m, thing, trigger));
         }
 
         // Fires the trigger on everything the pawn wears or wields
