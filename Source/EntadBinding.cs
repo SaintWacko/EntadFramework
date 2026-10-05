@@ -227,8 +227,10 @@ namespace EntadFramework
             users.Clear();
             items.Clear();
             if (!EntadBindingRegistry.Any) return false;
-            foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended)
+            // Colonists and slaves; the same cached vanilla list, so slaves cost nothing extra
+            foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
             {
+                if (p.Suspended) continue;
                 Check(p, p.equipment?.AllEquipmentListForReading);
                 Check(p, p.apparel?.WornApparel);
             }
