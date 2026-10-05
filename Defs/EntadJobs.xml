@@ -4,8 +4,8 @@
   <JobDef>
     <defName>Entad_UseFurnitureAbility</defName>
     <driverClass>EntadFramework.JobDriver_UseEntadFurniture</driverClass>
-    <reportString>using TargetA.</reportString>
-    <casualInterruptible>false</casualInterruptible>
+    <reportString>activating TargetA.</reportString>
+    <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
   </JobDef>
 
   <!-- Reloading a reloadable entad ability (EntadReload.cs). Same shape as vanilla's Reload job. -->
