@@ -185,6 +185,10 @@ namespace EntadFramework
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
             if (d.AllFuelTypes != null) foreach (var f in d.AllFuelTypes) sb.Append(' ').Append(f.label);
             if (d.changeDamageType != null) sb.Append(' ').Append(d.changeDamageType.label);
+            if (d.weaponProperties != null) foreach (var w in d.weaponProperties) sb.Append(' ').Append(w.Label);
+            if (d.ignoreAccuracyMaluses) sb.Append(' ').Append("EF_Summary_Weapon".Translate());
+            if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) sb.Append(' ').Append(h.label);
+            if (d.killThought != null) sb.Append(' ').Append("EF_Summary_KillThought".Translate()).Append(' ').Append(d.killThought.stages?.FirstOrDefault()?.label);
             if (d.extraDamage != null) foreach (var e in d.extraDamage) sb.Append(' ').Append(e.damageType?.label);
             return sb.ToString();
         }

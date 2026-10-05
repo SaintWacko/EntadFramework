@@ -9,11 +9,20 @@ namespace EntadFramework
 {
     // Weapon effects modelled on vanilla's unique weapon traits: burst count and speed, stopping power, ignoring
     // accuracy penalties, equipped hediffs and kill memories. Vanilla reads these from CompUniqueWeapon, which an
-    // entad doesn't have, so each read site gets a small patch. Every patch first asks EntadCompInjector whether the
-    // weapon's def can carry an entad at all, so ordinary weapons pay one array lookup.
+    // entad doesn't have, so each read site gets a small patch. Every weapon carries the entad comp, so each patch
+    // first checks a flag saying whether any loaded trait has the effect at all: with none, a patch is one branch.
     public static class EntadWeaponTraits
     {
-        // The comp, when the weapon has a trait with weapon effects that work for this user
+        // Def data, fixed once the game has loaded; worked out on the first read, which happens in play
+        private static bool? anyWeaponProperty, anyIgnoreMaluses;
+
+        private static bool AnyWeaponProperty =>
+            anyWeaponProperty ?? (anyWeaponProperty = DefDatabase<EntadTraitDef>.AllDefsListForReading.Any(d => !d.weaponProperties.NullOrEmpty())).Value;
+
+        private static bool AnyIgnoreMaluses =>
+            anyIgnoreMaluses ?? (anyIgnoreMaluses = DefDatabase<EntadTraitDef>.AllDefsListForReading.Any(d => d.ignoreAccuracyMaluses)).Value;
+
+        // The comp, when the weapon has entad traits that work for this user
         private static CompEntad WeaponComp(Thing weapon, Thing user)
         {
             if (weapon == null || !EntadCompInjector.MayHaveComp(weapon.def)) return null;
@@ -23,7 +32,7 @@ namespace EntadFramework
         // Product of the burst factors, or the sum of stopping power offsets, over the weapon's traits
         public static float Combined(Thing weapon, Thing user, EntadWeaponProperty property)
         {
-            var comp = WeaponComp(weapon, user);
+            var comp = AnyWeaponProperty ? WeaponComp(weapon, user) : null;
             bool factor = property != EntadWeaponProperty.StoppingPower;
             float v = factor ? 1f : 0f;
             if (comp == null) return v;
@@ -42,6 +51,7 @@ namespace EntadFramework
 
         public static bool IgnoresAccuracyMaluses(Verb verb)
         {
+            if (!AnyIgnoreMaluses) return false;
             var comp = WeaponComp(verb?.EquipmentSource, verb?.caster);
             if (comp == null) return false;
             foreach (var m in comp.activeTraits) if (m.def.ignoreAccuracyMaluses) return true;
@@ -165,8 +175,11 @@ namespace EntadFramework
     {
         public static void Postfix(VerbProperties __instance, Verb ownerVerb, Thing attacker, ref float __result)
         {
-            if (attacker == null || !EntadWeaponTraits.IgnoresAccuracyMaluses(ownerVerb)) return;
-            __result = __instance.rangeStat == null ? __instance.range : attacker.GetStatValue(__instance.rangeStat);
+            // Only when the weather cap is in force, and only lifting it: other changes to the range are kept
+            Map map = attacker?.MapHeld;
+            if (map == null || map.weatherManager.CurWeatherMaxRangeCap < 0f || !EntadWeaponTraits.IgnoresAccuracyMaluses(ownerVerb)) return;
+            float uncapped = __instance.rangeStat == null ? __instance.range : attacker.GetStatValue(__instance.rangeStat);
+            __result = Mathf.Max(__result, uncapped);
         }
     }
 

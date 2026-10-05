@@ -182,11 +182,12 @@ namespace EntadFramework
 
         public string ValueString(float v) => IsFactor ? "x" + v.ToStringPercent() : v.ToString("+0.0#;-0.0#");
 
-        // Burst speed only matters to a weapon that fires bursts
+        // Burst properties only on weapons that already fire bursts: shot counts round up, so x1.25 on a single-shot
+        // rifle or a one-use launcher would double its shots (vanilla limits its own to BurstFire weapons)
         public bool AppliesTo(ThingDef td)
         {
             if (!td.IsRangedWeapon || td.Verbs.NullOrEmpty()) return false;
-            if (property == EntadWeaponProperty.BurstShotSpeed) return td.Verbs.Any(v => v.burstShotCount > 1);
+            if (property != EntadWeaponProperty.StoppingPower) return td.Verbs.Any(v => v.burstShotCount > 1);
             if (property == EntadWeaponProperty.StoppingPower) return td.Verbs.Any(v => v.defaultProjectile?.projectile != null);
             return true;
         }
@@ -525,7 +526,10 @@ namespace EntadFramework
             if (thoughtMoodRange.min > thoughtMoodRange.max) yield return $"{defName}: thoughtMoodRange min is greater than max";
             if (HasMood && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
             if (weaponProperties != null && weaponProperties.Any(w => w.min > w.max)) yield return $"{defName}: invalid weaponProperties range";
-            if (killThought != null && !killThought.IsMemory) yield return $"{defName}: killThought {killThought.defName} is not a memory thought";
+            // Gained with no other pawn, so social memories can't work (vanilla logs an error on every kill)
+            if (killThought != null && (!killThought.IsMemory || !typeof(Thought_Memory).IsAssignableFrom(killThought.ThoughtClass)
+                || typeof(Thought_MemorySocial).IsAssignableFrom(killThought.ThoughtClass)))
+                yield return $"{defName}: killThought {killThought.defName} must be a plain (non-social) memory thought";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
         }
 
@@ -580,7 +584,8 @@ namespace EntadFramework
         }
 
         // Whether a stat of this trait works on the thing. Always true for an ordinary trait (CanApplyTo already
-        // required every stat to apply); a partialStats trait skips the ones that don't, in effect and on display.
+        // required every stat to apply). Used to hide a partialStats trait's other stats on the card. The values
+        // themselves still apply, but a stat that doesn't apply to the item is one the game never asks it for.
         public bool UsesStat(StatDef stat, Thing thing) => !partialStats || stat == StatDefOf.MarketValue || StatAppliesTo(stat, thing);
 
         private static bool StatAppliesTo(StatDef stat, Thing thing)
