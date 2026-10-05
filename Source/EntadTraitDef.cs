@@ -197,7 +197,8 @@ namespace EntadFramework
         }
 
         // Highest value rarity scaling may push this to; past it the trait stops being offered at higher rarities
-        public float MaxScaled => property == EntadWeaponProperty.StoppingPower ? 3f : 3f;
+        // (x3 shots or speed, or +3 stopping power: vanilla's strongest unique traits are x2 and +1)
+        public float MaxScaled => 3f;
     }
 
     [System.Flags]
