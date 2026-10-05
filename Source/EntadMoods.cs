@@ -90,7 +90,7 @@ namespace EntadFramework
                 // total stays within the stack limit and vanilla never has to evict (it could pick an equipped one)
                 if (kv.Key.stackLimit >= 0)
                     while (memories.NumMemoriesOfDef(kv.Key) > kv.Key.stackLimit
-                        && Thought_EntadFurniture.OldestReplaceable(memories.Memories, kv.Key) is Thought_Memory f)
+                        && Thought_EntadFurniture.SoonestToExpire(memories.Memories, kv.Key) is Thought_Memory f)
                         memories.RemoveMemory(f);
             }
         }
@@ -163,10 +163,13 @@ namespace EntadFramework
             bool workOrJoy = job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null
                 || job.def == JobDefOf.OperateDeepDrill || job.def == JobDefOf.OperateScanner;
             if (workOrJoy || IsOwnUse(pawn, job)) used = job.targetA.Thing;
-            bool atUsed = used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
+            // Position only counts once the pawn has stopped there: a pawn still walking is passing through, e.g.
+            // across a shower on the way to its far side, or over an interaction cell while fetching ingredients.
+            bool stopped = !pawn.pather.Moving;
+            bool atUsed = stopped && used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
             // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid). Not
             // beds: crossing a double bed to reach a slot would count, so beds go through CurrentBed below instead.
-            bool inside = used != null && !atUsed && !used.def.IsBed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
+            bool inside = stopped && used != null && !atUsed && !used.def.IsBed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
             if (succeeded || atUsed || inside) Check(pawn, used, null);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
@@ -247,17 +250,20 @@ namespace EntadFramework
             Scribe_Values.Look(ref sourceId, "entadSourceId", -1);
         }
 
-        // The oldest memory of the def that isn't held up by equipment: a furniture memory, a plain one from a normal
-        // game event (Fickle Cheer can pick any memory thought), or one from a save before this class existed.
-        public static Thought_Memory OldestReplaceable(List<Thought_Memory> list, ThoughtDef def)
+        public static int TicksLeft(Thought_Memory m) => m.DurationTicks - m.age;
+
+        // The memory of the def closest to expiring that isn't held up by equipment: a furniture memory, a plain one
+        // from a normal game event (Fickle Cheer can pick any memory thought), or one from a save before this class
+        // existed. Durations differ (each trait rolls its own hours), so the oldest isn't always the soonest to go.
+        public static Thought_Memory SoonestToExpire(List<Thought_Memory> list, ThoughtDef def)
         {
-            Thought_Memory oldest = null;
+            Thought_Memory soonest = null;
             for (int i = 0; i < list.Count; i++)
             {
                 var m = list[i];
-                if (m.def == def && !(m is Thought_EntadEquipped) && (oldest == null || m.age > oldest.age)) oldest = m;
+                if (m.def == def && !(m is Thought_EntadEquipped) && (soonest == null || TicksLeft(m) < TicksLeft(soonest))) soonest = m;
             }
-            return oldest;
+            return soonest;
         }
 
         // Vanilla's version renews the oldest memory of the whole group once the stack is full, whatever its source,
@@ -274,6 +280,9 @@ namespace EntadFramework
                 count++;
                 if (list[i] is Thought_EntadFurniture same && same.sourceId == sourceId)
                 {
+                    // Renew only when that lengthens it: a long roll isn't cut short by a shorter one
+                    showBubble = false;
+                    if (TicksLeft(same) >= DurationTicks) return true;
                     showBubble = same.age > same.DurationTicks / 2;
                     same.durationTicksOverride = durationTicksOverride;
                     same.Renew();
@@ -282,13 +291,15 @@ namespace EntadFramework
             }
             showBubble = true;
             if (def.stackLimit < 0 || count < def.stackLimit) return false;
-            var oldest = OldestReplaceable(list, def);
-            if (oldest != null)
+            // Full: replace the memory closest to expiring, but only if this one would outlast it. Otherwise the
+            // pawn keeps what it has (the same mood either way; the longer one wins).
+            var soonest = SoonestToExpire(list, def);
+            if (soonest != null && TicksLeft(soonest) < DurationTicks)
             {
-                memories.RemoveMemory(oldest);
+                memories.RemoveMemory(soonest);
                 return false;
             }
-            // The stack is full of equipped-item memories: this one has no room
+            // No room: the stack is full of equipped-item memories, or of memories that last longer than this one
             showBubble = false;
             return true;
         }
