@@ -163,6 +163,7 @@ namespace EntadFramework
     public static class EntadJobDefOf
     {
         public static JobDef Entad_UseFurnitureAbility;
+        public static JobDef Entad_Reload;
 
         static EntadJobDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadJobDefOf)); }
     }

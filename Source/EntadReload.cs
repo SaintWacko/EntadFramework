@@ -112,19 +112,11 @@ namespace EntadFramework
 
         public static Job MakeJob(Slot s, List<Thing> ammo)
         {
-            Job job = JobMaker.MakeJob(EntadJobDefOf.EF_EntadReload, s.comp.parent);
+            Job job = JobMaker.MakeJob(EntadJobDefOf.Entad_Reload, s.comp.parent);
             job.targetQueueB = ammo.Select(t => new LocalTargetInfo(t)).ToList();
             job.count = Mathf.Min(ammo.Sum(t => t.stackCount), MaxAmmoNeeded(s));
             return job;
         }
-    }
-
-    [DefOf]
-    public static class EntadJobDefOf
-    {
-        public static JobDef EF_EntadReload;
-
-        static EntadJobDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadJobDefOf)); }
     }
 
     // Vanilla JobDriver_Reload with the entad slots in place of IReloadableComp

@@ -2,7 +2,7 @@
 <Defs>
   <!-- Reloading a reloadable entad ability (EntadReload.cs). Same shape as vanilla's Reload job. -->
   <JobDef>
-    <defName>EF_EntadReload</defName>
+    <defName>Entad_Reload</defName>
     <driverClass>EntadFramework.JobDriver_EntadReload</driverClass>
     <reportString>reloading TargetA.</reportString>
     <suspendable>false</suspendable>
