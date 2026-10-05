@@ -172,16 +172,18 @@ namespace EntadFramework
             bool ate = job.def == JobDefOf.Ingest && succeeded;
             bool seated = ate || atUsed || (used != null && !used.def.hasInteractionCell && succeeded);
             bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
-            if (seated || lying)
+            if (seated)
             {
                 List<Thing> here = pawn.Position.GetThingList(map);
                 for (int i = 0; i < here.Count; i++)
                 {
                     Thing t = here[i];
-                    if (t.def.building == null) continue;
-                    if ((seated && t.def.building.isSittable) || (lying && t.def.IsBed)) Check(pawn, t, used);
+                    if (t.def.building != null && t.def.building.isSittable) Check(pawn, t, used);
                 }
             }
+            // The bed the pawn is actually in (beds are walkable too, so not just any bed on the cell). CurrentBed is
+            // still valid here: the job hasn't been cleared yet.
+            if (lying) Check(pawn, pawn.CurrentBed(), used);
 
             // The table the pawn ate at
             if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used);

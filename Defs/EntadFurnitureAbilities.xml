@@ -27,6 +27,11 @@
     <iconPath>UI/Commands/Draft</iconPath>
     <cooldownTicksRange>60000~60000</cooldownTicksRange>
     <targetRequired>false</targetRequired>
+    <!-- The hediff's own disappearsAfterTicks is overwritten by CompAbilityEffect_GiveHediff with this duration
+         (seconds; 167 s = about 10000 ticks, 4 in-game hours). Without it the hediff would vanish on its next tick. -->
+    <statBases>
+      <Ability_Duration>167</Ability_Duration>
+    </statBases>
     <verbProperties>
       <verbClass>Verb_CastAbility</verbClass>
       <label>restful sigh</label>

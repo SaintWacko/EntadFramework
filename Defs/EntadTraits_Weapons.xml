@@ -162,6 +162,10 @@
     <description>This weapon's attacks are bitterly cold.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
-    <changeDamageType>Frostbite</changeDamageType>
+    <!-- Extra damage rather than changeDamageType: Frostbite ignores armor and isn't violence, so a weapon converted
+         to it would bypass all armor and provoke no retaliation -->
+    <extraDamage>
+      <li><damageType>Frostbite</damageType><min>2</min><max>6</max></li>
+    </extraDamage>
   </EntadFramework.EntadTraitDef>
 </Defs>
