@@ -583,13 +583,13 @@ namespace EntadFramework
                     float v = m.OffsetFor(i);
                     // Offsets are added before the stat is finalized, so they read in the unfinalized style (as vanilla's
                     // StatModifier.ValueToStringAsOffset does): shooting accuracy +3 is three skill levels, not +300%
-                    sb.AppendLine($" - {s.LabelCap} {s.Worker.ValueToString(v, false, ToStringNumberSense.Offset)}");
+                    sb.AppendLine(" - " + "EF_Card_StatOffset".Translate(s.LabelCap, s.Worker.ValueToString(v, false, ToStringNumberSense.Offset)));
                 }
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
                     var s = m.def.statFactors[i].stat;
                     if (s == null) continue;
-                    sb.AppendLine($" - {s.LabelCap} x{m.FactorFor(i).ToStringPercent()}");
+                    sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(s.LabelCap, m.FactorFor(i).ToStringPercent()));
                 }
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
                 {
@@ -605,7 +605,7 @@ namespace EntadFramework
                 if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
                     sb.AppendLine(" - " + (m.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
-                    sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
+                    sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(m.def.buildingFactors[i].Label, m.BuildingFactorFor(i).ToStringPercent()));
                 if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
                     sb.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))));
                 if (m.def.HasMealEffect && m.IsRevealed(EntadEffectKind.Meal))

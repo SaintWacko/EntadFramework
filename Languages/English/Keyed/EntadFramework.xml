@@ -28,6 +28,8 @@
   <EF_Card_TraitsLabel>Entad traits</EF_Card_TraitsLabel>
   <EF_Card_Intro>This item's entad traits.</EF_Card_Intro>
   <EF_Card_TraitHeader>{0} ({1})</EF_Card_TraitHeader>
+  <EF_Card_StatOffset>{0} {1}</EF_Card_StatOffset>
+  <EF_Card_StatFactor>{0} x{1}</EF_Card_StatFactor>
   <EF_Card_Mood>Mood: {0} ({1}) ({2}h)</EF_Card_Mood>
   <EF_Card_DamageType>Damage type: {0}</EF_Card_DamageType>
   <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>

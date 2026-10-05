@@ -179,7 +179,7 @@ namespace EntadFramework
         private static string SearchText(EntadTraitDef d)
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append(d.label).Append(' ').Append(d.defName).Append(' ').Append(d.rarity);
+            sb.Append(d.label).Append(' ').Append(d.defName).Append(' ').Append(d.rarity).Append(' ').Append(d.rarity.Label());
             foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);

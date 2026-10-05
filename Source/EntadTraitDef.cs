@@ -74,9 +74,14 @@ namespace EntadFramework
             return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
         }
 
-        // Private on CompProperties_Power; the public PowerConsumption applies research upgrades on top
-        private static readonly HarmonyLib.AccessTools.FieldRef<CompProperties_Power, float> BasePowerConsumption =
-            HarmonyLib.AccessTools.FieldRefAccess<CompProperties_Power, float>("basePowerConsumption");
+        // Private on CompProperties_Power; the public PowerConsumption applies research upgrades on top. A FieldInfo,
+        // not FieldRefAccess: that throws from this static initializer if a game version renames the field, which
+        // would break AppliesTo for every property. Null instead means power consumption traits never apply.
+        private static readonly System.Reflection.FieldInfo BasePowerConsumptionField =
+            HarmonyLib.AccessTools.Field(typeof(CompProperties_Power), "basePowerConsumption");
+
+        private static float BasePowerConsumption(CompProperties_Power pp) =>
+            BasePowerConsumptionField?.GetValue(pp) is float f ? f : 0f;
 
         public bool AppliesTo(ThingDef td)
         {

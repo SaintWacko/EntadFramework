@@ -221,7 +221,8 @@ namespace EntadFramework
                 && d != JobDefOf.RefuelAtomic && d != JobDefOf.Flick && d != JobDefOf.HaulToContainer
                 && d != JobDefOf.BeatFire && d != JobDefOf.Hack && d != JobDefOf.ExtractRelic
                 && d != JobDefOf.ExtractToInventory && d != JobDefOf.CarryToEntityHolder
-                && d != JobDefOf.CarryToEntityHolderAlreadyHolding && d != JobDefOf.CarryDownedPawnToPortal;
+                && d != JobDefOf.CarryToEntityHolderAlreadyHolding && d != JobDefOf.CarryDownedPawnToPortal
+                && d != JobDefOf.EnterTransporter && d != JobDefOf.EnterPortal;
         }
 
         // Applies the furniture's mood unless it was already handled as the job's own building
