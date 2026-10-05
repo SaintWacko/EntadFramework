@@ -134,8 +134,9 @@ namespace EntadFramework
 
     // Furniture mood effects trigger when a pawn finishes (or is pulled off) a job that used the furniture.
     // CleanupCurrentJob is the single place every job ending passes through.
-    // "Used" means the pawn sat or lay on it, worked a bill at it, researched at it, relaxed with it (joy jobs) or
-    // ate at it. Hauling to it, repairing, refuelling, deconstructing or walking through it does not count.
+    // "Used" means the pawn sat or lay on it, worked a bill at it, researched at it, relaxed with it (joy jobs), ate
+    // at it, or used it for itself (a toilet, a shower, a throne, a comms console). Hauling to it, repairing,
+    // refuelling, deconstructing, attacking it or walking through it does not count.
     [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
     public static class Patch_CleanupCurrentJob_FurnitureMood
     {
@@ -159,9 +160,12 @@ namespace EntadFramework
             // the building only counts once the job has run to completion or the pawn is at its interaction cell. (A
             // finished bill often ends at a stockpile, after the product was hauled, so position alone would miss it.)
             Thing used = null;
-            if (job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null) used = job.targetA.Thing;
+            bool workOrJoy = job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null;
+            if (workOrJoy || IsOwnUse(pawn, job)) used = job.targetA.Thing;
             bool atUsed = used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
-            if (succeeded || atUsed) Check(pawn, used, null);
+            // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid)
+            bool inside = used != null && !atUsed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
+            if (succeeded || atUsed || inside) Check(pawn, used, null);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
             // seated at something, and a bed only for a job that lies the pawn down. Any other job that happens to
@@ -170,7 +174,7 @@ namespace EntadFramework
             // one (a TV, watched from any nearby seat), at the end of a completed job; or after a meal that was eaten,
             // not one the pawn was interrupted on the way to.
             bool ate = job.def == JobDefOf.Ingest && succeeded;
-            bool seated = ate || atUsed || (used != null && !used.def.hasInteractionCell && succeeded);
+            bool seated = ate || (workOrJoy && (atUsed || (used != null && !used.def.hasInteractionCell && succeeded)));
             bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
             if (seated)
             {
@@ -187,6 +191,23 @@ namespace EntadFramework
 
             // The table the pawn ate at
             if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used);
+        }
+
+        // A job the pawn does at a building for its own sake: everything its needs, recreation, rituals and the
+        // player's direct orders send it to (toilet, shower, throne, comms console, a casket). Work never counts
+        // here: every job a WorkGiver hands out, automatically or from a right-click, carries workGiverDef, and that
+        // covers hauling, repairing, refuelling, deconstructing and cleaning. What's left that doesn't use the
+        // building is attacking or opening it, which the list below catches, and anything done in a mental break.
+        private static bool IsOwnUse(Pawn pawn, Job job)
+        {
+            if (job.workGiverDef != null || !job.targetA.HasThing || pawn.InMentalState) return false;
+            JobDef d = job.def;
+            return d != JobDefOf.AttackMelee && d != JobDefOf.AttackStatic && d != JobDefOf.UseVerbOnThing
+                && d != JobDefOf.UseVerbOnThingStatic && d != JobDefOf.Ignite && d != JobDefOf.Open
+                && d != JobDefOf.Strip && d != JobDefOf.Mine && d != JobDefOf.Deconstruct && d != JobDefOf.Uninstall
+                && d != JobDefOf.Repair && d != JobDefOf.FixBrokenDownBuilding && d != JobDefOf.Refuel
+                && d != JobDefOf.RefuelAtomic && d != JobDefOf.Flick && d != JobDefOf.HaulToContainer
+                && d != JobDefOf.BeatFire;
         }
 
         // Applies the furniture's mood unless it was already handled as the job's own building
