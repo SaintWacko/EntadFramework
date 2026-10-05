@@ -113,13 +113,16 @@ namespace EntadFramework
                 AppliedEntadTrait trait = entry.Key;
                 int idx = entry.Value;
                 AbilityDef def = trait.def.abilities[idx];
-                string label = "Activate " + (!trait.IsRevealed(EntadEffectKind.Ability) ? "???" : def.LabelCap.ToString()) + " (" + parent.LabelNoCount + ")";
+                bool known = trait.IsRevealed(EntadEffectKind.Ability);
+                string abilityName = known ? def.LabelCap.ToString() : "EF_Unknown".Translate().ToString();
 
                 int maxCharges = trait.def.abilityCharges;
                 int ready = trait.AbilityReadyTick(idx);
                 int charges = maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, EntadFurnitureAbilities.Cooldown(trait, def)) : 1;
                 if (maxCharges > 0) ready = charges > 0 ? 0 : trait.AbilityReadyTick(idx);
-                if (maxCharges > 0 && trait.IsRevealed(EntadEffectKind.Ability)) label += " [" + charges + "/" + maxCharges + "]";
+                string label = maxCharges > 0 && known
+                    ? "EF_ActivateCharges".Translate(abilityName, parent.LabelNoCount, charges, maxCharges).ToString()
+                    : "EF_Activate".Translate(abilityName, parent.LabelNoCount).ToString();
                 if (!selPawn.CanReach(parent, EntadFurnitureAbilities.PathMode(parent.def), Danger.Deadly))
                 {
                     yield return new FloatMenuOption(label + " (" + "NoPath".Translate() + ")", null);
@@ -127,7 +130,7 @@ namespace EntadFramework
                 }
                 if (Find.TickManager.TicksGame < ready)
                 {
-                    yield return new FloatMenuOption(label + " (on cooldown: " + (ready - Find.TickManager.TicksGame).ToStringTicksToPeriod() + ")", null);
+                    yield return new FloatMenuOption("EF_OnCooldown".Translate(label, (ready - Find.TickManager.TicksGame).ToStringTicksToPeriod()), null);
                     continue;
                 }
 

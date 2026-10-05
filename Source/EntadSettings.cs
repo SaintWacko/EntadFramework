@@ -56,6 +56,15 @@ namespace EntadFramework
         public const float DefaultWeaponSpecificWeight = 3f;
         public static float WeaponSpecificWeight = DefaultWeaponSpecificWeight;
 
+        // Everything on the General and Rarity tabs. Trait toggles are left alone: the Traits tab has its own
+        // enable/disable-shown buttons, and losing a curated list to a misclick would hurt.
+        public static void ResetToDefaults()
+        {
+            HideTraits = true;
+            WeaponSpecificWeight = DefaultWeaponSpecificWeight;
+            ResetRarityWeights();
+        }
+
         public static void ResetRarityWeights()
         {
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
@@ -106,22 +115,64 @@ namespace EntadFramework
             appliedDurability = null;
         }
 
-        private enum Tab { General, Traits }
+        private enum Tab { General, Rarity, Traits }
         private Tab tab;
         private string search = "";
         private Vector2 scroll;
+        private Vector2 listingScroll;
+        private float listingHeight = 900f;
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
-            var tabRect = new Rect(inRect.x, inRect.y, 140f, 30f);
-            if (Widgets.ButtonText(tabRect, "General", tab != Tab.General)) tab = Tab.General;
-            tabRect.x += 150f;
-            if (Widgets.ButtonText(tabRect, "Traits", tab != Tab.Traits)) tab = Tab.Traits;
-
             if (appliedDurability == null) appliedDurability = new Dictionary<EntadRarity, float>(EntadSettings.Durability);
-            var body = new Rect(inRect.x, inRect.y + 40f, inRect.width, inRect.height - 40f);
-            if (tab == Tab.General) DoGeneral(body);
-            else DoTraits(body);
+
+            // TabDrawer draws the tab strip above the rect it is given, so the body starts one tab height down,
+            // and the bottom 40 px are kept for the reset button.
+            var body = new Rect(inRect.x, inRect.y + TabDrawer.TabHeight, inRect.width, inRect.height - TabDrawer.TabHeight - 40f);
+            var tabs = new List<TabRecord>
+            {
+                new TabRecord("EF_Tab_General".Translate(), () => SetTab(Tab.General), tab == Tab.General),
+                new TabRecord("EF_Tab_Rarity".Translate(), () => SetTab(Tab.Rarity), tab == Tab.Rarity),
+                new TabRecord("EF_Tab_Traits".Translate(), () => SetTab(Tab.Traits), tab == Tab.Traits),
+            };
+            Widgets.DrawMenuSection(body);
+            TabDrawer.DrawTabs(body, tabs);
+
+            Rect inner = body.ContractedBy(10f);
+            if (tab == Tab.Traits) DoTraits(inner);
+            else
+            {
+                var view = new Rect(0f, 0f, inner.width - 16f, listingHeight);
+                Widgets.BeginScrollView(inner, ref listingScroll, view);
+                // maxOneColumn: the view is sized from last frame's content, so right after switching to a taller
+                // tab the listing overruns it for one frame. Without this, Listing wraps the overflow into a second
+                // column off to the right, CurHeight measures only that column and the view never grows back.
+                var list = new Listing_Standard { maxOneColumn = true };
+                list.Begin(view);
+                if (tab == Tab.General) DoGeneral(list);
+                else DoRarity(list);
+                listingHeight = list.CurHeight + 20f;
+                list.End();
+                Widgets.EndScrollView();
+            }
+
+            var reset = new Rect(inRect.x, inRect.yMax - 32f, 200f, 32f);
+            if (Widgets.ButtonText(reset, "EF_Settings_Reset".Translate())) EntadSettings.ResetToDefaults();
+            TooltipHandler.TipRegion(reset, "EF_Settings_Reset_Tip".Translate());
+        }
+
+        private void SetTab(Tab t)
+        {
+            tab = t;
+            listingScroll = Vector2.zero;
+        }
+
+        private static void Section(Listing_Standard list, string key)
+        {
+            Text.Font = GameFont.Medium;
+            list.Label(key.Translate());
+            Text.Font = GameFont.Small;
+            list.GapLine(4f);
         }
 
         // Everything a trait does that can be searched for
@@ -142,7 +193,9 @@ namespace EntadFramework
         {
             var all = DefDatabase<EntadTraitDef>.AllDefsListForReading;
             var top = new Rect(rect.x, rect.y, rect.width, 30f);
-            Widgets.Label(new Rect(top.x, top.y, 70f, 30f), "Search:");
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(top.x, top.y, 70f, 30f), "EF_Settings_Search".Translate());
+            Text.Anchor = TextAnchor.UpperLeft;
             search = Widgets.TextField(new Rect(top.x + 75f, top.y, 300f, 30f), search);
             string[] terms = search.ToLowerInvariant().Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
 
@@ -153,13 +206,13 @@ namespace EntadFramework
                 return terms.All(t => text.Contains(t));
             }).OrderBy(d => d.label).ToList();
 
-            if (Widgets.ButtonText(new Rect(top.x + 390f, top.y, 120f, 30f), "Enable shown"))
+            if (Widgets.ButtonText(new Rect(top.x + 390f, top.y, 120f, 30f), "EF_Settings_EnableShown".Translate()))
                 foreach (var d in shown) EntadSettings.DisabledTraits.Remove(d.defName);
-            if (Widgets.ButtonText(new Rect(top.x + 520f, top.y, 120f, 30f), "Disable shown"))
+            if (Widgets.ButtonText(new Rect(top.x + 520f, top.y, 120f, 30f), "EF_Settings_DisableShown".Translate()))
                 foreach (var d in shown) EntadSettings.DisabledTraits.Add(d.defName);
 
             int off = all.Count(EntadSettings.IsDisabled);
-            Widgets.Label(new Rect(rect.x, rect.y + 34f, rect.width, 24f), $"{shown.Count} of {all.Count} traits shown, {off} disabled. Disabled traits are never picked when generating items.");
+            Widgets.Label(new Rect(rect.x, rect.y + 34f, rect.width, 24f), "EF_Settings_TraitCounts".Translate(shown.Count, all.Count, off));
 
             var outRect = new Rect(rect.x, rect.y + 62f, rect.width, rect.height - 62f);
             const float rowH = 28f;
@@ -176,7 +229,7 @@ namespace EntadFramework
                 bool was = on;
                 Widgets.Checkbox(row.x + 4f, row.y + 2f, ref on, 24f);
                 if (on != was) { if (on) EntadSettings.DisabledTraits.Remove(d.defName); else EntadSettings.DisabledTraits.Add(d.defName); }
-                Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), d.LabelCap + " (" + d.rarity + ")");
+                Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), "EF_Settings_TraitRow".Translate(d.LabelCap, d.rarity.Label()));
                 Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), Summary(d));
                 TooltipHandler.TipRegion(row, d.description);
             }
@@ -189,28 +242,27 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) parts.Add(r.stat.LabelCap);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
-            if (d.HasDamageEffect) parts.Add("Damage");
-            if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("Fuel");
+            if (d.HasDamageEffect) parts.Add("EF_Summary_Damage".Translate());
+            if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("EF_Summary_Fuel".Translate());
             return string.Join(", ", parts.Distinct());
         }
 
-        private Vector2 generalScroll;
-
-        private void DoGeneral(Rect inRect)
+        private static void DoGeneral(Listing_Standard list)
         {
-            var view = new Rect(0f, 0f, inRect.width - 20f, 1600f);
-            Widgets.BeginScrollView(inRect, ref generalScroll, view);
-            var list = new Listing_Standard();
-            list.Begin(view);
+            Section(list, "EF_Settings_Discovery");
+            list.CheckboxLabeled("EF_Settings_HideTraits".Translate(), ref EntadSettings.HideTraits, "EF_Settings_HideTraits_Tip".Translate());
+            list.Gap();
 
-            list.CheckboxLabeled("Hide traits until revealed", ref EntadSettings.HideTraits,
-                "Newly generated entad items show \"???\" for their traits until something the trait affects happens. Existing items keep their current state.");
-            list.GapLine();
-            list.Label($"Weapon-specific trait weight: x{EntadSettings.WeaponSpecificWeight:0.#}");
+            Section(list, "EF_Settings_Generation");
+            list.Label("EF_Settings_WeaponWeight".Translate(EntadSettings.WeaponSpecificWeight.ToString("0.#")));
             EntadSettings.WeaponSpecificWeight = Mathf.Round(list.Slider(EntadSettings.WeaponSpecificWeight, 1f, 10f) * 2f) / 2f;
-            list.Label("How much more likely traits made for weapons (damage, accuracy, ...) are than general ones when generating for a weapon. 1 = no preference.");
-            list.GapLine();
-            list.Label("Rarity curve: relative chance of each rarity when a trait is picked. Rarities with no eligible trait are skipped and the rest are renormalised.");
+            list.Label("EF_Settings_WeaponWeight_Desc".Translate());
+        }
+
+        private static void DoRarity(Listing_Standard list)
+        {
+            Section(list, "EF_Settings_RarityCurve");
+            list.Label("EF_Settings_RarityCurve_Desc".Translate());
             list.Gap(6f);
 
             float total = 0f;
@@ -220,35 +272,31 @@ namespace EntadFramework
             {
                 float w = EntadSettings.Weights[r];
                 string pct = total > 0f ? (w / total).ToStringPercent() : "0%";
-                list.Label($"{r}: weight {w:0.#} ({pct} of the total)");
+                list.Label("EF_Settings_WeightRow".Translate(r.Label(), w.ToString("0.#"), pct));
                 EntadSettings.Weights[r] = Mathf.Round(list.Slider(w, 0f, 100f) * 2f) / 2f;
             }
 
-            list.GapLine();
-            list.Label("Rarity multipliers: how much a rarity widens the min/max of traits that scale with rarity. Offsets are multiplied; factors scale their distance from 100%. A trait is capped at the highest rarity where its values stay valid (for example a factor never drops to zero).");
+            list.Gap();
+            Section(list, "EF_Settings_Multipliers");
+            list.Label("EF_Settings_Multipliers_Desc".Translate());
             list.Gap(6f);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float m = EntadSettings.Multipliers[r];
-                list.Label($"{r}: x{m:0.##}");
+                list.Label("EF_Settings_FactorRow".Translate(r.Label(), m.ToString("0.##")));
                 EntadSettings.Multipliers[r] = Mathf.Round(list.Slider(m, 0.5f, 6f) * 20f) / 20f;
             }
 
-            list.GapLine();
-            list.Label("Durability: max hit points multiplier for every item with at least one entad trait, set by the highest rarity among its traits.");
+            list.Gap();
+            Section(list, "EF_Settings_Durability");
+            list.Label("EF_Settings_Durability_Desc".Translate());
             list.Gap(6f);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float d = EntadSettings.Durability[r];
-                list.Label($"{r}: x{d:0.##}");
+                list.Label("EF_Settings_FactorRow".Translate(r.Label(), d.ToString("0.##")));
                 EntadSettings.Durability[r] = Mathf.Round(list.Slider(d, 1f, 10f) * 20f) / 20f;
             }
-
-            list.Gap(6f);
-            if (list.ButtonText("Reset to defaults")) EntadSettings.ResetRarityWeights();
-
-            list.End();
-            Widgets.EndScrollView();
         }
     }
 }

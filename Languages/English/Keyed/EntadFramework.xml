@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- Rarities -->
+  <EF_Rarity_Common>Common</EF_Rarity_Common>
+  <EF_Rarity_Uncommon>Uncommon</EF_Rarity_Uncommon>
+  <EF_Rarity_Rare>Rare</EF_Rarity_Rare>
+  <EF_Rarity_Epic>Epic</EF_Rarity_Epic>
+  <EF_Rarity_Legendary>Legendary</EF_Rarity_Legendary>
+
+  <!-- Building properties a trait can change -->
+  <EF_Prop_LightRadius>Light radius</EF_Prop_LightRadius>
+  <EF_Prop_HeatOutput>Heat output</EF_Prop_HeatOutput>
+  <EF_Prop_FuelConsumptionRate>Fuel consumption rate</EF_Prop_FuelConsumptionRate>
+  <EF_Prop_FuelCapacity>Fuel capacity</EF_Prop_FuelCapacity>
+  <EF_Prop_PowerConsumption>Power consumption</EF_Prop_PowerConsumption>
+  <EF_Prop_TemperatureControlPower>Heating/cooling power</EF_Prop_TemperatureControlPower>
+  <EF_Prop_PowerGeneration>Power generation</EF_Prop_PowerGeneration>
+
+  <!-- Item: inspect pane, gizmo, messages. {0} = item, {1} = trait. -->
+  <EF_Unknown>???</EF_Unknown>
+  <EF_InspectTraits>Entad Traits: {0}</EF_InspectTraits>
+  <EF_TraitRevealed>Something about {0} has revealed itself: {1}.</EF_TraitRevealed>
+  <EF_Rename>Rename</EF_Rename>
+  <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>
+
+  <!-- Item info card: the "Entad traits" row and its tooltip -->
+  <EF_Card_TraitsLabel>Entad traits</EF_Card_TraitsLabel>
+  <EF_Card_Intro>This item's entad traits.</EF_Card_Intro>
+  <EF_Card_TraitHeader>{0} ({1})</EF_Card_TraitHeader>
+  <EF_Card_Mood>Mood: {0} ({1}) ({2}h)</EF_Card_Mood>
+  <EF_Card_DamageType>Damage type: {0}</EF_Card_DamageType>
+  <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>
+  <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
+  <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
+  <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>
+  <EF_Card_GrantsAbility>Grants ability: {0}</EF_Card_GrantsAbility>
+  <EF_Card_MealNutrition>Meal nutrition x{0}</EF_Card_MealNutrition>
+  <EF_Card_MealQuality>Meal quality {0}</EF_Card_MealQuality>
+  <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
+  <EF_Card_MarketValue>Market value +{0}</EF_Card_MarketValue>
+  <EF_Card_Unidentified>Unidentified properties: market value +{0}</EF_Card_Unidentified>
+
+  <!-- Weapon section of the info card. {0} = trait, {1} = damage type. -->
+  <EF_Stat_DamageType>Entad damage type</EF_Stat_DamageType>
+  <EF_Stat_DamageTypeDesc>{0}: this weapon's attacks deal {1} damage instead of their usual type.</EF_Stat_DamageTypeDesc>
+  <EF_Stat_ExtraDamage>Entad {0} damage</EF_Stat_ExtraDamage>
+  <EF_Stat_ExtraDamageDesc>{0}: each hit deals this much additional {1} damage, on top of the weapon's normal damage. It is not reduced by or added to the Damage stat above.</EF_Stat_ExtraDamageDesc>
+  <EF_Stat_ExtraTotal>Entad extra damage per hit</EF_Stat_ExtraTotal>
+  <EF_Stat_ExtraTotalDesc>Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.</EF_Stat_ExtraTotalDesc>
+
+  <!-- Stat explanations (the breakdown when hovering a stat) -->
+  <EF_Explain_TraitValue>{0} ({1}): +{2}</EF_Explain_TraitValue>
+  <EF_Explain_Unidentified>Unidentified entad properties: +{0}</EF_Explain_Unidentified>
+  <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
+
+  <!-- Abilities. {0} = ability, {1} = building. -->
+  <EF_AbilityUnknown>The effect of this ability is not yet known.</EF_AbilityUnknown>
+  <EF_Activate>Activate {0} ({1})</EF_Activate>
+  <EF_ActivateCharges>Activate {0} ({1}) [{2}/{3}]</EF_ActivateCharges>
+  <EF_OnCooldown>{0} (on cooldown: {1})</EF_OnCooldown>
+
+  <!-- Settings -->
+  <EF_Tab_General>General</EF_Tab_General>
+  <EF_Tab_Rarity>Rarity and durability</EF_Tab_Rarity>
+  <EF_Tab_Traits>Traits</EF_Tab_Traits>
+  <EF_Settings_Reset>Reset to defaults</EF_Settings_Reset>
+  <EF_Settings_Reset_Tip>Resets the General and Rarity and durability tabs. Which traits are enabled is left as it is.</EF_Settings_Reset_Tip>
+
+  <EF_Settings_Discovery>Discovery</EF_Settings_Discovery>
+  <EF_Settings_HideTraits>Hide traits until revealed</EF_Settings_HideTraits>
+  <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
+  <EF_Settings_Generation>Generation</EF_Settings_Generation>
+  <EF_Settings_WeaponWeight>Weapon-specific trait weight: x{0}</EF_Settings_WeaponWeight>
+  <EF_Settings_WeaponWeight_Desc>How much more likely traits made for weapons (damage, accuracy, ...) are than general ones when generating for a weapon. 1 = no preference.</EF_Settings_WeaponWeight_Desc>
+
+  <EF_Settings_RarityCurve>Rarity curve</EF_Settings_RarityCurve>
+  <EF_Settings_RarityCurve_Desc>Relative chance of each rarity when a trait is picked. Rarities with no eligible trait are skipped and the rest are renormalised.</EF_Settings_RarityCurve_Desc>
+  <EF_Settings_WeightRow>{0}: weight {1} ({2} of the total)</EF_Settings_WeightRow>
+  <EF_Settings_Multipliers>Rarity multipliers</EF_Settings_Multipliers>
+  <EF_Settings_Multipliers_Desc>How much a rarity widens the min/max of traits that scale with rarity. Offsets are multiplied; factors scale their distance from 100%. A trait is capped at the highest rarity where its values stay valid (for example a factor never drops to zero).</EF_Settings_Multipliers_Desc>
+  <EF_Settings_Durability>Durability</EF_Settings_Durability>
+  <EF_Settings_Durability_Desc>Max hit points multiplier for every item with at least one entad trait, set by the highest rarity among its traits.</EF_Settings_Durability_Desc>
+  <EF_Settings_FactorRow>{0}: x{1}</EF_Settings_FactorRow>
+
+  <EF_Settings_Search>Search:</EF_Settings_Search>
+  <EF_Settings_EnableShown>Enable shown</EF_Settings_EnableShown>
+  <EF_Settings_DisableShown>Disable shown</EF_Settings_DisableShown>
+  <EF_Settings_TraitCounts>{0} of {1} traits shown, {2} disabled. Disabled traits are never picked when generating items.</EF_Settings_TraitCounts>
+  <EF_Settings_TraitRow>{0} ({1})</EF_Settings_TraitRow>
+  <EF_Summary_Damage>Damage</EF_Summary_Damage>
+  <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
+
+</LanguageData>

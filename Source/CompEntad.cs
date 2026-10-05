@@ -250,7 +250,7 @@ namespace EntadFramework
             // No glower refresh here: a reveal never changes the radius (building factors apply whether revealed or
             // not), and a reveal can be triggered from inside GlowGrid.RegisterGlower (the radius read in the GlowLight
             // constructor), where re-registering would corrupt the glow grid's light list.
-            if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
+            if (announce) Messages.Message("EF_TraitRevealed".Translate(parent.LabelNoCount, m.def.label), parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
         // Applies a changed glow radius to a light that is on. The glow grid keeps the radius it read when the light
@@ -545,8 +545,8 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) yield break;
             yield return new Command_Action
             {
-                defaultLabel = "Rename",
-                defaultDesc = "Give this entad a name.",
+                defaultLabel = "EF_Rename".Translate(),
+                defaultDesc = "EF_RenameDesc".Translate(),
                 icon = TexButton.Rename,
                 action = () => Find.WindowStack.Add(new Dialog_RenameEntad(this))
             };
@@ -555,7 +555,8 @@ namespace EntadFramework
         public override string CompInspectStringExtra()
         {
             if (activeTraits.NullOrEmpty()) return null;
-            return "Entad Traits: " + string.Join(", ", activeTraits.Select(m => m.NameHidden ? "???" : m.def.LabelCap.ToString()));
+            string unknown = "EF_Unknown".Translate();
+            return "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -563,15 +564,17 @@ namespace EntadFramework
         {
             if (activeTraits.NullOrEmpty()) yield break;
 
-            var sb = new System.Text.StringBuilder("This item's entad traits.\n");
+            string unknown = "EF_Unknown".Translate();
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("EF_Card_Intro".Translate());
             foreach (var m in activeTraits)
             {
                 if (m.NameHidden)
                 {
-                    sb.Append("\n").AppendLine("???".Colorize(ColoredText.TipSectionTitleColor));
+                    sb.Append("\n").AppendLine(unknown.Colorize(ColoredText.TipSectionTitleColor));
                     continue;
                 }
-                sb.Append("\n").AppendLine($"{m.def.LabelCap.Resolve()} ({m.Rarity})".Colorize(ColoredText.TipSectionTitleColor));
+                sb.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(m.def.LabelCap.Resolve(), m.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
                 if (!m.AnyHidden) sb.AppendLine(m.def.description);
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
@@ -590,39 +593,40 @@ namespace EntadFramework
                 }
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
                 {
-                    sb.AppendLine($" - Mood: {m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName} ({EntadTraitDef.MoodEffectOf(m.thought):+0.#;-0.#}) ({m.thoughtHours:0.#}h)");
+                    sb.AppendLine(" - " + "EF_Card_Mood".Translate(m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName,
+                        EntadTraitDef.MoodEffectOf(m.thought).ToString("+0.#;-0.#"), m.thoughtHours.ToString("0.#")));
                 }
                 if (m.def.HasDamageEffect && m.IsRevealed(EntadEffectKind.Damage))
                 {
-                    if (m.def.changeDamageType != null) sb.AppendLine($" - Damage type: {m.def.changeDamageType.LabelCap}");
+                    if (m.def.changeDamageType != null) sb.AppendLine(" - " + "EF_Card_DamageType".Translate(m.def.changeDamageType.LabelCap));
                     for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
-                        sb.AppendLine($" - Extra {m.def.extraDamage[i].damageType.label} damage +{m.ExtraDamageFor(i):0.#}");
+                        sb.AppendLine(" - " + "EF_Card_ExtraDamage".Translate(m.def.extraDamage[i].damageType.label, m.ExtraDamageFor(i).ToString("0.#")));
                 }
                 if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
-                    sb.AppendLine($" - {(m.def.replaceFuel ? "Burns only" : "Also burns")}: {string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))}");
+                    sb.AppendLine(" - " + (m.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
                     sb.AppendLine($" - {m.def.buildingFactors[i].Label} x{m.BuildingFactorFor(i).ToStringPercent()}");
                 if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
-                    sb.AppendLine($" - {(parent.def.building != null ? "Activatable ability" : "Grants ability")}: {string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))}");
+                    sb.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))));
                 if (m.def.HasMealEffect && m.IsRevealed(EntadEffectKind.Meal))
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)
-                        sb.AppendLine($" - Meal nutrition x{m.mealNutritionFactor.ToStringPercent()}");
+                        sb.AppendLine(" - " + "EF_Card_MealNutrition".Translate(m.mealNutritionFactor.ToStringPercent()));
                     if (m.def.mealQualityOffset != 0)
-                        sb.AppendLine($" - Meal quality {(m.def.mealQualityOffset > 0 ? "+" : "")}{m.def.mealQualityOffset}");
+                        sb.AppendLine(" - " + "EF_Card_MealQuality".Translate(m.def.mealQualityOffset.ToString("+0;-0")));
                     if (m.def.mealThought != null)
-                        sb.AppendLine($" - Meals give: {m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName}");
+                        sb.AppendLine(" - " + "EF_Card_MealThought".Translate(m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName));
                 }
-                if (m.AnyHidden) sb.AppendLine(" - ???");
-                if (!m.AnyHidden) sb.AppendLine($" - Market value +{m.MarketValueOffset().ToStringMoney()}");
+                if (m.AnyHidden) sb.AppendLine(" - " + unknown);
+                if (!m.AnyHidden) sb.AppendLine(" - " + "EF_Card_MarketValue".Translate(m.MarketValueOffset().ToStringMoney()));
             }
             if (activeTraits.Any(m => m.AnyHidden))
-                sb.Append("\nUnidentified properties: market value +").AppendLine(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney());
+                sb.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney()));
 
             foreach (var e in DamageDisplayStats()) yield return e;
 
-            string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? "???" : m.def.label));
-            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Entad traits", label, sb.ToString().TrimEnd(), 4000);
+            string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
+            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, sb.ToString().TrimEnd(), 4000);
         }
     }
 
@@ -644,20 +648,20 @@ namespace EntadFramework
             {
                 if (!m.def.HasDamageEffect || !m.IsRevealed(EntadEffectKind.Damage)) continue;
                 if (m.def.changeDamageType != null)
-                    yield return new StatDrawEntry(cat, "Entad damage type", m.def.changeDamageType.LabelCap,
-                        $"{m.def.LabelCap}: this weapon's attacks deal {m.def.changeDamageType.label} damage instead of their usual type.", order++);
+                    yield return new StatDrawEntry(cat, "EF_Stat_DamageType".Translate(), m.def.changeDamageType.LabelCap,
+                        "EF_Stat_DamageTypeDesc".Translate(m.def.LabelCap, m.def.changeDamageType.label), order++);
                 for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
                 {
                     float v = m.ExtraDamageFor(i);
                     total += v;
                     var d = m.def.extraDamage[i].damageType;
-                    yield return new StatDrawEntry(cat, $"Entad {d.label} damage", "+" + v.ToString("0.#"),
-                        $"{m.def.LabelCap}: each hit deals this much additional {d.label} damage, on top of the weapon's normal damage. It is not reduced by or added to the Damage stat above.", order++);
+                    yield return new StatDrawEntry(cat, "EF_Stat_ExtraDamage".Translate(d.label), "+" + v.ToString("0.#"),
+                        "EF_Stat_ExtraDamageDesc".Translate(m.def.LabelCap, d.label), order++);
                 }
             }
             if (total > 0f)
-                yield return new StatDrawEntry(cat, "Entad extra damage per hit", "+" + total.ToString("0.#"),
-                    "Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.", order);
+                yield return new StatDrawEntry(cat, "EF_Stat_ExtraTotal".Translate(), "+" + total.ToString("0.#"),
+                    "EF_Stat_ExtraTotalDesc".Translate(), order);
         }
     }
 

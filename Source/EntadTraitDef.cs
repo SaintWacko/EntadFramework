@@ -14,6 +14,18 @@ namespace EntadFramework
         Legendary
     }
 
+    public static class EntadRarityExtensions
+    {
+        // Translated rarity name. Translate is a dictionary lookup, cheap enough for the card's redraws.
+        private static readonly string[] Keys = { "EF_Rarity_Common", "EF_Rarity_Uncommon", "EF_Rarity_Rare", "EF_Rarity_Epic", "EF_Rarity_Legendary" };
+
+        public static string Label(this EntadRarity r)
+        {
+            int i = (int)r;
+            return i >= 0 && i < Keys.Length ? Keys[i].Translate().ToString() : r.ToString();
+        }
+    }
+
     // A stat trait whose value is rolled between min and max when applied to an item
     public class StatTraitRange
     {
@@ -92,13 +104,13 @@ namespace EntadFramework
             {
                 switch (property)
                 {
-                    case EntadBuildingProperty.LightRadius: return "Light radius";
-                    case EntadBuildingProperty.HeatOutput: return "Heat output";
-                    case EntadBuildingProperty.FuelConsumptionRate: return "Fuel consumption rate";
-                    case EntadBuildingProperty.FuelCapacity: return "Fuel capacity";
-                    case EntadBuildingProperty.PowerConsumption: return "Power consumption";
-                    case EntadBuildingProperty.TemperatureControlPower: return "Heating/cooling power";
-                    default: return "Power generation";
+                    case EntadBuildingProperty.LightRadius: return "EF_Prop_LightRadius".Translate();
+                    case EntadBuildingProperty.HeatOutput: return "EF_Prop_HeatOutput".Translate();
+                    case EntadBuildingProperty.FuelConsumptionRate: return "EF_Prop_FuelConsumptionRate".Translate();
+                    case EntadBuildingProperty.FuelCapacity: return "EF_Prop_FuelCapacity".Translate();
+                    case EntadBuildingProperty.PowerConsumption: return "EF_Prop_PowerConsumption".Translate();
+                    case EntadBuildingProperty.TemperatureControlPower: return "EF_Prop_TemperatureControlPower".Translate();
+                    default: return "EF_Prop_PowerGeneration".Translate();
                 }
             }
         }

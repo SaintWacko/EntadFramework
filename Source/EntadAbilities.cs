@@ -136,7 +136,7 @@ namespace EntadFramework
             foreach (Command c in list)
             {
                 if (!(c is Command_Ability ca)) continue;
-                string label = hidden ? "???" : __instance.def.LabelCap.ToString();
+                string label = hidden ? "EF_Unknown".Translate().ToString() : __instance.def.LabelCap.ToString();
                 ca.defaultLabel = label;
                 OriginalLabel(ca) = label;
                 PawnLabel(ca) = label;
@@ -157,7 +157,7 @@ namespace EntadFramework
         {
             if (__instance.Ability != null && Patch_Ability_GetGizmos_Hide.IsHidden(__instance.Ability))
                 // Command_Ability inserts the pawn's name after the (colored) title when it is built, so keep this longer than any title
-                __result = "???".Colorize(ColoredText.TipSectionTitleColor) + "\n\nThe effect of this ability is not yet known.";
+                __result = "EF_Unknown".Translate().ToString().Colorize(ColoredText.TipSectionTitleColor) + "\n\n" + "EF_AbilityUnknown".Translate();
         }
     }
 }

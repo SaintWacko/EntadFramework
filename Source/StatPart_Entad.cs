@@ -80,7 +80,7 @@ namespace EntadFramework
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;
-                    else explanation += $"\n{def.LabelCap} ({m.Rarity}): +{m.MarketValueOffset().ToStringMoney()}";
+                    else explanation += "\n" + "EF_Explain_TraitValue".Translate(def.LabelCap, m.Rarity.Label(), m.MarketValueOffset().ToStringMoney());
                     continue;
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
@@ -90,9 +90,9 @@ namespace EntadFramework
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
-            if (unidentified) explanation += $"\nUnidentified entad properties: +{EntadTraitDef.UnidentifiedMarketValue.ToStringMoney()}";
+            if (unidentified) explanation += "\n" + "EF_Explain_Unidentified".Translate(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney());
             if (parentStat == StatDefOf.MaxHitPoints)
-                explanation += $"\nEntad durability ({comp.HighestRarity}): x{comp.DurabilityFactor.ToStringPercent()}";
+                explanation += "\n" + "EF_Explain_Durability".Translate(comp.HighestRarity.Label(), comp.DurabilityFactor.ToStringPercent());
             return explanation.NullOrEmpty() ? null : explanation;
         }
     }
