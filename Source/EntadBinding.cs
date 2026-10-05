@@ -207,11 +207,13 @@ namespace EntadFramework
     }
 
     // Side alert, like "Need colonist beds": a colonist is using gear bound to another bloodline, so its traits do
-    // nothing for them. Returns at once while no entad in the game is bound.
+    // nothing for them. Returns at once in a session where nothing has been bound.
     public class Alert_EntadWrongBloodline : Alert
     {
         private readonly List<Pawn> culprits = new List<Pawn>();
-        private readonly List<string> lines = new List<string>();
+        // (wielder, item) pairs; the text is only built on hover, in GetExplanation
+        private readonly List<Pawn> users = new List<Pawn>();
+        private readonly List<Thing> items = new List<Thing>();
 
         public Alert_EntadWrongBloodline()
         {
@@ -222,9 +224,10 @@ namespace EntadFramework
         public override AlertReport GetReport()
         {
             culprits.Clear();
-            lines.Clear();
+            users.Clear();
+            items.Clear();
             if (!EntadBindingRegistry.Any) return false;
-            foreach (Pawn p in PawnsFinder.AllMaps_FreeColonistsSpawned)
+            foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended)
             {
                 Check(p, p.equipment?.AllEquipmentListForReading);
                 Check(p, p.apparel?.WornApparel);
@@ -232,20 +235,26 @@ namespace EntadFramework
             return AlertReport.CulpritsAre(culprits);
         }
 
-        private void Check<T>(Pawn pawn, List<T> items) where T : Thing
+        private void Check<T>(Pawn pawn, List<T> gear) where T : Thing
         {
-            if (items == null) return;
-            for (int i = 0; i < items.Count; i++)
+            if (gear == null) return;
+            for (int i = 0; i < gear.Count; i++)
             {
-                var comp = items[i].TryGetComp<CompEntad>();
-                if (comp == null || !comp.IsBound || comp.ActiveFor(pawn)) continue;
+                var comp = gear[i].TryGetComp<CompEntad>();
+                if (comp == null || !comp.IsBound || comp.activeTraits.Count == 0 || comp.ActiveFor(pawn)) continue;
                 if (!culprits.Contains(pawn)) culprits.Add(pawn);
-                lines.Add("  - " + "EF_Alert_WrongBloodlineLine".Translate(pawn.LabelShort, items[i].LabelCap));
+                users.Add(pawn);
+                items.Add(gear[i]);
             }
         }
 
-        public override TaggedString GetExplanation() =>
-            "EF_Alert_WrongBloodlineDesc".Translate(string.Join("\n", lines));
+        public override TaggedString GetExplanation()
+        {
+            var lines = new List<string>(users.Count);
+            for (int i = 0; i < users.Count; i++)
+                lines.Add("  - " + "EF_Alert_WrongBloodlineLine".Translate(users[i].LabelShort, items[i].LabelCap));
+            return "EF_Alert_WrongBloodlineDesc".Translate(string.Join("\n", lines));
+        }
     }
 
     // A new game or a loaded one starts with an empty set; items loading afterwards re-register their pawns
