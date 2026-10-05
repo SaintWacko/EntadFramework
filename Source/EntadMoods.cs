@@ -90,7 +90,7 @@ namespace EntadFramework
                 // total stays within the stack limit and vanilla never has to evict (it could pick an equipped one)
                 if (kv.Key.stackLimit >= 0)
                     while (memories.NumMemoriesOfDef(kv.Key) > kv.Key.stackLimit
-                        && Thought_EntadFurniture.OldestOf(memories.Memories, kv.Key) is Thought_EntadFurniture f)
+                        && Thought_EntadFurniture.OldestReplaceable(memories.Memories, kv.Key) is Thought_Memory f)
                         memories.RemoveMemory(f);
             }
         }
@@ -233,7 +233,8 @@ namespace EntadFramework
     // A timed memory from using a piece of entad furniture, tagged with the building it came from.
     // One building gives at most one memory of a thought: using it again renews that memory (age back to 0).
     // Different buildings and equipped items stack up to the thought's stackLimit. At the limit a new building
-    // replaces the oldest furniture memory; memories from equipped items (Thought_EntadEquipped) are never displaced.
+    // replaces the oldest memory of that thought that isn't from equipment (furniture, or the same thought from a
+    // normal game event); memories from equipped items (Thought_EntadEquipped) are never displaced.
     public class Thought_EntadFurniture : Thought_Memory
     {
         // Thing.thingIDNumber of the building: an int, so saving and comparing it costs nothing and a destroyed
@@ -246,11 +247,16 @@ namespace EntadFramework
             Scribe_Values.Look(ref sourceId, "entadSourceId", -1);
         }
 
-        public static Thought_EntadFurniture OldestOf(List<Thought_Memory> list, ThoughtDef def)
+        // The oldest memory of the def that isn't held up by equipment: a furniture memory, a plain one from a normal
+        // game event (Fickle Cheer can pick any memory thought), or one from a save before this class existed.
+        public static Thought_Memory OldestReplaceable(List<Thought_Memory> list, ThoughtDef def)
         {
-            Thought_EntadFurniture oldest = null;
+            Thought_Memory oldest = null;
             for (int i = 0; i < list.Count; i++)
-                if (list[i] is Thought_EntadFurniture f && f.def == def && (oldest == null || f.age > oldest.age)) oldest = f;
+            {
+                var m = list[i];
+                if (m.def == def && !(m is Thought_EntadEquipped) && (oldest == null || m.age > oldest.age)) oldest = m;
+            }
             return oldest;
         }
 
@@ -276,7 +282,7 @@ namespace EntadFramework
             }
             showBubble = true;
             if (def.stackLimit < 0 || count < def.stackLimit) return false;
-            var oldest = OldestOf(list, def);
+            var oldest = OldestReplaceable(list, def);
             if (oldest != null)
             {
                 memories.RemoveMemory(oldest);
