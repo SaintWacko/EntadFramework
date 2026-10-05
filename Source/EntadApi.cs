@@ -117,7 +117,30 @@ namespace EntadFramework
             return added;
         }
 
-        /// <summary>Binds <paramref name= and match the request's kinds, lists and predicate.</summary>
+        /// <summary>Binds <paramref name="thing"/> to <paramref name="pawns"/>, in addition to any pawns it is already
+        /// bound to. A bound entad works as an ordinary item for anyone, but its traits only work for the bound pawns
+        /// and their descendants. Item-level effects (durability, market value, building properties) apply to all.</summary>
+        /// <returns>False when the thing is not an entad.</returns>
+        public static bool Bind(Thing thing, IEnumerable<Pawn> pawns)
+        {
+            var comp = thing?.TryGetComp<CompEntad>();
+            if (comp == null) return false;
+            comp.Bind(pawns);
+            return true;
+        }
+
+        /// <summary>Removes every binding, so the traits work for anyone again.</summary>
+        public static void Unbind(Thing thing) => thing?.TryGetComp<CompEntad>()?.Unbind();
+
+        /// <summary>The pawns <paramref name="thing"/> is bound to; empty when it is unbound.</summary>
+        public static IReadOnlyList<Pawn> GetBoundPawns(Thing thing) =>
+            thing?.TryGetComp<CompEntad>()?.BoundPawns ?? (IReadOnlyList<Pawn>)Array.Empty<Pawn>();
+
+        /// <summary>Whether the entad traits on <paramref name="thing"/> work for <paramref name="pawn"/>: true for an
+        /// unbound item, or for a bound pawn or one of their descendants.</summary>
+        public static bool TraitsActiveFor(Thing thing, Pawn pawn) => thing?.TryGetComp<CompEntad>()?.ActiveFor(pawn) ?? true;
+
+        /// <summary>Item defs that can become entads and match the request's kinds, lists and predicate.</summary>
         public static List<ThingDef> GetCandidateItemDefs(EntadItemRequest request)
         {
             request = request ?? new EntadItemRequest();
