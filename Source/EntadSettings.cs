@@ -243,6 +243,10 @@ namespace EntadFramework
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
             if (d.HasDamageEffect) parts.Add("EF_Summary_Damage".Translate());
+            if (d.weaponProperties != null) foreach (var w in d.weaponProperties) parts.Add(w.Label);
+            if (d.ignoreAccuracyMaluses) parts.Add("EF_Summary_Weapon".Translate());
+            if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) parts.Add(h.LabelCap);
+            if (d.killThought != null) parts.Add("EF_Summary_KillThought".Translate());
             if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("EF_Summary_Fuel".Translate());
             return string.Join(", ", parts.Distinct());
         }

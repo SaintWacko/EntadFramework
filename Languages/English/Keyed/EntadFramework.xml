@@ -43,6 +43,9 @@
   <EF_Card_Mood>Mood: {0} ({1}) ({2}h)</EF_Card_Mood>
   <EF_Card_DamageType>Damage type: {0}</EF_Card_DamageType>
   <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>
+  <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
+  <EF_Card_KillThought>Kills give: {0}</EF_Card_KillThought>
+  <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
   <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
   <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
   <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>
@@ -58,6 +61,13 @@
   <EF_Stat_DamageTypeDesc>{0}: this weapon's attacks deal {1} damage instead of their usual type.</EF_Stat_DamageTypeDesc>
   <EF_Stat_ExtraDamage>Entad {0} damage</EF_Stat_ExtraDamage>
   <EF_Stat_ExtraDamageDesc>{0}: each hit deals this much additional {1} damage, on top of the weapon's normal damage. It is not reduced by or added to the Damage stat above.</EF_Stat_ExtraDamageDesc>
+  <EF_Weapon_BurstShotCount>Burst shot count</EF_Weapon_BurstShotCount>
+  <EF_Weapon_BurstShotSpeed>Burst shot speed</EF_Weapon_BurstShotSpeed>
+  <EF_Weapon_StoppingPower>Stopping power</EF_Weapon_StoppingPower>
+  <EF_Stat_Weapon>Entad {0}</EF_Stat_Weapon>
+  <EF_Stat_WeaponDesc>{0}: changes this weapon's {1}.</EF_Stat_WeaponDesc>
+  <EF_Stat_IgnoresAccuracyMaluses>Entad ignores accuracy penalties</EF_Stat_IgnoresAccuracyMaluses>
+  <EF_Stat_IgnoresAccuracyMalusesDesc>{0}: shots from this weapon ignore the accuracy and range penalties from weather and from blind smoke.</EF_Stat_IgnoresAccuracyMalusesDesc>
   <EF_Stat_ExtraTotal>Entad extra damage per hit</EF_Stat_ExtraTotal>
   <EF_Stat_ExtraTotalDesc>Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.</EF_Stat_ExtraTotalDesc>
 
@@ -102,5 +112,7 @@
   <EF_Settings_TraitRow>{0} ({1})</EF_Settings_TraitRow>
   <EF_Summary_Damage>Damage</EF_Summary_Damage>
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
+  <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
+  <EF_Summary_KillThought>Kill mood</EF_Summary_KillThought>
 
 </LanguageData>

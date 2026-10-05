@@ -139,6 +139,59 @@ namespace EntadFramework
         }
     }
 
+    // Ranged weapon properties that aren't stats (they live on the verb or the projectile)
+    public enum EntadWeaponProperty
+    {
+        BurstShotCount,   // factor on shots per burst (rounded up, like vanilla unique weapons)
+        BurstShotSpeed,   // factor on how fast burst shots follow each other (divides the ticks between them)
+        StoppingPower     // added to each projectile's stopping power
+    }
+
+    // A weapon property rolled between min and max when applied to an item. Burst properties are factors (rarity
+    // scaling widens their distance from 1); stopping power is an offset (scaling multiplies it).
+    public class WeaponPropertyRange
+    {
+        public EntadWeaponProperty property;
+        public float min = 1f;
+        public float max = 1f;
+
+        public bool IsFactor => property != EntadWeaponProperty.StoppingPower;
+
+        public float Neutral => IsFactor ? 1f : 0f;
+
+        public float RollScaled(float scale) => EntadTraitDef.Scale(Rand.Range(min, max), scale, IsFactor);
+
+        public float NormalizeScaled(float value, float scale)
+        {
+            float lo = EntadTraitDef.Scale(min, scale, IsFactor), hi = EntadTraitDef.Scale(max, scale, IsFactor);
+            return hi - lo > 0.0001f ? UnityEngine.Mathf.InverseLerp(lo, hi, value) : 0.5f;
+        }
+
+        public string Label
+        {
+            get
+            {
+                switch (property)
+                {
+                    case EntadWeaponProperty.BurstShotCount: return "EF_Weapon_BurstShotCount".Translate();
+                    case EntadWeaponProperty.BurstShotSpeed: return "EF_Weapon_BurstShotSpeed".Translate();
+                    default: return "EF_Weapon_StoppingPower".Translate();
+                }
+            }
+        }
+
+        public string ValueString(float v) => IsFactor ? "x" + v.ToStringPercent() : v.ToString("+0.0#;-0.0#");
+
+        // Burst speed only matters to a weapon that fires bursts
+        public bool AppliesTo(ThingDef td)
+        {
+            if (!td.IsRangedWeapon || td.Verbs.NullOrEmpty()) return false;
+            if (property == EntadWeaponProperty.BurstShotSpeed) return td.Verbs.Any(v => v.burstShotCount > 1);
+            if (property == EntadWeaponProperty.StoppingPower) return td.Verbs.Any(v => v.defaultProjectile?.projectile != null);
+            return true;
+        }
+    }
+
     [System.Flags]
     public enum EntadEffectKind
     {
@@ -149,8 +202,9 @@ namespace EntadFramework
         Ability = 8,
         Building = 16,
         Fuel = 32,
-        Damage = 64,
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage
+        Damage = 64,     // also burst, stopping power and ignoring accuracy penalties: all noticed when a shot lands
+        Hediff = 128,    // equipped hediffs: they show on the health tab, so they reveal the moment the item is equipped
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff
     }
 
     public class EntadTraitDef : Def
@@ -253,6 +307,26 @@ namespace EntadFramework
         }
 
         public bool HasDamageEffect => changeDamageType != null || !extraDamage.NullOrEmpty();
+
+        // Ranged weapons only: burst and stopping power, and ignoring weather, smoke and other accuracy penalties
+        // (vanilla's ignoresAccuracyMaluses: the weather range cap, the weather accuracy factor and blind smoke).
+        // Like damage effects, these only work for a pawn the item is active for, and reveal when a shot lands.
+        public List<WeaponPropertyRange> weaponProperties;
+        public bool ignoreAccuracyMaluses;
+
+        public bool HasWeaponEffect => !weaponProperties.NullOrEmpty() || ignoreAccuracyMaluses;
+
+        // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
+        // equippedHediffs and removed on unequip unless other active gear also gives them
+        public List<HediffDef> equippedHediffs;
+
+        // Weapons: a memory the wielder gets on each kill. Revealed (as a mood effect) by the first kill.
+        public ThoughtDef killThought;
+
+        // Allow this trait on items where only some of its stats mean anything (a trait with both melee and ranged
+        // stats on a melee weapon, say). Stats that don't apply to the item are skipped and not shown. Off by
+        // default: a trait normally needs every one of its stats to apply.
+        public bool partialStats;
 
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
         // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
@@ -424,7 +498,9 @@ namespace EntadFramework
                 if (HasMealEffect) kinds |= EntadEffectKind.Meal;
                 if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
                 if (!AllFuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
-                if (HasDamageEffect) kinds |= EntadEffectKind.Damage;
+                if (HasDamageEffect || HasWeaponEffect) kinds |= EntadEffectKind.Damage;
+                if (killThought != null) kinds |= EntadEffectKind.Mood;
+                if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
             }
@@ -448,6 +524,9 @@ namespace EntadFramework
             if (thought != null && (thoughtMoodRange.min != 0f || thoughtMoodRange.max != 0f)) yield return $"{defName}: specify either thought or thoughtMoodRange, not both";
             if (thoughtMoodRange.min > thoughtMoodRange.max) yield return $"{defName}: thoughtMoodRange min is greater than max";
             if (HasMood && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
+            if (weaponProperties != null && weaponProperties.Any(w => w.min > w.max)) yield return $"{defName}: invalid weaponProperties range";
+            if (killThought != null && !killThought.IsMemory) yield return $"{defName}: killThought {killThought.defName} is not a memory thought";
+            if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -465,6 +544,10 @@ namespace EntadFramework
             // Furniture moods need a pawn to use the building (abilities work from the right-click menu on any furniture)
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || IsAreaWeapon(td))) return false;
+            if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
+            if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
+            if (killThought != null && !td.IsWeapon) return false;
+            if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
@@ -483,14 +566,22 @@ namespace EntadFramework
             foreach (var r in Ranges(statFactors))
                 if (r.stat != null && IsWearerStat(r.stat) && !(td.statBases?.Any(m => m.stat == r.stat) ?? false)) return false;
 
+            bool anyStat = false, anyApplies = false;
             foreach (var r in AllRanges())
             {
                 if (r.stat == null) continue;
-                if (r.stat == StatDefOf.MarketValue) continue;
-                if (!StatAppliesTo(r.stat, thing)) return false;
+                anyStat = true;
+                if (r.stat == StatDefOf.MarketValue || StatAppliesTo(r.stat, thing)) { anyApplies = true; continue; }
+                if (!partialStats) return false;
             }
+            // Partial: at least one stat has to mean something, unless the trait has other effects that already passed
+            if (partialStats && anyStat && !anyApplies && EffectKinds == EntadEffectKind.Stat) return false;
             return true;
         }
+
+        // Whether a stat of this trait works on the thing. Always true for an ordinary trait (CanApplyTo already
+        // required every stat to apply); a partialStats trait skips the ones that don't, in effect and on display.
+        public bool UsesStat(StatDef stat, Thing thing) => !partialStats || stat == StatDefOf.MarketValue || StatAppliesTo(stat, thing);
 
         private static bool StatAppliesTo(StatDef stat, Thing thing)
         {
@@ -524,7 +615,7 @@ namespace EntadFramework
             {
                 if (weaponSpecific < 0)
                 {
-                    bool result = HasDamageEffect
+                    bool result = HasDamageEffect || HasWeaponEffect || killThought != null
                         || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
                         || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
                     weaponSpecific = result ? 1 : 0;

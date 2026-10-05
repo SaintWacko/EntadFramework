@@ -13,6 +13,7 @@ namespace EntadFramework
         public List<float> factorValues = new List<float>();
         public List<float> buildingValues = new List<float>();
         public List<float> extraDamageValues = new List<float>();
+        public List<float> weaponValues = new List<float>();
         public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
@@ -58,6 +59,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref factorValues, "factorValues", LookMode.Value);
             Scribe_Collections.Look(ref buildingValues, "buildingValues", LookMode.Value);
             Scribe_Collections.Look(ref extraDamageValues, "extraDamageValues", LookMode.Value);
+            Scribe_Collections.Look(ref weaponValues, "weaponValues", LookMode.Value);
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
@@ -83,6 +85,7 @@ namespace EntadFramework
                 factorValues = factorValues ?? new List<float>();
                 buildingValues = buildingValues ?? new List<float>();
                 extraDamageValues = extraDamageValues ?? new List<float>();
+                weaponValues = weaponValues ?? new List<float>();
             }
         }
 
@@ -91,7 +94,8 @@ namespace EntadFramework
             return (offsetValues?.Count ?? 0) == (def.statOffsets?.Count ?? 0)
                 && (factorValues?.Count ?? 0) == (def.statFactors?.Count ?? 0)
                 && (extraDamageValues?.Count ?? 0) == (def.extraDamage?.Count ?? 0)
-                && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0);
+                && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0)
+                && (weaponValues?.Count ?? 0) == (def.weaponProperties?.Count ?? 0);
         }
 
         private void RerollValues()
@@ -102,6 +106,7 @@ namespace EntadFramework
             factorValues = fresh.factorValues;
             extraDamageValues = fresh.extraDamageValues;
             buildingValues = fresh.buildingValues;
+            weaponValues = fresh.weaponValues;
             thought = fresh.thought;
             thoughtHours = fresh.thoughtHours;
             mealNutritionFactor = fresh.mealNutritionFactor;
@@ -120,6 +125,7 @@ namespace EntadFramework
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.RollScaled(scale, true));
             if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));
             if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.RollScaled(scale));
+            if (def.weaponProperties != null) foreach (var r in def.weaponProperties) applied.weaponValues.Add(r.RollScaled(scale));
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
@@ -166,6 +172,7 @@ namespace EntadFramework
         public float ExtraDamageFor(int i) => i < extraDamageValues.Count ? extraDamageValues[i] : 0f;
         public float BuildingFactorFor(int i) => i < buildingValues.Count ? buildingValues[i] : 1f;
         public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
+        public float WeaponValueFor(int i) => i < weaponValues.Count ? weaponValues[i] : def.weaponProperties[i].Neutral;
 
         // Average position (0..1) of the rolled values within their ranges
         public float RollQuality()
@@ -181,6 +188,8 @@ namespace EntadFramework
                 for (int i = 0; i < def.extraDamage.Count; i++) { sum += def.extraDamage[i].NormalizeScaled(ExtraDamageFor(i), scale); n++; }
             if (def.buildingFactors != null)
                 for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); n++; }
+            if (def.weaponProperties != null)
+                for (int i = 0; i < def.weaponProperties.Count; i++) { sum += def.weaponProperties[i].NormalizeScaled(WeaponValueFor(i), scale); n++; }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); n++; }
             if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
@@ -594,7 +603,7 @@ namespace EntadFramework
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
                 {
                     var s = m.def.statOffsets[i].stat;
-                    if (s == null) continue;
+                    if (s == null || !m.def.UsesStat(s, parent)) continue;
                     float v = m.OffsetFor(i);
                     // Offsets are added before the stat is finalized, so they read in the unfinalized style (as vanilla's
                     // StatModifier.ValueToStringAsOffset does): shooting accuracy +3 is three skill levels, not +300%
@@ -603,7 +612,7 @@ namespace EntadFramework
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {
                     var s = m.def.statFactors[i].stat;
-                    if (s == null) continue;
+                    if (s == null || !m.def.UsesStat(s, parent)) continue;
                     sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(s.LabelCap, m.FactorFor(i).ToStringPercent()));
                 }
                 if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
@@ -617,6 +626,16 @@ namespace EntadFramework
                     for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
                         sb.AppendLine(" - " + "EF_Card_ExtraDamage".Translate(m.def.extraDamage[i].damageType.label, m.ExtraDamageFor(i).ToString("0.#")));
                 }
+                if (m.def.HasWeaponEffect && m.IsRevealed(EntadEffectKind.Damage))
+                {
+                    for (int i = 0; m.def.weaponProperties != null && i < m.def.weaponProperties.Count; i++)
+                        sb.AppendLine(" - " + "EF_Card_StatOffset".Translate(m.def.weaponProperties[i].Label, m.def.weaponProperties[i].ValueString(m.WeaponValueFor(i))));
+                    if (m.def.ignoreAccuracyMaluses) sb.AppendLine(" - " + "EF_Card_IgnoresAccuracyMaluses".Translate());
+                }
+                if (m.def.killThought != null && m.IsRevealed(EntadEffectKind.Mood))
+                    sb.AppendLine(" - " + "EF_Card_KillThought".Translate(m.def.killThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.killThought.defName));
+                if (!m.def.equippedHediffs.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Hediff))
+                    sb.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", m.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
                 if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
                     sb.AppendLine(" - " + (m.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
@@ -669,7 +688,17 @@ namespace EntadFramework
             float total = 0f;
             foreach (var m in activeTraits)
             {
-                if (!m.def.HasDamageEffect || !m.IsRevealed(EntadEffectKind.Damage)) continue;
+                if (!m.IsRevealed(EntadEffectKind.Damage)) continue;
+                for (int i = 0; m.def.weaponProperties != null && i < m.def.weaponProperties.Count; i++)
+                {
+                    var w = m.def.weaponProperties[i];
+                    yield return new StatDrawEntry(cat, "EF_Stat_Weapon".Translate(w.Label), w.ValueString(m.WeaponValueFor(i)),
+                        "EF_Stat_WeaponDesc".Translate(m.def.LabelCap, w.Label), order++);
+                }
+                if (m.def.ignoreAccuracyMaluses)
+                    yield return new StatDrawEntry(cat, "EF_Stat_IgnoresAccuracyMaluses".Translate(), "Yes".Translate(),
+                        "EF_Stat_IgnoresAccuracyMalusesDesc".Translate(m.def.LabelCap), order++);
+                if (!m.def.HasDamageEffect) continue;
                 if (m.def.changeDamageType != null)
                     yield return new StatDrawEntry(cat, "EF_Stat_DamageType".Translate(), m.def.changeDamageType.LabelCap,
                         "EF_Stat_DamageTypeDesc".Translate(m.def.LabelCap, m.def.changeDamageType.label), order++);

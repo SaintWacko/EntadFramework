@@ -20,6 +20,7 @@ namespace EntadFramework
             if (!comp.ActiveFor(pawn)) return;
             // Stats that are always in effect (move speed, carrying capacity...) are noticed once the item is carried
             EntadStatReveal.Fire(comp, EntadStatTrigger.Equip);
+            EntadWeaponTraits.AddHediffs(pawn, comp);
             if (pawn?.abilities == null) return;
             foreach (var m in comp.activeTraits)
             {
@@ -33,6 +34,7 @@ namespace EntadFramework
         {
             var comp = removed?.TryGetComp<CompEntad>();
             comp?.HolderChanged();
+            if (comp != null) EntadWeaponTraits.RemoveHediffs(pawn, comp, Equipped(pawn));
             if (pawn?.abilities == null || comp == null) return;
 
             var stillGranted = new HashSet<AbilityDef>();
