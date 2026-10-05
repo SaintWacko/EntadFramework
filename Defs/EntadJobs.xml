@@ -1,8 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Defs>
+  <!-- Reloading a reloadable entad ability (EntadReload.cs). Same shape as vanilla's Reload job. -->
   <JobDef>
-    <defName>Entad_UseFurnitureAbility</defName>
-    <driverClass>EntadFramework.JobDriver_UseEntadFurniture</driverClass>
-    <reportString>activating TargetA.</reportString>
-    <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
+    <defName>EF_EntadReload</defName>
+    <driverClass>EntadFramework.JobDriver_EntadReload</driverClass>
+    <reportString>reloading TargetA.</reportString>
+    <suspendable>false</suspendable>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
   </JobDef>
 </Defs>

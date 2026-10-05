@@ -388,6 +388,16 @@ namespace EntadFramework
         // the pawn work at the furniture for this long. 0 keeps the ability's own casting time.
         public int abilityCastTicks;
 
+        // Reloadable abilities (weapons and apparel): with an ammo def, the abilityCharges never come back on their own.
+        // The pawn reloads them with abilityAmmoPerCharge of the ammo per charge, from the right-click menu on the
+        // ammo or automatically once they run out, like vanilla reloadable gear. Charges are kept on the item, so
+        // taking it off and putting it back on doesn't refill it. No cooldown between uses in this mode.
+        public ThingDef abilityAmmo;
+        public int abilityAmmoPerCharge = 1;
+        public int abilityReloadTicks = 60;
+
+        public bool IsReloadable => abilityAmmo != null && abilityCharges > 0 && !abilities.NullOrEmpty();
+
         // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadTraitDef> exclusiveWith;
 
@@ -531,6 +541,8 @@ namespace EntadFramework
                 || typeof(Thought_MemorySocial).IsAssignableFrom(killThought.ThoughtClass)))
                 yield return $"{defName}: killThought {killThought.defName} must be a plain (non-social) memory thought";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
+            if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
+            if (abilityAmmo != null && abilityAmmoPerCharge <= 0) yield return $"{defName}: abilityAmmoPerCharge must be at least 1";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -551,6 +563,8 @@ namespace EntadFramework
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             if (killThought != null && !td.IsWeapon) return false;
+            // Reloading works on worn and wielded gear only; furniture abilities have their own charge cooldown
+            if (IsReloadable && !td.IsWeapon && !td.IsApparel) return false;
             if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;

@@ -158,6 +158,19 @@ namespace EntadFramework
             abilityCharges[i] = c - 1;
         }
 
+        // Reloadable abilities: charges stored on the item while nobody has the ability (full when never set)
+        public int StoredCharges(int i)
+        {
+            while (abilityCharges.Count <= i) abilityCharges.Add(def.abilityCharges);
+            return abilityCharges[i];
+        }
+
+        public void SetStoredCharges(int i, int c)
+        {
+            while (abilityCharges.Count <= i) abilityCharges.Add(def.abilityCharges);
+            abilityCharges[i] = c;
+        }
+
         public int AbilityReadyTick(int i) => i < abilityReadyTicks.Count ? abilityReadyTicks[i] : 0;
 
         public void SetAbilityReadyTick(int i, int tick)
@@ -641,7 +654,12 @@ namespace EntadFramework
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
                     sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(m.def.buildingFactors[i].Label, m.BuildingFactorFor(i).ToStringPercent()));
                 if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
+                {
                     sb.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))));
+                    if (m.def.IsReloadable)
+                        foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == m))
+                            sb.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
+                }
                 if (m.def.HasMealEffect && m.IsRevealed(EntadEffectKind.Meal))
                 {
                     if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)

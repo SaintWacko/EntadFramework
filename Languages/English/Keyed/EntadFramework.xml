@@ -46,6 +46,7 @@
   <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
   <EF_Card_KillThought>Kills give: {0}</EF_Card_KillThought>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
+  <EF_Card_Reloadable>Charges {0} / {1}, reloaded with {2} ({3} per charge)</EF_Card_Reloadable>
   <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
   <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
   <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>

@@ -18,4 +18,22 @@
     <abilityCooldownTicks>30000</abilityCooldownTicks>
     <abilityCastTicks>60</abilityCastTicks>
   </EntadFramework.EntadTraitDef>
+  <!-- Reloadable: three charges that only come back by reloading with chemfuel -->
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_StunCharge</defName>
+    <label>Stun Charge</label>
+    <description>Grants the ability to stun a target. It holds three charges, and is refuelled with chemfuel.</description>
+    <categories>
+      <li>Weapon</li>
+      <li>Apparel</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <abilities>
+      <li>Stun</li>
+    </abilities>
+    <abilityCharges>3</abilityCharges>
+    <abilityAmmo>Chemfuel</abilityAmmo>
+    <abilityAmmoPerCharge>10</abilityAmmoPerCharge>
+    <abilityReloadTicks>90</abilityReloadTicks>
+  </EntadFramework.EntadTraitDef>
 </Defs>

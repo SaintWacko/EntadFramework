@@ -88,6 +88,14 @@ namespace EntadFramework
                 copy.cooldownPerCharge = true;
             }
             if (m.abilityCooldownTicks > 0) copy.cooldownTicksRange = new IntRange(m.abilityCooldownTicks, m.abilityCooldownTicks);
+            // Reloadable: no cooldown at all, so vanilla never refills the charges (a per-charge cooldown regains
+            // one each time it ends, and a whole cooldown refills them all). Only reloading adds charges.
+            if (m.IsReloadable)
+            {
+                copy.cooldownTicksRange = default;
+                copy.cooldownPerCharge = true;
+                copy.groupDef = null;
+            }
             if (m.abilityCastTicks > 0 && src.verbProperties != null)
             {
                 if (copy.verbProperties == src.verbProperties) copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);

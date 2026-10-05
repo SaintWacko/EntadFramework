@@ -25,8 +25,18 @@ namespace EntadFramework
             foreach (var m in comp.activeTraits)
             {
                 if (m.def.abilities == null) continue;
-                foreach (AbilityDef ability in m.def.abilities)
-                    if (pawn.abilities.GetAbility(ability) == null) pawn.abilities.GainAbility(ability);
+                for (int i = 0; i < m.def.abilities.Count; i++)
+                {
+                    AbilityDef ability = m.def.abilities[i];
+                    if (pawn.abilities.GetAbility(ability) != null) continue;
+                    pawn.abilities.GainAbility(ability);
+                    // Reloadable charges live on the item: a new Ability starts full, so put back what is left
+                    if (m.def.IsReloadable)
+                    {
+                        var granted = pawn.abilities.GetAbility(ability);
+                        if (granted != null) granted.RemainingCharges = m.StoredCharges(i);
+                    }
+                }
             }
         }
 
@@ -50,9 +60,14 @@ namespace EntadFramework
             foreach (var m in comp.activeTraits)
             {
                 if (m.def.abilities == null) continue;
-                foreach (AbilityDef ability in m.def.abilities)
-                    if (!stillGranted.Contains(ability) && pawn.abilities.GetAbility(ability) != null)
-                        pawn.abilities.RemoveAbility(ability);
+                for (int i = 0; i < m.def.abilities.Count; i++)
+                {
+                    AbilityDef ability = m.def.abilities[i];
+                    var held = pawn.abilities.GetAbility(ability);
+                    if (stillGranted.Contains(ability) || held == null) continue;
+                    if (m.def.IsReloadable) m.SetStoredCharges(i, held.RemainingCharges);
+                    pawn.abilities.RemoveAbility(ability);
+                }
             }
         }
 
