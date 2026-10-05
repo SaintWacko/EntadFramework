@@ -109,15 +109,27 @@ namespace EntadFramework
     [StaticConstructorOnStartup]
     public static class EntadCompInjector
     {
+        // Per ThingDef index: true when the def carries CompEntad. Lets hot paths (StatPart_Entad runs for every
+        // MaxHitPoints and MarketValue read of every thing) skip the comp lookup for everything else.
+        private static bool[] hasComp;
+
+        // Before this class has run (null table) every def answers true, so callers fall back to the comp lookup
+        public static bool MayHaveComp(ThingDef def) => hasComp == null || (def.index < hasComp.Length && hasComp[def.index]);
+
         static EntadCompInjector()
         {
-            foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
+            var defs = DefDatabase<ThingDef>.AllDefsListForReading;
+            var table = new bool[defs.Count];
+            foreach (ThingDef def in defs)
             {
-                if (!EntadUtility.IsEntadCompatible(def)) continue;
+                if (def.comps != null && def.comps.Any(c => c is CompProperties_Entad)) { table[def.index] = true; continue; }
+                // Comps only exist on ThingWithComps; a plain Thing would never create one
+                if (!EntadUtility.IsEntadCompatible(def) || !typeof(ThingWithComps).IsAssignableFrom(def.thingClass)) continue;
                 if (def.comps == null) def.comps = new List<CompProperties>();
-                if (def.comps.Any(c => c is CompProperties_Entad)) continue;
                 def.comps.Add(new CompProperties_Entad());
+                table[def.index] = true;
             }
+            hasComp = table;
         }
     }
 }

@@ -74,34 +74,42 @@ namespace EntadFramework
             if (worn != null) for (int i = 0; i < worn.Count; i++) Fire(worn[i].TryGetComp<CompEntad>(), trigger);
         }
 
+        // True when the pawn wears or wields anything with a still-hidden trait. Checked before any trigger work, so
+        // the job-end and damage patches cost a couple of list scans for everyone else (animals have neither tracker).
+        public static bool HasHiddenGear(Pawn pawn)
+        {
+            if (pawn == null) return false;
+            var gear = pawn.equipment?.AllEquipmentListForReading;
+            if (gear != null) for (int i = 0; i < gear.Count; i++) if (gear[i].TryGetComp<CompEntad>()?.HasHidden == true) return true;
+            var worn = pawn.apparel?.WornApparel;
+            if (worn != null) for (int i = 0; i < worn.Count; i++) if (worn[i].TryGetComp<CompEntad>()?.HasHidden == true) return true;
+            return false;
+        }
+
         public static void OnJobFinished(Pawn pawn, Job job)
         {
-            if (job == null) return;
+            if (job == null || !HasHiddenGear(pawn)) return;
             if (job.workGiverDef != null)
             {
                 Fire(pawn, EntadStatTrigger.Work);
-                switch (job.workGiverDef.workType?.defName)
-                {
-                    case "Mining": Fire(pawn, EntadStatTrigger.Mining); break;
-                    case "Construction": Fire(pawn, EntadStatTrigger.Construction); break;
-                    case "Growing": Fire(pawn, EntadStatTrigger.Plant); break;
-                    case "Research": Fire(pawn, EntadStatTrigger.Research); break;
-                    case "Doctor": Fire(pawn, EntadStatTrigger.Doctor); break;
-                    case "Handling": Fire(pawn, EntadStatTrigger.Animals); break;
-                }
+                WorkTypeDef work = job.workGiverDef.workType;
+                if (work == WorkTypeDefOf.Mining) Fire(pawn, EntadStatTrigger.Mining);
+                else if (work == WorkTypeDefOf.Construction) Fire(pawn, EntadStatTrigger.Construction);
+                else if (work == WorkTypeDefOf.Growing) Fire(pawn, EntadStatTrigger.Plant);
+                else if (work == WorkTypeDefOf.Research) Fire(pawn, EntadStatTrigger.Research);
+                else if (work == WorkTypeDefOf.Doctor) Fire(pawn, EntadStatTrigger.Doctor);
+                else if (work == WorkTypeDefOf.Handling) Fire(pawn, EntadStatTrigger.Animals);
             }
             // Crafting recipes (stonecutting, chemfuel, burning items, tailoring, art, smithing, smelting...) are
             // paced by whichever stat the recipe names, so ask the recipe rather than guessing from work types
             if (job.bill?.recipe?.workSpeedStat == StatDefOf.GeneralLaborSpeed) Fire(pawn, EntadStatTrigger.GeneralLabor);
-            switch (job.def.defName)
-            {
-                case "Ingest": Fire(pawn, EntadStatTrigger.Eat); break;
-                case "LayDown": Fire(pawn, EntadStatTrigger.Rest); break;
-                case "TradeWithPawn": Fire(pawn, EntadStatTrigger.Trade); break;
-                case "Research": Fire(pawn, EntadStatTrigger.Research); break;
-                case "Mine": Fire(pawn, EntadStatTrigger.Mining); break;
-                case "Tame": case "Train": Fire(pawn, EntadStatTrigger.Animals); break;
-            }
+            JobDef d = job.def;
+            if (d == JobDefOf.Ingest) Fire(pawn, EntadStatTrigger.Eat);
+            else if (d == JobDefOf.LayDown) Fire(pawn, EntadStatTrigger.Rest);
+            else if (d == JobDefOf.TradeWithPawn) Fire(pawn, EntadStatTrigger.Trade);
+            else if (d == JobDefOf.Research) Fire(pawn, EntadStatTrigger.Research);
+            else if (d == JobDefOf.Mine) Fire(pawn, EntadStatTrigger.Mining);
+            else if (d == JobDefOf.Tame || d == JobDefOf.Train) Fire(pawn, EntadStatTrigger.Animals);
         }
     }
 
@@ -130,18 +138,15 @@ namespace EntadFramework
     public static class Patch_Learn_StatReveal
     {
         private static readonly AccessTools.FieldRef<SkillRecord, Pawn> PawnField = AccessTools.FieldRefAccess<SkillRecord, Pawn>("pawn");
-        private static readonly Dictionary<int, int> lastCheck = new Dictionary<int, int>();
-        private const int CheckInterval = 250;
-
-        // Learn fires on every xp gain, so each pawn is only checked a few times a minute
+        // Learn fires on every xp gain, so each pawn is only checked once every 250 ticks: on its own hash tick.
+        // Learn runs every tick during work, so a pawn that is learning hits its hash tick within a few seconds.
+        // Stateless on purpose: an earlier per-pawn "last checked" table was static, so it kept ticks from a previous
+        // game and skipped reveals after loading an earlier save.
         public static void Postfix(SkillRecord __instance, float xp)
         {
             if (xp <= 0f) return;
             Pawn pawn = PawnField(__instance);
-            if (pawn == null) return;
-            int now = Find.TickManager.TicksGame;
-            if (lastCheck.TryGetValue(pawn.thingIDNumber, out int last) && now - last < CheckInterval) return;
-            lastCheck[pawn.thingIDNumber] = now;
+            if (pawn == null || !pawn.IsHashIntervalTick(250)) return;
             EntadStatReveal.Fire(pawn, EntadStatTrigger.Learn);
         }
     }
@@ -149,10 +154,19 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PostApplyDamage))]
     public static class Patch_Damage_StatReveal
     {
+        // Damage defs that count as toxic, found once by name (ToxGas, Tox bullets, mod tox damage)
+        private static HashSet<DamageDef> toxic;
+
         public static void Postfix(Pawn __instance, DamageInfo dinfo)
         {
+            if (!EntadStatReveal.HasHiddenGear(__instance)) return;
             EntadStatReveal.Fire(__instance, EntadStatTrigger.Damage);
-            if (dinfo.Def != null && dinfo.Def.defName.Contains("Tox")) EntadStatReveal.Fire(__instance, EntadStatTrigger.Toxic);
+            if (toxic == null)
+            {
+                toxic = new HashSet<DamageDef>();
+                foreach (var d in DefDatabase<DamageDef>.AllDefsListForReading) if (d.defName.Contains("Tox")) toxic.Add(d);
+            }
+            if (dinfo.Def != null && toxic.Contains(dinfo.Def)) EntadStatReveal.Fire(__instance, EntadStatTrigger.Toxic);
         }
     }
 

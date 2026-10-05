@@ -17,8 +17,9 @@ namespace EntadFramework
             Thing thing = owner as Thing ?? (owner as ThingComp)?.parent;
             var entad = thing?.TryGetComp<CompEntad>();
             if (entad == null || entad.activeTraits.Count == 0) return value;
-            if (entad.HasHidden) entad.RevealProperty((EntadBuildingProperty)property);
-            return value * entad.PropertyFactor((EntadBuildingProperty)property);
+            float factor = entad.PropertyFactor((EntadBuildingProperty)property);
+            entad.RevealProperty((EntadBuildingProperty)property);
+            return value * factor;
         }
 
         private static readonly MethodInfo scale = AccessTools.Method(typeof(EntadBuildingProperties), nameof(Scale));
@@ -132,8 +133,6 @@ namespace EntadFramework
     // own copy of the refuelable properties with a different filter, so all the vanilla code just sees it.
     public static class EntadFuel
     {
-        private static readonly Dictionary<CompRefuelable, CompProperties> originals = new Dictionary<CompRefuelable, CompProperties>();
-
         public static void Refresh(Thing thing, CompEntad entad)
         {
             var refuelable = thing.TryGetComp<CompRefuelable>();
@@ -148,15 +147,18 @@ namespace EntadFramework
                 replace |= m.def.replaceFuel;
             }
 
-            if (!originals.TryGetValue(refuelable, out var original))
+            // The original props live on the item's own comp (they used to sit in a static table, which kept every
+            // building from every loaded game alive)
+            var original = entad.originalRefuelableProps;
+            if (original == null)
             {
                 if (extra.Count == 0) return;
-                originals[refuelable] = original = refuelable.props;
+                entad.originalRefuelableProps = original = refuelable.props;
             }
             else if (extra.Count == 0)
             {
                 refuelable.props = original;
-                originals.Remove(refuelable);
+                entad.originalRefuelableProps = null;
                 return;
             }
 
@@ -166,7 +168,6 @@ namespace EntadFramework
             if (!replace) filter.CopyAllowancesFrom(baseProps.fuelFilter);
             foreach (var d in extra) filter.SetAllow(d, true);
             copy.fuelFilter = filter;
-            hiddenFuel.Remove(filter);
             hiddenFuel.Add(filter, new HiddenFuel { comp = entad, baseFilter = baseProps.fuelFilter });
             refuelable.props = copy;
         }
@@ -240,7 +241,7 @@ namespace EntadFramework
         public static void Prefix(Projectile __instance, Thing hitThing)
         {
             // Area weapons (incinerators, grenade launchers...) explode on the ground without hitting a thing
-            if (hitThing != null || __instance.def.projectile.explosionRadius > 0f) EntadWeaponReveal.Hit(Traverse.Create(__instance).Field("launcher").GetValue<Thing>() as Pawn, false);
+            if (hitThing != null || __instance.def.projectile.explosionRadius > 0f) EntadWeaponReveal.Hit(__instance.Launcher as Pawn, false);
         }
     }
 

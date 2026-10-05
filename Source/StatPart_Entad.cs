@@ -10,7 +10,9 @@ namespace EntadFramework
     {
         public override void TransformValue(StatRequest req, ref float val)
         {
-            var comp = req.HasThing ? req.Thing.TryGetComp<CompEntad>() : null;
+            // Runs for every MaxHitPoints and MarketValue read of every thing: a table lookup rules out most of them
+            if (!req.HasThing || !EntadCompInjector.MayHaveComp(req.Thing.def)) return;
+            var comp = req.Thing.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
 
             bool offsetsViaWearer = OffsetsViaWearer(req);

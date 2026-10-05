@@ -46,7 +46,8 @@ namespace EntadFramework
             trait.Reveal(EntadEffectKind.Ability);
 
             if (maxCharges > 0) trait.UseCharge(idx, maxCharges, cooldown);
-            else trait.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + def.cooldownTicksRange.RandomInRange);
+            // Same cooldown the charge path uses: the trait's abilityCooldownTicks when set, else the ability's own
+            else trait.SetAbilityReadyTick(idx, Find.TickManager.TicksGame + cooldown);
         }
 
         // Ticks a pawn works at the furniture before the ability goes off
@@ -103,6 +104,7 @@ namespace EntadFramework
         public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
         {
             if (parent.def.building == null || !parent.Spawned || activeTraits.NullOrEmpty()) yield break;
+            if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled) yield break;
 
             int flat = 0;
             foreach (var entry in EntadFurnitureAbilities.Entries(this))
@@ -118,8 +120,6 @@ namespace EntadFramework
                 int charges = maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, EntadFurnitureAbilities.Cooldown(trait, def)) : 1;
                 if (maxCharges > 0) ready = charges > 0 ? 0 : trait.AbilityReadyTick(idx);
                 if (maxCharges > 0 && trait.IsRevealed(EntadEffectKind.Ability)) label += " [" + charges + "/" + maxCharges + "]";
-                if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled)
-                    continue;
                 if (!selPawn.CanReach(parent, EntadFurnitureAbilities.PathMode(parent.def), Danger.Deadly))
                 {
                     yield return new FloatMenuOption(label + " (" + "NoPath".Translate() + ")", null);

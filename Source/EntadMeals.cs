@@ -22,33 +22,21 @@ namespace EntadFramework
             return null;
         }
 
-        public static IEnumerable<Thing> SurfaceThings(Pawn pawn)
-        {
-            Thing t = SurfaceThing(pawn);
-            if (t != null) yield return t;
-        }
-
         // Entad traits of the eating surface the pawn is using (the one they face, else any adjacent one)
         public static IEnumerable<AppliedEntadTrait> SurfaceTraits(Pawn pawn)
         {
-            Map map = pawn?.MapHeld;
-            if (map == null || !pawn.Spawned) yield break;
-
-            Thing surface = FindSurface(pawn.Position + pawn.Rotation.FacingCell, map);
-            if (surface == null)
-            {
-                foreach (IntVec3 c in GenAdj.CellsAdjacentCardinal(pawn))
-                {
-                    surface = FindSurface(c, map);
-                    if (surface != null) break;
-                }
-            }
-
-            var comp = surface?.TryGetComp<CompEntad>();
+            var comp = SurfaceThing(pawn)?.TryGetComp<CompEntad>();
             if (comp == null) yield break;
             foreach (var m in comp.activeTraits)
                 if (m.def.HasMealEffect) yield return m;
         }
+
+        public static bool IsMeal(ThingDef def) => def?.ingestible != null && (def.ingestible.foodType & FoodTypeFlags.Meal) != 0;
+
+        // True only while a pawn is actually eating (inside Thing.Ingested). ThoughtsFromIngesting is also called
+        // for every candidate while pawns pick food and pack food, and table effects must not run, reveal or skew
+        // food choice there.
+        [System.ThreadStatic] internal static bool eating;
 
         private static Thing FindSurface(IntVec3 cell, Map map)
         {
@@ -62,8 +50,22 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Thing), nameof(Thing.Ingested))]
     public static class Patch_Ingested_MealNutrition
     {
-        public static void Postfix(Pawn ingester, ref float __result)
+        public static void Prefix(out bool __state)
         {
+            __state = EntadMeals.eating;
+            EntadMeals.eating = true;
+        }
+
+        public static System.Exception Finalizer(System.Exception __exception, bool __state)
+        {
+            EntadMeals.eating = __state;
+            return __exception;
+        }
+
+        // Table nutrition applies to meals only, not drugs, raw food or corpses eaten at a table
+        public static void Postfix(Thing __instance, Pawn ingester, ref float __result)
+        {
+            if (!EntadMeals.IsMeal(__instance.def)) return;
             foreach (var m in EntadMeals.SurfaceTraits(ingester))
             {
                 __result *= m.mealNutritionFactor;
@@ -85,14 +87,25 @@ namespace EntadFramework
             DefDatabase<ThoughtDef>.GetNamedSilentFail("AteLavishMeal"),
         });
 
+        // Paste and survival meals have no quality thought to shift
+        private static ThingDef paste, survival;
+        private static bool resolved;
+
         private static bool IsQualityMeal(ThingDef foodDef)
         {
-            if (foodDef?.ingestible == null || (foodDef.ingestible.foodType & FoodTypeFlags.Meal) == 0) return false;
-            return foodDef.defName != "MealNutrientPaste" && foodDef.defName != "MealSurvivalPack";
+            if (!EntadMeals.IsMeal(foodDef)) return false;
+            if (!resolved)
+            {
+                paste = DefDatabase<ThingDef>.GetNamedSilentFail("MealNutrientPaste");
+                survival = DefDatabase<ThingDef>.GetNamedSilentFail("MealSurvivalPack");
+                resolved = true;
+            }
+            return foodDef != paste && foodDef != survival;
         }
 
         public static void Postfix(Pawn ingester, ThingDef foodDef, ref List<FoodUtility.ThoughtFromIngesting> __result)
         {
+            if (!EntadMeals.eating) return;
             int qualityOffset = 0;
             foreach (var m in EntadMeals.SurfaceTraits(ingester))
             {

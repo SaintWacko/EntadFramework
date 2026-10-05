@@ -302,17 +302,36 @@ namespace EntadFramework
         public void RevealWhere(EntadEffectKind kind, System.Func<AppliedEntadTrait, bool> predicate = null)
         {
             if (!HasHidden) return;
-            foreach (var m in activeTraits.ToList())
+            // Index loop, no copy: Reveal only updates flags and caches, it never adds or removes traits
+            for (int i = 0; i < activeTraits.Count; i++)
+            {
+                var m = activeTraits[i];
                 if (!m.IsRevealed(kind) && (predicate == null || predicate(m))) m.Reveal(kind);
+            }
         }
 
         // Building properties are read while the building is in play, so only count it once it has been
-        // around a while (not when it spawns or a save loads)
+        // around a while (not when it spawns or a save loads). Called every tick from the fuel, glow and power reads,
+        // so the bitmask check comes first and the common case (nothing hidden for this property) costs nothing.
         public void RevealProperty(EntadBuildingProperty property)
         {
+            PropertyFactor(property);
+            if ((hiddenPropertyMask & (1 << (int)property)) == 0) return;
             if (Find.TickManager.TicksGame - spawnedTick < 2500) return;
-            RevealWhere(EntadEffectKind.Building, m => m.def.buildingFactors != null && m.def.buildingFactors.Any(b => b.property == property));
+            for (int t = 0; t < activeTraits.Count; t++)
+            {
+                var m = activeTraits[t];
+                if (m.def.buildingFactors == null || m.IsRevealed(EntadEffectKind.Building)) continue;
+                for (int i = 0; i < m.def.buildingFactors.Count; i++)
+                    if (m.def.buildingFactors[i].property == property) { m.Reveal(EntadEffectKind.Building); break; }
+            }
         }
+
+        // Bit per EntadBuildingProperty that some unrevealed trait changes; rebuilt with propertyFactors
+        private int hiddenPropertyMask;
+
+        // The refuelable's def-shared properties, kept while EntadFuel has swapped in a per-item copy
+        internal CompProperties originalRefuelableProps;
 
         public bool FuelHidden => activeTraits.Any(m => !m.def.AllFuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
 
@@ -323,11 +342,16 @@ namespace EntadFramework
             {
                 propertyFactors = new float[System.Enum.GetValues(typeof(EntadBuildingProperty)).Length];
                 for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
+                hiddenPropertyMask = 0;
                 foreach (var m in activeTraits)
                 {
                     if (m.def.buildingFactors == null) continue;
+                    bool hidden = !m.IsRevealed(EntadEffectKind.Building);
                     for (int i = 0; i < m.def.buildingFactors.Count; i++)
+                    {
                         propertyFactors[(int)m.def.buildingFactors[i].property] *= m.BuildingFactorFor(i);
+                        if (hidden) hiddenPropertyMask |= 1 << (int)m.def.buildingFactors[i].property;
+                    }
                 }
             }
             return propertyFactors[(int)property];

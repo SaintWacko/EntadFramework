@@ -115,6 +115,8 @@ namespace EntadFramework
 
     // Furniture mood effects trigger when a pawn finishes (or is pulled off) a job that used the furniture.
     // CleanupCurrentJob is the single place every job ending passes through.
+    // "Used" means the pawn sat or lay on it, worked a bill at it, researched at it, relaxed with it (joy jobs) or
+    // ate at it. Hauling to it, repairing, refuelling, deconstructing or walking through it does not count.
     [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
     public static class Patch_CleanupCurrentJob_FurnitureMood
     {
@@ -131,24 +133,27 @@ namespace EntadFramework
             Map map = pawn.MapHeld;
             if (map == null) return;
 
-            Check(pawn, job.targetA.Thing, null);
-            Check(pawn, job.targetB.Thing, job.targetA.Thing);
-            Check(pawn, job.targetC.Thing, job.targetA.Thing, job.targetB.Thing);
+            // The building the job is about, when the job uses it: a bill at a workbench, research, or recreation
+            Thing used = null;
+            if (job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null) used = job.targetA.Thing;
+            Check(pawn, used, null);
 
-            // Chairs, beds etc. the pawn is sitting/lying on
+            // A chair or bed the pawn is sitting or lying on (not anything else on the cell, such as a door)
             List<Thing> here = pawn.Position.GetThingList(map);
-            for (int i = 0; i < here.Count; i++) Check(pawn, here[i], job.targetA.Thing, job.targetB.Thing, job.targetC.Thing);
+            for (int i = 0; i < here.Count; i++)
+            {
+                Thing t = here[i];
+                if (t.def.building != null && (t.def.building.isSittable || t.def.IsBed)) Check(pawn, t, used);
+            }
 
-            // Tables the pawn is eating at
-            if (job.def == JobDefOf.Ingest)
-                foreach (Thing t in EntadMeals.SurfaceThings(pawn)) Check(pawn, t, job.targetA.Thing, job.targetB.Thing, job.targetC.Thing);
+            // The table the pawn ate at
+            if (job.def == JobDefOf.Ingest) Check(pawn, EntadMeals.SurfaceThing(pawn), used);
         }
 
-        // Applies the furniture's mood unless it was already handled via one of the earlier targets (skip1..3)
-        private static void Check(Pawn pawn, Thing t, Thing skip1, Thing skip2 = null, Thing skip3 = null)
+        // Applies the furniture's mood unless it was already handled as the job's own building
+        private static void Check(Pawn pawn, Thing t, Thing skip)
         {
-            if (t == null || t.def.building == null) return;
-            if (t == skip1 || t == skip2 || t == skip3) return;
+            if (t == null || t == skip || t.def.building == null) return;
             EntadMoods.OnFurnitureUsed(pawn, t);
         }
     }
@@ -161,8 +166,10 @@ namespace EntadFramework
     {
         private bool computingMood;
 
-        // Normally removed explicitly when equipment changes; this is only a cheap periodic safety net
-        public override bool ShouldDiscard => pawn != null && pawn.IsHashIntervalTick(250) && !EntadMoods.IsBackedByEquipment(pawn, def);
+        // Normally removed explicitly when equipment changes; this is only a safety net. MemoryThoughtHandler checks
+        // ShouldDiscard on its own 150-tick interval, so a hash-tick gate here would almost never line up with it.
+        // The check itself is a couple of short list scans, cheap enough at that rate.
+        public override bool ShouldDiscard => pawn != null && !EntadMoods.IsBackedByEquipment(pawn, def);
 
         // The mood tab shows "expires in" whenever this is above a few ticks, ignoring the permanent flag,
         // so report no duration. Mood calculation still sees the real one (for lerpMoodToZero thoughts).

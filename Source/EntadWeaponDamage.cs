@@ -69,28 +69,46 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Projectile), nameof(Projectile.DamageDef), MethodType.Getter)]
     public static class Patch_ProjectileDamageDef
     {
-        public static void Postfix(Projectile __instance, ref DamageDef __result)
+        // Read on every hit and by several projectile code paths, so the protected field is injected (no reflection)
+        public static void Postfix(Thing ___equipment, ref DamageDef __result)
         {
-            var comp = EntadWeaponDamage.CompOf(Traverse.Create(__instance).Field("equipment").GetValue<Thing>());
+            var comp = EntadWeaponDamage.CompOf(___equipment);
             if (comp == null) return;
             DamageDef over = EntadWeaponDamage.TypeOverride(comp);
             if (over != null) __result = over;
         }
     }
 
+    // Bullet.Impact calls base.Impact before dealing its own damage, so a postfix on Projectile.Impact alone would
+    // land the extra damage before the main hit. Bullets get it after their own Impact; everything else after the base.
     [HarmonyPatch(typeof(Projectile), "Impact")]
     public static class Patch_ProjectileExtraDamage
     {
-        public static void Postfix(Projectile __instance, Thing hitThing)
+        public static void Postfix(Projectile __instance, Thing hitThing, Thing ___equipment, Thing ___launcher)
+        {
+            if (__instance is Bullet) return;
+            EntadProjectileDamage.ApplyExtra(__instance, hitThing, ___equipment, ___launcher);
+        }
+    }
+
+    [HarmonyPatch(typeof(Bullet), "Impact")]
+    public static class Patch_BulletExtraDamage
+    {
+        public static void Postfix(Bullet __instance, Thing hitThing, Thing ___equipment, Thing ___launcher)
+        {
+            EntadProjectileDamage.ApplyExtra(__instance, hitThing, ___equipment, ___launcher);
+        }
+    }
+
+    public static class EntadProjectileDamage
+    {
+        public static void ApplyExtra(Projectile projectile, Thing hitThing, Thing equipment, Thing launcher)
         {
             if (hitThing == null || hitThing.Destroyed) return;
-            var trav = Traverse.Create(__instance);
-            Thing equipment = trav.Field("equipment").GetValue<Thing>();
             var comp = EntadWeaponDamage.CompOf(equipment);
             if (comp == null) return;
 
-            Thing launcher = trav.Field("launcher").GetValue<Thing>();
-            var intended = trav.Field("intendedTarget").GetValue<LocalTargetInfo>();
+            var intended = projectile.intendedTarget;
             foreach (var m in comp.activeTraits)
             {
                 if (m.def.extraDamage == null) continue;

@@ -63,9 +63,15 @@ namespace EntadFramework
         public QualityCategory? quality;
     }
 
-    // Entry points intended for use by other mods
+    /// <summary>Entry points intended for use by other mods.</summary>
+    /// <remarks>
+    /// Request objects passed in are never modified, so a mod can keep one and reuse it.
+    /// Traits the player disabled in the settings are never picked.
+    /// </remarks>
     public static class EntadApi
     {
+        /// <summary>Every trait that could still be added to <paramref name="thing"/>: enabled, not already on it, valid
+        /// for its def and allowed by <paramref name="filter"/>. Empty when the thing cannot be an entad.</summary>
         public static List<EntadTraitDef> GetApplicableTraits(Thing thing, EntadTraitFilter filter = null)
         {
             var comp = thing?.TryGetComp<CompEntad>();
@@ -76,15 +82,27 @@ namespace EntadFramework
                 .ToList();
         }
 
-        // Applies random traits to the thing; returns the ones added (possibly fewer than requested)
+        /// <summary>Adds random traits to <paramref name="thing"/>, as many as <c>request.traitCount</c> rolls.</summary>
+        /// <returns>The traits added; fewer than requested when the candidates run out.</returns>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
+            return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
+        }
+
+        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact trait count that
+        /// overrides <c>request.traitCount</c>.</summary>
+        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
+        {
+            return ApplyRandomTraits(thing, request ?? new EntadApplyRequest(), traitCount);
+        }
+
+        private static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request, int count)
+        {
             var added = new List<EntadTraitDef>();
             var comp = thing?.TryGetComp<CompEntad>();
             if (comp == null) return added;
 
-            int count = request.traitCount.RandomInRange;
             for (int i = 0; i < count; i++)
             {
                 var candidates = GetApplicableTraits(thing, request.traitFilter);
@@ -99,6 +117,7 @@ namespace EntadFramework
             return added;
         }
 
+        /// <summary>Item defs that can become entads and match the request's kinds, lists and predicate.</summary>
         public static List<ThingDef> GetCandidateItemDefs(EntadItemRequest request)
         {
             request = request ?? new EntadItemRequest();
@@ -110,25 +129,24 @@ namespace EntadFramework
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 
-        // Generates an unspawned item with entad traits, or null if no item/trait combination fits the request.
-        // Item defs are tried in random order until one can receive at least one trait.
+        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with an exact trait count that overrides
+        /// <c>request.traitCount</c>.</summary>
         public static Thing GenerateEntadItem(int traitCount, EntadItemRequest request = null)
         {
-            request = request ?? new EntadItemRequest();
-            request.traitCount = new IntRange(traitCount, traitCount);
-            return GenerateEntadItem(request);
+            return GenerateEntadItem(request ?? new EntadItemRequest(), traitCount);
         }
 
-        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
-        {
-            request = request ?? new EntadApplyRequest();
-            request.traitCount = new IntRange(traitCount, traitCount);
-            return ApplyRandomTraits(thing, request);
-        }
-
+        /// <summary>Generates an unspawned item with entad traits. Item defs are tried in random order until one can
+        /// receive at least one trait.</summary>
+        /// <returns>The item, not yet spawned, or null when no item and trait combination fits the request.</returns>
         public static Thing GenerateEntadItem(EntadItemRequest request = null)
         {
             request = request ?? new EntadItemRequest();
+            return GenerateEntadItem(request, request.traitCount.RandomInRange);
+        }
+
+        private static Thing GenerateEntadItem(EntadItemRequest request, int traitCount)
+        {
             foreach (ThingDef def in GetCandidateItemDefs(request).InRandomOrder())
             {
                 ThingDef stuff = request.stuff;
@@ -139,8 +157,8 @@ namespace EntadFramework
                 if (quality != null && request.quality.HasValue)
                     quality.SetQuality(request.quality.Value, ArtGenerationContext.Outsider);
 
-                if (ApplyRandomTraits(thing, request).Count > 0) return thing;
-                thing.Destroy();
+                if (ApplyRandomTraits(thing, request, traitCount).Count > 0) return thing;
+                thing.Discard();
             }
             return null;
         }
