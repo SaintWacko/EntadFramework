@@ -53,7 +53,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RestfulChair</defName>
     <label>Restful</label>
-    <description>Sitting and sighing here once in a while numbs the user's pain.</description>
+    <description>Once a day, a pawn can rest here for a moment and come away with their pain halved for 4 hours.</description>
     <categories>
       <li>Furniture</li>
     </categories>
