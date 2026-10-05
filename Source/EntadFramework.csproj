@@ -1,55 +1,45 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Library</OutputType>
-        <TargetFramework>net48</TargetFramework>
+        <!-- RimWorld runs on Unity's Mono with the .NET Framework 4.7.2 surface -->
+        <TargetFramework>net472</TargetFramework>
         <RootNamespace>EntadFramework</RootNamespace>
         <AssemblyName>EntadFramework</AssemblyName>
         <LangVersion>latest</LangVersion>
         <Deterministic>true</Deterministic>
+        <OutputPath>..\Assemblies\</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <!-- Dependent mods (Forge Frenzy) and bug reports can tell builds apart by this -->
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Product>Entad Framework</Product>
+        <Authors>SaintWacko</Authors>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <Optimize>true</Optimize>
-        <OutputPath>..\Assemblies\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
         <DebugType>none</DebugType>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <Optimize>false</Optimize>
-        <OutputPath>..\Assemblies\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
         <DebugType>portable</DebugType>
     </PropertyGroup>
+
     <ItemGroup>
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Xml.Linq" />
-        <Reference Include="System.Data.DataSetExtensions" />
-        <Reference Include="Microsoft.CSharp" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Net.Http" />
-        <Reference Include="System.Xml" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Krafs.Publicizer" Version="2.*" PrivateAssets="all">
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.*-*" >
+        <!-- Reference assemblies for RimWorld + Unity, so the project builds on any machine without a game install.
+             Pinned: a floating version can pull a prerelease ref assembly on restore. -->
+        <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871">
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
         </PackageReference>
-        <PackageReference Include="Lib.Harmony" Version="2.*">
+        <!-- Pinned to the exact 0Harmony.dll that brrainz.harmony ships; a mismatch kills type loading for the whole
+             assembly. Compile-only: the Harmony mod supplies the runtime DLL, so it is never copied to Assemblies/. -->
+        <PackageReference Include="Lib.Harmony" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
-            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-    </ItemGroup>
-    <PropertyGroup>
-
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
-    <ItemGroup>
-        <Publicize Include="Assembly-CSharp" />
     </ItemGroup>
 </Project>

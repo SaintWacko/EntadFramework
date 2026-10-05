@@ -5,8 +5,8 @@
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
+  <modVersion>1.0.0</modVersion>
   <loadAfter>
-    <li>Ludeon.RimWorld</li>
     <li>brrainz.harmony</li>
   </loadAfter>
   <description>Core framework for dynamic, randomized item traits and abilities.</description>

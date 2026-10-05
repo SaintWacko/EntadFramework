@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -16,6 +17,15 @@ namespace EntadFramework
     public static class EntadAbilityPrep
     {
         private static readonly MethodInfo Clone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        // Private caches on AbilityDef that the clone would otherwise share with the source ability
+        private static readonly AccessTools.FieldRef<AbilityDef, string> CachedTooltip = AccessTools.FieldRefAccess<AbilityDef, string>("cachedTooltip");
+        private static readonly AccessTools.FieldRef<AbilityDef, List<string>> CachedTargets = AccessTools.FieldRefAccess<AbilityDef, List<string>>("cachedTargets");
+
+        // ShortHashGiver's own per-type set of taken hashes and its picker, so copies get a hash no other AbilityDef has
+        private static readonly AccessTools.FieldRef<Dictionary<System.Type, HashSet<ushort>>> TakenHashes =
+            AccessTools.StaticFieldRefAccess<Dictionary<System.Type, HashSet<ushort>>>(AccessTools.Field(typeof(ShortHashGiver), "takenHashesPerDeftype"));
+        private static readonly MethodInfo GiveShortHash = AccessTools.Method(typeof(ShortHashGiver), "GiveShortHash");
 
         static EntadAbilityPrep()
         {
@@ -44,8 +54,14 @@ namespace EntadFramework
 
             var copy = (AbilityDef)Clone.Invoke(src, null);
             copy.defName = name;
-            copy.shortHash = 0;
+            // Def equality and GetHashCode use defNameHash, which MemberwiseClone copied from the source. Without this
+            // the copy counts as equal to the vanilla ability in every HashSet, Dictionary and Contains check.
+            copy.ResolveDefNameHash();
             copy.generated = true;
+            AssignShortHash(copy);
+            // The clone shares these lists with the source by reference. They are only ever replaced below, never
+            // mutated: mutating one in place would change the vanilla ability too.
+            // comps, modExtensions, descriptionHyperlinks, statBases (until filtered)
             if (IsPsycast(src))
             {
                 copy.abilityClass = typeof(Ability);
@@ -69,12 +85,31 @@ namespace EntadFramework
                 if (copy.verbProperties == src.verbProperties) copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);
                 copy.verbProperties.warmupTime = m.abilityCastTicks / 60f;
             }
-            copy.cachedTooltip = null;
-            copy.cachedTargets = null;
+            CachedTooltip(copy) = null;
+            CachedTargets(copy) = null;
             if (!copy.iconPath.NullOrEmpty())
                 copy.uiIcon = ContentFinder<Texture2D>.Get(copy.iconPath, false) ?? copy.uiIcon;
             DefDatabase<AbilityDef>.Add(copy);
             return copy;
+        }
+
+        private static void AssignShortHash(AbilityDef copy)
+        {
+            copy.shortHash = 0;
+            try
+            {
+                var all = TakenHashes();
+                if (!all.TryGetValue(typeof(AbilityDef), out var taken))
+                {
+                    taken = new HashSet<ushort>();
+                    all[typeof(AbilityDef)] = taken;
+                }
+                GiveShortHash.Invoke(null, new object[] { copy, typeof(AbilityDef), taken });
+            }
+            catch (System.Exception e)
+            {
+                Log.Warning($"[Entad Framework] Could not give {copy.defName} a short hash: {e.Message}");
+            }
         }
     }
 }
