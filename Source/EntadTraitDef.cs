@@ -208,6 +208,9 @@ namespace EntadFramework
             }
         }
 
+        // For the settings list: a trait that rolls at more than one rarity has no single rarity to show
+        public string RarityLabel => scalesWithRarity && MaxRarity > rarity ? "EF_Rarity_Variable".Translate().ToString() : rarity.Label();
+
         public bool CanAppearAt(EntadRarity at) => scalesWithRarity ? at >= rarity && at <= MaxRarity : at == rarity;
 
         public EntadRarity ClampRarity(EntadRarity at)

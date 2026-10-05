@@ -7,6 +7,7 @@
   <EF_Rarity_Rare>Rare</EF_Rarity_Rare>
   <EF_Rarity_Epic>Epic</EF_Rarity_Epic>
   <EF_Rarity_Legendary>Legendary</EF_Rarity_Legendary>
+  <EF_Rarity_Variable>Variable</EF_Rarity_Variable>
 
   <!-- Building properties a trait can change -->
   <EF_Prop_LightRadius>Light radius</EF_Prop_LightRadius>

@@ -179,7 +179,7 @@ namespace EntadFramework
         private static string SearchText(EntadTraitDef d)
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append(d.label).Append(' ').Append(d.defName).Append(' ').Append(d.rarity).Append(' ').Append(d.rarity.Label());
+            sb.Append(d.label).Append(' ').Append(d.defName).Append(' ').Append(d.rarity).Append(' ').Append(d.RarityLabel);
             foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
@@ -229,7 +229,7 @@ namespace EntadFramework
                 bool was = on;
                 Widgets.Checkbox(row.x + 4f, row.y + 2f, ref on, 24f);
                 if (on != was) { if (on) EntadSettings.DisabledTraits.Remove(d.defName); else EntadSettings.DisabledTraits.Add(d.defName); }
-                Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), "EF_Settings_TraitRow".Translate(d.LabelCap, d.rarity.Label()));
+                Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), "EF_Settings_TraitRow".Translate(d.LabelCap, d.RarityLabel));
                 Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), Summary(d));
                 TooltipHandler.TipRegion(row, d.description);
             }
