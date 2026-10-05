@@ -101,7 +101,7 @@ namespace EntadFramework
             foreach (var m in activeTraits)
             {
                 if (m.def.killThought == null) continue;
-                pawn.needs.memories.TryGainMemory(m.def.killThought);
+                pawn.needs.mood.thoughts.memories.TryGainMemory(m.def.killThought);
                 m.Reveal(EntadEffectKind.Mood);
             }
         }
