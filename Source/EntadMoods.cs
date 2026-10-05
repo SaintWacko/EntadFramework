@@ -165,7 +165,9 @@ namespace EntadFramework
             if (workOrJoy || IsOwnUse(pawn, job)) used = job.targetA.Thing;
             // Position only counts once the pawn has stopped there: a pawn still walking is passing through, e.g.
             // across a shower on the way to its far side, or over an interaction cell while fetching ingredients.
-            bool stopped = !pawn.pather.Moving;
+            // (Downing stops the pather before the job ends, so a pawn downed mid-walk would read as stopped. A pawn
+            // held in a container has no pather at all.)
+            bool stopped = pawn.pather != null && !pawn.pather.Moving && !pawn.Downed;
             bool atUsed = stopped && used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
             // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid). Not
             // beds: crossing a double bed to reach a slot would count, so beds go through CurrentBed below instead.
