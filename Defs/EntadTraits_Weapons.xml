@@ -3,7 +3,7 @@
 <Defs>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HairTrigger</defName>
-    <label>hair trigger</label>
+    <label>Hair Trigger</label>
     <description>The slightest touch sets it off.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -12,7 +12,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavySlugs</defName>
-    <label>heavy slugs</label>
+    <label>Heavy Slugs</label>
     <description>Ammunition fired from this weapon hits a little harder.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -21,7 +21,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SteadyBarrel</defName>
-    <label>steady barrel</label>
+    <label>Steady Barrel</label>
     <description>There is almost no recoil.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -30,7 +30,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MarksmansEye</defName>
-    <label>marksman's eye</label>
+    <label>Marksman's Eye</label>
     <description>Whoever holds it sees exactly where the shot will land.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -39,7 +39,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Stormfeed</defName>
-    <label>stormfeed</label>
+    <label>Stormfeed</label>
     <description>It never seems to run out of momentum.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
@@ -48,7 +48,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sharpshooter</defName>
-    <label>sharpshooter</label>
+    <label>Sharpshooter</label>
     <description>Every shot is placed with uncanny care and force.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
@@ -57,7 +57,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Parrying</defName>
-    <label>parrying</label>
+    <label>Parrying</label>
     <description>It always seems to be in the way of incoming blows.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -66,7 +66,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavyHitter</defName>
-    <label>heavy hitter</label>
+    <label>Heavy Hitter</label>
     <description>It carries more weight than it should.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -75,7 +75,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RecklessEdge</defName>
-    <label>reckless edge</label>
+    <label>Reckless Edge</label>
     <description>Hits hard, but leaves the wielder off balance.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -84,7 +84,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Bruising</defName>
-    <label>bruising</label>
+    <label>Bruising</label>
     <description>Blows leave deep bruises.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -93,7 +93,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Razoredge</defName>
-    <label>razor-edged</label>
+    <label>Razor-Edged</label>
     <description>Cuts far deeper than the blade should.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -102,7 +102,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Piercing</defName>
-    <label>piercing</label>
+    <label>Piercing</label>
     <description>Finds the gaps in anything.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -111,7 +111,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Searing</defName>
-    <label>searing</label>
+    <label>Searing</label>
     <description>Leaves burns wherever it strikes.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -120,7 +120,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Stunning</defName>
-    <label>stunning</label>
+    <label>Stunning</label>
     <description>Targets reel from every hit.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -129,11 +129,39 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Shocking</defName>
-    <label>shocking</label>
+    <label>Shocking</label>
     <description>Crackles with static, and wrecks machinery.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>EMP</damageType><min>2</min><max>6</max></li></extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_AcceleratedRounds</defName>
+    <label>Accelerated Rounds</label>
+    <description>Projectiles leave this weapon with far more force.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <statFactors>
+      <li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.6</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Cinderstrike</defName>
+    <label>Cinderstrike</label>
+    <description>Every hit scorches the target.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <extraDamage>
+      <li><damageType>Flame</damageType><min>2</min><max>6</max></li>
+    </extraDamage>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Frostbite</defName>
+    <label>Frostbite</label>
+    <description>This weapon's attacks are bitterly cold.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <changeDamageType>Frostbite</changeDamageType>
   </EntadFramework.EntadTraitDef>
 </Defs>

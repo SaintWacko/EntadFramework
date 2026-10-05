@@ -30,7 +30,7 @@ namespace EntadFramework
                     case "ConstructionSpeed": case "SmoothingSpeed": return EntadStatTrigger.Construction;
                     case "PlantWorkSpeed": case "PlantHarvestYield": return EntadStatTrigger.Plant;
                     case "ResearchSpeed": return EntadStatTrigger.Research;
-                    case "MedicalTendQuality": case "MedicalTendSpeed": case "SurgerySuccessChanceFactor": return EntadStatTrigger.Doctor;
+                    case "MedicalTendQuality": case "MedicalTendSpeed": case "SurgerySuccessChanceFactor": case "MedicalSurgerySuccessChance": return EntadStatTrigger.Doctor;
                     case "TameAnimalChance": case "TrainAnimalChance": return EntadStatTrigger.Animals;
                     case "NegotiationAbility": case "TradePriceImprovement": return EntadStatTrigger.Trade;
                     case "SocialImpact": return EntadStatTrigger.Social;

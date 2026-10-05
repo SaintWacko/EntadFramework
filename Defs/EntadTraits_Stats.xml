@@ -3,7 +3,7 @@
 <Defs>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RapidCycling</defName>
-    <label>rapid cycling</label>
+    <label>Rapid Cycling</label>
     <description>The action cycles faster than it should.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -14,7 +14,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_TrueSights</defName>
-    <label>true sights</label>
+    <label>True Sights</label>
     <description>Shots seem to want to land where you look.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -28,7 +28,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_LongSight</defName>
-    <label>long sight</label>
+    <label>Long Sight</label>
     <description>Distant targets feel closer.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
@@ -40,7 +40,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BrutalEdge</defName>
-    <label>brutal edge</label>
+    <label>Brutal Edge</label>
     <description>Blows land with unusual weight.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -51,7 +51,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_QuickStrikes</defName>
-    <label>quick strikes</label>
+    <label>Quick Strikes</label>
     <description>The weapon is eager to strike again.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
@@ -62,7 +62,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_WardingWeave</defName>
-    <label>warding weave</label>
+    <label>Warding Weave</label>
     <description>Blades seem to slide off.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -73,7 +73,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_CushioningWeave</defName>
-    <label>cushioning weave</label>
+    <label>Cushioning Weave</label>
     <description>Impacts are strangely dulled.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -84,7 +84,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_EmberWard</defName>
-    <label>ember ward</label>
+    <label>Ember Ward</label>
     <description>Fire licks harmlessly at it.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -95,7 +95,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Winterproof</defName>
-    <label>winterproof</label>
+    <label>Winterproof</label>
     <description>Cold simply stops at the fabric.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -106,7 +106,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Summerproof</defName>
-    <label>summerproof</label>
+    <label>Summerproof</label>
     <description>Heat simply stops at the fabric.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -117,7 +117,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Hardiness</defName>
-    <label>hardiness</label>
+    <label>Hardiness</label>
     <description>Comfortable across a wider range of temperatures.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -129,7 +129,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Swiftness</defName>
-    <label>swiftness</label>
+    <label>Swiftness</label>
     <description>The wearer's steps feel lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -140,7 +140,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Industriousness</defName>
-    <label>industriousness</label>
+    <label>Industriousness</label>
     <description>Work seems to go faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
@@ -151,18 +151,18 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SteadyHands</defName>
-    <label>steady hands</label>
+    <label>Steady Hands</label>
     <description>Fine work and careful aim come easier.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
-      <li><stat>ShootingAccuracyPawn</stat><min>1</min><max>4</max></li>
+      <li><stat>ShootingAccuracyPawn</stat><min>0.02</min><max>0.06</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Duelist</defName>
-    <label>duelist</label>
+    <label>Duelist</label>
     <description>Strikes find their mark more often.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -173,7 +173,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Evasion</defName>
-    <label>evasion</label>
+    <label>Evasion</label>
     <description>The wearer is hard to hit in melee.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -184,7 +184,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Attunement</defName>
-    <label>attunement</label>
+    <label>Attunement</label>
     <description>Heightened sensitivity to the psychic.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
@@ -195,7 +195,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Composure</defName>
-    <label>composure</label>
+    <label>Composure</label>
     <description>Stress rolls off the wearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
@@ -206,7 +206,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Resilience</defName>
-    <label>resilience</label>
+    <label>Resilience</label>
     <description>Illness is shaken off quickly.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -217,7 +217,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HealersTouch</defName>
-    <label>healer's touch</label>
+    <label>Healer's Touch</label>
     <description>Treatment is more effective.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -228,18 +228,18 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SteadySurgeon</defName>
-    <label>steady surgeon</label>
+    <label>Steady Surgeon</label>
     <description>Surgery is less likely to go wrong.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
-      <li><stat>SurgerySuccessChanceFactor</stat><min>0.05</min><max>0.2</max></li>
+      <li><stat>MedicalSurgerySuccessChance</stat><min>0.05</min><max>0.2</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Porter</defName>
-    <label>porter</label>
+    <label>Porter</label>
     <description>The load feels lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -250,7 +250,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Delver</defName>
-    <label>delver</label>
+    <label>Delver</label>
     <description>Stone yields to the wearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -261,7 +261,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Builder</defName>
-    <label>builder</label>
+    <label>Builder</label>
     <description>Construction goes faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -272,7 +272,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_GreenThumb</defName>
-    <label>green thumb</label>
+    <label>Green Thumb</label>
     <description>Plants thrive under careful hands.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -284,7 +284,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Scholar</defName>
-    <label>scholar</label>
+    <label>Scholar</label>
     <description>Ideas arrive faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -295,7 +295,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_QuickStudy</defName>
-    <label>quick study</label>
+    <label>Quick Study</label>
     <description>Skills are learned faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
@@ -306,7 +306,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Charisma</defName>
-    <label>charisma</label>
+    <label>Charisma</label>
     <description>People are inclined to listen.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -317,7 +317,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SilverTongue</defName>
-    <label>silver tongue</label>
+    <label>Silver Tongue</label>
     <description>Negotiations go better.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -329,7 +329,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_AnimalFriend</defName>
-    <label>animal friend</label>
+    <label>Animal Friend</label>
     <description>Animals take to the wearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -341,7 +341,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Stoicism</defName>
-    <label>stoicism</label>
+    <label>Stoicism</label>
     <description>Pain is easier to bear.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -352,7 +352,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Restfulness</defName>
-    <label>restfulness</label>
+    <label>Restfulness</label>
     <description>Sleep is deeper and more restoring.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -363,7 +363,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Appetite</defName>
-    <label>appetite</label>
+    <label>Appetite</label>
     <description>Meals are finished quickly.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -374,7 +374,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Allure</defName>
-    <label>allure</label>
+    <label>Allure</label>
     <description>The wearer is striking to behold.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -385,7 +385,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Purity</defName>
-    <label>purity</label>
+    <label>Purity</label>
     <description>Toxins find no purchase.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
@@ -396,7 +396,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Toil</defName>
-    <label>toil</label>
+    <label>Toil</label>
     <description>General labor goes faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
@@ -407,7 +407,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sturdy</defName>
-    <label>sturdy</label>
+    <label>Sturdy</label>
     <description>Far harder to damage than it looks.</description>
     <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -418,7 +418,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Fireproof</defName>
-    <label>fireproof</label>
+    <label>Fireproof</label>
     <description>Flames refuse to take hold.</description>
     <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -429,7 +429,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Ageless</defName>
-    <label>ageless</label>
+    <label>Ageless</label>
     <description>Time barely touches it.</description>
     <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -440,7 +440,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Lovely</defName>
-    <label>lovely</label>
+    <label>Lovely</label>
     <description>Simply pleasant to look at.</description>
     <categories><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -451,7 +451,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SoothingPresence</defName>
-    <label>soothing presence</label>
+    <label>Soothing Presence</label>
     <description>A calm settles over the room.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -462,7 +462,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SelfCleaning</defName>
-    <label>self-cleaning</label>
+    <label>Self-Cleaning</label>
     <description>The area around it stays tidy.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -473,7 +473,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Efficient</defName>
-    <label>efficient</label>
+    <label>Efficient</label>
     <description>Work done here goes faster.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
@@ -484,7 +484,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Precise</defName>
-    <label>precise</label>
+    <label>Precise</label>
     <description>Work done here comes out better.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
@@ -495,7 +495,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_DeepSleep</defName>
-    <label>deep sleep</label>
+    <label>Deep Sleep</label>
     <description>Rest here is especially restorative.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
@@ -506,7 +506,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Healthful</defName>
-    <label>healthful</label>
+    <label>Healthful</label>
     <description>Patients recover faster here.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
@@ -518,7 +518,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Amusing</defName>
-    <label>amusing</label>
+    <label>Amusing</label>
     <description>Recreation here is more fun.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
@@ -529,7 +529,7 @@
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Inspired</defName>
-    <label>inspired</label>
+    <label>Inspired</label>
     <description>Research here moves faster.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>

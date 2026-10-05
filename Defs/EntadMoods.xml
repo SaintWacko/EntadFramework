@@ -2,7 +2,7 @@
   <ThoughtDef>
     <defName>Entad_Thought_Contentment</defName>
     <durationDays>1</durationDays>
-    <stackLimit>5</stackLimit>
+    <stackLimit>1</stackLimit>
     <stages>
       <li>
         <label>entad contentment</label>
@@ -14,7 +14,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Contentment</defName>
-    <label>contentment</label>
+    <label>Contentment</label>
     <description>Whoever holds or uses this item feels strangely at ease.</description>
     <categories>
       <li>Weapon</li>
@@ -31,7 +31,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RandomGoodMood</defName>
-    <label>fickle cheer</label>
+    <label>Fickle Cheer</label>
     <description>Whoever holds or uses this item is overcome by a random good feeling.</description>
     <categories>
       <li>Weapon</li>

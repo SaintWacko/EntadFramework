@@ -21,13 +21,7 @@ namespace EntadFramework
         public float min;
         public float max;
 
-        public float Roll() => Rand.Range(min, max);
-
-        // Position of a value within [min, max], 0..1 (0.5 when the range is degenerate)
-        public float Normalize(float value)
-        {
-            return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
-        }
+        private float Roll() => Rand.Range(min, max);
 
         // Rarity scaling widens the whole range: offsets multiply, factors scale their distance from 1
         public float RollScaled(float scale, bool factor) => EntadTraitDef.Scale(Roll(), scale, factor);
@@ -58,12 +52,7 @@ namespace EntadFramework
         public float min = 1f;
         public float max = 1f;
 
-        public float Roll() => Rand.Range(min, max);
-
-        public float Normalize(float value)
-        {
-            return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
-        }
+        private float Roll() => Rand.Range(min, max);
 
         public float RollScaled(float scale) => EntadTraitDef.Scale(Roll(), scale, true);
 
@@ -122,12 +111,7 @@ namespace EntadFramework
         public float min = 1f;
         public float max = 1f;
 
-        public float Roll() => Rand.Range(min, max);
-
-        public float Normalize(float value)
-        {
-            return max - min > 0.0001f ? UnityEngine.Mathf.InverseLerp(min, max, value) : 0.5f;
-        }
+        private float Roll() => Rand.Range(min, max);
 
         public float RollScaled(float scale) => Roll() * scale;
 
@@ -316,8 +300,6 @@ namespace EntadFramework
         // exclusiveWith / exclusivityTags still apply.
         public bool allowOverlap;
 
-        public string discoveryMessage;
-
         public bool ConflictsWith(EntadTraitDef other)
         {
             if (other == null) return false;
@@ -364,8 +346,6 @@ namespace EntadFramework
                 }
             }
         }
-
-        public float BaseMarketValue => BaseMarketValueAt(rarity);
 
         public static float MoodEffectOf(ThoughtDef t) => t.stages[0].baseMoodEffect;
 
@@ -505,12 +485,6 @@ namespace EntadFramework
                 }
                 return weaponSpecific == 1;
             }
-        }
-
-        public override void PostLoad()
-        {
-            base.PostLoad();
-            if (!label.NullOrEmpty()) label = GenText.ToTitleCaseSmart(label);
         }
 
         private static readonly HashSet<string> WearerCategories = new HashSet<string>

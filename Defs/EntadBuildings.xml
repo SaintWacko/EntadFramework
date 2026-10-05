@@ -1,7 +1,7 @@
 <Defs>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BrightHearth</defName>
-    <label>bright</label>
+    <label>Bright</label>
     <description>Burns with a wider, warmer glow than it should.</description>
     <categories>
       <li>Furniture</li>
@@ -23,7 +23,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_FrugalBurner</defName>
-    <label>frugal</label>
+    <label>Frugal</label>
     <description>Needs less fuel to run and holds more of it.</description>
     <categories>
       <li>Furniture</li>
@@ -45,7 +45,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_OverflowingGenerator</defName>
-    <label>overflowing</label>
+    <label>Overflowing</label>
     <description>Generates more power than it has any right to.</description>
     <categories>
       <li>Furniture</li>
@@ -62,7 +62,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SerenityFocus</defName>
-    <label>serene</label>
+    <label>Serene</label>
     <description>A stronger meditation focus.</description>
     <categories>
       <li>Furniture</li>
@@ -79,7 +79,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_PotentCooling</defName>
-    <label>potent</label>
+    <label>Potent</label>
     <description>Heats or cools much harder than it should.</description>
     <categories>
       <li>Furniture</li>
@@ -96,7 +96,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_ThriftyDevice</defName>
-    <label>thrifty</label>
+    <label>Thrifty</label>
     <description>Draws less power than it should.</description>
     <categories>
       <li>Furniture</li>
@@ -113,7 +113,7 @@
 
   <EntadFramework.EntadTraitDef>
     <defName>Entad_StoneBurner</defName>
-    <label>stone-burning</label>
+    <label>Stone-Burning</label>
     <description>Somehow burns rock instead of wood.</description>
     <categories>
       <li>Furniture</li>
@@ -123,5 +123,21 @@
     <fuelCategories>
       <li>StoneBlocks</li>
     </fuelCategories>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BlessedComfort</defName>
+    <label>Blessed Comfort</label>
+    <description>An ethereal warmth radiates from this object, easing the mind of anyone using it.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <statOffsets>
+      <li>
+        <stat>Comfort</stat>
+        <min>0.05</min>
+        <max>0.25</max>
+      </li>
+    </statOffsets>
   </EntadFramework.EntadTraitDef>
 </Defs>
