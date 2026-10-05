@@ -12,6 +12,19 @@
     </stages>
   </ThoughtDef>
 
+  <ThoughtDef>
+    <defName>Entad_Thought_BattleJoy</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>battle joy</label>
+        <description>My weapon sang when it struck them down.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Contentment</defName>
     <label>Contentment</label>

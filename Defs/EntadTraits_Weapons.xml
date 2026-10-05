@@ -11,6 +11,49 @@
     <statFactors><li><stat>RangedWeapon_Cooldown</stat><min>0.8</min><max>0.92</max></li></statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
+    <defName>Entad_RapidVolley</defName>
+    <label>Rapid Volley</label>
+    <description>Each pull of the trigger lets loose more shots than the weapon was built for.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <weaponProperties><li><property>BurstShotCount</property><min>1.25</min><max>1.5</max></li></weaponProperties>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Quickfire</defName>
+    <label>Quickfire</label>
+    <description>Shots in a burst follow one another faster.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <weaponProperties><li><property>BurstShotSpeed</property><min>1.2</min><max>1.5</max></li></weaponProperties>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_ImpactRounds</defName>
+    <label>Impact Rounds</label>
+    <description>Its shots knock targets back on their heels, slowing them down.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <weaponProperties><li><property>StoppingPower</property><min>0.5</min><max>1</max></li></weaponProperties>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stormsight</defName>
+    <label>Stormsight</label>
+    <description>Rain, fog and smoke do nothing to spoil its aim.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <ignoreAccuracyMaluses>true</ignoreAccuracyMaluses>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BattleJoy</defName>
+    <label>Battle Joy</label>
+    <description>The wielder feels a rush of joy with every kill.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <killThought>Entad_Thought_BattleJoy</killThought>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavySlugs</defName>
     <label>Heavy Slugs</label>
     <description>Ammunition fired from this weapon hits a little harder.</description>
