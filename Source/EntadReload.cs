@@ -100,7 +100,7 @@ namespace EntadFramework
                 any = true;
                 if (ammo.Destroyed) break;
             }
-            if (any) SoundDefOf.Standard_Reload?.PlayOneShot(new TargetInfo(comp.parent.PositionHeld, comp.parent.MapHeld));
+            if (any) DefDatabase<SoundDef>.GetNamedSilentFail("Standard_Reload")?.PlayOneShot(new TargetInfo(comp.parent.PositionHeld, comp.parent.MapHeld));
         }
 
         public static List<Thing> FindAmmo(Pawn pawn, IntVec3 root, Slot s, bool forced)
