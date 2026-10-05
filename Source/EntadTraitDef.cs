@@ -362,7 +362,7 @@ namespace EntadFramework
                 t.IsMemory && t.ThoughtClass == typeof(Thought_Memory) && t.stages != null && t.stages.Count == 1
                 && t.stages[0] != null && t.stages[0].visible && t.requiredTraits.NullOrEmpty() && t.requiredGenes.NullOrEmpty()
                 && t.nextThought == null && t.thoughtToMake == null && t.stages[0].baseMoodEffect != 0f
-                && IsSelfContained(t.stages[0])
+                && IsSelfContained(t.stages[0]) && !AboutDeath(t)
                 && thoughtMoodRange.Includes(MoodEffectOf(t))).ToList());
         }
 
@@ -375,6 +375,13 @@ namespace EntadFramework
         }
 
         private static readonly char[] PlaceholderChars = { '{', '[' };
+
+        // Memories of a death or a witnessed atrocity ("colonist died", "prisoner died innocent") would claim an event
+        // that never happened. Vanilla and most mods mark those as nullified by Psychopath, so that is the test.
+        private static bool AboutDeath(ThoughtDef t)
+        {
+            return t.nullifyingTraits != null && TraitDefOf.Psychopath != null && t.nullifyingTraits.Contains(TraitDefOf.Psychopath);
+        }
 
         // Cached: IsRevealed/AnyHidden read this on stat and draw paths, and computing it allocates AllRanges
         // iterators. Everything it reads is def data fixed after loading (EntadAbilityPrep swaps ability entries

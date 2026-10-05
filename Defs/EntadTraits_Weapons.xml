@@ -116,7 +116,7 @@
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
     <extraDamage>
-      <li><damageType>Flame</damageType><min>2</min><max>6</max></li>
+      <li><damageType>Flame</damageType><min>4</min><max>10</max></li>
     </extraDamage>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>

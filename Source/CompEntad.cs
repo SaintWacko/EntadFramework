@@ -48,6 +48,10 @@ namespace EntadFramework
 
         public void ExposeData()
         {
+            // The name as written in the save, before BackCompatibility maps a removed trait onto its replacement
+            // (Patch_BackCompatibleDefName). Read only while loading: on save it would write a second "def" node.
+            string savedName = null;
+            if (Scribe.mode == LoadSaveMode.LoadingVars) Scribe_Values.Look(ref savedName, "def");
             Scribe_Defs.Look(ref def, "def");
             Scribe_Values.Look(ref rarityValue, "rarity", -1);
             Scribe_Collections.Look(ref offsetValues, "offsetValues", LookMode.Value);
@@ -63,6 +67,11 @@ namespace EntadFramework
             if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyRevealed && revealedKinds == EntadEffectKind.All) revealedKinds = EntadEffectKind.None;
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             Scribe_Collections.Look(ref abilityCharges, "abilityCharges", LookMode.Value);
+            // A trait saved under a removed name: its stored rolls came from the old trait's range, which can be far
+            // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Steady Hands rolls 1-4).
+            // Re-roll the values at the saved rarity so the item behaves like any other copy of the replacement.
+            if (Scribe.mode == LoadSaveMode.LoadingVars && def != null && savedName != null && savedName != def.defName)
+                RerollValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
@@ -72,6 +81,16 @@ namespace EntadFramework
                 buildingValues = buildingValues ?? new List<float>();
                 extraDamageValues = extraDamageValues ?? new List<float>();
             }
+        }
+
+        private void RerollValues()
+        {
+            var fresh = Roll(def, Rarity);
+            rarityValue = fresh.rarityValue;
+            offsetValues = fresh.offsetValues;
+            factorValues = fresh.factorValues;
+            extraDamageValues = fresh.extraDamageValues;
+            buildingValues = fresh.buildingValues;
         }
 
         public static AppliedEntadTrait Roll(EntadTraitDef def, EntadRarity? rarity = null)

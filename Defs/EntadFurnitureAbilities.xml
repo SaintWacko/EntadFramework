@@ -27,6 +27,8 @@
     <iconPath>UI/Commands/Draft</iconPath>
     <cooldownTicksRange>60000~60000</cooldownTicksRange>
     <targetRequired>false</targetRequired>
+    <!-- Abilities default to hostile, which would mark the pawn as in combat every time it rests -->
+    <hostile>false</hostile>
     <!-- The hediff's own disappearsAfterTicks is overwritten by CompAbilityEffect_GiveHediff with this duration
          (seconds; 167 s = about 10000 ticks, 4 in-game hours). Without it the hediff would vanish on its next tick. -->
     <statBases>
@@ -53,11 +55,12 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RestfulChair</defName>
     <label>Restful</label>
-    <description>Once a day, a pawn can rest here for a moment and come away with their pain halved for 4 hours.</description>
+    <description>Once a day, a pawn can pause by it for a few seconds and come away with their pain halved for 4 hours.</description>
     <categories>
       <li>Furniture</li>
     </categories>
     <rarity>Rare</rarity>
+    <abilityCastTicks>250</abilityCastTicks>
     <abilities>
       <li>Entad_RestfulSigh</li>
     </abilities>
