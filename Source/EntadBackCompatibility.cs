@@ -7,8 +7,9 @@ using Verse;
 namespace EntadFramework
 {
     // Traits that were removed as duplicates of another trait on the same stat. Saves that still hold one load it as
-    // its replacement instead of logging "Could not load reference" and dropping it. Each pair changes the same stats
-    // in the same order, so the item's stored rolls carry over unchanged.
+    // its replacement instead of logging "Could not load reference" and dropping it. The old rolls came from the
+    // removed trait's range, which can be far from the replacement's (Marksman's Eye 0.03-0.1 vs Steady Hands 1-4),
+    // so AppliedEntadTrait.ExposeData notices the name changed and re-rolls the values at the saved rarity.
     [HarmonyPatch(typeof(BackCompatibility), nameof(BackCompatibility.BackCompatibleDefName))]
     public static class Patch_BackCompatibleDefName
     {
