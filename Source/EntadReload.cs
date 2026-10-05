@@ -47,15 +47,17 @@ namespace EntadFramework
         }
 
         // Reloadable slots on the gear a pawn is using whose traits work for that pawn
+        // Two items with the same trait share one pawn Ability, so only the first one's slot is offered
         public static IEnumerable<Slot> SlotsFor(Pawn pawn)
         {
             if (pawn == null) yield break;
+            var seen = new HashSet<AbilityDef>();
             if (pawn.equipment != null)
                 foreach (var eq in pawn.equipment.AllEquipmentListForReading)
-                    foreach (var s in ActiveSlots(eq, pawn)) yield return s;
+                    foreach (var s in ActiveSlots(eq, pawn)) if (seen.Add(s.Ability)) yield return s;
             if (pawn.apparel != null)
                 foreach (var ap in pawn.apparel.WornApparel)
-                    foreach (var s in ActiveSlots(ap, pawn)) yield return s;
+                    foreach (var s in ActiveSlots(ap, pawn)) if (seen.Add(s.Ability)) yield return s;
         }
 
         private static IEnumerable<Slot> ActiveSlots(Thing gear, Pawn pawn)

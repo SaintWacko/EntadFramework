@@ -187,10 +187,17 @@ namespace EntadFramework
         public bool AppliesTo(ThingDef td)
         {
             if (!td.IsRangedWeapon || td.Verbs.NullOrEmpty()) return false;
-            if (property != EntadWeaponProperty.StoppingPower) return td.Verbs.Any(v => v.burstShotCount > 1);
-            if (property == EntadWeaponProperty.StoppingPower) return td.Verbs.Any(v => v.defaultProjectile?.projectile != null);
-            return true;
+            switch (property)
+            {
+                case EntadWeaponProperty.BurstShotCount:
+                case EntadWeaponProperty.BurstShotSpeed: return td.Verbs.Any(v => v.burstShotCount > 1);
+                case EntadWeaponProperty.StoppingPower: return td.Verbs.Any(v => v.defaultProjectile?.projectile != null);
+                default: return false;
+            }
         }
+
+        // Highest value rarity scaling may push this to; past it the trait stops being offered at higher rarities
+        public float MaxScaled => property == EntadWeaponProperty.StoppingPower ? 3f : 3f;
     }
 
     [System.Flags]
@@ -249,6 +256,14 @@ namespace EntadFramework
                     if (1f + (UnityEngine.Mathf.Min(b.min, b.max) - 1f) * scale < MinScaledFactor) return false;
             foreach (var r in Ranges(statOffsets))
                 if (r.stat != null && UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(r.min), UnityEngine.Mathf.Abs(r.max)) * scale > r.stat.maxValue) return false;
+            // Burst factors and stopping power: a factor can't drop to nothing, and nothing may pass its cap
+            if (weaponProperties != null)
+                foreach (var w in weaponProperties)
+                {
+                    float lo = EntadTraitDef.Scale(UnityEngine.Mathf.Min(w.min, w.max), scale, w.IsFactor);
+                    float hi = EntadTraitDef.Scale(UnityEngine.Mathf.Max(w.min, w.max), scale, w.IsFactor);
+                    if ((w.IsFactor && lo <= MinScaledFactor) || hi > w.MaxScaled) return false;
+                }
             return true;
         }
 
@@ -543,6 +558,11 @@ namespace EntadFramework
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
             if (abilityAmmo != null && abilityAmmoPerCharge <= 0) yield return $"{defName}: abilityAmmoPerCharge must be at least 1";
+            if (abilityAmmo != null && abilityReloadTicks < 0) yield return $"{defName}: abilityReloadTicks can't be negative";
+            if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
+            if (killThought != null && (!killThought.requiredTraits.NullOrEmpty() || !killThought.requiredGenes.NullOrEmpty()
+                || !killThought.requiredHediffs.NullOrEmpty() || killThought.gender != Gender.None || killThought.minExpectation != null))
+                yield return $"{defName}: killThought {killThought.defName} has requirements most wielders won't meet, so it would usually do nothing";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item

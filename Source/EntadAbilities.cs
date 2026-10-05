@@ -64,8 +64,11 @@ namespace EntadFramework
                 {
                     AbilityDef ability = m.def.abilities[i];
                     var held = pawn.abilities.GetAbility(ability);
-                    if (stillGranted.Contains(ability) || held == null) continue;
+                    if (held == null) continue;
+                    // Store even when other gear keeps the ability: two items share one pawn Ability, and an item
+                    // that wrote nothing back would come off still reading full, refilled for free
                     if (m.def.IsReloadable) m.SetStoredCharges(i, held.RemainingCharges);
+                    if (stillGranted.Contains(ability)) continue;
                     pawn.abilities.RemoveAbility(ability);
                 }
             }

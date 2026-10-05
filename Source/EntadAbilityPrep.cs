@@ -95,6 +95,7 @@ namespace EntadFramework
                 copy.cooldownTicksRange = default;
                 copy.cooldownPerCharge = true;
                 copy.groupDef = null;
+                copy.hasExternallyHandledCooldown = false;
             }
             if (m.abilityCastTicks > 0 && src.verbProperties != null)
             {

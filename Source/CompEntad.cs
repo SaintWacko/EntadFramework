@@ -74,9 +74,13 @@ namespace EntadFramework
             // Re-roll the values at the saved rarity so the item behaves like any other copy of the replacement.
             // Also when the def has gained or lost a range since the save (Frostbite moved from a damage type to
             // extra damage, so old copies had no roll for it and dealt +0): the stored lists no longer line up.
-            if (Scribe.mode == LoadSaveMode.LoadingVars && def != null
-                && ((savedName != null && savedName != def.defName) || !ListsMatchDef()))
-                RerollValues();
+            if (Scribe.mode == LoadSaveMode.LoadingVars && def != null)
+            {
+                if (savedName != null && savedName != def.defName) RerollValues();
+                // Same trait, retuned: re-roll only the lists that changed shape, keeping the mood, meal rolls,
+                // cooldowns and stored charges the player already has
+                else if (!ListsMatchDef()) RerollMismatchedLists();
+            }
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
@@ -96,6 +100,16 @@ namespace EntadFramework
                 && (extraDamageValues?.Count ?? 0) == (def.extraDamage?.Count ?? 0)
                 && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0)
                 && (weaponValues?.Count ?? 0) == (def.weaponProperties?.Count ?? 0);
+        }
+
+        private void RerollMismatchedLists()
+        {
+            var fresh = Roll(def, Rarity);
+            if ((offsetValues?.Count ?? 0) != (def.statOffsets?.Count ?? 0)) offsetValues = fresh.offsetValues;
+            if ((factorValues?.Count ?? 0) != (def.statFactors?.Count ?? 0)) factorValues = fresh.factorValues;
+            if ((extraDamageValues?.Count ?? 0) != (def.extraDamage?.Count ?? 0)) extraDamageValues = fresh.extraDamageValues;
+            if ((buildingValues?.Count ?? 0) != (def.buildingFactors?.Count ?? 0)) buildingValues = fresh.buildingValues;
+            if ((weaponValues?.Count ?? 0) != (def.weaponProperties?.Count ?? 0)) weaponValues = fresh.weaponValues;
         }
 
         private void RerollValues()
