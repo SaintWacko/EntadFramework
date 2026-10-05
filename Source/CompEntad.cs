@@ -70,7 +70,10 @@ namespace EntadFramework
             // A trait saved under a removed name: its stored rolls came from the old trait's range, which can be far
             // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Steady Hands rolls 1-4).
             // Re-roll the values at the saved rarity so the item behaves like any other copy of the replacement.
-            if (Scribe.mode == LoadSaveMode.LoadingVars && def != null && savedName != null && savedName != def.defName)
+            // Also when the def has gained or lost a range since the save (Frostbite moved from a damage type to
+            // extra damage, so old copies had no roll for it and dealt +0): the stored lists no longer line up.
+            if (Scribe.mode == LoadSaveMode.LoadingVars && def != null
+                && ((savedName != null && savedName != def.defName) || !ListsMatchDef()))
                 RerollValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -81,6 +84,14 @@ namespace EntadFramework
                 buildingValues = buildingValues ?? new List<float>();
                 extraDamageValues = extraDamageValues ?? new List<float>();
             }
+        }
+
+        private bool ListsMatchDef()
+        {
+            return (offsetValues?.Count ?? 0) == (def.statOffsets?.Count ?? 0)
+                && (factorValues?.Count ?? 0) == (def.statFactors?.Count ?? 0)
+                && (extraDamageValues?.Count ?? 0) == (def.extraDamage?.Count ?? 0)
+                && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0);
         }
 
         private void RerollValues()

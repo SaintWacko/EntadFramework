@@ -33,7 +33,7 @@ namespace EntadFramework
 
             // A bound item held by someone outside the bloodline: its trait stats don't apply. Market value and
             // durability are the item's own and stay. An item nobody holds counts as active (ActiveFor(null)).
-            bool userActive = parentStat == StatDefOf.MarketValue || comp.ActiveForHolder;
+            bool userActive = parentStat == StatDefOf.MarketValue || parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
@@ -76,7 +76,7 @@ namespace EntadFramework
 
             string explanation = "";
             bool unidentified = false;
-            bool userActive = comp.ActiveForHolder;
+            bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;

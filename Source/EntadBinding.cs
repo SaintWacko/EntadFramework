@@ -97,9 +97,9 @@ namespace EntadFramework
         // Called on equip (weapons, apparel) and on own use of furniture, before the traits are checked for that pawn.
         public void TryBindOnUse(Pawn pawn)
         {
-            // Not while the pawn is being generated: a raider or trader handed an entad at generation would bind it,
-            // and the colonist who loots it would get an ordinary item. Binding is for a pawn choosing to use it.
-            if (pawn == null || IsBound || !BindsOnFirstUse || PawnGenerator.IsBeingGenerated(pawn)) return;
+            // Player pawns only, and not while being generated: a raider handed an entad at generation, or picking
+            // one up mid-raid, would bind it, and the colonist who loots it would get an ordinary item.
+            if (pawn == null || IsBound || !BindsOnFirstUse || pawn.Faction != Faction.OfPlayer || PawnGenerator.IsBeingGenerated(pawn)) return;
             Bind(new[] { pawn });
         }
 
