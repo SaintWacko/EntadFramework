@@ -18,13 +18,17 @@ namespace EntadFramework
     {
         private static readonly MethodInfo Clone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        // Private members of vanilla this reaches into. Looked up as plain FieldInfo/MethodInfo (null when missing) rather
+        // than FieldRefAccess, which throws: a throw in a static initialiser would abort this whole class, so a field
+        // renamed in a future game version would stop every ability copy instead of skipping one cosmetic step.
+        // Only used at startup, a few times per ability, so reflection's speed doesn't matter.
+
         // Private caches on AbilityDef that the clone would otherwise share with the source ability
-        private static readonly AccessTools.FieldRef<AbilityDef, string> CachedTooltip = AccessTools.FieldRefAccess<AbilityDef, string>("cachedTooltip");
-        private static readonly AccessTools.FieldRef<AbilityDef, List<string>> CachedTargets = AccessTools.FieldRefAccess<AbilityDef, List<string>>("cachedTargets");
+        private static readonly FieldInfo CachedTooltip = AccessTools.Field(typeof(AbilityDef), "cachedTooltip");
+        private static readonly FieldInfo CachedTargets = AccessTools.Field(typeof(AbilityDef), "cachedTargets");
 
         // ShortHashGiver's own per-type set of taken hashes and its picker, so copies get a hash no other AbilityDef has
-        private static readonly AccessTools.FieldRef<Dictionary<System.Type, HashSet<ushort>>> TakenHashes =
-            AccessTools.StaticFieldRefAccess<Dictionary<System.Type, HashSet<ushort>>>(AccessTools.Field(typeof(ShortHashGiver), "takenHashesPerDeftype"));
+        private static readonly FieldInfo TakenHashes = AccessTools.Field(typeof(ShortHashGiver), "takenHashesPerDeftype");
         private static readonly MethodInfo GiveShortHash = AccessTools.Method(typeof(ShortHashGiver), "GiveShortHash");
 
         static EntadAbilityPrep()
@@ -89,8 +93,8 @@ namespace EntadFramework
                 if (copy.verbProperties == src.verbProperties) copy.verbProperties = (VerbProperties)Clone.Invoke(src.verbProperties, null);
                 copy.verbProperties.warmupTime = m.abilityCastTicks / 60f;
             }
-            CachedTooltip(copy) = null;
-            CachedTargets(copy) = null;
+            CachedTooltip?.SetValue(copy, null);
+            CachedTargets?.SetValue(copy, null);
             if (!copy.iconPath.NullOrEmpty())
                 copy.uiIcon = ContentFinder<Texture2D>.Get(copy.iconPath, false) ?? copy.uiIcon;
             DefDatabase<AbilityDef>.Add(copy);
@@ -100,9 +104,14 @@ namespace EntadFramework
         private static void AssignShortHash(AbilityDef copy)
         {
             copy.shortHash = 0;
+            if (TakenHashes == null || GiveShortHash == null)
+            {
+                Log.Warning($"[Entad Framework] Could not give {copy.defName} a short hash: ShortHashGiver has changed in this game version.");
+                return;
+            }
             try
             {
-                var all = TakenHashes();
+                var all = (Dictionary<System.Type, HashSet<ushort>>)TakenHashes.GetValue(null);
                 if (!all.TryGetValue(typeof(AbilityDef), out var taken))
                 {
                     taken = new HashSet<ushort>();
@@ -112,7 +121,8 @@ namespace EntadFramework
             }
             catch (System.Exception e)
             {
-                Log.Warning($"[Entad Framework] Could not give {copy.defName} a short hash: {e.Message}");
+                // Invoke wraps the real failure in a TargetInvocationException
+                Log.Warning($"[Entad Framework] Could not give {copy.defName} a short hash: {(e.InnerException ?? e).Message}");
             }
         }
     }

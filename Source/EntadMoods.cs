@@ -152,16 +152,25 @@ namespace EntadFramework
             Map map = pawn.MapHeld;
             if (map == null) return;
 
-            // The building the job is about, when the job uses it: a bill at a workbench, research, or recreation
+            bool succeeded = condition == JobCondition.Succeeded;
+
+            // The building the job is about, when the job uses it: a bill at a workbench, research, or recreation.
+            // These jobs can end early while the pawn is still walking (fetching ingredients, heading to the TV), so
+            // the building only counts once the job has run to completion or the pawn is at its interaction cell. (A
+            // finished bill often ends at a stockpile, after the product was hauled, so position alone would miss it.)
             Thing used = null;
             if (job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null) used = job.targetA.Thing;
-            Check(pawn, used, null);
+            bool atUsed = used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
+            if (succeeded || atUsed) Check(pawn, used, null);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
-            // seated at something (a bill, research, recreation at a building, or a meal), and a bed only for a job
-            // that lies the pawn down. Any other job that happens to end on the cell (cleaning, hauling, a walk or
-            // skygazing, whose target is a cell) does not count.
-            bool seated = used != null || job.def == JobDefOf.Ingest;
+            // seated at something, and a bed only for a job that lies the pawn down. Any other job that happens to
+            // end on the cell (cleaning, hauling, a walk or skygazing, whose target is a cell) does not count.
+            // Seated means: on the building's interaction cell (workbench, research bench); for a building without
+            // one (a TV, watched from any nearby seat), at the end of a completed job; or after a meal that was eaten,
+            // not one the pawn was interrupted on the way to.
+            bool ate = job.def == JobDefOf.Ingest && succeeded;
+            bool seated = ate || atUsed || (used != null && !used.def.hasInteractionCell && succeeded);
             bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
             if (seated || lying)
             {
@@ -175,7 +184,7 @@ namespace EntadFramework
             }
 
             // The table the pawn ate at
-            if (job.def == JobDefOf.Ingest) Check(pawn, EntadMeals.SurfaceThing(pawn), used);
+            if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used);
         }
 
         // Applies the furniture's mood unless it was already handled as the job's own building

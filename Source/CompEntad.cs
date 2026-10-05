@@ -538,7 +538,9 @@ namespace EntadFramework
                     var s = m.def.statOffsets[i].stat;
                     if (s == null) continue;
                     float v = m.OffsetFor(i);
-                    sb.AppendLine($" - {s.LabelCap} {v.ToStringByStyle(s.toStringStyle, ToStringNumberSense.Offset)}");
+                    // Offsets are added before the stat is finalized, so they read in the unfinalized style (as vanilla's
+                    // StatModifier.ValueToStringAsOffset does): shooting accuracy +3 is three skill levels, not +300%
+                    sb.AppendLine($" - {s.LabelCap} {s.Worker.ValueToString(v, false, ToStringNumberSense.Offset)}");
                 }
                 for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
                 {

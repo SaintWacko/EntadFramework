@@ -113,8 +113,9 @@ namespace EntadFramework
         // MaxHitPoints and MarketValue read of every thing) skip the comp lookup for everything else.
         private static bool[] hasComp;
 
-        // Before this class has run (null table) every def answers true, so callers fall back to the comp lookup
-        public static bool MayHaveComp(ThingDef def) => hasComp == null || (def.index < hasComp.Length && hasComp[def.index]);
+        // While the table is being built (null), and for defs generated after it (index past the end), the answer is
+        // true, so callers fall back to the comp lookup rather than wrongly skipping a def that has the comp
+        public static bool MayHaveComp(ThingDef def) => hasComp == null || def.index >= hasComp.Length || hasComp[def.index];
 
         static EntadCompInjector()
         {

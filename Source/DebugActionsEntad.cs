@@ -39,7 +39,7 @@ namespace EntadFramework
                 return;
             }
 
-            Messages.Message($"Applied '{applied[0].LabelCap}' to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
+            Messages.Message($"Applied {string.Join(", ", applied.Select(t => t.LabelCap.Resolve()))} to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
         }
 
         [DebugAction(
