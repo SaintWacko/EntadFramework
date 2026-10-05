@@ -22,12 +22,16 @@
   <EF_Unknown>???</EF_Unknown>
   <EF_InspectTraits>Entad Traits: {0}</EF_InspectTraits>
   <EF_TraitRevealed>Something about {0} has revealed itself: {1}.</EF_TraitRevealed>
+  <EF_BoundTo>Bound to: {0}</EF_BoundTo>
   <EF_Rename>Rename</EF_Rename>
   <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>
 
   <!-- Item info card: the "Entad traits" row and its tooltip -->
   <EF_Card_TraitsLabel>Entad traits</EF_Card_TraitsLabel>
   <EF_Card_Intro>This item's entad traits.</EF_Card_Intro>
+  <EF_Card_BoundLabel>Bound to</EF_Card_BoundLabel>
+  <EF_Card_BoundDesc>This entad is bound. Anyone can use it as an ordinary item, but its traits only work for the pawns it is bound to and their descendants. Its durability, value and effects on a building apply regardless.</EF_Card_BoundDesc>
+  <EF_Card_InactiveFor>Its traits do nothing for {0}, who is not of a bound bloodline.</EF_Card_InactiveFor>
   <EF_Card_TraitHeader>{0} ({1})</EF_Card_TraitHeader>
   <EF_Card_StatOffset>{0} {1}</EF_Card_StatOffset>
   <EF_Card_StatFactor>{0} x{1}</EF_Card_StatFactor>

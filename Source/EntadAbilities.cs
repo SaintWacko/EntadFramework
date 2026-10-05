@@ -12,6 +12,9 @@ namespace EntadFramework
         public static void Grant(Pawn pawn, CompEntad comp)
         {
             if (comp == null) return;
+            comp.TryBindOnUse(pawn);
+            comp.HolderChanged();
+            if (!comp.ActiveFor(pawn)) return;
             // Stats that are always in effect (move speed, carrying capacity...) are noticed once the item is carried
             EntadStatReveal.Fire(comp, EntadStatTrigger.Equip);
             if (pawn?.abilities == null) return;
@@ -26,6 +29,7 @@ namespace EntadFramework
         public static void Revoke(Pawn pawn, Thing removed)
         {
             var comp = removed?.TryGetComp<CompEntad>();
+            comp?.HolderChanged();
             if (pawn?.abilities == null || comp == null) return;
 
             var stillGranted = new HashSet<AbilityDef>();
@@ -33,7 +37,7 @@ namespace EntadFramework
             {
                 if (other == removed) continue;
                 var otherComp = other.TryGetComp<CompEntad>();
-                if (otherComp == null) continue;
+                if (otherComp == null || !otherComp.ActiveFor(pawn)) continue;
                 foreach (var m in otherComp.activeTraits)
                     if (m.def.abilities != null) stillGranted.UnionWith(m.def.abilities);
             }
@@ -53,7 +57,7 @@ namespace EntadFramework
             foreach (Thing item in Equipped(pawn))
             {
                 var comp = item.TryGetComp<CompEntad>();
-                if (comp == null) continue;
+                if (comp == null || !comp.ActiveFor(pawn)) continue;
                 foreach (var m in comp.activeTraits)
                     if (m.def.abilities != null && m.def.abilities.Contains(ability)) yield return m;
             }

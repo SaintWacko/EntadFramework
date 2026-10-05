@@ -56,7 +56,8 @@ namespace EntadFramework
         {
             hiddenPart = 0f;
             var comp = (gear as ThingWithComps)?.GetComp<CompEntad>();
-            return comp == null ? 0f : comp.WearerOffset(stat, out hiddenPart);
+            if (comp == null || !comp.ActiveForHolder) return 0f;
+            return comp.WearerOffset(stat, out hiddenPart);
         }
 
         // The pawn whose stat explanation / hyperlinks are being built right now. Vanilla's GearAffectsStat only

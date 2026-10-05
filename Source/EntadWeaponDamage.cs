@@ -9,10 +9,13 @@ namespace EntadFramework
     // They are applied whether or not they have been revealed; a hit that lands reveals them.
     public static class EntadWeaponDamage
     {
-        public static CompEntad CompOf(Thing weapon)
+        // The weapon's entad comp when its traits work for whoever is using it (user: the wielder, or a projectile's
+        // launcher). A turret or other non-pawn user counts as active, like an item nobody holds.
+        public static CompEntad CompOf(Thing weapon, Thing user)
         {
             var comp = weapon?.TryGetComp<CompEntad>();
-            return comp == null || comp.activeTraits.Count == 0 ? null : comp;
+            if (comp == null || comp.activeTraits.Count == 0) return null;
+            return comp.ActiveFor(user as Pawn) ? comp : null;
         }
 
         public static DamageDef TypeOverride(CompEntad comp)
@@ -33,7 +36,7 @@ namespace EntadFramework
     {
         public static void Postfix(Verb_MeleeAttackDamage __instance, ref IEnumerable<DamageInfo> __result)
         {
-            var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource);
+            var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
             __result = Modify(__result, comp);
         }
@@ -70,9 +73,9 @@ namespace EntadFramework
     public static class Patch_ProjectileDamageDef
     {
         // Read on every hit and by several projectile code paths, so the protected field is injected (no reflection)
-        public static void Postfix(Thing ___equipment, ref DamageDef __result)
+        public static void Postfix(Thing ___equipment, Thing ___launcher, ref DamageDef __result)
         {
-            var comp = EntadWeaponDamage.CompOf(___equipment);
+            var comp = EntadWeaponDamage.CompOf(___equipment, ___launcher);
             if (comp == null) return;
             DamageDef over = EntadWeaponDamage.TypeOverride(comp);
             if (over != null) __result = over;
@@ -105,7 +108,7 @@ namespace EntadFramework
         public static void ApplyExtra(Projectile projectile, Thing hitThing, Thing equipment, Thing launcher)
         {
             if (hitThing == null || hitThing.Destroyed) return;
-            var comp = EntadWeaponDamage.CompOf(equipment);
+            var comp = EntadWeaponDamage.CompOf(equipment, launcher);
             if (comp == null) return;
 
             var intended = projectile.intendedTarget;

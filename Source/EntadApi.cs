@@ -117,7 +117,7 @@ namespace EntadFramework
             return added;
         }
 
-        /// <summary>Item defs that can become entads and match the request's kinds, lists and predicate.</summary>
+        /// <summary>Binds <paramref name= and match the request's kinds, lists and predicate.</summary>
         public static List<ThingDef> GetCandidateItemDefs(EntadItemRequest request)
         {
             request = request ?? new EntadItemRequest();

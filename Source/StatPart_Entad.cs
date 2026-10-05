@@ -31,6 +31,9 @@ namespace EntadFramework
             // MaxHitPoints stays real on the card: its HP row is "HitPoints / MaxHitPoints", and HitPoints is the
             // real stored value (already scaled by the trait), so a hidden-free maximum would read e.g. 150 / 100.
 
+            // A bound item held by someone outside the bloodline: its trait stats don't apply. Market value and
+            // durability are the item's own and stay. An item nobody holds counts as active (ActiveFor(null)).
+            bool userActive = parentStat == StatDefOf.MarketValue || comp.ActiveForHolder;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
@@ -38,7 +41,7 @@ namespace EntadFramework
                 // Stat effects apply whether or not they've been revealed; only displays leave them out (skipHidden).
                 // The MarketValueOffset/unidentified term below is not gated: unrevealed traits already show as the
                 // flat "unidentified" bonus. (A trait's own statOffsets on MarketValue, if any, are gated like others.)
-                bool apply = !skipHidden || m.IsRevealed(EntadEffectKind.Stat);
+                bool apply = userActive && (!skipHidden || m.IsRevealed(EntadEffectKind.Stat));
                 for (int i = 0; apply && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
                 for (int i = 0; apply && def.statFactors != null && i < def.statFactors.Count; i++)
@@ -73,10 +76,11 @@ namespace EntadFramework
 
             string explanation = "";
             bool unidentified = false;
+            bool userActive = comp.ActiveForHolder;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
-                bool known = m.IsRevealed(EntadEffectKind.Stat);
+                bool known = userActive && m.IsRevealed(EntadEffectKind.Stat);
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;

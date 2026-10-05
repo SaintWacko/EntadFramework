@@ -489,6 +489,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref activeTraits, "activeTraits", LookMode.Deep);
             // Saves from before durability load as 1 (unscaled), so SyncDurability below brings them up to full scale
             Scribe_Values.Look(ref scaledDurability, "scaledDurability", 1f);
+            ExposeBinding();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -556,7 +557,9 @@ namespace EntadFramework
         {
             if (activeTraits.NullOrEmpty()) return null;
             string unknown = "EF_Unknown".Translate();
-            return "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
+            string s = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
+            if (IsBound) s += "\n" + "EF_BoundTo".Translate(BoundNames);
+            return s;
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -625,6 +628,13 @@ namespace EntadFramework
 
             foreach (var e in DamageDisplayStats()) yield return e;
 
+            if (IsBound)
+            {
+                Pawn holder = Holder;
+                if (holder != null && !ActiveFor(holder)) sb.Append("\n").AppendLine("EF_Card_InactiveFor".Translate(holder.LabelShort));
+                yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_BoundLabel".Translate(), BoundNames,
+                    "EF_Card_BoundDesc".Translate(), 3999);
+            }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, sb.ToString().TrimEnd(), 4000);
         }

@@ -26,7 +26,7 @@ namespace EntadFramework
         public static IEnumerable<AppliedEntadTrait> SurfaceTraits(Pawn pawn)
         {
             var comp = SurfaceThing(pawn)?.TryGetComp<CompEntad>();
-            if (comp == null) yield break;
+            if (comp == null || !comp.ActiveFor(pawn)) yield break;
             foreach (var m in comp.activeTraits)
                 if (m.def.HasMealEffect) yield return m;
         }

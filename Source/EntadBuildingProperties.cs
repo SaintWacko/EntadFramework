@@ -216,7 +216,7 @@ namespace EntadFramework
         {
             if (pawn == null) return;
             var comp = pawn.equipment?.Primary?.TryGetComp<CompEntad>();
-            if (comp != null && comp.HasHidden)
+            if (comp != null && comp.HasHidden && comp.ActiveFor(pawn))
             {
                 EntadStatReveal.Fire(comp, EntadStatTrigger.Hit);
                 comp.RevealWhere(EntadEffectKind.Damage);

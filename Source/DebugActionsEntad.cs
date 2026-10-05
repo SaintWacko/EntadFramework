@@ -155,6 +155,33 @@ namespace EntadFramework
             foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
         }
 
+        [DebugAction(category = "Entad Framework", name = "Bind Entad to pawn", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void BindEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            var options = new List<DebugMenuOption>();
+            foreach (Pawn p in thing.Map.mapPawns.AllPawnsSpawned.Where(p => p.RaceProps.Humanlike).OrderBy(p => p.LabelShort))
+            {
+                Pawn pawn = p;
+                options.Add(new DebugMenuOption(pawn.LabelShort, DebugMenuOptionMode.Action, () =>
+                {
+                    comp.Bind(new[] { pawn });
+                    Messages.Message($"Bound {thing.Label} to {pawn.LabelShort}.", MessageTypeDefOf.NeutralEvent, false);
+                }));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        [DebugAction(category = "Entad Framework", name = "Unbind Entad", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void UnbindEntad()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            comp.Unbind();
+            Messages.Message($"Unbound {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(category = "Entad Framework", name = "Hide all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void HideAllEntad()
         {

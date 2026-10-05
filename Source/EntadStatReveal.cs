@@ -69,9 +69,15 @@ namespace EntadFramework
         {
             if (pawn == null) return;
             var gear = pawn.equipment?.AllEquipmentListForReading;
-            if (gear != null) for (int i = 0; i < gear.Count; i++) Fire(gear[i].TryGetComp<CompEntad>(), trigger);
+            if (gear != null) for (int i = 0; i < gear.Count; i++) FireFor(pawn, gear[i].TryGetComp<CompEntad>(), trigger);
             var worn = pawn.apparel?.WornApparel;
-            if (worn != null) for (int i = 0; i < worn.Count; i++) Fire(worn[i].TryGetComp<CompEntad>(), trigger);
+            if (worn != null) for (int i = 0; i < worn.Count; i++) FireFor(pawn, worn[i].TryGetComp<CompEntad>(), trigger);
+        }
+
+        // A bound item's traits do nothing for someone outside the bloodline, so that use can't reveal them either
+        private static void FireFor(Pawn pawn, CompEntad comp, EntadStatTrigger trigger)
+        {
+            if (comp != null && comp.ActiveFor(pawn)) Fire(comp, trigger);
         }
 
         // True when the pawn wears or wields anything with a still-hidden trait. Checked before any trigger work, so

@@ -163,6 +163,10 @@ namespace EntadFramework
         // this def's own rarity). When false the trait only ever appears at "rarity".
         public bool scalesWithRarity;
 
+        // The item binds to the first pawn who equips it (weapons, apparel) or uses it for themselves (furniture), if
+        // nobody is bound yet. From then on its traits only work for that pawn and their descendants.
+        public bool bindOnFirstUse;
+
         public const float MinScaledFactor = 0.05f;
 
         public static float Scale(float value, float scale, bool factor)

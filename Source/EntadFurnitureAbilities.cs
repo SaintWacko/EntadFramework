@@ -34,7 +34,7 @@ namespace EntadFramework
 
         public static void Perform(Pawn pawn, CompEntad comp, int flatIndex, LocalTargetInfo target)
         {
-            if (!TryGet(comp, flatIndex, out var trait, out int idx)) return;
+            if (!comp.ActiveFor(pawn) || !TryGet(comp, flatIndex, out var trait, out int idx)) return;
             AbilityDef def = trait.def.abilities[idx];
             int maxCharges = trait.def.abilityCharges;
             int cooldown = Cooldown(trait, def);
@@ -92,6 +92,7 @@ namespace EntadFramework
             use.initAction = () =>
             {
                 var comp = job.targetA.Thing?.TryGetComp<CompEntad>();
+                comp?.TryBindOnUse(pawn);
                 if (comp != null) EntadFurnitureAbilities.Perform(pawn, comp, job.count, job.targetB);
             };
             use.defaultCompleteMode = ToilCompleteMode.Instant;
@@ -105,6 +106,9 @@ namespace EntadFramework
         {
             if (parent.def.building == null || !parent.Spawned || activeTraits.NullOrEmpty()) yield break;
             if (selPawn.Downed || !selPawn.Spawned || !selPawn.IsColonistPlayerControlled) yield break;
+            // Using an ability is using the furniture for oneself: it can bind it, and a bound one's abilities are
+            // only offered to the bloodline. Binding happens when the ability is performed, not from the menu.
+            if (!ActiveFor(selPawn) && !(BindsOnFirstUse && !IsBound)) yield break;
 
             int flat = 0;
             foreach (var entry in EntadFurnitureAbilities.Entries(this))

@@ -32,17 +32,17 @@ namespace EntadFramework
         {
             var apparel = pawn.apparel?.WornApparel;
             if (apparel != null)
-                for (int i = 0; i < apparel.Count; i++) if (ItemUses(apparel[i], def)) return true;
+                for (int i = 0; i < apparel.Count; i++) if (ItemUses(apparel[i], def, pawn)) return true;
             var equipment = pawn.equipment?.AllEquipmentListForReading;
             if (equipment != null)
-                for (int i = 0; i < equipment.Count; i++) if (ItemUses(equipment[i], def)) return true;
+                for (int i = 0; i < equipment.Count; i++) if (ItemUses(equipment[i], def, pawn)) return true;
             return false;
         }
 
-        private static bool ItemUses(Thing item, ThoughtDef def)
+        private static bool ItemUses(Thing item, ThoughtDef def, Pawn pawn)
         {
             var comp = item.TryGetComp<CompEntad>();
-            if (comp == null) return false;
+            if (comp == null || !comp.ActiveFor(pawn)) return false;
             var mods = comp.activeTraits;
             for (int i = 0; i < mods.Count; i++) if (mods[i].thought == def) return true;
             return false;
@@ -57,8 +57,8 @@ namespace EntadFramework
             if (memories == null) return;
 
             var wanted = new Dictionary<ThoughtDef, int>();
-            Count(pawn.apparel?.WornApparel, removing, wanted);
-            Count(pawn.equipment?.AllEquipmentListForReading, removing, wanted);
+            Count(pawn, pawn.apparel?.WornApparel, removing, wanted);
+            Count(pawn, pawn.equipment?.AllEquipmentListForReading, removing, wanted);
 
             var present = new Dictionary<ThoughtDef, List<Thought_EntadEquipped>>();
             var list = memories.Memories;
@@ -98,14 +98,15 @@ namespace EntadFramework
         // A stackLimit below 0 means unlimited
         private static int Capped(ThoughtDef def, int n) => def.stackLimit < 0 ? n : System.Math.Min(n, def.stackLimit);
 
-        private static void Count<T>(List<T> items, Thing removing, Dictionary<ThoughtDef, int> wanted) where T : Thing
+        private static void Count<T>(Pawn pawn, List<T> items, Thing removing, Dictionary<ThoughtDef, int> wanted) where T : Thing
         {
             if (items == null) return;
             for (int i = 0; i < items.Count; i++)
             {
                 if (items[i] == removing) continue;
                 var entad = items[i].TryGetComp<CompEntad>();
-                var mods = entad?.activeTraits;
+                if (entad == null || !entad.ActiveFor(pawn)) continue;
+                var mods = entad.activeTraits;
                 if (mods == null) continue;
                 for (int j = 0; j < mods.Count; j++)
                 {
@@ -122,6 +123,8 @@ namespace EntadFramework
         {
             var comp = furniture?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
+            comp.TryBindOnUse(pawn);
+            if (!comp.ActiveFor(pawn)) return;
             EntadStatReveal.Fire(comp, EntadStatTrigger.Use);
             foreach (var m in comp.activeTraits)
             {
