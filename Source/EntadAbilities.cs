@@ -12,7 +12,10 @@ namespace EntadFramework
         public static void Grant(Pawn pawn, CompEntad comp)
         {
             if (comp == null) return;
+            bool wasBound = comp.IsBound;
             comp.TryBindOnUse(pawn);
+            // A first-use bind already re-ran Grant for the holder (BindingChanged), so don't do it all twice
+            if (!wasBound && comp.IsBound && comp.Holder == pawn) return;
             comp.HolderChanged();
             if (!comp.ActiveFor(pawn)) return;
             // Stats that are always in effect (move speed, carrying capacity...) are noticed once the item is carried

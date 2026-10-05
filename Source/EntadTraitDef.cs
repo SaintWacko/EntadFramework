@@ -386,10 +386,12 @@ namespace EntadFramework
                 // Memories of events that never happened ("colonist died") are deliberate: the item plants false
                 // memories. What's left out is what can't work or can't read right without context: other thought
                 // classes (social memories need another pawn), several stages, an invisible stage, required traits
-                // or genes (TryGainMemory silently refuses those for anyone without them), chained follow-ups, and
-                // text with placeholders.
+                // or genes, hediffs, a gender, an expectation level or a non-adult life stage (TryGainMemory silently
+                // refuses those for anyone who doesn't match), chained follow-ups, and text with placeholders.
                 t.IsMemory && t.ThoughtClass == typeof(Thought_Memory) && t.stages != null && t.stages.Count == 1
                 && t.stages[0] != null && t.stages[0].visible && t.requiredTraits.NullOrEmpty() && t.requiredGenes.NullOrEmpty()
+                && t.requiredHediffs.NullOrEmpty() && t.gender == Gender.None && t.minExpectation == null
+                && t.developmentalStageFilter.Has(DevelopmentalStage.Adult)
                 && t.nextThought == null && t.thoughtToMake == null && t.stages[0].baseMoodEffect != 0f
                 && IsSelfContained(t.stages[0])
                 && thoughtMoodRange.Includes(MoodEffectOf(t))).ToList());

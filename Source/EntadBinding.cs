@@ -97,7 +97,9 @@ namespace EntadFramework
         // Called on equip (weapons, apparel) and on own use of furniture, before the traits are checked for that pawn.
         public void TryBindOnUse(Pawn pawn)
         {
-            if (pawn == null || IsBound || !BindsOnFirstUse) return;
+            // Not while the pawn is being generated: a raider or trader handed an entad at generation would bind it,
+            // and the colonist who loots it would get an ordinary item. Binding is for a pawn choosing to use it.
+            if (pawn == null || IsBound || !BindsOnFirstUse || PawnGenerator.IsBeingGenerated(pawn)) return;
             Bind(new[] { pawn });
         }
 
@@ -138,6 +140,8 @@ namespace EntadFramework
         {
             // References to dead pawns too: an ancestor's death must not break the bloodline. Their world pawns
             // are kept from garbage collection by EntadBindingRegistry.
+            // A pawn discarded some other way is never written to the save, so its reference couldn't resolve on load
+            if (Scribe.mode == LoadSaveMode.Saving && boundPawns != null) boundPawns.RemoveAll(p => p == null || p.Discarded);
             Scribe_Collections.Look(ref boundPawns, "boundPawns", true, LookMode.Reference);
             if (Scribe.mode == LoadSaveMode.PostLoadInit && boundPawns != null)
             {
@@ -166,6 +170,34 @@ namespace EntadFramework
 
         public static bool IsKept(Pawn pawn) => kept.Count > 0 && kept.Contains(pawn);
 
+        // Bound pawns and every descendant of one. A dead descendant in the middle of the line (a bound pawn's son
+        // who died off-map, say) is what links the grandchildren to the binding; vanilla only keeps relatives one
+        // step from colonists, so without this the middle of the line could be discarded and the chain cut.
+        // Walks parents upward with a visited set and a depth cap. Only called from world pawn GC passes.
+        public static bool IsKeptOrDescendant(Pawn pawn)
+        {
+            if (kept.Count == 0 || pawn == null) return false;
+            if (kept.Contains(pawn)) return true;
+            if (!pawn.RaceProps.Humanlike) return false;
+            var visited = new HashSet<Pawn>();
+            var frontier = new List<Pawn> { pawn };
+            for (int depth = 0; depth < 16 && frontier.Count > 0; depth++)
+            {
+                var next = new List<Pawn>();
+                foreach (var p in frontier)
+                {
+                    if (p == null || !visited.Add(p)) continue;
+                    if (kept.Contains(p)) return true;
+                    var rels = p.relations?.DirectRelations;
+                    if (rels == null) continue;
+                    for (int i = 0; i < rels.Count; i++)
+                        if (rels[i].def == PawnRelationDefOf.Parent && rels[i].otherPawn != null) next.Add(rels[i].otherPawn);
+                }
+                frontier = next;
+            }
+            return false;
+        }
+
         public static void Clear() => kept.Clear();
     }
 
@@ -188,7 +220,7 @@ namespace EntadFramework
     {
         public static void Postfix(Pawn pawn, ref string __result)
         {
-            if (__result == null && !pawn.Discarded && EntadBindingRegistry.IsKept(pawn)) __result = "EntadBound";
+            if (__result == null && !pawn.Discarded && EntadBindingRegistry.IsKeptOrDescendant(pawn)) __result = "EntadBound";
         }
     }
 }

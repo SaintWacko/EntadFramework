@@ -86,10 +86,17 @@ namespace EntadFramework
         {
             if (pawn == null) return false;
             var gear = pawn.equipment?.AllEquipmentListForReading;
-            if (gear != null) for (int i = 0; i < gear.Count; i++) if (gear[i].TryGetComp<CompEntad>()?.HasHidden == true) return true;
+            if (gear != null) for (int i = 0; i < gear.Count; i++) if (HiddenFor(gear[i], pawn)) return true;
             var worn = pawn.apparel?.WornApparel;
-            if (worn != null) for (int i = 0; i < worn.Count; i++) if (worn[i].TryGetComp<CompEntad>()?.HasHidden == true) return true;
+            if (worn != null) for (int i = 0; i < worn.Count; i++) if (HiddenFor(worn[i], pawn)) return true;
             return false;
+        }
+
+        // Hidden traits this pawn could reveal: a bound item outside their bloodline has none, so it doesn't count
+        private static bool HiddenFor(Thing item, Pawn pawn)
+        {
+            var comp = item.TryGetComp<CompEntad>();
+            return comp != null && comp.HasHidden && comp.ActiveFor(pawn);
         }
 
         public static void OnJobFinished(Pawn pawn, Job job)
