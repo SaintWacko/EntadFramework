@@ -486,6 +486,12 @@ namespace EntadFramework
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
                 activeTraits.RemoveAll(m => m == null || m.def == null);
+                // Removed traits load as their replacement (Patch_BackCompatibleDefName). An old item that had both
+                // the old trait and its replacement, or two old traits with one replacement, would now hold the same
+                // trait twice and apply it twice: keep the first copy.
+                for (int i = activeTraits.Count - 1; i > 0; i--)
+                    for (int j = 0; j < i; j++)
+                        if (activeTraits[j].def == activeTraits[i].def) { activeTraits.RemoveAt(i); break; }
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;

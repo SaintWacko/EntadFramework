@@ -160,11 +160,13 @@ namespace EntadFramework
             // the building only counts once the job has run to completion or the pawn is at its interaction cell. (A
             // finished bill often ends at a stockpile, after the product was hauled, so position alone would miss it.)
             Thing used = null;
-            bool workOrJoy = job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null;
+            bool workOrJoy = job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null
+                || job.def == JobDefOf.OperateDeepDrill || job.def == JobDefOf.OperateScanner;
             if (workOrJoy || IsOwnUse(pawn, job)) used = job.targetA.Thing;
             bool atUsed = used != null && used.def.hasInteractionCell && pawn.Position == used.InteractionCell;
-            // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid)
-            bool inside = used != null && !atUsed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
+            // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid). Not
+            // beds: crossing a double bed to reach a slot would count, so beds go through CurrentBed below instead.
+            bool inside = used != null && !atUsed && !used.def.IsBed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
             if (succeeded || atUsed || inside) Check(pawn, used, null);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
@@ -174,8 +176,11 @@ namespace EntadFramework
             // one (a TV, watched from any nearby seat), at the end of a completed job; or after a meal that was eaten,
             // not one the pawn was interrupted on the way to.
             bool ate = job.def == JobDefOf.Ingest && succeeded;
-            bool seated = ate || (workOrJoy && (atUsed || (used != null && !used.def.hasInteractionCell && succeeded)));
-            bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
+            // (used.def.building: a surgery bill targets the patient, which must not credit a chair under the doctor)
+            bool seated = ate || (workOrJoy && used != null && used.def.building != null
+                && (atUsed || (!used.def.hasInteractionCell && succeeded)));
+            bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting
+                || job.def == JobDefOf.Lovin;
             if (seated)
             {
                 List<Thing> here = pawn.Position.GetThingList(map);
@@ -197,7 +202,9 @@ namespace EntadFramework
         // player's direct orders send it to (toilet, shower, throne, comms console, a casket). Work never counts
         // here: every job a WorkGiver hands out, automatically or from a right-click, carries workGiverDef, and that
         // covers hauling, repairing, refuelling, deconstructing and cleaning. What's left that doesn't use the
-        // building is attacking or opening it, which the list below catches, and anything done in a mental break.
+        // building is attacking, opening, hacking or emptying it, or carrying something into it, which the list
+        // below catches, and anything done in a mental break. (Anomaly's JobDefOf entries are null without the DLC;
+        // comparing against null is harmless.)
         private static bool IsOwnUse(Pawn pawn, Job job)
         {
             if (job.workGiverDef != null || !job.targetA.HasThing || pawn.InMentalState) return false;
@@ -207,7 +214,9 @@ namespace EntadFramework
                 && d != JobDefOf.Strip && d != JobDefOf.Mine && d != JobDefOf.Deconstruct && d != JobDefOf.Uninstall
                 && d != JobDefOf.Repair && d != JobDefOf.FixBrokenDownBuilding && d != JobDefOf.Refuel
                 && d != JobDefOf.RefuelAtomic && d != JobDefOf.Flick && d != JobDefOf.HaulToContainer
-                && d != JobDefOf.BeatFire;
+                && d != JobDefOf.BeatFire && d != JobDefOf.Hack && d != JobDefOf.ExtractRelic
+                && d != JobDefOf.ExtractToInventory && d != JobDefOf.CarryToEntityHolder
+                && d != JobDefOf.CarryToEntityHolderAlreadyHolding && d != JobDefOf.CarryDownedPawnToPortal;
         }
 
         // Applies the furniture's mood unless it was already handled as the job's own building
