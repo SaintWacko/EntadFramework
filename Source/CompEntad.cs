@@ -569,7 +569,8 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) return null;
             string unknown = "EF_Unknown".Translate();
             string s = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
-            if (IsBound) s += "\n" + BoundLine("EF_BoundTo".Translate(BoundNames));
+            // Plain: an item in the inspect pane is on the map, so it has no holder for the red to be about
+            if (IsBound) s += "\n" + "EF_BoundTo".Translate(BoundNames);
             return s;
         }
 
