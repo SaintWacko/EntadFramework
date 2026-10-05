@@ -8,10 +8,19 @@ namespace EntadFramework
 {
     public static class EntadMoods
     {
-        public static void Give(Pawn pawn, ThoughtDef def, int durationTicks)
+        // 'source' is the building the memory came from. Plain memory thoughts (every thought a trait can carry: see
+        // EntadTraitDef.MoodCandidates) are made as Thought_EntadFurniture, so using the same building again renews
+        // its memory instead of stacking a second one.
+        public static void Give(Pawn pawn, ThoughtDef def, int durationTicks, Thing source = null)
         {
             if (pawn?.needs?.mood == null || def == null) return;
-            var memory = ThoughtMaker.MakeThought(def) as Thought_Memory;
+            Thought_Memory memory;
+            if (source != null && def.thoughtClass == typeof(Thought_Memory))
+            {
+                memory = new Thought_EntadFurniture { def = def, sourceId = source.thingIDNumber };
+                memory.Init();
+            }
+            else memory = ThoughtMaker.MakeThought(def) as Thought_Memory;
             if (memory == null) return;
             memory.durationTicksOverride = durationTicks;
             pawn.needs.mood.thoughts.memories.TryGainMemory(memory);
@@ -76,6 +85,12 @@ namespace EntadFramework
                     memory.Init();
                     memories.Memories.Add(memory);
                 }
+                // Equipped memories take precedence: furniture memories of the same thought make room for them, so the
+                // total stays within the stack limit and vanilla never has to evict (it could pick an equipped one)
+                if (kv.Key.stackLimit >= 0)
+                    while (memories.NumMemoriesOfDef(kv.Key) > kv.Key.stackLimit
+                        && Thought_EntadFurniture.OldestOf(memories.Memories, kv.Key) is Thought_EntadFurniture f)
+                        memories.RemoveMemory(f);
             }
         }
 
@@ -107,7 +122,7 @@ namespace EntadFramework
             foreach (var m in comp.activeTraits)
             {
                 if (m.thought == null) continue;
-                Give(pawn, m.thought, m.ThoughtDurationTicks);
+                Give(pawn, m.thought, m.ThoughtDurationTicks, furniture);
                 m.Reveal(EntadEffectKind.Mood);
             }
         }
@@ -138,12 +153,20 @@ namespace EntadFramework
             if (job.bill != null || job.def == JobDefOf.Research || job.def.joyKind != null) used = job.targetA.Thing;
             Check(pawn, used, null);
 
-            // A chair or bed the pawn is sitting or lying on (not anything else on the cell, such as a door)
-            List<Thing> here = pawn.Position.GetThingList(map);
-            for (int i = 0; i < here.Count; i++)
+            // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
+            // seated (a bill, research, recreation or a meal), and a bed only for a job that lies the pawn down. Any
+            // other job that happens to end on the cell (cleaning, hauling) does not count.
+            bool seated = used != null || job.bill != null || job.def.joyKind != null || job.def == JobDefOf.Ingest;
+            bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting;
+            if (seated || lying)
             {
-                Thing t = here[i];
-                if (t.def.building != null && (t.def.building.isSittable || t.def.IsBed)) Check(pawn, t, used);
+                List<Thing> here = pawn.Position.GetThingList(map);
+                for (int i = 0; i < here.Count; i++)
+                {
+                    Thing t = here[i];
+                    if (t.def.building == null) continue;
+                    if ((seated && t.def.building.isSittable) || (lying && t.def.IsBed)) Check(pawn, t, used);
+                }
             }
 
             // The table the pawn ate at
@@ -161,6 +184,64 @@ namespace EntadFramework
 
 namespace EntadFramework
 {
+    // A timed memory from using a piece of entad furniture, tagged with the building it came from.
+    // One building gives at most one memory of a thought: using it again renews that memory (age back to 0).
+    // Different buildings and equipped items stack up to the thought's stackLimit. At the limit a new building
+    // replaces the oldest furniture memory; memories from equipped items (Thought_EntadEquipped) are never displaced.
+    public class Thought_EntadFurniture : Thought_Memory
+    {
+        // Thing.thingIDNumber of the building: an int, so saving and comparing it costs nothing and a destroyed
+        // building leaves no dangling reference behind
+        public int sourceId = -1;
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref sourceId, "entadSourceId", -1);
+        }
+
+        public static Thought_EntadFurniture OldestOf(List<Thought_Memory> list, ThoughtDef def)
+        {
+            Thought_EntadFurniture oldest = null;
+            for (int i = 0; i < list.Count; i++)
+                if (list[i] is Thought_EntadFurniture f && f.def == def && (oldest == null || f.age > oldest.age)) oldest = f;
+            return oldest;
+        }
+
+        // Vanilla's version renews the oldest memory of the whole group once the stack is full, whatever its source,
+        // and its later eviction loop removes the oldest memory of the def, which could be an equipped one.
+        // Returning true means "merged, don't add me".
+        public override bool TryMergeWithExistingMemory(out bool showBubble)
+        {
+            var memories = pawn.needs.mood.thoughts.memories;
+            var list = memories.Memories;
+            int count = 0;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].def != def) continue;
+                count++;
+                if (list[i] is Thought_EntadFurniture same && same.sourceId == sourceId)
+                {
+                    showBubble = same.age > same.DurationTicks / 2;
+                    same.durationTicksOverride = durationTicksOverride;
+                    same.Renew();
+                    return true;
+                }
+            }
+            showBubble = true;
+            if (def.stackLimit < 0 || count < def.stackLimit) return false;
+            var oldest = OldestOf(list, def);
+            if (oldest != null)
+            {
+                memories.RemoveMemory(oldest);
+                return false;
+            }
+            // The stack is full of equipped-item memories: this one has no room
+            showBubble = false;
+            return true;
+        }
+    }
+
     // A memory thought that lasts exactly as long as an equipped entad item uses it, and shows under its own name
     public class Thought_EntadEquipped : Thought_Memory
     {

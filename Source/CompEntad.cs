@@ -225,13 +225,13 @@ namespace EntadFramework
             if (announce) Messages.Message($"Something about {parent.LabelNoCount} has revealed itself: {m.def.label}.", parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
-        // CompGlower.RefreshGlower is private; it re-registers the glower so a changed radius takes effect
-        private static readonly System.Action<CompGlower> RefreshGlowerCall =
-            HarmonyLib.AccessTools.MethodDelegate<System.Action<CompGlower>>(HarmonyLib.AccessTools.Method(typeof(CompGlower), "RefreshGlower"));
-
-        private static void RefreshGlower(CompGlower glower)
+        // Applies a changed glow radius to a light that is on. The glow grid keeps the radius it read when the light
+        // registered, and vanilla's private RefreshGlower does nothing for a light that is already registered, so
+        // ForceRegister (deregister, then register) is the call that picks up the new radius. A light that is off
+        // reads the radius when it next turns on.
+        private void RefreshGlower(CompGlower glower)
         {
-            if (glower != null) RefreshGlowerCall(glower);
+            if (glower != null && glower.Glows) glower.ForceRegister(parent.Map);
         }
 
         // Highest rarity among this item's traits (Common when it has none); sets its durability multiplier

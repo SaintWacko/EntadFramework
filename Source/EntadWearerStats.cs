@@ -33,7 +33,6 @@ namespace EntadFramework
 
         // Flat lookups by def index keep the per-call cost of the stat hooks tiny; they run for every gear piece on every stat evaluation.
         private static bool[] statFlags;
-        private static bool[] gearFlags;
 
         public static bool AffectsStat(StatDef stat)
         {
@@ -48,17 +47,9 @@ namespace EntadFramework
 
         public static bool IsEntadGear(Thing gear) => gear is ThingWithComps twc && IsEntadGearDef(twc.def);
 
-        public static bool IsEntadGearDef(ThingDef def)
-        {
-            if (gearFlags == null)
-            {
-                var flags = new bool[DefDatabase<ThingDef>.DefCount];
-                foreach (var d in DefDatabase<ThingDef>.AllDefsListForReading)
-                    flags[d.index] = d.GetCompProperties<CompProperties_Entad>() != null;
-                gearFlags = flags;
-            }
-            return def.index < gearFlags.Length && gearFlags[def.index];
-        }
+        // EntadCompInjector's per-def table, built right after it adds the comps. (A separate lazy table here could be
+        // built before the injector ran and then cache every injected def as false for the session.)
+        public static bool IsEntadGearDef(ThingDef def) => EntadCompInjector.MayHaveComp(def);
 
         public static float OffsetFrom(Thing gear, StatDef stat, out float hiddenPart)
         {

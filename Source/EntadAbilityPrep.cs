@@ -30,6 +30,10 @@ namespace EntadFramework
         static EntadAbilityPrep()
         {
             foreach (var m in DefDatabase<EntadTraitDef>.AllDefsListForReading) Prepare(m);
+            // DefDatabase.Add does not touch the short-hash lookup, which the game built before this ran.
+            // Rebuilding it makes GetByShortHash find the copies too (vanilla never looks abilities up that way,
+            // but other mods may).
+            DefDatabase<AbilityDef>.InitializeShortHashDictionary();
         }
 
         private static bool IsPsycast(AbilityDef a) => a.abilityClass != null && typeof(Psycast).IsAssignableFrom(a.abilityClass);

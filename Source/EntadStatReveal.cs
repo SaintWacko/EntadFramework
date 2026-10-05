@@ -138,15 +138,19 @@ namespace EntadFramework
     public static class Patch_Learn_StatReveal
     {
         private static readonly AccessTools.FieldRef<SkillRecord, Pawn> PawnField = AccessTools.FieldRefAccess<SkillRecord, Pawn>("pawn");
-        // Learn fires on every xp gain, so each pawn is only checked once every 250 ticks: on its own hash tick.
-        // Learn runs every tick during work, so a pawn that is learning hits its hash tick within a few seconds.
+        // Learn fires on every xp gain. Work grants a trickle on each of the pawn's tick intervals (0.05 to 0.25 xp
+        // per tick, times the interval), so trickle gains are only checked on the pawn's 250-tick hash tick; the pawn's
+        // interval ticks share its hash offset, so a working pawn lines up with it every few hundred ticks.
+        // One-off grants (a shot, a melee swing, a social interaction, a ritual) are rare and usually 1 xp or more, so
+        // those are always checked: a hash gate would give each of them about a 1 in 250 chance.
         // Stateless on purpose: an earlier per-pawn "last checked" table was static, so it kept ticks from a previous
         // game and skipped reveals after loading an earlier save.
         public static void Postfix(SkillRecord __instance, float xp)
         {
             if (xp <= 0f) return;
             Pawn pawn = PawnField(__instance);
-            if (pawn == null || !pawn.IsHashIntervalTick(250)) return;
+            if (pawn == null || (xp < 1f && !pawn.IsHashIntervalTick(250))) return;
+            if (!EntadStatReveal.HasHiddenGear(pawn)) return;
             EntadStatReveal.Fire(pawn, EntadStatTrigger.Learn);
         }
     }

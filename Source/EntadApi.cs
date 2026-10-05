@@ -157,8 +157,9 @@ namespace EntadFramework
                 if (quality != null && request.quality.HasValue)
                     quality.SetQuality(request.quality.Value, ArtGenerationContext.Outsider);
 
+                // A rejected candidate was never spawned or registered anywhere, so it is simply dropped for the GC.
+                // (Thing.Discard only accepts destroyed things and would log a warning for each one.)
                 if (ApplyRandomTraits(thing, request, traitCount).Count > 0) return thing;
-                thing.Discard();
             }
             return null;
         }
