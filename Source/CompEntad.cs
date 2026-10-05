@@ -94,6 +94,10 @@ namespace EntadFramework
             thought = fresh.thought;
             thoughtHours = fresh.thoughtHours;
             mealNutritionFactor = fresh.mealNutritionFactor;
+            // Parallel to the old trait's abilities; they rebuild against the new one's on first use
+            // (null when the save had none: this runs in LoadingVars, before PostLoadInit fills in empty lists)
+            abilityReadyTicks?.Clear();
+            abilityCharges?.Clear();
         }
 
         public static AppliedEntadTrait Roll(EntadTraitDef def, EntadRarity? rarity = null)
@@ -496,6 +500,9 @@ namespace EntadFramework
                     for (int j = 0; j < i; j++)
                         if (activeTraits[j].def == activeTraits[i].def)
                         {
+                            // Whatever the player had found out about either copy stays found out
+                            activeTraits[j].revealedKinds |= activeTraits[i].revealedKinds;
+                            activeTraits[i].revealedKinds |= activeTraits[j].revealedKinds;
                             if (activeTraits[i].Rarity > activeTraits[j].Rarity) activeTraits[j] = activeTraits[i];
                             activeTraits.RemoveAt(i);
                             break;
