@@ -124,20 +124,4 @@
       <li>StoneBlocks</li>
     </fuelCategories>
   </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
-    <defName>Entad_BlessedComfort</defName>
-    <label>Blessed Comfort</label>
-    <description>An ethereal warmth radiates from this object, easing the mind of anyone using it.</description>
-    <categories>
-      <li>Furniture</li>
-    </categories>
-    <rarity>Uncommon</rarity>
-    <statOffsets>
-      <li>
-        <stat>Comfort</stat>
-        <min>0.05</min>
-        <max>0.25</max>
-      </li>
-    </statOffsets>
-  </EntadFramework.EntadTraitDef>
 </Defs>

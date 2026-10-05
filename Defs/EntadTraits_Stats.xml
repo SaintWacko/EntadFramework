@@ -2,17 +2,6 @@
 <!-- Generated entad traits covering common stats. Stat names that do not exist in your game version or loaded mods will log errors; delete or edit those entries. Wearer stats (move speed, work speed...) are added as offsets to the pawn carrying the item. -->
 <Defs>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_RapidCycling</defName>
-    <label>Rapid Cycling</label>
-    <description>The action cycles faster than it should.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Uncommon</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statFactors>
-      <li><stat>RangedWeapon_Cooldown</stat><min>0.6</min><max>0.85</max></li>
-    </statFactors>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
     <defName>Entad_TrueSights</defName>
     <label>True Sights</label>
     <description>Shots seem to want to land where you look.</description>
@@ -37,17 +26,6 @@
       <li><stat>AccuracyMedium</stat><min>0.03</min><max>0.08</max></li>
       <li><stat>AccuracyLong</stat><min>0.05</min><max>0.12</max></li>
     </statOffsets>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
-    <defName>Entad_BrutalEdge</defName>
-    <label>Brutal Edge</label>
-    <description>Blows land with unusual weight.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Uncommon</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statFactors>
-      <li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.2</min><max>1.6</max></li>
-    </statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_QuickStrikes</defName>

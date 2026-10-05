@@ -29,24 +29,6 @@
     <statOffsets><li><stat>AccuracyShort</stat><min>0.02</min><max>0.06</max></li><li><stat>AccuracyMedium</stat><min>0.02</min><max>0.06</max></li></statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_MarksmansEye</defName>
-    <label>Marksman's Eye</label>
-    <description>Whoever holds it sees exactly where the shot will land.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Uncommon</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statOffsets><li><stat>ShootingAccuracyPawn</stat><min>2</min><max>5</max></li></statOffsets>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
-    <defName>Entad_Stormfeed</defName>
-    <label>Stormfeed</label>
-    <description>It never seems to run out of momentum.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Epic</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statFactors><li><stat>RangedWeapon_Cooldown</stat><min>0.4</min><max>0.6</max></li></statFactors>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
     <defName>Entad_Sharpshooter</defName>
     <label>Sharpshooter</label>
     <description>Every shot is placed with uncanny care and force.</description>
@@ -54,15 +36,6 @@
     <rarity>Epic</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>AccuracyShort</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyMedium</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyLong</stat><min>0.03</min><max>0.07</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.1</min><max>1.25</max></li></statFactors>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
-    <defName>Entad_Parrying</defName>
-    <label>Parrying</label>
-    <description>It always seems to be in the way of incoming blows.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <statOffsets><li><stat>MeleeDodgeChance</stat><min>0.04</min><max>0.12</max></li></statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavyHitter</defName>
@@ -137,21 +110,11 @@
     <extraDamage><li><damageType>EMP</damageType><min>2</min><max>6</max></li></extraDamage>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_AcceleratedRounds</defName>
-    <label>Accelerated Rounds</label>
-    <description>Projectiles leave this weapon with far more force.</description>
-    <categories><li>Weapon</li></categories>
-    <rarity>Uncommon</rarity>
-    <statFactors>
-      <li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.6</max></li>
-    </statFactors>
-  </EntadFramework.EntadTraitDef>
-  <EntadFramework.EntadTraitDef>
     <defName>Entad_Cinderstrike</defName>
     <label>Cinderstrike</label>
-    <description>Every hit scorches the target.</description>
+    <description>Every hit bursts into flame, and can set the target alight.</description>
     <categories><li>Weapon</li></categories>
-    <rarity>Rare</rarity>
+    <rarity>Epic</rarity>
     <extraDamage>
       <li><damageType>Flame</damageType><min>2</min><max>6</max></li>
     </extraDamage>
