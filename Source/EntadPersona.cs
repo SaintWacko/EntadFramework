@@ -109,8 +109,37 @@ namespace EntadFramework
             }
         }
 
+        // A persona weapon's traits start revealed unless it's Secretive; the persona traits themselves always are.
+        // Runs on every add, so the order traits are rolled in doesn't matter: adding Persona reveals the traits
+        // already there, adding Secretive hides them again. Silent: this happens at generation, not in play.
+        private void SyncPersonaReveal(AppliedEntadTrait added)
+        {
+            if (!EntadSettings.HideTraits) return;
+            bool persona = false, secretive = false;
+            for (int i = 0; i < activeTraits.Count; i++)
+            {
+                persona |= activeTraits[i].def.persona;
+                secretive |= activeTraits[i].def.secretive;
+            }
+            if (!persona) return;
+            bool changed = false;
+            foreach (var m in activeTraits)
+            {
+                bool always = m.def.persona || m.def.neverBond || m.def.secretive;
+                EntadEffectKind want;
+                if (always || !secretive) want = EntadEffectKind.All;
+                else if (added != null && added.def.secretive && m != added) want = EntadEffectKind.None;
+                else continue;
+                if (m.revealedKinds == want) continue;
+                m.revealedKinds = want;
+                changed = true;
+            }
+            if (changed && added != null) RevealedChanged(added, EntadEffectKind.All, announce: false);
+        }
+
         private void PersonaTraitAdded(AppliedEntadTrait m)
         {
+            SyncPersonaReveal(m);
             if (bondedPawn == null)
             {
                 // Persona added to a weapon already in someone's hands: bond now, as if it had just been equipped
@@ -124,6 +153,8 @@ namespace EntadFramework
 
         private void PersonaTraitRemoved(AppliedEntadTrait m)
         {
+            // Secretive gone: the persona tells all
+            if (m.def.secretive) SyncPersonaReveal(m);
             if (bondedPawn == null) return;
             if (!IsPersona) { Unbond(); return; }   // the persona itself removed
             RemoveBondedHediffs(bondedPawn, m.def, m);
@@ -159,6 +190,7 @@ namespace EntadFramework
             var d = m.def;
             if (d.persona) yield return "EF_Card_Persona".Translate();
             if (d.neverBond) yield return "EF_Card_NeverBond".Translate();
+            if (d.secretive) yield return "EF_Card_Secretive".Translate();
             if (!d.bondedHediffs.NullOrEmpty())
                 yield return "EF_Card_BondedHediffs".Translate(string.Join(", ", d.bondedHediffs.Select(h => h.LabelCap.ToString())));
             if (d.bondedThought != null)

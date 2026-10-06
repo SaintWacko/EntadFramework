@@ -354,6 +354,9 @@ namespace EntadFramework
         public bool persona;
         // Freewielder: keeps the persona's other effects but the weapon never bonds
         public bool neverBond;
+        // A persona tells whoever looks at it what it can do, so a weapon with one starts with every trait revealed.
+        // Secretive (needs a persona) turns that off: its other traits reveal through use like any entad's.
+        public bool secretive;
         // Effects of the bond (the item needs a persona trait). Bonded hediffs last while the bond does, held or not.
         public List<HediffDef> bondedHediffs;
         // A situational thought active while bonded (worker ThoughtWorker_WeaponTraitBonded, as vanilla's)
@@ -618,6 +621,7 @@ namespace EntadFramework
             if (killThirstThought != null && killThirstDays <= 0f) yield return $"{defName}: killThirstDays must be above 0";
             if (persona && (neverBond || HasBondEffect)) yield return $"{defName}: persona goes on its own trait; neverBond and bond effects are separate traits that need one";
             if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
+            if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
         }
 
@@ -632,7 +636,8 @@ namespace EntadFramework
                 foreach (var m in existing.activeTraits)
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
-            if ((persona || neverBond || HasBondEffect) && !td.IsWeapon) return false;
+            if ((persona || neverBond || secretive || HasBondEffect) && !td.IsWeapon) return false;
+            if (secretive && (existing == null || !existing.activeTraits.Any(m => m.def.persona))) return false;
             // A vanilla persona weapon's own comp takes the pawn's bonded-weapon slot first, so ours would never bond
             if (persona && td.comps != null && td.comps.Any(c => c.compClass != null && typeof(CompBladelinkWeapon).IsAssignableFrom(c.compClass))) return false;
             // Bond effects and freewielder only go on a weapon that already has a persona, and never together
@@ -741,7 +746,7 @@ namespace EntadFramework
             {
                 if (weaponSpecific < 0)
                 {
-                    bool result = HasDamageEffect || HasWeaponEffect || killThought != null || persona || neverBond || HasBondEffect
+                    bool result = HasDamageEffect || HasWeaponEffect || killThought != null || persona || neverBond || secretive || HasBondEffect
                         || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
                         || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
                     weaponSpecific = result ? 1 : 0;

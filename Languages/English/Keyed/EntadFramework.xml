@@ -46,6 +46,7 @@
   <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
   <EF_Card_Trigger>{0}: {1}</EF_Card_Trigger>
   <EF_Card_Persona>Bonds to the first person who equips it. Nobody else can wield it until they die.</EF_Card_Persona>
+  <EF_Card_Secretive>Keeps its other traits secret until they show themselves.</EF_Card_Secretive>
   <EF_Card_NeverBond>Never bonds: anyone can wield it.</EF_Card_NeverBond>
   <EF_Card_BondedHediffs>While bonded: {0}</EF_Card_BondedHediffs>
   <EF_Card_BondedThought>While bonded: {0} ({1} mood)</EF_Card_BondedThought>

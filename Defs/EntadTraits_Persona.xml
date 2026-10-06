@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- Persona weapons (EntadPersona.cs). Persona rolls like any Rare weapon trait; bond traits and Freewielder only
-       roll on a weapon that already has it. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
+  <!-- Persona weapons (EntadPersona.cs). Persona rolls like any Rare weapon trait; bond traits, Freewielder and
+       Secretive only roll on a weapon that already has it. A persona weapon's traits start revealed unless it's
+       Secretive. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
        weapon's name, and need no DLC. -->
 
   <EntadFramework.EntadTraitDef>
@@ -29,6 +30,15 @@
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <neverBond>true</neverBond>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Secretive</defName>
+    <label>Secretive</label>
+    <description>This weapon's persona won't say what it can do. Its other traits stay hidden until they show themselves in use.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <secretive>true</secretive>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
