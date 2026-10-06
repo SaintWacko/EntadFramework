@@ -133,8 +133,9 @@ namespace EntadFramework
         //    still roll a big trait, just rarely (strictness 0 is a pure minimum, higher approaches a maximum);
         //  - a pair much cheaper than the target per remaining trait slot is made less likely, so a big target buys
         //    rarer traits instead of running into the trait cap on Commons.
-        // An item allowed drawbacks takes one as soon as one is eligible after its first real trait; the drawback's
-        // points go back on the target, so generation carries on and pays for it with more or better traits.
+        // An item allowed drawbacks takes one as soon as one is eligible after its first real trait, even if that
+        // trait already reached the target, as long as the drawback's points put the item back under it; generation
+        // then carries on and pays for it with more or better traits.
         // The trait cap is the one thing that can stop an item short of its target.
         private static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request, float budget)
         {
@@ -155,8 +156,10 @@ namespace EntadFramework
                 weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
 
             bool hasRealTrait = false;
-            while (added.Count < cap && remaining > Epsilon)
+            // Runs past the target only to take a drawback the item rolled for, whose points reopen the target
+            while (added.Count < cap)
             {
+                if (remaining <= Epsilon && !(drawbacksLeft > 0 && hasRealTrait)) break;
                 var candidates = GetApplicableTraits(thing, request.traitFilter);
                 candidates.RemoveAll(d => d.neverRandom);
                 if (candidates.Count == 0) break;
@@ -171,9 +174,11 @@ namespace EntadFramework
                 {
                     // ...and a real trait that can still go on with it, or the drawback would never be paid back
                     pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => d.IsDrawback && candidates.Any(p => !p.IsDrawback && !p.ConflictsWith(d) && !d.ConflictsWith(p)), null, out rolled);
+                        (d, r) => d.IsDrawback && left - d.PointsAt(r) > Epsilon
+                            && candidates.Any(p => !p.IsDrawback && !p.ConflictsWith(d) && !d.ConflictsWith(p)), null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
+                if (pick == null && remaining <= Epsilon) break;
                 if (pick == null)
                 {
                     pick = chances.PickWhere(candidates, weight, allowed,
