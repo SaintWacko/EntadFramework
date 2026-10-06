@@ -2,7 +2,8 @@
 <Defs>
   <!-- Persona weapons (EntadPersona.cs). Persona rolls like any Rare weapon trait; bond traits, Freewielder and
        Secretive only roll on a weapon that already has it. A persona weapon's traits start revealed unless it's
-       Secretive. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
+       Secretive. Negative points mark drawbacks: generation takes one only on an item allowed drawbacks, and
+       spends the points it gives back on more traits. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
        weapon's name, and need no DLC. -->
 
   <EntadFramework.EntadTraitDef>
@@ -29,6 +30,7 @@
     <description>This weapon's persona doesn't form bonds. Anyone can pick it up and use it.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <points>1</points>
     <neverBond>true</neverBond>
   </EntadFramework.EntadTraitDef>
 
@@ -38,6 +40,7 @@
     <description>This weapon's persona won't say what it can do. Its other traits stay hidden until they show themselves in use.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <points>-1</points>
     <secretive>true</secretive>
   </EntadFramework.EntadTraitDef>
 
@@ -47,6 +50,7 @@
     <description>The persona is kind and supportive, and whispers encouragement to whoever it's bonded with.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <points>2</points>
     <bondedThought>Entad_BondedThoughtKind</bondedThought>
     <exclusivityTags><li>EntadBondedThought</li></exclusivityTags>
   </EntadFramework.EntadTraitDef>
@@ -69,6 +73,7 @@
     <description>The persona is neurotic and never stops muttering to whoever it's bonded with.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
+    <points>-2</points>
     <bondedThought>Entad_BondedThoughtMuttering</bondedThought>
     <exclusivityTags><li>EntadBondedThought</li></exclusivityTags>
   </EntadFramework.EntadTraitDef>
@@ -91,6 +96,7 @@
     <description>The persona loves food and passes its appetite on: whoever it's bonded with gets hungry 50% faster.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
+    <points>-1</points>
     <bondedHediffs><li>Entad_Hediff_PersonaHunger</li></bondedHediffs>
   </EntadFramework.EntadTraitDef>
   <HediffDef>
@@ -113,6 +119,7 @@
     <description>The persona flies into a rage when the person bonded to it uses another weapon.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
+    <points>-1</points>
     <otherWeaponThought>Entad_JealousRage</otherWeaponThought>
   </EntadFramework.EntadTraitDef>
   <ThoughtDef>
@@ -134,6 +141,7 @@
     <description>The persona finds purpose in bloodshed. After 20 days without a kill it grows angry and complains to whoever is bonded with it.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
+    <points>-1</points>
     <killThirstThought>Entad_KillThirstThought</killThirstThought>
     <killThirstDays>20</killThirstDays>
   </EntadFramework.EntadTraitDef>
