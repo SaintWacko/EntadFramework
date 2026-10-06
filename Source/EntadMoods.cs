@@ -182,12 +182,13 @@ namespace EntadFramework
             bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting
                 || job.def == JobDefOf.Lovin;
             // What kind of use this was, for furniture Use triggers (moods don't care)
-            bool slept = lying && job.def != JobDefOf.Lovin && Find.TickManager.TicksGame - job.startTick >= EntadTriggers.MinSleepTicks;
+            bool slept = EntadTriggers.Slept(pawn, job);
             EntadUseKind usedKind = job.bill != null || job.def == JobDefOf.Research || job.def == JobDefOf.OperateDeepDrill
                 || job.def == JobDefOf.OperateScanner ? EntadUseKind.Work
                 : job.def.joyKind != null ? EntadUseKind.Recreation
                 : slept ? EntadUseKind.Sleep : EntadUseKind.Other;
-            if (succeeded || atUsed || inside) Check(pawn, used, null, usedKind);
+            bool credited = succeeded || atUsed || inside;
+            if (credited) Check(pawn, used, null, usedKind);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
             // seated at something, and a bed only for a job that lies the pawn down. Any other job that happens to
@@ -210,7 +211,9 @@ namespace EntadFramework
             }
             // The bed the pawn is actually in (beds are walkable too, so not just any bed on the cell). CurrentBed is
             // still valid here: the job hasn't been cleared yet.
-            if (lying) Check(pawn, pawn.CurrentBed(), used, slept ? EntadUseKind.Sleep : EntadUseKind.Other);
+            // Skip it only if it was already credited as the job's own target: a sleep cut short by a raid or a draft
+            // ends early, so the bed (which has no interaction cell) is credited here instead
+            if (lying) Check(pawn, pawn.CurrentBed(), credited ? used : null, slept ? EntadUseKind.Sleep : EntadUseKind.Other);
 
             // The table the pawn ate at
             if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used, EntadUseKind.Eat);

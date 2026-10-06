@@ -343,7 +343,8 @@ namespace EntadFramework
         public List<HediffDef> equippedHediffs;
 
         // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
-        // turned into one in ResolveReferences.
+        // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
+        // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
         public ThoughtDef killThought;
 
         // "When X happens, do Y" (EntadTriggers.cs). Use triggers are for furniture; every other event is for worn or
@@ -606,7 +607,8 @@ namespace EntadFramework
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             if (killThought != null && !td.IsWeapon) return false;
             if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
-            if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td))) return false;
+            if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td)
+                || triggers.Any(t => t.on == EntadTriggerEvent.Use && (t.use & UseKindsOf(td)) == 0))) return false;
             // Reloading works on worn and wielded gear only; furniture abilities have their own charge cooldown
             if (IsReloadable && !td.IsWeapon && !td.IsApparel) return false;
             if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;
@@ -639,6 +641,20 @@ namespace EntadFramework
             // Partial: at least one stat has to mean something, unless the trait has other effects that already passed
             if (partialStats && anyStat && !anyApplies && EffectKinds == EntadEffectKind.Stat) return false;
             return true;
+        }
+
+        // The kinds of use the job-end hook can report for this building (EntadMoods): a Sleep trigger on a workbench
+        // would never fire
+        public static EntadUseKind UseKindsOf(ThingDef td)
+        {
+            var b = td.building;
+            if (b == null) return 0;
+            EntadUseKind k = EntadUseKind.Other;
+            if (td.IsBed) k |= EntadUseKind.Sleep;
+            if (b.isSittable || td.surfaceType == SurfaceType.Eat) k |= EntadUseKind.Eat;
+            if (b.isSittable || td.hasInteractionCell) k |= EntadUseKind.Work;
+            if (b.isSittable || b.joyKind != null) k |= EntadUseKind.Recreation;
+            return k;
         }
 
         // Whether a stat of this trait works on the thing. Always true for an ordinary trait (CanApplyTo already

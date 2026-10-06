@@ -142,7 +142,9 @@ namespace EntadFramework
                 if (r.min > r.max || r.min < 0f) yield return $"{owner}: invalid trigger range ({r})";
             }
             if (rest.max > 1f || food.max > 1f || joy.max > 1f) yield return $"{owner}: rest, food and joy are fractions of the need (at most 1)";
-            if (hediffHours.max > 0f && (hediff == null || !hediff.HasComp(typeof(HediffComp_Disappears))))
+            // (any comp derived from it too: DisappearsPausable, DisappearsAndKills...)
+            if (hediffHours.max > 0f && (hediff == null || hediff.comps == null
+                || !hediff.comps.Any(c => c.compClass != null && typeof(HediffComp_Disappears).IsAssignableFrom(c.compClass))))
                 yield return $"{owner}: hediffHours needs a hediff with HediffComp_Disappears";
             // Gained with no other pawn, so social memories can't work (vanilla logs an error every time)
             if (thought != null && (!thought.IsMemory || !typeof(Thought_Memory).IsAssignableFrom(thought.ThoughtClass)
@@ -199,7 +201,7 @@ namespace EntadFramework
                 for (int i = 0; i < ts.Count; i++)
                 {
                     if (ts[i].on != ev) continue;
-                    if (ev == EntadTriggerEvent.JobDone && !ts[i].jobs.Contains(job)) continue;
+                    if (ev == EntadTriggerEvent.JobDone && (ts[i].jobs == null || !ts[i].jobs.Contains(job))) continue;
                     TryQueue(pawn, m, i, null);
                 }
             }
@@ -283,7 +285,10 @@ namespace EntadFramework
             if (existing != null)
             {
                 var d = existing.TryGetComp<HediffComp_Disappears>();
-                if (d != null && ticks > d.ticksToDisappear) d.ticksToDisappear = ticks;
+                if (d == null) return;
+                // With the hediff's own duration, a repeat trigger gives it a fresh one (if that's longer than what's left)
+                if (ticks < 0) ticks = d.Props.disappearsAfterTicks.RandomInRange;
+                if (ticks > d.ticksToDisappear) d.ticksToDisappear = ticks;
                 return;
             }
             var hediff = HediffMaker.MakeHediff(def, pawn);
@@ -295,12 +300,24 @@ namespace EntadFramework
             pawn.health.AddHediff(hediff);
         }
 
+        private static readonly AccessTools.FieldRef<Need_Rest, int> lastRestTick = AccessTools.FieldRefAccess<Need_Rest, int>("lastRestTick");
+
+        // A LayDown job that lasted an hour and in which the pawn actually slept. Vanilla only counts rest (and sets
+        // lastRestTick) while asleep, so a patient lying awake on bed rest, or a downed pawn kept lying, doesn't count.
+        public static bool Slept(Pawn pawn, Job job)
+        {
+            if (job.def != JobDefOf.LayDown || job.startTick < 0) return false;
+            if (Find.TickManager.TicksGame - job.startTick < MinSleepTicks) return false;
+            var rest = pawn.needs?.rest;
+            return rest != null && lastRestTick(rest) >= job.startTick;
+        }
+
         // From EntadMoods' CleanupCurrentJob prefix, for every pawn's job end; returns at once for pawns without gear
         public static void OnJobEnded(Pawn pawn, Job job, JobCondition condition)
         {
             if ((pawn.apparel == null && pawn.equipment == null) || pawn.Dead) return;
             bool succeeded = condition == JobCondition.Succeeded;
-            if (job.def == JobDefOf.LayDown && !pawn.Downed && Find.TickManager.TicksGame - job.startTick >= MinSleepTicks)
+            if (!pawn.Downed && Any(EntadTriggerEvent.WakeUp) && Slept(pawn, job))
                 FromGear(pawn, EntadTriggerEvent.WakeUp);
             if (!succeeded) return;
             if (job.def == JobDefOf.Ingest && job.targetA.Thing?.def?.IsNutritionGivingIngestible == true)
@@ -354,13 +371,15 @@ namespace EntadFramework
         }
     }
 
-    // A prefix: MakeDowned drops the pawn's weapon, so the gear has to be read before it runs
+    // A prefix: MakeDowned drops the pawn's weapon, so the gear has to be read before it runs.
+    // Going under anaesthetic for surgery isn't being downed in any sense a trait cares about (and would use up
+    // Last Stand's cooldown on the operating table).
     [HarmonyPatch(typeof(Pawn_HealthTracker), "MakeDowned")]
     public static class Patch_HealthTracker_MakeDowned_EntadTrigger
     {
-        public static void Prefix(Pawn_HealthTracker __instance, Pawn ___pawn)
+        public static void Prefix(Pawn_HealthTracker __instance, Pawn ___pawn, Hediff hediff)
         {
-            if (__instance.Downed) return;
+            if (__instance.Downed || hediff?.def == HediffDefOf.Anesthetic) return;
             EntadTriggers.FromGear(___pawn, EntadTriggerEvent.Downed);
         }
     }

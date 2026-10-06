@@ -232,6 +232,8 @@ namespace EntadFramework
         public static void Postfix(Pawn pawn, ref Job __result)
         {
             if (__result != null || !EntadReload.AnyReloadable) return;
+            // Allocation-free check before SlotsFor builds anything: most pawns carry no reloadable entad
+            if (!HasReloadableGear(pawn)) return;
             if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation)) return;
             foreach (var s in EntadReload.SlotsFor(pawn))
             {
@@ -242,6 +244,23 @@ namespace EntadFramework
                 __result = EntadReload.MakeJob(s, ammo);
                 return;
             }
+        }
+
+        private static bool HasReloadableGear(Pawn pawn)
+        {
+            var eq = pawn.equipment?.AllEquipmentListForReading;
+            if (eq != null) for (int i = 0; i < eq.Count; i++) if (Reloadable(eq[i])) return true;
+            var ap = pawn.apparel?.WornApparel;
+            if (ap != null) for (int i = 0; i < ap.Count; i++) if (Reloadable(ap[i])) return true;
+            return false;
+        }
+
+        private static bool Reloadable(Thing t)
+        {
+            var comp = t.TryGetComp<CompEntad>();
+            if (comp == null) return false;
+            for (int i = 0; i < comp.activeTraits.Count; i++) if (comp.activeTraits[i].def.IsReloadable) return true;
+            return false;
         }
     }
 }
