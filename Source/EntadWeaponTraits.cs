@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using HarmonyLib;
 using RimWorld;
 using UnityEngine;
@@ -16,7 +18,7 @@ namespace EntadFramework
         // Def data, fixed once the game has loaded; worked out on the first read, which happens in play
         private static bool? anyWeaponProperty, anyIgnoreMaluses;
 
-        private static bool AnyWeaponProperty =>
+        internal static bool AnyWeaponProperty =>
             anyWeaponProperty ?? (anyWeaponProperty = DefDatabase<EntadTraitDef>.AllDefsListForReading.Any(d => !d.weaponProperties.NullOrEmpty())).Value;
 
         private static bool AnyIgnoreMaluses =>
@@ -114,6 +116,119 @@ namespace EntadFramework
                 pawn.needs.mood.thoughts.memories.TryGainMemory(m.def.killThought);
                 m.Reveal(EntadEffectKind.Mood);
             }
+        }
+    }
+
+    // The info card's burst count, burst fire rate and stopping power rows come from ThingDef.SpecialDisplayStats,
+    // which reads the verb props and CompUniqueWeapon only, so an entad showed the base value there (3) next to its
+    // own "x128%" row while actually firing 4. This rewrites those three rows to the value the gun really uses,
+    // with each revealed trait listed in the tooltip the way vanilla lists unique weapon traits. Hidden traits stay
+    // out of the numbers, like everywhere else on the card. Runs only while an info card is being built.
+    [HarmonyPatch(typeof(ThingDef), nameof(ThingDef.SpecialDisplayStats))]
+    public static class Patch_ThingDef_SpecialDisplayStats_EntadWeapon
+    {
+        private const int BurstCountOrder = 5391, FireRateOrder = 5395, StoppingPowerOrder = 5402;
+
+        public static void Postfix(ThingDef __instance, StatRequest req, ref IEnumerable<StatDrawEntry> __result)
+        {
+            if (!EntadWeaponTraits.AnyWeaponProperty || !req.HasThing || !__instance.IsRangedWeapon) return;
+            if (!EntadCompInjector.MayHaveComp(__instance)) return;
+            var comp = req.Thing.TryGetComp<CompEntad>();
+            if (comp == null || !comp.ActiveForHolder) return;
+            var verb = __instance.Verbs?.FirstOrDefault(v => v.Ranged);
+            if (verb == null || !Revealed(comp).Any()) return;
+            __result = Rewrite(__result, comp, verb);
+        }
+
+        // (trait, property, rolled value) for every revealed weapon property
+        private static IEnumerable<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> Revealed(CompEntad comp)
+        {
+            foreach (var m in comp.activeTraits)
+            {
+                if (m.def.weaponProperties == null || !m.IsRevealed(EntadEffectKind.Damage)) continue;
+                for (int i = 0; i < m.def.weaponProperties.Count; i++)
+                    yield return (m, m.def.weaponProperties[i], m.WeaponValueFor(i));
+            }
+        }
+
+        private static IEnumerable<StatDrawEntry> Rewrite(IEnumerable<StatDrawEntry> rows, CompEntad comp, VerbProperties verb)
+        {
+            var cat = StatCategoryDefOf.Weapon_Ranged;
+            var props = Revealed(comp).ToList();
+            bool hasCount = props.Any(p => p.w.property == EntadWeaponProperty.BurstShotCount);
+            bool hasSpeed = props.Any(p => p.w.property == EntadWeaponProperty.BurstShotSpeed);
+            bool hasStop = props.Any(p => p.w.property == EntadWeaponProperty.StoppingPower);
+            bool stopSeen = false;
+            foreach (var row in rows)
+            {
+                if (row.category != cat || row.stat != null) { yield return row; continue; }
+                int order = row.DisplayPriorityWithinCategory;
+                if (order == BurstCountOrder && hasCount) yield return BurstCountRow(cat, verb, props);
+                else if (order == FireRateOrder && hasSpeed) yield return FireRateRow(cat, verb, props);
+                else if (order == StoppingPowerOrder && hasStop)
+                {
+                    stopSeen = true;
+                    var stop = StoppingPowerRow(cat, verb, props);
+                    if (stop != null) yield return stop;
+                }
+                else yield return row;
+            }
+            // Vanilla leaves the stopping power row out when the base is 0, so a trait may have to add it
+            if (hasStop && !stopSeen && verb.defaultProjectile?.projectile != null)
+            {
+                var row = StoppingPowerRow(cat, verb, props);
+                if (row != null) yield return row;
+            }
+        }
+
+        private static string Explain(string descKey, string baseValue, IEnumerable<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> lines, string finalValue)
+        {
+            var sb = new StringBuilder(descKey.Translate());
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("StatsReport_BaseValue".Translate() + ": " + baseValue);
+            sb.AppendLine();
+            sb.AppendLine("EF_Stat_EntadTraits".Translate() + ":");
+            foreach (var l in lines) sb.AppendLine("    " + l.m.def.LabelCap + ": " + l.w.ValueString(l.v));
+            sb.AppendLine();
+            sb.Append("StatsReport_FinalValue".Translate() + ": " + finalValue);
+            return sb.ToString();
+        }
+
+        // Same rounding as Patch_Verb_BurstShotCount, so the card matches the shots fired
+        private static StatDrawEntry BurstCountRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        {
+            var lines = props.Where(p => p.w.property == EntadWeaponProperty.BurstShotCount).ToList();
+            float f = 1f;
+            foreach (var l in lines) f *= l.v;
+            string final = Mathf.Max(1, Mathf.CeilToInt(verb.burstShotCount * f)).ToString();
+            return new StatDrawEntry(cat, "BurstShotCount".Translate(), final,
+                Explain("Stat_Thing_Weapon_BurstShotCount_Desc", verb.burstShotCount.ToString(), lines, final), BurstCountOrder);
+        }
+
+        // Same rounding as Patch_Verb_TicksBetweenBurstShots
+        private static StatDrawEntry FireRateRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        {
+            var lines = props.Where(p => p.w.property == EntadWeaponProperty.BurstShotSpeed).ToList();
+            float f = 1f;
+            foreach (var l in lines) f *= l.v;
+            int ticks = f > 0f ? Mathf.Max(1, Mathf.RoundToInt(verb.ticksBetweenBurstShots / f)) : verb.ticksBetweenBurstShots;
+            string Rpm(int t) => (60f / Mathf.Max(1, t).TicksToSeconds()).ToString("0.##") + " rpm";
+            string final = Rpm(ticks);
+            return new StatDrawEntry(cat, "BurstShotFireRate".Translate(), final,
+                Explain("Stat_Thing_Weapon_BurstShotFireRate_Desc", Rpm(verb.ticksBetweenBurstShots), lines, final), FireRateOrder);
+        }
+
+        private static StatDrawEntry StoppingPowerRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        {
+            var lines = props.Where(p => p.w.property == EntadWeaponProperty.StoppingPower).ToList();
+            float baseValue = verb.defaultProjectile?.projectile?.stoppingPower ?? 0f;
+            float total = baseValue;
+            foreach (var l in lines) total += l.v;
+            if (total <= 0f) return null;
+            string final = total.ToString("F1");
+            return new StatDrawEntry(cat, "StoppingPower".Translate(), final,
+                Explain("StoppingPowerExplanation", baseValue.ToString("F1"), lines, final), StoppingPowerOrder);
         }
     }
 

@@ -721,12 +721,7 @@ namespace EntadFramework
             foreach (var m in activeTraits)
             {
                 if (!m.IsRevealed(EntadEffectKind.Damage)) continue;
-                for (int i = 0; m.def.weaponProperties != null && i < m.def.weaponProperties.Count; i++)
-                {
-                    var w = m.def.weaponProperties[i];
-                    yield return new StatDrawEntry(cat, "EF_Stat_Weapon".Translate(w.Label), w.ValueString(m.WeaponValueFor(i)),
-                        "EF_Stat_WeaponDesc".Translate(m.def.LabelCap, w.Label), order++);
-                }
+                // Burst and stopping power values are folded into vanilla's own rows (Patch_ThingDef_SpecialDisplayStats_EntadWeapon)
                 if (m.def.ignoreAccuracyMaluses)
                     yield return new StatDrawEntry(cat, "EF_Stat_IgnoresAccuracyMaluses".Translate(), "Yes".Translate(),
                         "EF_Stat_IgnoresAccuracyMalusesDesc".Translate(m.def.LabelCap), order++);

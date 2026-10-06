@@ -65,8 +65,7 @@
   <EF_Weapon_BurstShotCount>Burst shot count</EF_Weapon_BurstShotCount>
   <EF_Weapon_BurstShotSpeed>Burst shot speed</EF_Weapon_BurstShotSpeed>
   <EF_Weapon_StoppingPower>Stopping power</EF_Weapon_StoppingPower>
-  <EF_Stat_Weapon>Entad {0}</EF_Stat_Weapon>
-  <EF_Stat_WeaponDesc>{0}: changes this weapon's {1}.</EF_Stat_WeaponDesc>
+  <EF_Stat_EntadTraits>Entad traits</EF_Stat_EntadTraits>
   <EF_Stat_IgnoresAccuracyMaluses>Entad ignores accuracy penalties</EF_Stat_IgnoresAccuracyMaluses>
   <EF_Stat_IgnoresAccuracyMalusesDesc>{0}: shots from this weapon ignore the accuracy and range penalties from weather and from blind smoke.</EF_Stat_IgnoresAccuracyMalusesDesc>
   <EF_Stat_ExtraTotal>Entad extra damage per hit</EF_Stat_ExtraTotal>
