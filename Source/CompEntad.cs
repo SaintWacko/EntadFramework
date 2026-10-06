@@ -14,6 +14,9 @@ namespace EntadFramework
         public List<float> buildingValues = new List<float>();
         public List<float> extraDamageValues = new List<float>();
         public List<float> weaponValues = new List<float>();
+        // EntadTrigger.ValueCount rolls per trigger (heal, rest, food, joy, hediff hours), and when each is ready again
+        public List<float> triggerValues = new List<float>();
+        public List<int> triggerReadyTicks = new List<int>();
         public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
@@ -60,6 +63,8 @@ namespace EntadFramework
             Scribe_Collections.Look(ref buildingValues, "buildingValues", LookMode.Value);
             Scribe_Collections.Look(ref extraDamageValues, "extraDamageValues", LookMode.Value);
             Scribe_Collections.Look(ref weaponValues, "weaponValues", LookMode.Value);
+            Scribe_Collections.Look(ref triggerValues, "triggerValues", LookMode.Value);
+            Scribe_Collections.Look(ref triggerReadyTicks, "triggerReadyTicks", LookMode.Value);
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
@@ -90,6 +95,8 @@ namespace EntadFramework
                 buildingValues = buildingValues ?? new List<float>();
                 extraDamageValues = extraDamageValues ?? new List<float>();
                 weaponValues = weaponValues ?? new List<float>();
+                triggerValues = triggerValues ?? new List<float>();
+                triggerReadyTicks = triggerReadyTicks ?? new List<int>();
             }
         }
 
@@ -99,8 +106,11 @@ namespace EntadFramework
                 && (factorValues?.Count ?? 0) == (def.statFactors?.Count ?? 0)
                 && (extraDamageValues?.Count ?? 0) == (def.extraDamage?.Count ?? 0)
                 && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0)
-                && (weaponValues?.Count ?? 0) == (def.weaponProperties?.Count ?? 0);
+                && (weaponValues?.Count ?? 0) == (def.weaponProperties?.Count ?? 0)
+                && (triggerValues?.Count ?? 0) == TriggerValueCount(def);
         }
+
+        private static int TriggerValueCount(EntadTraitDef d) => (d.triggers?.Count ?? 0) * EntadTrigger.ValueCount;
 
         private void RerollMismatchedLists()
         {
@@ -110,6 +120,7 @@ namespace EntadFramework
             if ((extraDamageValues?.Count ?? 0) != (def.extraDamage?.Count ?? 0)) extraDamageValues = fresh.extraDamageValues;
             if ((buildingValues?.Count ?? 0) != (def.buildingFactors?.Count ?? 0)) buildingValues = fresh.buildingValues;
             if ((weaponValues?.Count ?? 0) != (def.weaponProperties?.Count ?? 0)) weaponValues = fresh.weaponValues;
+            if ((triggerValues?.Count ?? 0) != TriggerValueCount(def)) { triggerValues = fresh.triggerValues; triggerReadyTicks?.Clear(); }
         }
 
         private void RerollValues()
@@ -121,6 +132,8 @@ namespace EntadFramework
             extraDamageValues = fresh.extraDamageValues;
             buildingValues = fresh.buildingValues;
             weaponValues = fresh.weaponValues;
+            triggerValues = fresh.triggerValues;
+            triggerReadyTicks?.Clear();
             thought = fresh.thought;
             thoughtHours = fresh.thoughtHours;
             mealNutritionFactor = fresh.mealNutritionFactor;
@@ -140,6 +153,9 @@ namespace EntadFramework
             if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));
             if (def.buildingFactors != null) foreach (var r in def.buildingFactors) applied.buildingValues.Add(r.RollScaled(scale));
             if (def.weaponProperties != null) foreach (var r in def.weaponProperties) applied.weaponValues.Add(r.RollScaled(scale));
+            if (def.triggers != null)
+                foreach (var t in def.triggers)
+                    for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.RangeAt(k).RandomInRange * scale);
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
@@ -201,6 +217,21 @@ namespace EntadFramework
         public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
         public float WeaponValueFor(int i) => i < weaponValues.Count ? weaponValues[i] : def.weaponProperties[i].Neutral;
 
+        // Trigger i's rolled amount k (EntadTrigger.Heal, Rest...); the middle of the range when there's no roll
+        public float TriggerValue(int i, int k)
+        {
+            int idx = i * EntadTrigger.ValueCount + k;
+            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[i].RangeAt(k).Average;
+        }
+
+        public int TriggerReadyTick(int i) => i < triggerReadyTicks.Count ? triggerReadyTicks[i] : 0;
+
+        public void SetTriggerReadyTick(int i, int tick)
+        {
+            while (triggerReadyTicks.Count <= i) triggerReadyTicks.Add(0);
+            triggerReadyTicks[i] = tick;
+        }
+
         // Average position (0..1) of the rolled values within their ranges
         public float RollQuality()
         {
@@ -217,6 +248,14 @@ namespace EntadFramework
                 for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); n++; }
             if (def.weaponProperties != null)
                 for (int i = 0; i < def.weaponProperties.Count; i++) { sum += def.weaponProperties[i].NormalizeScaled(WeaponValueFor(i), scale); n++; }
+            if (def.triggers != null)
+                for (int i = 0; i < def.triggers.Count; i++)
+                    for (int k = 0; k < EntadTrigger.ValueCount; k++)
+                    {
+                        var r = def.triggers[i].RangeAt(k);
+                        if (r.max - r.min <= 0.0001f) continue;
+                        sum += UnityEngine.Mathf.InverseLerp(r.min * scale, r.max * scale, TriggerValue(i, k)); n++;
+                    }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); n++; }
             if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
@@ -659,8 +698,11 @@ namespace EntadFramework
                         sb.AppendLine(" - " + "EF_Card_StatOffset".Translate(m.def.weaponProperties[i].Label, m.def.weaponProperties[i].ValueString(m.WeaponValueFor(i))));
                     if (m.def.ignoreAccuracyMaluses) sb.AppendLine(" - " + "EF_Card_IgnoresAccuracyMaluses".Translate());
                 }
-                if (m.def.killThought != null && m.IsRevealed(EntadEffectKind.Mood))
-                    sb.AppendLine(" - " + "EF_Card_KillThought".Translate(m.def.killThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.killThought.defName));
+                for (int i = 0; m.IsRevealed(EntadEffectKind.Trigger) && m.def.triggers != null && i < m.def.triggers.Count; i++)
+                {
+                    int ti = i;
+                    sb.AppendLine(" - " + m.def.triggers[i].Line(k => m.TriggerValue(ti, k)));
+                }
                 if (!m.def.equippedHediffs.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Hediff))
                     sb.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", m.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
                 if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))

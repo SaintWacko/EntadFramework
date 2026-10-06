@@ -119,7 +119,7 @@ namespace EntadFramework
             }
         }
 
-        public static void OnFurnitureUsed(Pawn pawn, Thing furniture)
+        public static void OnFurnitureUsed(Pawn pawn, Thing furniture, EntadUseKind kind)
         {
             var comp = furniture?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
@@ -132,6 +132,7 @@ namespace EntadFramework
                 Give(pawn, m.thought, m.ThoughtDurationTicks, furniture);
                 m.Reveal(EntadEffectKind.Mood);
             }
+            EntadTriggers.FromFurniture(pawn, comp, kind);
         }
     }
 
@@ -151,7 +152,10 @@ namespace EntadFramework
             if (job.def == JobDefOf.Goto) return;
 
             Pawn pawn = ___pawn;
-            if (pawn == null || pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
+            if (pawn == null) return;
+            // Gear triggers (waking, eating, finishing a job) work for anyone holding the item, raiders included
+            if (EntadTriggers.AnyJobEvent) EntadTriggers.OnJobEnded(pawn, job, condition);
+            if (pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
 
             Map map = pawn.MapHeld;
             if (map == null) return;
@@ -175,7 +179,15 @@ namespace EntadFramework
             // Inside the footprint: a shower or bath without an interaction cell, left early (drafted, a raid). Not
             // beds: crossing a double bed to reach a slot would count, so beds go through CurrentBed below instead.
             bool inside = stopped && used != null && !atUsed && !used.def.IsBed && used.Spawned && used.OccupiedRect().Contains(pawn.Position);
-            if (succeeded || atUsed || inside) Check(pawn, used, null);
+            bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting
+                || job.def == JobDefOf.Lovin;
+            // What kind of use this was, for furniture Use triggers (moods don't care)
+            bool slept = lying && job.def != JobDefOf.Lovin && Find.TickManager.TicksGame - job.startTick >= EntadTriggers.MinSleepTicks;
+            EntadUseKind usedKind = job.bill != null || job.def == JobDefOf.Research || job.def == JobDefOf.OperateDeepDrill
+                || job.def == JobDefOf.OperateScanner ? EntadUseKind.Work
+                : job.def.joyKind != null ? EntadUseKind.Recreation
+                : slept ? EntadUseKind.Sleep : EntadUseKind.Other;
+            if (succeeded || atUsed || inside) Check(pawn, used, null, usedKind);
 
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
             // seated at something, and a bed only for a job that lies the pawn down. Any other job that happens to
@@ -187,23 +199,21 @@ namespace EntadFramework
             // (used.def.building: a surgery bill targets the patient, which must not credit a chair under the doctor)
             bool seated = ate || (workOrJoy && used != null && used.def.building != null
                 && (atUsed || (!used.def.hasInteractionCell && succeeded)));
-            bool lying = job.def == JobDefOf.LayDown || job.def == JobDefOf.LayDownAwake || job.def == JobDefOf.LayDownResting
-                || job.def == JobDefOf.Lovin;
             if (seated)
             {
                 List<Thing> here = pawn.Position.GetThingList(map);
                 for (int i = 0; i < here.Count; i++)
                 {
                     Thing t = here[i];
-                    if (t.def.building != null && t.def.building.isSittable) Check(pawn, t, used);
+                    if (t.def.building != null && t.def.building.isSittable) Check(pawn, t, used, ate ? EntadUseKind.Eat : usedKind);
                 }
             }
             // The bed the pawn is actually in (beds are walkable too, so not just any bed on the cell). CurrentBed is
             // still valid here: the job hasn't been cleared yet.
-            if (lying) Check(pawn, pawn.CurrentBed(), used);
+            if (lying) Check(pawn, pawn.CurrentBed(), used, slept ? EntadUseKind.Sleep : EntadUseKind.Other);
 
             // The table the pawn ate at
-            if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used);
+            if (ate) Check(pawn, EntadMeals.SurfaceThing(pawn), used, EntadUseKind.Eat);
         }
 
         // A job the pawn does at a building for its own sake: everything its needs, recreation, rituals and the
@@ -229,10 +239,10 @@ namespace EntadFramework
         }
 
         // Applies the furniture's mood unless it was already handled as the job's own building
-        private static void Check(Pawn pawn, Thing t, Thing skip)
+        private static void Check(Pawn pawn, Thing t, Thing skip, EntadUseKind kind)
         {
             if (t == null || t == skip || t.def.building == null) return;
-            EntadMoods.OnFurnitureUsed(pawn, t);
+            EntadMoods.OnFurnitureUsed(pawn, t, kind);
         }
     }
 }

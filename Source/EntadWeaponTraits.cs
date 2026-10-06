@@ -103,21 +103,7 @@ namespace EntadFramework
         }
     }
 
-    public partial class CompEntad
-    {
-        // Vanilla calls this on every weapon the killer has equipped, with the killer as the argument
-        public override void Notify_KilledPawn(Pawn pawn)
-        {
-            base.Notify_KilledPawn(pawn);
-            if (pawn?.needs?.mood == null || !ActiveFor(pawn)) return;
-            foreach (var m in activeTraits)
-            {
-                if (m.def.killThought == null) continue;
-                pawn.needs.mood.thoughts.memories.TryGainMemory(m.def.killThought);
-                m.Reveal(EntadEffectKind.Mood);
-            }
-        }
-    }
+    // (Kill memories moved to the trigger system: killThought becomes a Kill trigger, see EntadTriggers.cs)
 
     // The info card's burst count, burst fire rate and stopping power rows come from ThingDef.SpecialDisplayStats,
     // which reads the verb props and CompUniqueWeapon only, so an entad showed the base value there (3) next to its

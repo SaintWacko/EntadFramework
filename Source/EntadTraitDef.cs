@@ -213,7 +213,8 @@ namespace EntadFramework
         Fuel = 32,
         Damage = 64,     // also burst, stopping power and ignoring accuracy penalties: all noticed when a shot lands
         Hediff = 128,    // equipped hediffs: they show on the health tab, so they reveal the moment the item is equipped
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff
+        Trigger = 256,   // "when X happens, do Y" effects (EntadTriggers): revealed the first time one fires
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger
     }
 
     public class EntadTraitDef : Def
@@ -257,6 +258,10 @@ namespace EntadFramework
                     if (1f + (UnityEngine.Mathf.Min(b.min, b.max) - 1f) * scale < MinScaledFactor) return false;
             foreach (var r in Ranges(statOffsets))
                 if (r.stat != null && UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(r.min), UnityEngine.Mathf.Abs(r.max)) * scale > r.stat.maxValue) return false;
+            // Triggered need restores are fractions of the need: past 100% they'd be wasted
+            if (triggers != null)
+                foreach (var t in triggers)
+                    if ((t.rest.max > 0f && t.rest.max * scale > 1f) || (t.food.max > 0f && t.food.max * scale > 1f) || (t.joy.max > 0f && t.joy.max * scale > 1f)) return false;
             // Burst factors and stopping power: a factor can't drop to nothing, and nothing may pass its cap
             if (weaponProperties != null)
                 foreach (var w in weaponProperties)
@@ -337,8 +342,26 @@ namespace EntadFramework
         // equippedHediffs and removed on unequip unless other active gear also gives them
         public List<HediffDef> equippedHediffs;
 
-        // Weapons: a memory the wielder gets on each kill. Revealed (as a mood effect) by the first kill.
+        // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
+        // turned into one in ResolveReferences.
         public ThoughtDef killThought;
+
+        // "When X happens, do Y" (EntadTriggers.cs). Use triggers are for furniture; every other event is for worn or
+        // wielded gear, so one trait can't mix the two.
+        public List<EntadTrigger> triggers;
+
+        public bool HasGearTrigger => triggers != null && triggers.Any(t => t.on != EntadTriggerEvent.Use);
+        public bool HasUseTrigger => triggers != null && triggers.Any(t => t.on == EntadTriggerEvent.Use);
+
+        public override void ResolveReferences()
+        {
+            base.ResolveReferences();
+            if (killThought != null && (triggers == null || !triggers.Any(t => t.on == EntadTriggerEvent.Kill && t.thought == killThought)))
+            {
+                if (triggers == null) triggers = new List<EntadTrigger>();
+                triggers.Add(new EntadTrigger { on = EntadTriggerEvent.Kill, thought = killThought });
+            }
+        }
 
         // Allow this trait on items where only some of its stats mean anything (a trait with both melee and ranged
         // stats on a melee weapon, say). Stats that don't apply to the item are skipped and not shown. Off by
@@ -526,7 +549,7 @@ namespace EntadFramework
                 if (!buildingFactors.NullOrEmpty()) kinds |= EntadEffectKind.Building;
                 if (!AllFuelTypes.NullOrEmpty()) kinds |= EntadEffectKind.Fuel;
                 if (HasDamageEffect || HasWeaponEffect) kinds |= EntadEffectKind.Damage;
-                if (killThought != null) kinds |= EntadEffectKind.Mood;
+                if (!triggers.NullOrEmpty()) kinds |= EntadEffectKind.Trigger;
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 return kinds;
@@ -552,18 +575,16 @@ namespace EntadFramework
             if (thoughtMoodRange.min > thoughtMoodRange.max) yield return $"{defName}: thoughtMoodRange min is greater than max";
             if (HasMood && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
             if (weaponProperties != null && weaponProperties.Any(w => w.min > w.max)) yield return $"{defName}: invalid weaponProperties range";
-            // Gained with no other pawn, so social memories can't work (vanilla logs an error on every kill)
-            if (killThought != null && (!killThought.IsMemory || !typeof(Thought_Memory).IsAssignableFrom(killThought.ThoughtClass)
-                || typeof(Thought_MemorySocial).IsAssignableFrom(killThought.ThoughtClass)))
-                yield return $"{defName}: killThought {killThought.defName} must be a plain (non-social) memory thought";
+            // (killThought is checked as the Kill trigger it becomes)
+            if (triggers != null)
+                foreach (var t in triggers)
+                    foreach (var e in t.ConfigErrors(defName)) yield return e;
+            if (HasGearTrigger && HasUseTrigger) yield return $"{defName}: Use triggers (furniture) can't be mixed with gear triggers on one trait";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
             if (abilityAmmo != null && abilityAmmoPerCharge <= 0) yield return $"{defName}: abilityAmmoPerCharge must be at least 1";
             if (abilityAmmo != null && abilityReloadTicks < 0) yield return $"{defName}: abilityReloadTicks can't be negative";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
-            if (killThought != null && (!killThought.requiredTraits.NullOrEmpty() || !killThought.requiredGenes.NullOrEmpty()
-                || !killThought.requiredHediffs.NullOrEmpty() || killThought.gender != Gender.None || killThought.minExpectation != null))
-                yield return $"{defName}: killThought {killThought.defName} has requirements most wielders won't meet, so it would usually do nothing";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -584,6 +605,8 @@ namespace EntadFramework
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             if (killThought != null && !td.IsWeapon) return false;
+            if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
+            if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td))) return false;
             // Reloading works on worn and wielded gear only; furniture abilities have their own charge cooldown
             if (IsReloadable && !td.IsWeapon && !td.IsApparel) return false;
             if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;

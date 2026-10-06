@@ -44,7 +44,31 @@
   <EF_Card_DamageType>Damage type: {0}</EF_Card_DamageType>
   <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>
   <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
-  <EF_Card_KillThought>Kills give: {0}</EF_Card_KillThought>
+  <EF_Card_Trigger>{0}: {1}</EF_Card_Trigger>
+  <EF_Card_TriggerLimited>{0}: {1} ({2})</EF_Card_TriggerLimited>
+  <EF_Trigger_Kill>On a kill</EF_Trigger_Kill>
+  <EF_Trigger_WakeUp>On waking up</EF_Trigger_WakeUp>
+  <EF_Trigger_BillDone>On finishing a bill</EF_Trigger_BillDone>
+  <EF_Trigger_JobDone>On finishing {0}</EF_Trigger_JobDone>
+  <EF_Trigger_TakeDamage>On taking damage</EF_Trigger_TakeDamage>
+  <EF_Trigger_Downed>On being downed</EF_Trigger_Downed>
+  <EF_Trigger_Eat>On eating</EF_Trigger_Eat>
+  <EF_Trigger_Use>After using it</EF_Trigger_Use>
+  <EF_Trigger_UseKinds>After {0} here</EF_Trigger_UseKinds>
+  <EF_UseKind_Sleep>sleeping</EF_UseKind_Sleep>
+  <EF_UseKind_Eat>eating</EF_UseKind_Eat>
+  <EF_UseKind_Work>working</EF_UseKind_Work>
+  <EF_UseKind_Recreation>relaxing</EF_UseKind_Recreation>
+  <EF_UseKind_Other>other use</EF_UseKind_Other>
+  <EF_TriggerEffect_Heal>heals {0} HP</EF_TriggerEffect_Heal>
+  <EF_TriggerEffect_Rest>restores {0} rest</EF_TriggerEffect_Rest>
+  <EF_TriggerEffect_Food>restores {0} food</EF_TriggerEffect_Food>
+  <EF_TriggerEffect_Joy>restores {0} recreation</EF_TriggerEffect_Joy>
+  <EF_TriggerEffect_Hediff>gives {0}</EF_TriggerEffect_Hediff>
+  <EF_TriggerEffect_HediffFor>gives {0} for {1} hours</EF_TriggerEffect_HediffFor>
+  <EF_TriggerEffect_Thought>mood: {0}</EF_TriggerEffect_Thought>
+  <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
+  <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
   <EF_Card_Reloadable>Charges {0} / {1}, reloaded with {2} ({3} per charge)</EF_Card_Reloadable>
   <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
@@ -113,6 +137,5 @@
   <EF_Summary_Damage>Damage</EF_Summary_Damage>
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
   <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
-  <EF_Summary_KillThought>Kill mood</EF_Summary_KillThought>
 
 </LanguageData>
