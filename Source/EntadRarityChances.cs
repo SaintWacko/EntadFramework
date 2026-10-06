@@ -89,8 +89,8 @@ namespace EntadFramework
             public float traitWeight;
         }
 
-        // Point-budget picking (EntadApi). The same odds as Pick, a rarity by its weight and then a trait within it,
-        // but over the (trait, rarity) pairs "fits" accepts, so a rarity with nothing affordable drops out. "pairWeight"
+        // Point-target picking (EntadApi). The same odds as Pick, a rarity by its weight and then a trait within it,
+        // but over the (trait, rarity) pairs "fits" accepts, so a rarity with no accepted pair drops out. "pairWeight"
         // then scales each pair's chance. Returns null when no pair fits.
         public EntadTraitDef PickWhere(IList<EntadTraitDef> candidates, System.Func<EntadTraitDef, float> weightOf, ICollection<EntadRarity> allowed,
             System.Func<EntadTraitDef, EntadRarity, bool> fits, System.Func<EntadTraitDef, EntadRarity, float> pairWeight, out EntadRarity rarity)

@@ -140,7 +140,7 @@
   <EF_Settings_Durability_Desc>Max hit points multiplier for every item with at least one entad trait, set by the highest rarity among its traits.</EF_Settings_Durability_Desc>
   <EF_Settings_FactorRow>{0}: x{1}</EF_Settings_FactorRow>
   <EF_Settings_Points>Generation points</EF_Settings_Points>
-  <EF_Settings_Points_Desc>What a trait at each rarity costs from an item's point budget, when the trait doesn't set its own value. A trait that scales with rarity has its cost multiplied by the same ratio between its own rarity and the rolled one.</EF_Settings_Points_Desc>
+  <EF_Settings_Points_Desc>What a trait at each rarity counts toward an item's point target, when the trait doesn't set its own value. A trait that scales with rarity has its cost multiplied by the same ratio between its own rarity and the rolled one.</EF_Settings_Points_Desc>
   <EF_Settings_PointRow>{0}: {1} points</EF_Settings_PointRow>
   <EF_Settings_PointTarget>Point target per item: {0} to {1}</EF_Settings_PointTarget>
   <EF_Settings_PointTarget_Desc>Traits are picked until the item reaches its target, and the last trait can go over it. A bigger target gives more traits and opens up rarer ones. Used when the mod generating the item doesn't set its own target.</EF_Settings_PointTarget_Desc>

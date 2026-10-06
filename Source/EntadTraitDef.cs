@@ -228,7 +228,7 @@ namespace EntadFramework
         // this def's own rarity). When false the trait only ever appears at "rarity".
         public bool scalesWithRarity;
 
-        // Generation cost at this def's own rarity (EntadApi's point budget). Unset: the rarity's value from the
+        // Generation cost at this def's own rarity (counted against EntadApi's point target). Unset: the rarity's value from the
         // settings. Below zero: a drawback, which gives points back. Never shown to the player.
         public float points = float.NaN;
 

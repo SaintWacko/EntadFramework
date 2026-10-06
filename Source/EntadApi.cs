@@ -119,8 +119,8 @@ namespace EntadFramework
         private static bool PassesUniqueWeaponChance(ThingDef def) =>
             !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
-        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact point budget that
-        /// overrides <c>request.points</c>. The unique weapon chance applies here too.</summary>
+        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with a fixed point target (a
+        /// minimum) that overrides <c>request.points</c>. The unique weapon chance applies here too.</summary>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, float points, EntadApplyRequest request = null)
         {
             if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
@@ -169,7 +169,9 @@ namespace EntadFramework
                 // A drawback needs a real trait before it and a free slot after it to spend its points on
                 if (drawbacksLeft > 0 && hasRealTrait && slotsLeft > 1)
                 {
-                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => d.IsDrawback, null, out rolled);
+                    // ...and a real trait that can still go on with it, or the drawback would never be paid back
+                    pick = chances.PickWhere(candidates, weight, allowed,
+                        (d, r) => d.IsDrawback && candidates.Any(p => !p.IsDrawback && !p.ConflictsWith(d) && !d.ConflictsWith(p)), null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
                 if (pick == null)
@@ -230,8 +232,8 @@ namespace EntadFramework
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 
-        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with an exact point budget that overrides
-        /// <c>request.points</c>.</summary>
+        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with a fixed point target (a minimum)
+        /// that overrides <c>request.points</c>.</summary>
         public static Thing GenerateEntadItem(float points, EntadItemRequest request = null)
         {
             return GenerateEntadItem(request ?? new EntadItemRequest(), points);
