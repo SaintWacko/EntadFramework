@@ -87,13 +87,20 @@ namespace EntadFramework
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
+            if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
             return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
         }
+
+        /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
+        /// Traits added by name (<see cref="CompEntad.AddTrait"/>) are not affected.</summary>
+        private static bool PassesUniqueWeaponChance(ThingDef def) =>
+            !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
         /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact trait count that
         /// overrides <c>request.traitCount</c>.</summary>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
         {
+            if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
             return ApplyRandomTraits(thing, request ?? new EntadApplyRequest(), traitCount);
         }
 
@@ -173,6 +180,8 @@ namespace EntadFramework
         {
             foreach (ThingDef def in GetCandidateItemDefs(request).InRandomOrder())
             {
+                // Rolled per candidate, so at a low chance unique weapons come up that much less often
+                if (!PassesUniqueWeaponChance(def)) continue;
                 ThingDef stuff = request.stuff;
                 if (stuff == null && def.MadeFromStuff) stuff = GenStuff.RandomStuffFor(def);
 

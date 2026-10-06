@@ -56,12 +56,16 @@ namespace EntadFramework
         public const float DefaultWeaponSpecificWeight = 3f;
         public static float WeaponSpecificWeight = DefaultWeaponSpecificWeight;
 
+        // Chance that a vanilla unique or persona weapon picked for random traits gets them (EntadUtility.IsUniqueWeapon)
+        public static float UniqueWeaponChance = 0f;
+
         // Everything on the General and Rarity tabs. Trait toggles are left alone: the Traits tab has its own
         // enable/disable-shown buttons, and losing a curated list to a misclick would hurt.
         public static void ResetToDefaults()
         {
             HideTraits = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
+            UniqueWeaponChance = 0f;
             ResetRarityWeights();
         }
 
@@ -80,6 +84,8 @@ namespace EntadFramework
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
+            Scribe_Values.Look(ref UniqueWeaponChance, "uniqueWeaponChance", 0f);
+            UniqueWeaponChance = Mathf.Clamp01(UniqueWeaponChance);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -266,6 +272,10 @@ namespace EntadFramework
             list.Label("EF_Settings_WeaponWeight".Translate(EntadSettings.WeaponSpecificWeight.ToString("0.#")));
             EntadSettings.WeaponSpecificWeight = Mathf.Round(list.Slider(EntadSettings.WeaponSpecificWeight, 1f, 10f) * 2f) / 2f;
             list.Label("EF_Settings_WeaponWeight_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_UniqueChance".Translate(EntadSettings.UniqueWeaponChance.ToStringPercent()));
+            EntadSettings.UniqueWeaponChance = Mathf.Round(list.Slider(EntadSettings.UniqueWeaponChance, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_UniqueChance_Desc".Translate());
         }
 
         private static void DoRarity(Listing_Standard list)

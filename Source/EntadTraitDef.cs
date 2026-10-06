@@ -350,7 +350,7 @@ namespace EntadFramework
 
         // Persona weapons (EntadPersona.cs). A persona trait makes the weapon bond to the first pawn who equips it,
         // as vanilla's persona weapons do: one bonded weapon per pawn, nobody else can equip it, and the bond ends
-        // when that pawn dies. Never rolled at random: it's given by the persona conversion, the API or the dev tools.
+        // when that pawn dies.
         public bool persona;
         // Freewielder: keeps the persona's other effects but the weapon never bonds
         public bool neverBond;
@@ -364,7 +364,7 @@ namespace EntadFramework
         // days without a kill in its bonded pawn's hands, as vanilla's kill thirst
         public ThoughtDef killThirstThought;
         public float killThirstDays = 20f;
-        // Never picked by random generation (persona traits: they come from conversion or are added on purpose)
+        // Never picked by random generation: only added by name (API, dev tools)
         public bool neverRandom;
 
         public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;

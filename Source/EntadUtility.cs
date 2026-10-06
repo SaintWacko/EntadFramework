@@ -87,6 +87,23 @@ namespace EntadFramework
             return kind;
         }
 
+        private static readonly Dictionary<ThingDef, bool> uniqueWeaponCache = new Dictionary<ThingDef, bool>();
+
+        // Vanilla unique (Odyssey) and persona (Royalty) weapons carry their own weapon traits, so random entad
+        // traits only roll on them by the "unique and persona weapons" setting's chance. Checked by comp class, so
+        // modded subclasses count and nothing here needs the DLC loaded.
+        public static bool IsUniqueWeapon(ThingDef def)
+        {
+            if (def == null || !def.IsWeapon) return false;
+            if (!uniqueWeaponCache.TryGetValue(def, out bool result))
+            {
+                result = def.comps != null && def.comps.Any(c => c.compClass != null
+                    && (typeof(CompUniqueWeapon).IsAssignableFrom(c.compClass) || typeof(CompBladelinkWeapon).IsAssignableFrom(c.compClass)));
+                uniqueWeaponCache[def] = result;
+            }
+            return result;
+        }
+
         public static bool IsEntadCompatible(ThingDef def)
         {
             return KindOf(def) != EntadItemKind.None;

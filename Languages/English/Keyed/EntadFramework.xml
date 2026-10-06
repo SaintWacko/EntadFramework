@@ -126,6 +126,8 @@
   <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
   <EF_Settings_Generation>Generation</EF_Settings_Generation>
   <EF_Settings_WeaponWeight>Weapon-specific trait weight: x{0}</EF_Settings_WeaponWeight>
+  <EF_Settings_UniqueChance>Unique and persona weapons get entad traits: {0}</EF_Settings_UniqueChance>
+  <EF_Settings_UniqueChance_Desc>Chance that a vanilla unique or persona weapon gets random entad traits when it's picked for them. These weapons already have their own weapon traits. Traits added by name are not affected.</EF_Settings_UniqueChance_Desc>
   <EF_Settings_WeaponWeight_Desc>How much more likely traits made for weapons (damage, accuracy, ...) are than general ones when generating for a weapon. 1 = no preference.</EF_Settings_WeaponWeight_Desc>
 
   <EF_Settings_RarityCurve>Rarity curve</EF_Settings_RarityCurve>

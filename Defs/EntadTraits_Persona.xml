@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- Persona weapons (EntadPersona.cs). Persona is never rolled at random; bond traits and Freewielder only roll on a
-       weapon that already has it. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
+  <!-- Persona weapons (EntadPersona.cs). Persona rolls like any Rare weapon trait; bond traits and Freewielder only
+       roll on a weapon that already has it. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
        weapon's name, and need no DLC. -->
 
   <EntadFramework.EntadTraitDef>
@@ -12,7 +12,6 @@
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <persona>true</persona>
-    <neverRandom>true</neverRandom>
     <partialStats>true</partialStats>
     <!-- At Rare these match the persona monosword against the plain one: +8% damage, 20% faster attacks -->
     <statFactors>

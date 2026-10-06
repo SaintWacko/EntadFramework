@@ -35,7 +35,9 @@ namespace EntadFramework
             var applied = EntadApi.ApplyRandomTraits(targetThing);
             if (applied.Count == 0)
             {
-                Messages.Message("No applicable EntadTraitDefs for this item!", MessageTypeDefOf.RejectInput, false);
+                Messages.Message(EntadUtility.IsUniqueWeapon(targetThing.def)
+                    ? "Unique or persona weapon: random traits blocked by the 'Unique and persona weapons' setting chance."
+                    : "No applicable EntadTraitDefs for this item!", MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
