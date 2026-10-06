@@ -214,7 +214,8 @@ namespace EntadFramework
         Damage = 64,     // also burst, stopping power and ignoring accuracy penalties: all noticed when a shot lands
         Hediff = 128,    // equipped hediffs: they show on the health tab, so they reveal the moment the item is equipped
         Trigger = 256,   // "when X happens, do Y" effects (EntadTriggers): revealed the first time one fires
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger
+        Bond = 512,      // persona bond effects (EntadPersona): the persona tells its wielder everything when it bonds
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond
     }
 
     public class EntadTraitDef : Def
@@ -346,6 +347,27 @@ namespace EntadFramework
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
         // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
         public ThoughtDef killThought;
+
+        // Persona weapons (EntadPersona.cs). A persona trait makes the weapon bond to the first pawn who equips it,
+        // as vanilla's persona weapons do: one bonded weapon per pawn, nobody else can equip it, and the bond ends
+        // when that pawn dies. Never rolled at random: it's given by the persona conversion, the API or the dev tools.
+        public bool persona;
+        // Freewielder: keeps the persona's other effects but the weapon never bonds
+        public bool neverBond;
+        // Effects of the bond (the item needs a persona trait). Bonded hediffs last while the bond does, held or not.
+        public List<HediffDef> bondedHediffs;
+        // A situational thought active while bonded (worker ThoughtWorker_WeaponTraitBonded, as vanilla's)
+        public ThoughtDef bondedThought;
+        // A memory (class Thought_WeaponTrait) given when the bonded pawn wields another weapon, as vanilla's Jealous
+        public ThoughtDef otherWeaponThought;
+        // A situational thought (worker ThoughtWorker_WeaponTraitKillNeed) active once the weapon has gone this many
+        // days without a kill in its bonded pawn's hands, as vanilla's kill thirst
+        public ThoughtDef killThirstThought;
+        public float killThirstDays = 20f;
+        // Never picked by random generation (persona traits: they come from conversion or are added on purpose)
+        public bool neverRandom;
+
+        public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;
 
         // "When X happens, do Y" (EntadTriggers.cs). Use triggers are for furniture; every other event is for worn or
         // wielded gear, so one trait can't mix the two.
@@ -553,6 +575,7 @@ namespace EntadFramework
                 if (!triggers.NullOrEmpty()) kinds |= EntadEffectKind.Trigger;
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
+                if (persona || neverBond || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 return kinds;
             }
         }
@@ -585,6 +608,16 @@ namespace EntadFramework
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
             if (abilityAmmo != null && abilityAmmoPerCharge <= 0) yield return $"{defName}: abilityAmmoPerCharge must be at least 1";
             if (abilityAmmo != null && abilityReloadTicks < 0) yield return $"{defName}: abilityReloadTicks can't be negative";
+            if (bondedHediffs != null && bondedHediffs.Any(h => h == null)) yield return $"{defName}: bondedHediffs contains an unknown def";
+            if (otherWeaponThought != null && (!otherWeaponThought.IsMemory || !typeof(Thought_WeaponTrait).IsAssignableFrom(otherWeaponThought.ThoughtClass)))
+                yield return $"{defName}: otherWeaponThought {otherWeaponThought.defName} must be a memory with a Thought_WeaponTrait class";
+            if (bondedThought != null && !typeof(ThoughtWorker_WeaponTraitBonded).IsAssignableFrom(bondedThought.workerClass))
+                yield return $"{defName}: bondedThought {bondedThought.defName} needs workerClass ThoughtWorker_WeaponTraitBonded";
+            if (killThirstThought != null && !typeof(ThoughtWorker_WeaponTraitKillNeed).IsAssignableFrom(killThirstThought.workerClass))
+                yield return $"{defName}: killThirstThought {killThirstThought.defName} needs workerClass ThoughtWorker_WeaponTraitKillNeed";
+            if (killThirstThought != null && killThirstDays <= 0f) yield return $"{defName}: killThirstDays must be above 0";
+            if (persona && (neverBond || HasBondEffect)) yield return $"{defName}: persona goes on its own trait; neverBond and bond effects are separate traits that need one";
+            if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
         }
 
@@ -599,6 +632,14 @@ namespace EntadFramework
                 foreach (var m in existing.activeTraits)
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
+            if ((persona || neverBond || HasBondEffect) && !td.IsWeapon) return false;
+            // Bond effects and freewielder only go on a weapon that already has a persona, and never together
+            if (neverBond || HasBondEffect)
+            {
+                if (existing == null || !existing.activeTraits.Any(m => m.def.persona)) return false;
+                if (neverBond && existing.activeTraits.Any(m => m.def.HasBondEffect)) return false;
+                if (HasBondEffect && existing.activeTraits.Any(m => m.def.neverBond)) return false;
+            }
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
             // Furniture moods need a pawn to use the building (abilities work from the right-click menu on any furniture)
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
@@ -698,7 +739,7 @@ namespace EntadFramework
             {
                 if (weaponSpecific < 0)
                 {
-                    bool result = HasDamageEffect || HasWeaponEffect || killThought != null
+                    bool result = HasDamageEffect || HasWeaponEffect || killThought != null || persona || neverBond || HasBondEffect
                         || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
                         || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
                     weaponSpecific = result ? 1 : 0;

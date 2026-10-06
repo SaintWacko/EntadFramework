@@ -45,6 +45,14 @@
   <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>
   <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
   <EF_Card_Trigger>{0}: {1}</EF_Card_Trigger>
+  <EF_Card_Persona>Bonds to the first person who equips it. Nobody else can wield it until they die.</EF_Card_Persona>
+  <EF_Card_NeverBond>Never bonds: anyone can wield it.</EF_Card_NeverBond>
+  <EF_Card_BondedHediffs>While bonded: {0}</EF_Card_BondedHediffs>
+  <EF_Card_BondedThought>While bonded: {0} ({1} mood)</EF_Card_BondedThought>
+  <EF_Card_OtherWeaponThought>When the bonded person wields another weapon: {0} ({1} mood)</EF_Card_OtherWeaponThought>
+  <EF_Card_KillThirst>After {0} days without a kill: {1} ({2} mood)</EF_Card_KillThirst>
+  <EF_Persona_EquipWarning>{0} has a persona. Once it bonds to a wielder, it will refuse to be wielded by anyone else.</EF_Persona_EquipWarning>
+  <EF_Persona_EquipConfirm>Are you sure you want to equip it?</EF_Persona_EquipConfirm>
   <EF_Card_TriggerLimited>{0}: {1} ({2})</EF_Card_TriggerLimited>
   <EF_Trigger_Kill>On a kill</EF_Trigger_Kill>
   <EF_Trigger_WakeUp>On waking up</EF_Trigger_WakeUp>

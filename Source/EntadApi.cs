@@ -106,6 +106,7 @@ namespace EntadFramework
             for (int i = 0; i < count; i++)
             {
                 var candidates = GetApplicableTraits(thing, request.traitFilter);
+                candidates.RemoveAll(d => d.neverRandom);
                 System.Func<EntadTraitDef, float> weight = null;
                 if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
                     weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;

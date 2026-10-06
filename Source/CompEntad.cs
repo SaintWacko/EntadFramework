@@ -534,6 +534,7 @@ namespace EntadFramework
             TraitsChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
+            PersonaTraitAdded(applied);
             return true;
         }
 
@@ -557,6 +558,7 @@ namespace EntadFramework
             TraitsChanged();
             Pawn holder = Holder;
             if (holder != null) EntadMoods.SyncEquipped(holder);
+            PersonaTraitRemoved(trait);
             if (trait.def.abilities != null && holder != null)
                 foreach (var a in trait.def.abilities)
                     if (!activeTraits.Any(m => m.def.abilities != null && m.def.abilities.Contains(a)) && holder.abilities?.GetAbility(a) != null)
@@ -576,6 +578,7 @@ namespace EntadFramework
             // Saves from before durability load as 1 (unscaled), so SyncDurability below brings them up to full scale
             Scribe_Values.Look(ref scaledDurability, "scaledDurability", 1f);
             ExposeBinding();
+            ExposePersona();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -646,6 +649,8 @@ namespace EntadFramework
             string s = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
             // Plain: an item in the inspect pane is on the map, so it has no holder for the red to be about
             if (IsBound) s += "\n" + "EF_BoundTo".Translate(BoundNames);
+            string bond = PersonaInspectLine;
+            if (bond != null) s += "\n" + bond;
             return s;
         }
 
@@ -703,6 +708,7 @@ namespace EntadFramework
                     int ti = i;
                     sb.AppendLine(" - " + m.def.triggers[i].Line(k => m.TriggerValue(ti, k)));
                 }
+                if (m.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(m)) sb.AppendLine(" - " + line);
                 if (!m.def.equippedHediffs.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Hediff))
                     sb.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", m.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
                 if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
