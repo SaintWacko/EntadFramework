@@ -155,11 +155,17 @@ namespace EntadFramework
                 // Cheapest thing the budget could still buy, at any rarity
                 float cheapest = float.MaxValue;
                 foreach (var d in candidates)
-                    for (var r = d.rarity; r <= d.MaxRarity; r++)
+                {
+                    EntadRarity hi = d.MaxRarity;
+                    for (var r = d.rarity; r <= hi; r++)
                     {
+                        // Only pairs PickWhere could return
+                        if (allowed != null && allowed.Count > 0 && !allowed.Contains(r)) continue;
+                        if (chances[r] <= 0f) continue;
                         float c = d.PointsAt(r);
                         if (c >= 0f && c < cheapest) cheapest = c;
                     }
+                }
                 EntadTraitDef pick = null;
                 EntadRarity rolled = EntadRarity.Common;
                 if (left > Epsilon)
@@ -182,7 +188,7 @@ namespace EntadFramework
                     if (pick != null) drawbacksLeft--;
                 }
                 // A budget below every trait still makes an entad: the cheapest trait there is
-                if (pick == null && added.Count == 0 && cheapest < float.MaxValue)
+                if (pick == null && !added.Any(a => !a.IsDrawback) && cheapest < float.MaxValue)
                     pick = chances.PickWhere(candidates, weight, allowed, (d, r) => { float c = d.PointsAt(r); return c >= 0f && c <= cheapest + Epsilon; }, null, out rolled);
                 if (pick == null) break;
                 rolled = pick.ClampRarity(rolled);
