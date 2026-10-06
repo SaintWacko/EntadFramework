@@ -82,6 +82,62 @@ namespace EntadFramework
             return PickWithin(byRarity[(int)chosen], weightOf);
         }
 
+        private struct Pair
+        {
+            public EntadTraitDef def;
+            public EntadRarity rarity;
+            public float traitWeight;
+        }
+
+        // Point-budget picking (EntadApi). The same odds as Pick, a rarity by its weight and then a trait within it,
+        // but over the (trait, rarity) pairs "fits" accepts, so a rarity with nothing affordable drops out. "pairWeight"
+        // then scales each pair's chance. Returns null when no pair fits.
+        public EntadTraitDef PickWhere(IList<EntadTraitDef> candidates, System.Func<EntadTraitDef, float> weightOf, ICollection<EntadRarity> allowed,
+            System.Func<EntadTraitDef, EntadRarity, bool> fits, System.Func<EntadTraitDef, EntadRarity, float> pairWeight, out EntadRarity rarity)
+        {
+            rarity = EntadRarity.Common;
+            if (candidates.NullOrEmpty()) return null;
+
+            var pairs = new List<Pair>();
+            var sums = new float[5];
+            foreach (var d in candidates)
+            {
+                float wd = weightOf?.Invoke(d) ?? 1f;
+                if (wd <= 0f) continue;
+                EntadRarity hi = d.MaxRarity;
+                for (var r = d.rarity; r <= hi; r++)
+                {
+                    if (allowed != null && allowed.Count > 0 && !allowed.Contains(r)) continue;
+                    if (fits != null && !fits(d, r)) continue;
+                    pairs.Add(new Pair { def = d, rarity = r, traitWeight = wd });
+                    sums[(int)r] += wd;
+                }
+            }
+
+            var final = new float[pairs.Count];
+            float total = 0f;
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                var p = pairs[i];
+                float wr = weights[p.rarity];
+                if (wr <= 0f) continue;
+                final[i] = wr * p.traitWeight / sums[(int)p.rarity] * (pairWeight?.Invoke(p.def, p.rarity) ?? 1f);
+                total += final[i];
+            }
+            if (total <= 0f) return null;
+
+            float roll = Rand.Value * total;
+            int chosen = pairs.Count - 1;
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                roll -= final[i];
+                if (final[i] > 0f && roll <= 0f) { chosen = i; break; }
+            }
+            while (chosen > 0 && final[chosen] <= 0f) chosen--;
+            rarity = pairs[chosen].rarity;
+            return pairs[chosen].def;
+        }
+
         private static EntadTraitDef PickWithin(List<EntadTraitDef> list, System.Func<EntadTraitDef, float> weightOf)
         {
             if (weightOf == null) return list.RandomElement();

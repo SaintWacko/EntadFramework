@@ -228,6 +228,23 @@ namespace EntadFramework
         // this def's own rarity). When false the trait only ever appears at "rarity".
         public bool scalesWithRarity;
 
+        // Generation cost at this def's own rarity (EntadApi's point budget). Unset: the rarity's value from the
+        // settings. Below zero: a drawback, which gives points back. Never shown to the player.
+        public float points = float.NaN;
+
+        public float BasePoints => float.IsNaN(points) ? EntadSettings.Points[rarity] : points;
+
+        public bool IsDrawback => BasePoints < 0f;
+
+        // Cost when rolled at a rarity: scaling traits follow the settings' point table relative to their own rarity
+        public float PointsAt(EntadRarity at)
+        {
+            float basePts = BasePoints;
+            if (!scalesWithRarity || at == rarity) return basePts;
+            float own = EntadSettings.Points[rarity];
+            return own > 0.0001f ? basePts * EntadSettings.Points[at] / own : basePts;
+        }
+
         // The item binds to the first pawn who equips it (weapons, apparel) or uses it for themselves (furniture), if
         // nobody is bound yet. From then on its traits only work for that pawn and their descendants.
         public bool bindOnFirstUse;

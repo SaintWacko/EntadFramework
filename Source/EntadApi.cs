@@ -46,8 +46,14 @@ namespace EntadFramework
     {
         public EntadTraitFilter traitFilter = new EntadTraitFilter();
         public EntadRarityChances rarityChances = EntadRarityChances.Default;
-        // Number of traits to add (inclusive range)
-        public IntRange traitCount = new IntRange(1, 1);
+        // Point budget: traits are picked until it's spent (EntadTraitDef.PointsAt). Null: the settings' budget.
+        // A trait at its own rarity is worth 1 (Common) to 11 (Legendary) by default, so 2-6 is an everyday item.
+        public FloatRange? points;
+        // Most traits to add. Null: the settings' cap.
+        public int? maxTraits;
+        // Chance the item may take drawbacks (negative-point traits that add to the budget), and how many. Null: the settings'.
+        public float? drawbackChance;
+        public int? maxDrawbacks;
     }
 
     // Options for generating a brand new entad item
@@ -82,24 +88,25 @@ namespace EntadFramework
                 .ToList();
         }
 
-        /// <summary>Adds random traits to <paramref name="thing"/>, as many as <c>request.traitCount</c> rolls.
+        /// <summary>Adds random traits to <paramref name="thing"/> until a budget of <c>request.points</c> is spent.
         /// A vanilla unique or persona weapon only gets random traits at the player's "unique and persona weapons"
         /// chance (0% by default); adding a trait by name with <see cref="CompEntad.AddTrait"/> is not limited.</summary>
-        /// <returns>The traits added; fewer than requested when the candidates run out, and none when the unique
-        /// weapon chance fails.</returns>
+        /// <returns>The traits added; none when the unique weapon chance fails.</returns>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
             if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
-            return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
+            return ApplyRandomTraits(thing, request, RollBudget(request));
         }
+
+        private static float RollBudget(EntadApplyRequest request) => (request.points ?? EntadSettings.PointTarget).RandomInRange;
 
         // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
         // means to override (GenerateEntadItem's dev action still goes through it)
         internal static List<EntadTraitDef> ApplyRandomTraitsIgnoringUniqueChance(Thing thing)
         {
             var request = new EntadApplyRequest();
-            return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
+            return ApplyRandomTraits(thing, request, RollBudget(request));
         }
 
         /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
@@ -107,31 +114,68 @@ namespace EntadFramework
         private static bool PassesUniqueWeaponChance(ThingDef def) =>
             !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
-        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact trait count that
-        /// overrides <c>request.traitCount</c>. The unique weapon chance applies here too.</summary>
-        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
+        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact point budget that
+        /// overrides <c>request.points</c>. The unique weapon chance applies here too.</summary>
+        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, float points, EntadApplyRequest request = null)
         {
             if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
-            return ApplyRandomTraits(thing, request ?? new EntadApplyRequest(), traitCount);
+            return ApplyRandomTraits(thing, request ?? new EntadApplyRequest(), points);
         }
 
-        private static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request, int count)
+        // Spends a point budget. Each pick is a (trait, rarity) pair that fits what's left, chosen with the usual
+        // rarity and weapon-specific odds. Cheap pairs are made less likely when the budget per remaining trait slot
+        // is well above them, so a big budget buys rarer traits instead of running into the trait cap on Commons.
+        // When nothing positive fits any more, an item allowed drawbacks takes one (its points go back into the
+        // budget) and carries on. Drawbacks always need a slot to spend the refund on.
+        private static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request, float budget)
         {
             var added = new List<EntadTraitDef>();
             var comp = thing?.TryGetComp<CompEntad>();
             if (comp == null) return added;
 
-            for (int i = 0; i < count; i++)
+            const float Epsilon = 0.001f;
+            float remaining = budget;
+            int cap = Math.Max(1, request.maxTraits ?? EntadSettings.MaxTraits);
+            int drawbacksLeft = Rand.Chance(request.drawbackChance ?? EntadSettings.DrawbackChance) ? (request.maxDrawbacks ?? EntadSettings.MaxDrawbacks) : 0;
+            var chances = request.rarityChances ?? EntadRarityChances.Default;
+            var allowed = request.traitFilter?.rarities;
+            Func<EntadTraitDef, float> weight = null;
+            if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
+                weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
+
+            while (added.Count < cap)
             {
                 var candidates = GetApplicableTraits(thing, request.traitFilter);
                 candidates.RemoveAll(d => d.neverRandom);
-                System.Func<EntadTraitDef, float> weight = null;
-                if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
-                    weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
-                var pick = (request.rarityChances ?? EntadRarityChances.Default).Pick(candidates, weight, request.traitFilter?.rarities, out EntadRarity rolled);
+                if (candidates.Count == 0) break;
+
+                int slotsLeft = cap - added.Count;
+                float perSlot = remaining / slotsLeft;
+                float left = remaining;
+                EntadTraitDef pick = null;
+                EntadRarity rolled = EntadRarity.Common;
+                if (left > Epsilon)
+                {
+                    pick = chances.PickWhere(candidates, weight, allowed,
+                        (d, r) => { float c = d.PointsAt(r); return c >= 0f && c <= left + Epsilon; },
+                        (d, r) =>
+                        {
+                            float c = d.PointsAt(r);
+                            if (c >= perSlot || perSlot <= Epsilon) return 1f;
+                            float f = c / perSlot;
+                            return Math.Max(0.05f, f * f);
+                        }, out rolled);
+                }
+                if (pick == null && drawbacksLeft > 0 && slotsLeft > 1)
+                {
+                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => d.PointsAt(r) < 0f, null, out rolled);
+                    if (pick != null) drawbacksLeft--;
+                }
                 if (pick == null) break;
+                rolled = pick.ClampRarity(rolled);
                 if (!comp.AddTrait(pick, rolled)) break;
                 added.Add(pick);
+                remaining -= pick.PointsAt(rolled);
             }
             return added;
         }
@@ -171,11 +215,11 @@ namespace EntadFramework
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 
-        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with an exact trait count that overrides
-        /// <c>request.traitCount</c>.</summary>
-        public static Thing GenerateEntadItem(int traitCount, EntadItemRequest request = null)
+        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with an exact point budget that overrides
+        /// <c>request.points</c>.</summary>
+        public static Thing GenerateEntadItem(float points, EntadItemRequest request = null)
         {
-            return GenerateEntadItem(request ?? new EntadItemRequest(), traitCount);
+            return GenerateEntadItem(request ?? new EntadItemRequest(), points);
         }
 
         /// <summary>Generates an unspawned item with entad traits. Item defs are tried in random order until one can
@@ -185,10 +229,10 @@ namespace EntadFramework
         public static Thing GenerateEntadItem(EntadItemRequest request = null)
         {
             request = request ?? new EntadItemRequest();
-            return GenerateEntadItem(request, request.traitCount.RandomInRange);
+            return GenerateEntadItem(request, RollBudget(request));
         }
 
-        private static Thing GenerateEntadItem(EntadItemRequest request, int traitCount)
+        private static Thing GenerateEntadItem(EntadItemRequest request, float points)
         {
             foreach (ThingDef def in GetCandidateItemDefs(request).InRandomOrder())
             {
@@ -204,7 +248,7 @@ namespace EntadFramework
 
                 // A rejected candidate was never spawned or registered anywhere, so it is simply dropped for the GC.
                 // (Thing.Discard only accepts destroyed things and would log a warning for each one.)
-                if (ApplyRandomTraits(thing, request, traitCount).Count > 0) return thing;
+                if (ApplyRandomTraits(thing, request, points).Count > 0) return thing;
             }
             return null;
         }

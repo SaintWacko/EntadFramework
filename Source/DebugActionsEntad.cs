@@ -55,17 +55,19 @@ namespace EntadFramework
             if (map == null || !cell.InBounds(map)) return;
 
             var options = new List<DebugMenuOption>();
-            for (int n = 1; n <= 8; n++)
+            var r = EntadSettings.PointTarget;
+            options.Add(new DebugMenuOption($"Settings budget ({r.min:0.#}-{r.max:0.#} points)", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, r.RandomInRange)));
+            foreach (float p in new[] { 1f, 2f, 4f, 6f, 8f, 12f, 16f, 24f })
             {
-                int count = n;
-                options.Add(new DebugMenuOption(count + (count == 1 ? " trait" : " traits"), DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, count)));
+                float points = p;
+                options.Add(new DebugMenuOption($"{points} points", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, points)));
             }
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
 
-        private static void PlaceGenerated(IntVec3 cell, Map map, int count)
+        private static void PlaceGenerated(IntVec3 cell, Map map, float points)
         {
-            Thing thing = EntadApi.GenerateEntadItem(count);
+            Thing thing = EntadApi.GenerateEntadItem(points);
             if (thing == null)
             {
                 Messages.Message("Could not generate an entad item.", MessageTypeDefOf.RejectInput, false);
@@ -73,7 +75,10 @@ namespace EntadFramework
             }
 
             GenPlace.TryPlaceThing(thing, cell, map, ThingPlaceMode.Near);
-            Messages.Message($"Generated {thing.LabelCap}.", thing, MessageTypeDefOf.PositiveEvent, false);
+            // Dev only: what the budget bought, so point values can be tuned
+            var comp = thing.TryGetComp<CompEntad>();
+            string spent = comp == null ? "" : string.Join(", ", comp.activeTraits.Select(m => $"{m.def.defName} {m.Rarity} ({m.def.PointsAt(m.Rarity):0.#})"));
+            Messages.Message($"Generated {thing.LabelCap} from {points:0.#} points: {spent}.", thing, MessageTypeDefOf.PositiveEvent, false);
         }
 
         private static CompEntad EntadAtMouse(out Thing thing)

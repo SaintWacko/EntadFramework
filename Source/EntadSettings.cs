@@ -45,6 +45,32 @@ namespace EntadFramework
 
         public static readonly Dictionary<EntadRarity, float> Durability = new Dictionary<EntadRarity, float>(DefaultDurability);
 
+        // Generation points (EntadTraitDef.PointsAt). A trait with no <points> is worth its rarity's value; one that
+        // scales with rarity has its points multiplied by this table relative to its own rarity. Steeper than the
+        // strength multipliers on purpose: a Legendary roll is worth more than the size of its numbers, it's rare.
+        public static readonly Dictionary<EntadRarity, float> DefaultPoints = new Dictionary<EntadRarity, float>
+        {
+            { EntadRarity.Common, 1f },
+            { EntadRarity.Uncommon, 2f },
+            { EntadRarity.Rare, 4f },
+            { EntadRarity.Epic, 7f },
+            { EntadRarity.Legendary, 11f },
+        };
+
+        public static readonly Dictionary<EntadRarity, float> Points = new Dictionary<EntadRarity, float>(DefaultPoints);
+
+        // Point target used when a request doesn't give one
+        public static readonly FloatRange DefaultPointTarget = new FloatRange(2f, 6f);
+        public static FloatRange PointTarget = DefaultPointTarget;
+        // Chance an item may take drawbacks (negative points, which buy more traits), and how many
+        public const float DefaultDrawbackChance = 0.3f;
+        public static float DrawbackChance = DefaultDrawbackChance;
+        public const int DefaultMaxDrawbacks = 1;
+        public static int MaxDrawbacks = DefaultMaxDrawbacks;
+        // Most traits a generated item gets, whatever its budget
+        public const int DefaultMaxTraits = 5;
+        public static int MaxTraits = DefaultMaxTraits;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -66,6 +92,10 @@ namespace EntadFramework
             HideTraits = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
+            PointTarget = DefaultPointTarget;
+            DrawbackChance = DefaultDrawbackChance;
+            MaxDrawbacks = DefaultMaxDrawbacks;
+            MaxTraits = DefaultMaxTraits;
             ResetRarityWeights();
         }
 
@@ -74,6 +104,7 @@ namespace EntadFramework
             foreach (var kv in DefaultWeights) Weights[kv.Key] = kv.Value;
             foreach (var kv in DefaultMultipliers) Multipliers[kv.Key] = kv.Value;
             foreach (var kv in DefaultDurability) Durability[kv.Key] = kv.Value;
+            foreach (var kv in DefaultPoints) Points[kv.Key] = kv.Value;
         }
 
         public override void ExposeData()
@@ -86,6 +117,14 @@ namespace EntadFramework
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
             Scribe_Values.Look(ref UniqueWeaponChance, "uniqueWeaponChance", 0f);
             UniqueWeaponChance = Mathf.Clamp01(UniqueWeaponChance);
+            Scribe_Values.Look(ref PointTarget, "pointTarget", DefaultPointTarget);
+            PointTarget = new FloatRange(Mathf.Max(0.5f, PointTarget.min), Mathf.Max(Mathf.Max(0.5f, PointTarget.min), PointTarget.max));
+            Scribe_Values.Look(ref DrawbackChance, "drawbackChance", DefaultDrawbackChance);
+            DrawbackChance = Mathf.Clamp01(DrawbackChance);
+            Scribe_Values.Look(ref MaxDrawbacks, "maxDrawbacks", DefaultMaxDrawbacks);
+            MaxDrawbacks = Mathf.Clamp(MaxDrawbacks, 0, 5);
+            Scribe_Values.Look(ref MaxTraits, "maxTraits", DefaultMaxTraits);
+            MaxTraits = Mathf.Clamp(MaxTraits, 1, 10);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -97,6 +136,9 @@ namespace EntadFramework
                 float dur = Durability[r];
                 Scribe_Values.Look(ref dur, "durability" + r, DefaultDurability[r]);
                 Durability[r] = Mathf.Max(0.1f, dur);
+                float pts = Points[r];
+                Scribe_Values.Look(ref pts, "points" + r, DefaultPoints[r]);
+                Points[r] = Mathf.Max(0.1f, pts);
             }
         }
     }
@@ -276,6 +318,21 @@ namespace EntadFramework
             list.Label("EF_Settings_UniqueChance".Translate(EntadSettings.UniqueWeaponChance.ToStringPercent()));
             EntadSettings.UniqueWeaponChance = Mathf.Round(list.Slider(EntadSettings.UniqueWeaponChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_UniqueChance_Desc".Translate());
+            list.Gap();
+
+            list.Label("EF_Settings_PointTarget".Translate(EntadSettings.PointTarget.min.ToString("0.#"), EntadSettings.PointTarget.max.ToString("0.#")));
+            Widgets.FloatRange(list.GetRect(28f), 0x45465054, ref EntadSettings.PointTarget, 0.5f, 40f, null, ToStringStyle.FloatOne);
+            EntadSettings.PointTarget = new FloatRange(Mathf.Round(EntadSettings.PointTarget.min * 2f) / 2f, Mathf.Round(EntadSettings.PointTarget.max * 2f) / 2f);
+            list.Label("EF_Settings_PointTarget_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_MaxTraits".Translate(EntadSettings.MaxTraits));
+            EntadSettings.MaxTraits = Mathf.RoundToInt(list.Slider(EntadSettings.MaxTraits, 1f, 10f));
+            list.Gap();
+            list.Label("EF_Settings_DrawbackChance".Translate(EntadSettings.DrawbackChance.ToStringPercent()));
+            EntadSettings.DrawbackChance = Mathf.Round(list.Slider(EntadSettings.DrawbackChance, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_MaxDrawbacks".Translate(EntadSettings.MaxDrawbacks));
+            EntadSettings.MaxDrawbacks = Mathf.RoundToInt(list.Slider(EntadSettings.MaxDrawbacks, 0f, 5f));
+            list.Label("EF_Settings_Drawbacks_Desc".Translate());
         }
 
         private static void DoRarity(Listing_Standard list)
@@ -315,6 +372,17 @@ namespace EntadFramework
                 float d = EntadSettings.Durability[r];
                 list.Label("EF_Settings_FactorRow".Translate(r.Label(), d.ToString("0.##")));
                 EntadSettings.Durability[r] = Mathf.Round(list.Slider(d, 1f, 10f) * 20f) / 20f;
+            }
+
+            list.Gap();
+            Section(list, "EF_Settings_Points");
+            list.Label("EF_Settings_Points_Desc".Translate());
+            list.Gap(6f);
+            foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
+            {
+                float p = EntadSettings.Points[r];
+                list.Label("EF_Settings_PointRow".Translate(r.Label(), p.ToString("0.#")));
+                EntadSettings.Points[r] = Mathf.Round(list.Slider(p, 0.5f, 30f) * 2f) / 2f;
             }
         }
     }
