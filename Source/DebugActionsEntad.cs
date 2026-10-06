@@ -56,7 +56,7 @@ namespace EntadFramework
 
             var options = new List<DebugMenuOption>();
             var r = EntadSettings.PointTarget;
-            options.Add(new DebugMenuOption($"Settings budget ({r.min:0.#}-{r.max:0.#} points)", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, r.RandomInRange)));
+            options.Add(new DebugMenuOption($"Settings target ({r.min:0.#}-{r.max:0.#} points)", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, r.RandomInRange)));
             foreach (float p in new[] { 1f, 2f, 4f, 6f, 8f, 12f, 16f, 24f })
             {
                 float points = p;
@@ -75,10 +75,11 @@ namespace EntadFramework
             }
 
             GenPlace.TryPlaceThing(thing, cell, map, ThingPlaceMode.Near);
-            // Dev only: what the budget bought, so point values can be tuned
+            // Dev only: what the target bought and the total, so point values can be tuned
             var comp = thing.TryGetComp<CompEntad>();
             string spent = comp == null ? "" : string.Join(", ", comp.activeTraits.Select(m => $"{m.def.defName} {m.Rarity} ({m.def.PointsAt(m.Rarity):0.#})"));
-            Messages.Message($"Generated {thing.LabelCap} from {points:0.#} points: {spent}.", thing, MessageTypeDefOf.PositiveEvent, false);
+            float total = comp == null ? 0f : comp.activeTraits.Sum(m => m.def.PointsAt(m.Rarity));
+            Messages.Message($"Generated {thing.LabelCap}, target {points:0.#}, total {total:0.#}: {spent}.", thing, MessageTypeDefOf.PositiveEvent, false);
         }
 
         private static CompEntad EntadAtMouse(out Thing thing)

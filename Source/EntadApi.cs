@@ -46,12 +46,16 @@ namespace EntadFramework
     {
         public EntadTraitFilter traitFilter = new EntadTraitFilter();
         public EntadRarityChances rarityChances = EntadRarityChances.Default;
-        // Point budget: traits are picked until it's spent (EntadTraitDef.PointsAt). Null: the settings' budget.
-        // A trait at its own rarity is worth 1 (Common) to 11 (Legendary) by default, so 2-6 is an everyday item.
+        // Point target, a minimum: traits are picked until the item's points reach it, and the last one may go over
+        // (EntadTraitDef.PointsAt). Null: the settings' target. A trait at its own rarity is worth 1 (Common) to 11
+        // (Legendary) by default, so 2-6 is an everyday item.
         public FloatRange? points;
+        // How strongly a trait that would overshoot the target is held back: it keeps (points left / its cost) to
+        // this power of its weight. 0 = a pure minimum. Null: the settings'.
+        public float? overshootStrictness;
         // Most traits to add. Null: the settings' cap.
         public int? maxTraits;
-        // Chance the item may take drawbacks (negative-point traits that add to the budget), and how many. Null: the settings'.
+        // Chance the item may take drawbacks (negative-point traits that add to the target), and how many. Null: the settings'.
         public float? drawbackChance;
         public int? maxDrawbacks;
     }
@@ -88,7 +92,8 @@ namespace EntadFramework
                 .ToList();
         }
 
-        /// <summary>Adds random traits to <paramref name="thing"/> until a budget of <c>request.points</c> is spent.
+        /// <summary>Adds random traits to <paramref name="thing"/> until its points reach a target rolled from
+        /// <c>request.points</c>; the last trait may go over it.
         /// A vanilla unique or persona weapon only gets random traits at the player's "unique and persona weapons"
         /// chance (0% by default); adding a trait by name with <see cref="CompEntad.AddTrait"/> is not limited.</summary>
         /// <returns>The traits added; none when the unique weapon chance fails.</returns>
@@ -122,11 +127,15 @@ namespace EntadFramework
             return ApplyRandomTraits(thing, request ?? new EntadApplyRequest(), points);
         }
 
-        // Spends a point budget. Each pick is a (trait, rarity) pair that fits what's left, chosen with the usual
-        // rarity and weapon-specific odds. Cheap pairs are made less likely when the budget per remaining trait slot
-        // is well above them, so a big budget buys rarer traits instead of running into the trait cap on Commons.
-        // When nothing positive fits any more, an item allowed drawbacks takes one (its points go back into the
-        // budget) and carries on. Drawbacks always need a slot to spend the refund on.
+        // Picks traits until the item's points reach the target (a minimum: the last pick may go over). Each pick is a
+        // (trait, rarity) pair chosen with the usual rarity and weapon-specific odds, then reweighted:
+        //  - a pair costing more than what's left keeps (left / cost)^strictness of its weight, so a cheap item can
+        //    still roll a big trait, just rarely (strictness 0 is a pure minimum, higher approaches a maximum);
+        //  - a pair much cheaper than the target per remaining trait slot is made less likely, so a big target buys
+        //    rarer traits instead of running into the trait cap on Commons.
+        // An item allowed drawbacks takes one as soon as one is eligible after its first real trait; the drawback's
+        // points go back on the target, so generation carries on and pays for it with more or better traits.
+        // The trait cap is the one thing that can stop an item short of its target.
         private static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request, float budget)
         {
             var added = new List<EntadTraitDef>();
@@ -134,7 +143,9 @@ namespace EntadFramework
             if (comp == null) return added;
 
             const float Epsilon = 0.001f;
-            float remaining = budget;
+            // Never zero, so even a zero target gets one trait (overshoot weights would all be 0 otherwise)
+            float remaining = Math.Max(budget, 0.1f);
+            float strictness = Math.Max(0f, request.overshootStrictness ?? EntadSettings.OvershootStrictness);
             int cap = Math.Max(1, request.maxTraits ?? EntadSettings.MaxTraits);
             int drawbacksLeft = Rand.Chance(request.drawbackChance ?? EntadSettings.DrawbackChance) ? (request.maxDrawbacks ?? EntadSettings.MaxDrawbacks) : 0;
             var chances = request.rarityChances ?? EntadRarityChances.Default;
@@ -143,7 +154,8 @@ namespace EntadFramework
             if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
                 weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
 
-            while (added.Count < cap)
+            bool hasRealTrait = false;
+            while (added.Count < cap && remaining > Epsilon)
             {
                 var candidates = GetApplicableTraits(thing, request.traitFilter);
                 candidates.RemoveAll(d => d.neverRandom);
@@ -152,48 +164,32 @@ namespace EntadFramework
                 int slotsLeft = cap - added.Count;
                 float perSlot = remaining / slotsLeft;
                 float left = remaining;
-                // Cheapest thing the budget could still buy, at any rarity
-                float cheapest = float.MaxValue;
-                foreach (var d in candidates)
-                {
-                    EntadRarity hi = d.MaxRarity;
-                    for (var r = d.rarity; r <= hi; r++)
-                    {
-                        // Only pairs PickWhere could return
-                        if (allowed != null && allowed.Count > 0 && !allowed.Contains(r)) continue;
-                        if (chances[r] <= 0f) continue;
-                        float c = d.PointsAt(r);
-                        if (c >= 0f && c < cheapest) cheapest = c;
-                    }
-                }
                 EntadTraitDef pick = null;
                 EntadRarity rolled = EntadRarity.Common;
-                if (left > Epsilon)
+                // A drawback needs a real trait before it and a free slot after it to spend its points on
+                if (drawbacksLeft > 0 && hasRealTrait && slotsLeft > 1)
+                {
+                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => d.IsDrawback, null, out rolled);
+                    if (pick != null) drawbacksLeft--;
+                }
+                if (pick == null)
                 {
                     pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => { float c = d.PointsAt(r); return c >= 0f && c <= left + Epsilon; },
+                        (d, r) => !d.IsDrawback,
                         (d, r) =>
                         {
                             float c = d.PointsAt(r);
-                            if (c >= perSlot || perSlot <= Epsilon) return 1f;
+                            if (c > left + Epsilon) return (float)Math.Pow(left / c, strictness);
+                            if (c >= perSlot) return 1f;
                             float f = c / perSlot;
                             return Math.Max(0.05f, f * f);
                         }, out rolled);
                 }
-                // A drawback only if its refund buys something, so an item never ends on a drawback alone
-                if (pick == null && drawbacksLeft > 0 && slotsLeft > 1 && cheapest < float.MaxValue)
-                {
-                    pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => d.IsDrawback && left - d.PointsAt(r) >= cheapest - Epsilon, null, out rolled);
-                    if (pick != null) drawbacksLeft--;
-                }
-                // A budget below every trait still makes an entad: the cheapest trait there is
-                if (pick == null && !added.Any(a => !a.IsDrawback) && cheapest < float.MaxValue)
-                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => { float c = d.PointsAt(r); return c >= 0f && c <= cheapest + Epsilon; }, null, out rolled);
                 if (pick == null) break;
                 rolled = pick.ClampRarity(rolled);
                 if (!comp.AddTrait(pick, rolled)) break;
                 added.Add(pick);
+                if (!pick.IsDrawback) hasRealTrait = true;
                 remaining -= pick.PointsAt(rolled);
             }
             return added;

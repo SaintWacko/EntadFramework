@@ -70,6 +70,9 @@ namespace EntadFramework
         // Most traits a generated item gets, whatever its budget
         public const int DefaultMaxTraits = 5;
         public static int MaxTraits = DefaultMaxTraits;
+        // A trait that would take an item past its point target keeps (points left / its cost)^this of its weight
+        public const float DefaultOvershootStrictness = 1f;
+        public static float OvershootStrictness = DefaultOvershootStrictness;
 
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
@@ -96,6 +99,7 @@ namespace EntadFramework
             DrawbackChance = DefaultDrawbackChance;
             MaxDrawbacks = DefaultMaxDrawbacks;
             MaxTraits = DefaultMaxTraits;
+            OvershootStrictness = DefaultOvershootStrictness;
             ResetRarityWeights();
         }
 
@@ -125,6 +129,8 @@ namespace EntadFramework
             MaxDrawbacks = Mathf.Clamp(MaxDrawbacks, 0, 5);
             Scribe_Values.Look(ref MaxTraits, "maxTraits", DefaultMaxTraits);
             MaxTraits = Mathf.Clamp(MaxTraits, 1, 10);
+            Scribe_Values.Look(ref OvershootStrictness, "overshootStrictness", DefaultOvershootStrictness);
+            OvershootStrictness = Mathf.Clamp(OvershootStrictness, 0f, 4f);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -324,6 +330,10 @@ namespace EntadFramework
             Widgets.FloatRange(list.GetRect(28f), 0x45465054, ref EntadSettings.PointTarget, 0.5f, 40f, null, ToStringStyle.FloatOne);
             EntadSettings.PointTarget = new FloatRange(Mathf.Round(EntadSettings.PointTarget.min * 2f) / 2f, Mathf.Round(EntadSettings.PointTarget.max * 2f) / 2f);
             list.Label("EF_Settings_PointTarget_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_Overshoot".Translate(EntadSettings.OvershootStrictness.ToString("0.##")));
+            EntadSettings.OvershootStrictness = Mathf.Round(list.Slider(EntadSettings.OvershootStrictness, 0f, 4f) * 4f) / 4f;
+            list.Label("EF_Settings_Overshoot_Desc".Translate());
             list.Gap();
             list.Label("EF_Settings_MaxTraits".Translate(EntadSettings.MaxTraits));
             EntadSettings.MaxTraits = Mathf.RoundToInt(list.Slider(EntadSettings.MaxTraits, 1f, 10f));
