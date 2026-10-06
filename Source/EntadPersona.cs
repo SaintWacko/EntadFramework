@@ -232,7 +232,9 @@ namespace EntadFramework
         {
             if (__result || pawn?.equipment?.bondedWeapon == null || pawn.equipment.bondedWeapon == thing) return;
             var comp = EntadPersona.PersonaComp(thing);
-            if (comp != null && comp.BondedPawn == null) __result = true;
+            // Only when it would bond with them: a bloodline-bound persona whose traits don't work for this pawn
+            // never bonds, so it's an ordinary weapon to them
+            if (comp != null && comp.BondedPawn == null && comp.ActiveFor(pawn)) __result = true;
         }
     }
 

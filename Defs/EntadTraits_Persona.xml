@@ -7,7 +7,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Persona</defName>
     <label>Persona</label>
-    <description>An intelligent persona lives in this weapon. It bonds with its first wielder and refuses anyone else, and the two fight with a speed and precision neither could manage alone.</description>
+    <description>An intelligent persona lives in this weapon. It usually bonds with its first wielder and refuses anyone else, and the two fight with a speed and precision neither could manage alone.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>

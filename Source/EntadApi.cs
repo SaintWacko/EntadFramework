@@ -82,8 +82,11 @@ namespace EntadFramework
                 .ToList();
         }
 
-        /// <summary>Adds random traits to <paramref name="thing"/>, as many as <c>request.traitCount</c> rolls.</summary>
-        /// <returns>The traits added; fewer than requested when the candidates run out.</returns>
+        /// <summary>Adds random traits to <paramref name="thing"/>, as many as <c>request.traitCount</c> rolls.
+        /// A vanilla unique or persona weapon only gets random traits at the player's "unique and persona weapons"
+        /// chance (0% by default); adding a trait by name with <see cref="CompEntad.AddTrait"/> is not limited.</summary>
+        /// <returns>The traits added; fewer than requested when the candidates run out, and none when the unique
+        /// weapon chance fails.</returns>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
         {
             request = request ?? new EntadApplyRequest();
@@ -93,11 +96,19 @@ namespace EntadFramework
 
         /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
         /// Traits added by name (<see cref="CompEntad.AddTrait"/>) are not affected.</summary>
+        // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
+        // means to override (GenerateEntadItem's dev action still goes through it)
+        internal static List<EntadTraitDef> ApplyRandomTraitsIgnoringUniqueChance(Thing thing)
+        {
+            var request = new EntadApplyRequest();
+            return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
+        }
+
         private static bool PassesUniqueWeaponChance(ThingDef def) =>
             !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
         /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with an exact trait count that
-        /// overrides <c>request.traitCount</c>.</summary>
+        /// overrides <c>request.traitCount</c>. The unique weapon chance applies here too.</summary>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, int traitCount, EntadApplyRequest request = null)
         {
             if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
@@ -168,7 +179,8 @@ namespace EntadFramework
         }
 
         /// <summary>Generates an unspawned item with entad traits. Item defs are tried in random order until one can
-        /// receive at least one trait.</summary>
+        /// receive at least one trait. Vanilla unique and persona weapon defs are skipped unless the player's "unique
+        /// and persona weapons" chance passes for them.</summary>
         /// <returns>The item, not yet spawned, or null when no item and trait combination fits the request.</returns>
         public static Thing GenerateEntadItem(EntadItemRequest request = null)
         {
