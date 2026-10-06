@@ -111,7 +111,12 @@ namespace EntadFramework
 
         private void PersonaTraitAdded(AppliedEntadTrait m)
         {
-            if (bondedPawn == null) return;
+            if (bondedPawn == null)
+            {
+                // Persona added to a weapon already in someone's hands: bond now, as if it had just been equipped
+                if (m.def.persona && parent.ParentHolder is Pawn_EquipmentTracker eqt) Notify_Equipped(eqt.pawn);
+                return;
+            }
             if (!IsPersona) { Unbond(); return; }   // freewielder added
             AddBondedHediffs(m.def);
             if ((m.def.EffectKinds & EntadEffectKind.Bond) != 0) m.Reveal(EntadEffectKind.All);
@@ -204,19 +209,16 @@ namespace EntadFramework
         new[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out, ArgumentType.Normal })]
     public static class Patch_EquipmentUtility_CanEquip_Persona
     {
-        public static void Postfix(Thing thing, Pawn pawn, ref string cantReason, bool checkBonded, ref bool __result)
+        public static void Postfix(Thing thing, Pawn pawn, ref string cantReason, ref bool __result)
         {
             if (!__result) return;
             var comp = EntadPersona.PersonaComp(thing);
             if (comp == null) return;
+            // ("Already bonded to another weapon" needs nothing here: vanilla's own check calls AlreadyBondedToWeapon,
+            // which is patched below)
             if (comp.BondedPawn != null && comp.BondedPawn != pawn)
             {
                 cantReason = "BladelinkBondedToSomeoneElse".Translate();
-                __result = false;
-            }
-            else if (checkBonded && EquipmentUtility.AlreadyBondedToWeapon(thing, pawn))
-            {
-                cantReason = "BladelinkAlreadyBondedMessage".Translate(pawn.Named("PAWN"), pawn.equipment.bondedWeapon.Named("BONDEDWEAPON"));
                 __result = false;
             }
         }

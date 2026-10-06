@@ -72,6 +72,9 @@ namespace EntadFramework
             bool legacyRevealed = true;
             Scribe_Values.Look(ref legacyRevealed, "revealed", true);
             if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyRevealed && revealedKinds == EntadEffectKind.All) revealedKinds = EntadEffectKind.None;
+            // Kill memories revealed as Mood before they became Kill triggers (build 65): keep them known
+            if (Scribe.mode == LoadSaveMode.LoadingVars && def?.killThought != null && (revealedKinds & EntadEffectKind.Mood) != 0)
+                revealedKinds |= EntadEffectKind.Trigger;
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             Scribe_Collections.Look(ref abilityCharges, "abilityCharges", LookMode.Value);
             // A trait saved under a removed name: its stored rolls came from the old trait's range, which can be far
@@ -221,7 +224,7 @@ namespace EntadFramework
         public float TriggerValue(int i, int k)
         {
             int idx = i * EntadTrigger.ValueCount + k;
-            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[i].RangeAt(k).Average;
+            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[i].RangeAt(k).Average * def.RarityScale(Rarity);
         }
 
         public int TriggerReadyTick(int i) => i < triggerReadyTicks.Count ? triggerReadyTicks[i] : 0;
@@ -601,6 +604,8 @@ namespace EntadFramework
                 wearerOffsets = null;
                 hiddenState = 0;
                 foreach (var m in activeTraits) m.owner = this;
+                // A bond whose persona trait is gone (def removed or renamed away) mustn't hold the pawn's slot
+                if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
             }
         }

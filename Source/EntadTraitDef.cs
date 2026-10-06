@@ -633,6 +633,8 @@ namespace EntadFramework
                     if (m.def == this || ConflictsWith(m.def)) return false;
 
             if ((persona || neverBond || HasBondEffect) && !td.IsWeapon) return false;
+            // A vanilla persona weapon's own comp takes the pawn's bonded-weapon slot first, so ours would never bond
+            if (persona && td.comps != null && td.comps.Any(c => c.compClass != null && typeof(CompBladelinkWeapon).IsAssignableFrom(c.compClass))) return false;
             // Bond effects and freewielder only go on a weapon that already has a persona, and never together
             if (neverBond || HasBondEffect)
             {
