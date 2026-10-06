@@ -122,8 +122,15 @@ namespace EntadFramework
                 persona |= activeTraits[i].def.persona;
                 secretive |= activeTraits[i].def.secretive;
             }
-            if (!persona) return;
             bool changed = false;
+            if (!persona)
+            {
+                // Persona-related traits (added by hand to a weapon without one) still show their names
+                foreach (var m in activeTraits)
+                    if ((m.def.neverBond || m.def.secretive) && m.revealedKinds != EntadEffectKind.All) { m.revealedKinds = EntadEffectKind.All; changed = true; }
+                if (changed && added != null) RevealedChanged(added, EntadEffectKind.All, announce: false);
+                return;
+            }
             foreach (var m in activeTraits)
             {
                 // Bond traits stay known while bonded: the bond is what told the wielder about them

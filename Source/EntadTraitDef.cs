@@ -638,6 +638,7 @@ namespace EntadFramework
             if (killThirstThought != null && killThirstDays <= 0f) yield return $"{defName}: killThirstDays must be above 0";
             if (persona && (neverBond || HasBondEffect)) yield return $"{defName}: persona goes on its own trait; neverBond and bond effects are separate traits that need one";
             if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
+            if (!float.IsNaN(points) && points == 0f) yield return $"{defName}: points 0 lets generation add it for free until the trait cap; use a small positive value";
             if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
         }

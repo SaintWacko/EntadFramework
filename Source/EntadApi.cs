@@ -152,6 +152,14 @@ namespace EntadFramework
                 int slotsLeft = cap - added.Count;
                 float perSlot = remaining / slotsLeft;
                 float left = remaining;
+                // Cheapest thing the budget could still buy, at any rarity
+                float cheapest = float.MaxValue;
+                foreach (var d in candidates)
+                    for (var r = d.rarity; r <= d.MaxRarity; r++)
+                    {
+                        float c = d.PointsAt(r);
+                        if (c >= 0f && c < cheapest) cheapest = c;
+                    }
                 EntadTraitDef pick = null;
                 EntadRarity rolled = EntadRarity.Common;
                 if (left > Epsilon)
@@ -166,11 +174,16 @@ namespace EntadFramework
                             return Math.Max(0.05f, f * f);
                         }, out rolled);
                 }
-                if (pick == null && drawbacksLeft > 0 && slotsLeft > 1)
+                // A drawback only if its refund buys something, so an item never ends on a drawback alone
+                if (pick == null && drawbacksLeft > 0 && slotsLeft > 1 && cheapest < float.MaxValue)
                 {
-                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => d.PointsAt(r) < 0f, null, out rolled);
+                    pick = chances.PickWhere(candidates, weight, allowed,
+                        (d, r) => d.IsDrawback && left - d.PointsAt(r) >= cheapest - Epsilon, null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
+                // A budget below every trait still makes an entad: the cheapest trait there is
+                if (pick == null && added.Count == 0 && cheapest < float.MaxValue)
+                    pick = chances.PickWhere(candidates, weight, allowed, (d, r) => { float c = d.PointsAt(r); return c >= 0f && c <= cheapest + Epsilon; }, null, out rolled);
                 if (pick == null) break;
                 rolled = pick.ClampRarity(rolled);
                 if (!comp.AddTrait(pick, rolled)) break;
