@@ -155,6 +155,8 @@ namespace EntadFramework
             if (pawn == null) return;
             // Gear triggers (waking, eating, finishing a job) work for anyone holding the item, raiders included
             if (EntadTriggers.AnyJobEvent) EntadTriggers.OnJobEnded(pawn, job, condition);
+            // Dying ends the job too: a corpse hasn't used the bed it died in (and mustn't bind to it)
+            if (pawn.Dead) return;
             if (pawn.Faction != Faction.OfPlayer || !pawn.RaceProps.Humanlike) return;
 
             Map map = pawn.MapHeld;

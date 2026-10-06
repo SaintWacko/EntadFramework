@@ -10,7 +10,7 @@ using Verse.AI;
 namespace EntadFramework
 {
     // Weapon effects modelled on vanilla's unique weapon traits: burst count and speed, stopping power, ignoring
-    // accuracy penalties, equipped hediffs and kill memories. Vanilla reads these from CompUniqueWeapon, which an
+    // accuracy penalties and equipped hediffs. Vanilla reads these from CompUniqueWeapon, which an
     // entad doesn't have, so each read site gets a small patch. Every weapon carries the entad comp, so each patch
     // first checks a flag saying whether any loaded trait has the effect at all: with none, a patch is one branch.
     public static class EntadWeaponTraits
@@ -121,7 +121,9 @@ namespace EntadFramework
             if (!EntadCompInjector.MayHaveComp(__instance)) return;
             var comp = req.Thing.TryGetComp<CompEntad>();
             if (comp == null || !comp.ActiveForHolder) return;
-            var verb = __instance.Verbs?.FirstOrDefault(v => v.Ranged);
+            // The verb vanilla builds these rows from
+            var verb = __instance.Verbs?.FirstOrDefault(v => v.isPrimary);
+            if (verb == null || !verb.Ranged) return;
             if (verb == null || !Revealed(comp).Any()) return;
             __result = Rewrite(__result, comp, verb, req.Thing.TryGetComp<CompUniqueWeapon>()?.TraitsListForReading);
         }
@@ -163,7 +165,7 @@ namespace EntadFramework
             }
             // Vanilla leaves the stopping power row out when the base is 0, so a trait may have to add it.
             // (No burst rows to add: burst traits only go on weapons that already fire bursts, see AppliesTo.)
-            if (hasStop && !stopSeen && verb.defaultProjectile?.projectile != null)
+            if (hasStop && !stopSeen && verb.defaultProjectile?.projectile?.damageDef?.harmsHealth == true)
             {
                 var row = StoppingPowerRow(cat, verb, props, unique);
                 if (row != null) yield return row;

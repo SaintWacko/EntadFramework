@@ -26,7 +26,8 @@ namespace EntadFramework
             public AbilityDef Ability => trait.def.abilities[index];
             public ThingDef Ammo => trait.def.abilityAmmo;
             public int Max => trait.def.abilityCharges;
-            public int PerCharge => trait.def.abilityAmmoPerCharge;
+            // At least 1 even for a def that failed its config check, so reloading can't divide by zero
+            public int PerCharge => Mathf.Max(1, trait.def.abilityAmmoPerCharge);
         }
 
         private static bool? anyReloadable;

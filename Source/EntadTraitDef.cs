@@ -652,7 +652,11 @@ namespace EntadFramework
             EntadUseKind k = EntadUseKind.Other;
             if (td.IsBed) k |= EntadUseKind.Sleep;
             if (b.isSittable || td.surfaceType == SurfaceType.Eat) k |= EntadUseKind.Eat;
-            if (b.isSittable || td.hasInteractionCell) k |= EntadUseKind.Work;
+            // Work is a bill, research, a deep drill or a scanner (the jobs the hook reports as Work), or a seat at one
+            if (b.isSittable || td.IsWorkTable || !td.AllRecipes.NullOrEmpty() || typeof(Building_ResearchBench).IsAssignableFrom(td.thingClass)
+                || (td.comps != null && td.comps.Any(c => c.compClass != null
+                    && (typeof(CompDeepDrill).IsAssignableFrom(c.compClass) || typeof(CompScanner).IsAssignableFrom(c.compClass)))))
+                k |= EntadUseKind.Work;
             if (b.isSittable || b.joyKind != null) k |= EntadUseKind.Recreation;
             return k;
         }

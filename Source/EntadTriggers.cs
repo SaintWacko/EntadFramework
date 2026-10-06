@@ -292,21 +292,18 @@ namespace EntadFramework
                 return;
             }
             var hediff = HediffMaker.MakeHediff(def, pawn);
-            if (ticks > 0)
-            {
-                var d = hediff.TryGetComp<HediffComp_Disappears>();
-                if (d != null) d.ticksToDisappear = ticks;
-            }
+            if (ticks > 0) hediff.TryGetComp<HediffComp_Disappears>()?.SetDuration(ticks);
             pawn.health.AddHediff(hediff);
         }
 
         private static readonly AccessTools.FieldRef<Need_Rest, int> lastRestTick = AccessTools.FieldRefAccess<Need_Rest, int>("lastRestTick");
 
-        // A LayDown job that lasted an hour and in which the pawn actually slept. Vanilla only counts rest (and sets
-        // lastRestTick) while asleep, so a patient lying awake on bed rest, or a downed pawn kept lying, doesn't count.
+        // A LayDown job that lasted an hour and in which the pawn fell asleep at some point. Vanilla only counts rest
+        // (and sets lastRestTick) while asleep, so a patient lying awake on bed rest doesn't count. A downed pawn
+        // doesn't either, though they may doze: they're recovering, not waking up.
         public static bool Slept(Pawn pawn, Job job)
         {
-            if (job.def != JobDefOf.LayDown || job.startTick < 0) return false;
+            if (job.def != JobDefOf.LayDown || job.startTick < 0 || pawn.Downed) return false;
             if (Find.TickManager.TicksGame - job.startTick < MinSleepTicks) return false;
             var rest = pawn.needs?.rest;
             return rest != null && lastRestTick(rest) >= job.startTick;
@@ -317,7 +314,7 @@ namespace EntadFramework
         {
             if ((pawn.apparel == null && pawn.equipment == null) || pawn.Dead) return;
             bool succeeded = condition == JobCondition.Succeeded;
-            if (!pawn.Downed && Any(EntadTriggerEvent.WakeUp) && Slept(pawn, job))
+            if (Any(EntadTriggerEvent.WakeUp) && Slept(pawn, job))
                 FromGear(pawn, EntadTriggerEvent.WakeUp);
             if (!succeeded) return;
             if (job.def == JobDefOf.Ingest && job.targetA.Thing?.def?.IsNutritionGivingIngestible == true)
