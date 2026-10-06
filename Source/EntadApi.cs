@@ -94,8 +94,6 @@ namespace EntadFramework
             return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
         }
 
-        /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
-        /// Traits added by name (<see cref="CompEntad.AddTrait"/>) are not affected.</summary>
         // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
         // means to override (GenerateEntadItem's dev action still goes through it)
         internal static List<EntadTraitDef> ApplyRandomTraitsIgnoringUniqueChance(Thing thing)
@@ -104,6 +102,8 @@ namespace EntadFramework
             return ApplyRandomTraits(thing, request, request.traitCount.RandomInRange);
         }
 
+        /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
+        /// Traits added by name (<see cref="CompEntad.AddTrait"/>) are not affected.</summary>
         private static bool PassesUniqueWeaponChance(ThingDef def) =>
             !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
