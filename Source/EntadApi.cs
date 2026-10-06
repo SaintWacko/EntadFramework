@@ -104,6 +104,17 @@ namespace EntadFramework
             return ApplyRandomTraits(thing, request, RollBudget(request));
         }
 
+        // Whether PickWhere could ever return this trait: a weight above zero and some rarity it covers that's
+        // allowed and has a weight above zero
+        private static bool CanRoll(EntadTraitDef d, EntadRarityChances chances, ICollection<EntadRarity> allowed, Func<EntadTraitDef, float> weight)
+        {
+            if ((weight?.Invoke(d) ?? 1f) <= 0f) return false;
+            EntadRarity hi = d.MaxRarity;
+            for (var r = d.rarity; r <= hi; r++)
+                if ((allowed == null || allowed.Count == 0 || allowed.Contains(r)) && chances[r] > 0f) return true;
+            return false;
+        }
+
         private static float RollBudget(EntadApplyRequest request) => (request.points ?? EntadSettings.PointTarget).RandomInRange;
 
         // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
@@ -172,10 +183,13 @@ namespace EntadFramework
                 // A drawback needs a real trait before it and a free slot after it to spend its points on
                 if (drawbacksLeft > 0 && hasRealTrait && slotsLeft > 1)
                 {
-                    // ...and a real trait that can still go on with it, or the drawback would never be paid back
-                    pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => d.IsDrawback && left - d.PointsAt(r) > Epsilon
-                            && candidates.Any(p => !p.IsDrawback && !p.ConflictsWith(d) && !d.ConflictsWith(p)), null, out rolled);
+                    // ...and a real trait the picker could still return beside it, or it would never be paid back
+                    var pickable = candidates.Where(p => !p.IsDrawback && CanRoll(p, chances, allowed, weight)).ToList();
+                    var payable = new HashSet<EntadTraitDef>(candidates.Where(d => d.IsDrawback
+                        && pickable.Any(p => !p.ConflictsWith(d) && !d.ConflictsWith(p))));
+                    if (payable.Count > 0)
+                        pick = chances.PickWhere(candidates, weight, allowed,
+                            (d, r) => payable.Contains(d) && left - d.PointsAt(r) > Epsilon, null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
                 if (pick == null && remaining <= Epsilon) break;
