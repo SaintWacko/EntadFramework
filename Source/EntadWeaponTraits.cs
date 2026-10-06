@@ -137,7 +137,7 @@ namespace EntadFramework
             if (comp == null || !comp.ActiveForHolder) return;
             var verb = __instance.Verbs?.FirstOrDefault(v => v.Ranged);
             if (verb == null || !Revealed(comp).Any()) return;
-            __result = Rewrite(__result, comp, verb);
+            __result = Rewrite(__result, comp, verb, req.Thing.TryGetComp<CompUniqueWeapon>()?.TraitsListForReading);
         }
 
         // (trait, property, rolled value) for every revealed weapon property
@@ -151,7 +151,9 @@ namespace EntadFramework
             }
         }
 
-        private static IEnumerable<StatDrawEntry> Rewrite(IEnumerable<StatDrawEntry> rows, CompEntad comp, VerbProperties verb)
+        // unique: a vanilla unique weapon's own traits (Odyssey), which vanilla had already folded into these rows.
+        // The Verb getters apply them first and round, then our postfixes apply the entad factor and round again.
+        private static IEnumerable<StatDrawEntry> Rewrite(IEnumerable<StatDrawEntry> rows, CompEntad comp, VerbProperties verb, List<WeaponTraitDef> unique)
         {
             var cat = StatCategoryDefOf.Weapon_Ranged;
             var props = Revealed(comp).ToList();
@@ -163,31 +165,39 @@ namespace EntadFramework
             {
                 if (row.category != cat || row.stat != null) { yield return row; continue; }
                 int order = row.DisplayPriorityWithinCategory;
-                if (order == BurstCountOrder && hasCount) yield return BurstCountRow(cat, verb, props);
-                else if (order == FireRateOrder && hasSpeed) yield return FireRateRow(cat, verb, props);
+                if (order == BurstCountOrder && hasCount) yield return BurstCountRow(cat, verb, props, unique);
+                else if (order == FireRateOrder && hasSpeed) yield return FireRateRow(cat, verb, props, unique);
                 else if (order == StoppingPowerOrder && hasStop)
                 {
                     stopSeen = true;
-                    var stop = StoppingPowerRow(cat, verb, props);
+                    var stop = StoppingPowerRow(cat, verb, props, unique);
                     if (stop != null) yield return stop;
                 }
                 else yield return row;
             }
-            // Vanilla leaves the stopping power row out when the base is 0, so a trait may have to add it
+            // Vanilla leaves the stopping power row out when the base is 0, so a trait may have to add it.
+            // (No burst rows to add: burst traits only go on weapons that already fire bursts, see AppliesTo.)
             if (hasStop && !stopSeen && verb.defaultProjectile?.projectile != null)
             {
-                var row = StoppingPowerRow(cat, verb, props);
+                var row = StoppingPowerRow(cat, verb, props, unique);
                 if (row != null) yield return row;
             }
         }
 
-        private static string Explain(string descKey, string baseValue, IEnumerable<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> lines, string finalValue)
+        private static string Explain(string descKey, string baseValue, List<string> uniqueLines,
+            IEnumerable<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> lines, string finalValue)
         {
             var sb = new StringBuilder(descKey.Translate());
             sb.AppendLine();
             sb.AppendLine();
             sb.AppendLine("StatsReport_BaseValue".Translate() + ": " + baseValue);
             sb.AppendLine();
+            if (uniqueLines.Count > 0)
+            {
+                sb.AppendLine("StatsReport_WeaponTraits".Translate() + ":");
+                foreach (var u in uniqueLines) sb.AppendLine(u);
+                sb.AppendLine();
+            }
             sb.AppendLine("EF_Stat_EntadTraits".Translate() + ":");
             foreach (var l in lines) sb.AppendLine("    " + l.m.def.LabelCap + ": " + l.w.ValueString(l.v));
             sb.AppendLine();
@@ -195,40 +205,74 @@ namespace EntadFramework
             return sb.ToString();
         }
 
-        // Same rounding as Patch_Verb_BurstShotCount, so the card matches the shots fired
-        private static StatDrawEntry BurstCountRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        // Vanilla's tooltip line for a unique trait: "    Name: x150%"
+        private static string UniqueLine(WeaponTraitDef t, float v, ToStringStyle style, ToStringNumberSense sense) =>
+            "    " + t.LabelCap + ": " + v.ToStringByStyle(style, sense);
+
+        // Same rounding as Verb.BurstShotCount then Patch_Verb_BurstShotCount, so the card matches the shots fired
+        private static StatDrawEntry BurstCountRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props, List<WeaponTraitDef> unique)
         {
             var lines = props.Where(p => p.w.property == EntadWeaponProperty.BurstShotCount).ToList();
+            float u = verb.burstShotCount;
+            var uLines = new List<string>();
+            if (unique != null)
+                foreach (var t in unique)
+                    if (!Mathf.Approximately(t.burstShotCountMultiplier, 1f))
+                    {
+                        u *= t.burstShotCountMultiplier;
+                        uLines.Add(UniqueLine(t, t.burstShotCountMultiplier, ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+                    }
             float f = 1f;
             foreach (var l in lines) f *= l.v;
-            string final = Mathf.Max(1, Mathf.CeilToInt(verb.burstShotCount * f)).ToString();
+            string final = Mathf.Max(1, Mathf.CeilToInt(Mathf.CeilToInt(u) * f)).ToString();
             return new StatDrawEntry(cat, "BurstShotCount".Translate(), final,
-                Explain("Stat_Thing_Weapon_BurstShotCount_Desc", verb.burstShotCount.ToString(), lines, final), BurstCountOrder);
+                Explain("Stat_Thing_Weapon_BurstShotCount_Desc", verb.burstShotCount.ToString(), uLines, lines, final), BurstCountOrder);
         }
 
-        // Same rounding as Patch_Verb_TicksBetweenBurstShots
-        private static StatDrawEntry FireRateRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        // Same rounding as Verb.TicksBetweenBurstShots then Patch_Verb_TicksBetweenBurstShots
+        private static StatDrawEntry FireRateRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props, List<WeaponTraitDef> unique)
         {
             var lines = props.Where(p => p.w.property == EntadWeaponProperty.BurstShotSpeed).ToList();
+            float u = verb.ticksBetweenBurstShots;
+            var uLines = new List<string>();
+            if (unique != null)
+                foreach (var t in unique)
+                    if (!Mathf.Approximately(t.burstShotSpeedMultiplier, 1f))
+                    {
+                        u /= t.burstShotSpeedMultiplier;
+                        uLines.Add(UniqueLine(t, t.burstShotSpeedMultiplier, ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+                    }
+            int baseTicks = Mathf.RoundToInt(u);
             float f = 1f;
             foreach (var l in lines) f *= l.v;
-            int ticks = f > 0f ? Mathf.Max(1, Mathf.RoundToInt(verb.ticksBetweenBurstShots / f)) : verb.ticksBetweenBurstShots;
+            int ticks = f > 0f ? Mathf.Max(1, Mathf.RoundToInt(baseTicks / f)) : baseTicks;
             string Rpm(int t) => (60f / Mathf.Max(1, t).TicksToSeconds()).ToString("0.##") + " rpm";
             string final = Rpm(ticks);
             return new StatDrawEntry(cat, "BurstShotFireRate".Translate(), final,
-                Explain("Stat_Thing_Weapon_BurstShotFireRate_Desc", Rpm(verb.ticksBetweenBurstShots), lines, final), FireRateOrder);
+                Explain("Stat_Thing_Weapon_BurstShotFireRate_Desc", Rpm(verb.ticksBetweenBurstShots), uLines, lines, final), FireRateOrder);
         }
 
-        private static StatDrawEntry StoppingPowerRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props)
+        // Same base as Projectile.Launch: the projectile's value, or its damage type's default when that is 0
+        private static StatDrawEntry StoppingPowerRow(StatCategoryDef cat, VerbProperties verb, List<(AppliedEntadTrait m, WeaponPropertyRange w, float v)> props, List<WeaponTraitDef> unique)
         {
             var lines = props.Where(p => p.w.property == EntadWeaponProperty.StoppingPower).ToList();
-            float baseValue = verb.defaultProjectile?.projectile?.stoppingPower ?? 0f;
+            var proj = verb.defaultProjectile?.projectile;
+            float baseValue = proj?.stoppingPower ?? 0f;
+            if (baseValue == 0f && proj?.damageDef != null) baseValue = proj.damageDef.defaultStoppingPower;
             float total = baseValue;
+            var uLines = new List<string>();
+            if (unique != null)
+                foreach (var t in unique)
+                    if (!Mathf.Approximately(t.additionalStoppingPower, 0f))
+                    {
+                        total += t.additionalStoppingPower;
+                        uLines.Add(UniqueLine(t, t.additionalStoppingPower, ToStringStyle.FloatOne, ToStringNumberSense.Offset));
+                    }
             foreach (var l in lines) total += l.v;
             if (total <= 0f) return null;
             string final = total.ToString("F1");
             return new StatDrawEntry(cat, "StoppingPower".Translate(), final,
-                Explain("StoppingPowerExplanation", baseValue.ToString("F1"), lines, final), StoppingPowerOrder);
+                Explain("StoppingPowerExplanation", baseValue.ToString("F1"), uLines, lines, final), StoppingPowerOrder);
         }
     }
 
