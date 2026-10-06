@@ -578,7 +578,7 @@ namespace EntadFramework
                 if (!triggers.NullOrEmpty()) kinds |= EntadEffectKind.Trigger;
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
-                if (persona || neverBond || HasBondEffect) kinds |= EntadEffectKind.Bond;
+                if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 return kinds;
             }
         }

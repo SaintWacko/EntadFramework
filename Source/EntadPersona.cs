@@ -111,7 +111,8 @@ namespace EntadFramework
 
         // A persona weapon's traits start revealed unless it's Secretive; the persona traits themselves always are.
         // Runs on every add, so the order traits are rolled in doesn't matter: adding Persona reveals the traits
-        // already there, adding Secretive hides them again. Silent: this happens at generation, not in play.
+        // already there, adding Secretive hides them again. Silent, as it's meant for generation; Secretive added to a
+        // weapon in play (API, dev tools) hides what the player had learned too, since a reveal doesn't record why.
         private void SyncPersonaReveal(AppliedEntadTrait added)
         {
             if (!EntadSettings.HideTraits) return;
@@ -125,7 +126,9 @@ namespace EntadFramework
             bool changed = false;
             foreach (var m in activeTraits)
             {
-                bool always = m.def.persona || m.def.neverBond || m.def.secretive;
+                // Bond traits stay known while bonded: the bond is what told the wielder about them
+                bool always = m.def.persona || m.def.neverBond || m.def.secretive
+                    || (bondedPawn != null && (m.def.EffectKinds & EntadEffectKind.Bond) != 0);
                 EntadEffectKind want;
                 if (always || !secretive) want = EntadEffectKind.All;
                 else if (added != null && added.def.secretive && m != added) want = EntadEffectKind.None;
