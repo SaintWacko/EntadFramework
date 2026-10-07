@@ -20,12 +20,11 @@ namespace EntadFramework
     public static class EntadStorage
     {
         // Spawned storage buildings whose factor isn't 1. The grid postfix runs for every capacity check in the game,
-        // so it starts with an empty-check and then a single dictionary lookup on the edifice. ASF buildings are in
-        // here too, only so a capacity check on them can reveal the trait; they're scaled through their own table.
+        // so it starts with an empty-check and then a single dictionary lookup on the edifice. ASF buildings stay
+        // out: they're scaled through their own table.
         private static readonly Dictionary<Building, CompEntad> active = new Dictionary<Building, CompEntad>();
-        private static readonly HashSet<Building> asfBuildings = new HashSet<Building>();
 
-        public static void Clear() { active.Clear(); asfBuildings.Clear(); }
+        public static void Clear() => active.Clear();
 
         private static readonly List<Building> stale = new List<Building>();
 
@@ -38,13 +37,11 @@ namespace EntadFramework
             // A removed map despawns only its pawns, so its buildings never reach PostDeSpawn; drop them here
             stale.Clear();
             foreach (var k in active.Keys) if (!k.Spawned) stale.Add(k);
-            foreach (var k in stale) { active.Remove(k); asfBuildings.Remove(k); }
+            foreach (var k in stale) active.Remove(k);
             bool scaled = spawned && b.def.building?.maxItemsInCell >= 2 && IsScaled(comp);
             bool asf = EntadStorage_ASF.Is(b);
-            if (scaled) active[b] = comp;
+            if (scaled && !asf) active[b] = comp;
             else active.Remove(b);
-            if (scaled && asf) asfBuildings.Add(b);
-            else asfBuildings.Remove(b);
             if (asf && spawned && !fromSpawn) EntadStorage_ASF.Recalculate(b);
         }
 
@@ -58,8 +55,18 @@ namespace EntadFramework
             if (active.Count == 0 || map == null) return;
             var edifice = c.GetEdifice(map);
             if (edifice == null || !active.TryGetValue(edifice, out var comp)) return;
-            comp.RevealProperty(EntadBuildingProperty.StorageCapacity);
-            if (!asfBuildings.Contains(edifice)) __result = Scaled(__result, comp.PropertyFactor(EntadBuildingProperty.StorageCapacity));
+            __result = Scaled(__result, comp.PropertyFactor(EntadBuildingProperty.StorageCapacity));
+        }
+    }
+
+    // Revealed the first time an item is stored in it. ASF's override calls this base method, so it's covered too.
+    [HarmonyPatch(typeof(Building_Storage), nameof(Building_Storage.Notify_ReceivedThing))]
+    public static class Patch_Building_Storage_ReceivedThing_EntadReveal
+    {
+        public static void Postfix(Building_Storage __instance)
+        {
+            if (!EntadCompInjector.MayHaveComp(__instance.def)) return;
+            __instance.TryGetComp<CompEntad>()?.RevealProperty(EntadBuildingProperty.StorageCapacity, 1);
         }
     }
 

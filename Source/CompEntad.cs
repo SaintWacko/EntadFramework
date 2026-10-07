@@ -430,11 +430,13 @@ namespace EntadFramework
         // Building properties are read while the building is in play, so only count it once it has been
         // around a while (not when it spawns or a save loads). Called every tick from the fuel, glow and power reads,
         // so the bitmask check comes first and the common case (nothing hidden for this property) costs nothing.
-        public void RevealProperty(EntadBuildingProperty property)
+        // minAgeTicks: storage reveals on the first item stored, so it only needs to skip the spawn tick itself (items
+        // spawning onto it as a save loads or a reinstalled building unpacks all arrive on that tick).
+        public void RevealProperty(EntadBuildingProperty property, int minAgeTicks = 2500)
         {
             PropertyFactor(property);
             if ((hiddenPropertyMask & (1 << (int)property)) == 0) return;
-            if (Find.TickManager.TicksGame - spawnedTick < 2500) return;
+            if (Find.TickManager.TicksGame - spawnedTick < minAgeTicks) return;
             for (int t = 0; t < activeTraits.Count; t++)
             {
                 var m = activeTraits[t];
