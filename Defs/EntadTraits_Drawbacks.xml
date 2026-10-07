@@ -55,7 +55,7 @@
     <defName>Entad_Garish</defName>
     <label>Garish</label>
     <description>Unpleasant to look at, somehow.</description>
-    <categories><li>Apparel</li><li>Furniture</li></categories>
+    <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>
     <statOffsets>
@@ -93,7 +93,7 @@
     <description>Whoever wears or wields this is a little closer to breaking under stress.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
-    <points>-1</points>
+    <points>-2</points>
     <statOffsets>
       <li><stat>MentalBreakThreshold</stat><min>0.02</min><max>0.05</max></li>
     </statOffsets>
