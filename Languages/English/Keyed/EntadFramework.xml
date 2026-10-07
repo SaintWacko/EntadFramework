@@ -32,7 +32,7 @@
   <EF_Rename>Rename</EF_Rename>
 
   <!-- Appraisers: identify entads for silver -->
-  <EF_Appraiser_LeftToday>Can identify {0} more items today (at most {1} a day).</EF_Appraiser_LeftToday>
+  <EF_Appraiser_LeftToday>Items left to identify today: {0} (at most {1} a day).</EF_Appraiser_LeftToday>
   <EF_Appraise_Option>Ask {0} to identify entads</EF_Appraise_Option>
   <EF_Appraise_CannotTalk>{0}: unable to talk</EF_Appraise_CannotTalk>
   <EF_Appraise_Command>Identify entads</EF_Appraise_Command>

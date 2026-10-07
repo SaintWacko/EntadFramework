@@ -453,7 +453,33 @@ namespace EntadFramework
         }
     }
 
-    // The question mark over the head, like a caravan's trader
+    // Swaps the question mark for the appraiser's own icon. The pawn still reports ShouldShowQuestionMark (below) so
+    // the overlay is queued; this draws the same pulsing quad at the same spot, with our texture, and skips the
+    // vanilla draw. Copies OverlayDrawer.RenderQuestionMarkOverlay, which is private.
+    [HarmonyPatch(typeof(OverlayDrawer), "RenderQuestionMarkOverlay")]
+    public static class Patch_RenderQuestionMark_EntadAppraiser
+    {
+        private static readonly AccessTools.FieldRef<OverlayDrawer, DrawBatch> drawBatch =
+            AccessTools.FieldRefAccess<OverlayDrawer, DrawBatch>("drawBatch");
+        private static Material iconMat;
+
+        public static bool Prefix(OverlayDrawer __instance, Thing t)
+        {
+            if (!(t is Pawn p) || !EntadAppraisal.CanAppraiseNow(p, out _)) return true;
+            if (iconMat == null) iconMat = MaterialPool.MatFrom("UI/Overlays/EntadAppraiser", ShaderDatabase.MetaOverlay);
+
+            Vector3 drawPos = t.DrawPos;
+            drawPos.y = AltitudeLayer.MetaOverlays.AltitudeFor() + 0.21951221f;
+            drawPos.x += p.def.size.x - 0.52f;
+            drawPos.z += p.def.size.z - 0.45f;
+            float pulse = ((float)System.Math.Sin((Time.realtimeSinceStartup + 397f * (t.thingIDNumber % 571)) * 4f) + 1f) * 0.5f;
+            Material mat = FadedMaterialPool.FadedVersionOf(iconMat, 0.3f + pulse * 0.7f);
+            drawBatch(__instance).DrawMesh(MeshPool.plane05, Matrix4x4.TRS(drawPos, Quaternion.identity, Vector3.one), mat, 0, renderInstanced: true);
+            return false;
+        }
+    }
+
+    // Makes the game queue the question-mark overlay over an appraiser, like a caravan's trader
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.ShouldShowQuestionMark))]
     public static class Patch_ShouldShowQuestionMark_EntadAppraiser
     {

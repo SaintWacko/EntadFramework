@@ -1,4 +1,11 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "path": "Textures/UI/Commands/Trade.png",
+      "kind": "texture",
+      "sha256": "eeebf38f43c97e0cf4fca8e974065642edd06ecdea08a3a3c4d57650817459bf",
+      "generatedAt": "2026-10-07T19:23:24.183Z"
+    }
+  ]
 }
