@@ -420,7 +420,7 @@
     <defName>Entad_Lovely</defName>
     <label>Lovely</label>
     <description>Simply pleasant to look at.</description>
-    <categories><li>Apparel</li><li>Furniture</li></categories>
+    <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
