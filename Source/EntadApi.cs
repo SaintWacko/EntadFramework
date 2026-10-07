@@ -115,6 +115,24 @@ namespace EntadFramework
             return false;
         }
 
+        // The most one real trait could add on this pick: the costliest (trait, rarity) pair PickWhere could return
+        private static float MaxRollablePoints(List<EntadTraitDef> candidates, EntadRarityChances chances, ICollection<EntadRarity> allowed, Func<EntadTraitDef, float> weight)
+        {
+            float best = 0f;
+            foreach (var d in candidates)
+            {
+                if (d.IsDrawback || (weight?.Invoke(d) ?? 1f) <= 0f) continue;
+                EntadRarity hi = d.MaxRarity;
+                for (var r = d.rarity; r <= hi; r++)
+                {
+                    if (allowed != null && allowed.Count > 0 && !allowed.Contains(r)) continue;
+                    if (chances[r] <= 0f) continue;
+                    best = Math.Max(best, d.PointsAt(r));
+                }
+            }
+            return best;
+        }
+
         private static float RollBudget(EntadApplyRequest request) => (request.points ?? EntadSettings.PointTarget).RandomInRange;
 
         // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
@@ -143,7 +161,9 @@ namespace EntadFramework
         //  - a pair costing more than what's left keeps (left / cost)^strictness of its weight, so a cheap item can
         //    still roll a big trait, just rarely (strictness 0 is a pure minimum, higher approaches a maximum);
         //  - a pair much cheaper than the target per remaining trait slot is made less likely, so a big target buys
-        //    rarer traits instead of running into the trait cap on Commons.
+        //    rarer traits instead of running into the trait cap on Commons;
+        //  - a pair that would leave the target out of reach of the remaining slots is skipped (reachability), and
+        //    when every pair would, the costliest is taken.
         // An item allowed drawbacks takes one as soon as one is eligible after its first real trait, even if that
         // trait already reached the target, as long as the drawback's points put the item back under it; generation
         // then carries on and pays for it with more or better traits.
@@ -195,8 +215,13 @@ namespace EntadFramework
                 if (pick == null && remaining <= Epsilon) break;
                 if (pick == null)
                 {
+                    // Reachability: a pick has to leave the target within reach of the slots after it, at the most a
+                    // single trait can still be worth here. Never binds on small targets; on big ones it steers the
+                    // last slots toward big traits so the trait cap doesn't stop the item well short.
+                    float best = MaxRollablePoints(candidates, chances, allowed, weight);
+                    float reach = (slotsLeft - 1) * best;
                     pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => !d.IsDrawback,
+                        (d, r) => !d.IsDrawback && left - d.PointsAt(r) <= reach + Epsilon,
                         (d, r) =>
                         {
                             float c = d.PointsAt(r);
@@ -205,6 +230,10 @@ namespace EntadFramework
                             float f = c / perSlot;
                             return Math.Max(0.05f, f * f);
                         }, out rolled);
+                    // Out of reach whatever is picked: take the biggest trait there is and get as close as possible
+                    if (pick == null && best > 0f)
+                        pick = chances.PickWhere(candidates, weight, allowed,
+                            (d, r) => !d.IsDrawback && d.PointsAt(r) >= best - Epsilon, null, out rolled);
                 }
                 if (pick == null) break;
                 rolled = pick.ClampRarity(rolled);
