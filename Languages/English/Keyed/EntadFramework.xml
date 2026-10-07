@@ -109,6 +109,7 @@
 
   <!-- Stat explanations (the breakdown when hovering a stat) -->
   <EF_Explain_TraitValue>{0} ({1}): {2}</EF_Explain_TraitValue>
+  <EF_Explain_ValueFloor>Drawbacks can't lower the value below {0} of base: {1}</EF_Explain_ValueFloor>
   <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
   <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
 

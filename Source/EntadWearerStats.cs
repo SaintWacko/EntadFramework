@@ -222,7 +222,8 @@ namespace EntadFramework
             // Saves the previous value like the other context patches, in case another mod nests a stats report
             __state = new KeyValuePair<CompEntad, Thing>(null, EntadWearerStats.infoCardThing);
             var comp = (thing as ThingWithComps)?.GetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden || !comp.HasHiddenStat) return;
+            // Any hidden trait, not just a hidden stat: the card's market value leaves out unidentified traits' price
+            if (comp == null || comp.activeTraits.NullOrEmpty() || !comp.HasHidden) return;
             __state = new KeyValuePair<CompEntad, Thing>(comp, __state.Value);
             EntadWearerStats.infoCardThing = thing;
         }

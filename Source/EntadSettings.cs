@@ -148,13 +148,13 @@ namespace EntadFramework
             Scribe_Values.Look(ref OvershootStrictness, "overshootStrictness", DefaultOvershootStrictness);
             OvershootStrictness = Mathf.Clamp(OvershootStrictness, 0f, 4f);
             Scribe_Values.Look(ref ValuePercentPerPoint, "valuePercentPerPoint", DefaultValuePercentPerPoint);
-            ValuePercentPerPoint = Mathf.Clamp(ValuePercentPerPoint, 0f, 1f);
+            ValuePercentPerPoint = Mathf.Clamp(ValuePercentPerPoint, 0f, 0.5f);
             Scribe_Values.Look(ref ValueSilverPerPoint, "valueSilverPerPoint", DefaultValueSilverPerPoint);
-            ValueSilverPerPoint = Mathf.Clamp(ValueSilverPerPoint, 0f, 1000f);
+            ValueSilverPerPoint = Mathf.Clamp(ValueSilverPerPoint, 0f, 500f);
             Scribe_Values.Look(ref ValueFloor, "valueFloor", DefaultValueFloor);
             ValueFloor = Mathf.Clamp01(ValueFloor);
             Scribe_Values.Look(ref MysteryBonus, "mysteryBonus", DefaultMysteryBonus);
-            MysteryBonus = Mathf.Clamp(MysteryBonus, 0f, 2f);
+            MysteryBonus = Mathf.Clamp01(MysteryBonus);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];

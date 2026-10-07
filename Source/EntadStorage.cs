@@ -80,7 +80,7 @@ namespace EntadFramework
     // Clears the registry for each new or loaded game; spawning re-registers every building
     public class EntadStorageReset : GameComponent
     {
-        public EntadStorageReset(Game game) { EntadStorage.Clear(); }
+        public EntadStorageReset(Game game) { EntadStorage.Clear(); EntadTrade.Reset(); }
     }
 
     // Adaptive Storage Framework (adaptive.storage.framework), reached by reflection so nothing here needs it loaded.

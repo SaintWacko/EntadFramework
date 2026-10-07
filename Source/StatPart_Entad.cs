@@ -41,7 +41,7 @@ namespace EntadFramework
             // trait nobody has found yet. Traders price only what's identified, plus one mystery premium if anything
             // isn't. The item's own card shows identified traits only. Trade prices are read while a TradeSession is
             // open (the deal is built after the session starts), and nothing caches market value between reads.
-            bool trade = isValue && TradeSession.Active;
+            bool trade = isValue && EntadTrade.Open;
             bool valueSkipsHidden = trade || EntadWearerStats.infoCardThing == req.Thing;
             float baseValue = val, traitValue = 0f;
             bool unidentified = false;
@@ -91,7 +91,11 @@ namespace EntadFramework
 
             string explanation = "";
             bool unidentified = false;
+            // The finished value with our part left out. TransformValue prices from the value at our place in the
+            // stat's parts instead; the two match while ours is the last part, which it is unless another mod injects a
+            // MarketValue part from code after our static constructor (XML-declared parts always come first).
             float baseValue = parentStat == StatDefOf.MarketValue ? comp.BaseMarketValue() : 0f;
+            float traitValue = 0f;
             bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
             foreach (var m in comp.activeTraits)
             {
@@ -100,7 +104,12 @@ namespace EntadFramework
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;
-                    else explanation += "\n" + "EF_Explain_TraitValue".Translate(def.LabelCap, m.Rarity.Label(), m.MarketValueOffset(baseValue).ToStringMoneyOffset());
+                    else
+                    {
+                        float v = m.MarketValueOffset(baseValue);
+                        traitValue += v;
+                        explanation += "\n" + "EF_Explain_TraitValue".Translate(def.LabelCap, m.Rarity.Label(), v.ToStringMoneyOffset());
+                    }
                     continue;
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
@@ -110,12 +119,45 @@ namespace EntadFramework
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
+            // Same clamp as TransformValue, so the lines add up to the value shown
+            float lowest = -(1f - EntadSettings.ValueFloor) * baseValue;
+            if (parentStat == StatDefOf.MarketValue && traitValue < lowest)
+                explanation += "\n" + "EF_Explain_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent(), (lowest - traitValue).ToStringMoneyOffset());
             // The premium only exists in trade, so that's the only place it's explained
-            if (unidentified && TradeSession.Active)
+            if (unidentified && EntadTrade.Open)
                 explanation += "\n" + "EF_Explain_Unidentified".Translate((baseValue * EntadSettings.MysteryBonus).ToStringMoney());
             if (parentStat == StatDefOf.MaxHitPoints)
                 explanation += "\n" + "EF_Explain_Durability".Translate(comp.HighestRarity.Label(), comp.DurabilityFactor.ToStringPercent());
             return explanation.NullOrEmpty() ? null : explanation;
+        }
+    }
+
+    // Whether a trade window is open. TradeSession.Active alone isn't enough: vanilla never clears the session's
+    // trader after a trade, so it stays true for the rest of the game and wealth would be priced like a trade.
+    public static class EntadTrade
+    {
+        private static bool open;
+
+        public static bool Open => open && TradeSession.Active;
+
+        public static void Reset() => open = false;
+
+        // Dialog_Trade calls SetupWith from its constructor, before any price is read
+        [HarmonyPatch(typeof(TradeSession), nameof(TradeSession.SetupWith))]
+        public static class Patch_SetupWith
+        {
+            public static void Postfix() => open = true;
+        }
+
+        // Window.PostClose runs however a window is removed (Close, escape, WindowStack.TryRemove); Dialog_Trade
+        // doesn't override it, so a postfix on the base method sees it
+        [HarmonyPatch(typeof(Window), nameof(Window.PostClose))]
+        public static class Patch_PostClose
+        {
+            public static void Postfix(Window __instance)
+            {
+                if (open && __instance is Dialog_Trade) open = false;
+            }
         }
     }
 
