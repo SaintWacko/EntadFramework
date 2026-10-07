@@ -85,15 +85,24 @@ namespace EntadFramework
             BasePowerConsumptionField?.GetValue(pp) is float f ? f : 0f;
 
         // LWM's Deep Storage sets capacity in its own comp, which a vanilla capacity patch doesn't reach
-        private static bool HasDeepStorageComp(ThingDef td) =>
-            td.comps != null && td.comps.Any(c => c.compClass != null && c.compClass.FullName == "LWM.DeepStorage.CompDeepStorage");
+        private static bool HasDeepStorageComp(ThingDef td)
+        {
+            if (td.comps == null) return false;
+            foreach (var c in td.comps)
+                for (var t = c.compClass; t != null; t = t.BaseType)
+                    if (t.FullName == "LWM.DeepStorage.CompDeepStorage") return true;
+            return false;
+        }
 
         public bool AppliesTo(ThingDef td)
         {
             if (property == EntadBuildingProperty.StorageCapacity)
+                // Shelf-like storage only: a 1-stack building (hopper) isn't built to hold several, and vanilla skips
+                // moving extra stacks off it when it's removed
                 return td?.thingClass != null && typeof(Building_Storage).IsAssignableFrom(td.thingClass)
+                    && td.building != null && td.building.maxItemsInCell >= 2
                     && !typeof(Building_Bookcase).IsAssignableFrom(td.thingClass) && !HasDeepStorageComp(td)
-                    && (!EntadStorage_ASF.IsDef(td) || EntadStorage_ASF.Supported);
+                    && (!EntadStorage_ASF.IsDef(td) || (EntadStorage_ASF.Supported && !EntadStorage_ASF.HasCellTable(td)));
             if (td?.comps == null) return false;
             foreach (var c in td.comps)
             {

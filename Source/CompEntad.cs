@@ -547,7 +547,7 @@ namespace EntadFramework
             base.PostSpawnSetup(respawningAfterLoad);
             spawnedTick = Find.TickManager.TicksGame;
             if (!activeTraits.NullOrEmpty()) EntadFuel.Refresh(parent, this);
-            if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true);
+            if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true, fromSpawn: true);
         }
 
         public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)

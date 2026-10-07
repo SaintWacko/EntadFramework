@@ -27,17 +27,25 @@ namespace EntadFramework
 
         public static void Clear() { active.Clear(); asfBuildings.Clear(); }
 
-        // From CompEntad on spawn, despawn and trait changes
-        public static void Refresh(CompEntad comp, bool spawned)
+        private static readonly List<Building> stale = new List<Building>();
+
+        // From CompEntad on spawn, despawn and trait changes. fromSpawn: ASF buildings are recalculated after their own
+        // spawn has finished instead (Patch_ASF_OnSpawn), since ASF unpacks a reinstalled building's contents late
+        // in OnSpawn and rebuilding its stored list before that would lose them.
+        public static void Refresh(CompEntad comp, bool spawned, bool fromSpawn = false)
         {
             if (!(comp.parent is Building_Storage b)) return;
+            // A removed map despawns only its pawns, so its buildings never reach PostDeSpawn; drop them here
+            stale.Clear();
+            foreach (var k in active.Keys) if (!k.Spawned) stale.Add(k);
+            foreach (var k in stale) { active.Remove(k); asfBuildings.Remove(k); }
             bool scaled = spawned && Mathf.Abs(comp.PropertyFactor(EntadBuildingProperty.StorageCapacity) - 1f) > 0.001f;
             bool asf = EntadStorage_ASF.Is(b);
             if (scaled) active[b] = comp;
             else active.Remove(b);
             if (scaled && asf) asfBuildings.Add(b);
             else asfBuildings.Remove(b);
-            if (asf && spawned) EntadStorage_ASF.Recalculate(b);
+            if (asf && spawned && !fromSpawn) EntadStorage_ASF.Recalculate(b);
         }
 
         public static int Scaled(int baseCount, float factor) =>
@@ -83,10 +91,24 @@ namespace EntadFramework
         // Every member we touch was found; if ASF renames one, its buildings are simply left out (AppliesTo)
         public static readonly bool Supported = ThingClass != null && initMaxItems != null && initStored != null && maxItemsByCell != null
             && currentSlotLimit != null && totalSlots?.GetSetMethod(true) != null && currentSlotLimitProp?.GetSetMethod(true) != null
-            && AccessTools.Method(ThingClass, "DefaultMaxItemsInCell") != null;
+            && AccessTools.Method(ThingClass, "DefaultMaxItemsInCell") != null && AccessTools.Method(ThingClass, "OnSpawn") != null;
 
         public static bool Is(Thing t) => ThingClass != null && ThingClass.IsInstanceOfType(t);
         public static bool IsDef(ThingDef td) => ThingClass != null && td.thingClass != null && ThingClass.IsAssignableFrom(td.thingClass);
+
+        // A def with ASF's per-cell capacity table only uses DefaultMaxItemsInCell for cells the table leaves out,
+        // so the factor would barely apply; the trait stays off those
+        public static bool HasCellTable(ThingDef td)
+        {
+            if (td.modExtensions == null) return false;
+            foreach (var ext in td.modExtensions)
+            {
+                if (ext?.GetType().FullName != "AdaptiveStorage.Extension") continue;
+                var f = AccessTools.Field(ext.GetType(), "maxItemsByCell");
+                return f == null || f.GetValue(ext) != null;
+            }
+            return false;
+        }
 
         private static bool warned;
 
@@ -111,6 +133,22 @@ namespace EntadFramework
                 if (!warned) Log.Warning($"[Entad Framework] Couldn't apply an entad storage trait to an Adaptive Storage building ({b}); it keeps its normal capacity: {e}");
                 warned = true;
             }
+        }
+    }
+
+    // After ASF's own spawn (unpacking included), so the capacity table is rebuilt with the item's traits
+    [HarmonyPatch]
+    public static class Patch_ASF_OnSpawn
+    {
+        public static bool Prepare() => EntadStorage_ASF.Supported;
+
+        public static MethodBase TargetMethod() => AccessTools.Method(EntadStorage_ASF.ThingClass, "OnSpawn");
+
+        public static void Postfix(Building __instance)
+        {
+            var comp = __instance.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.Count == 0) return;
+            EntadStorage_ASF.Recalculate(__instance);
         }
     }
 
