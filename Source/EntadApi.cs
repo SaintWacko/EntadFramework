@@ -159,7 +159,7 @@ namespace EntadFramework
         // Picks traits until the item's points reach the target (a minimum: the last pick may go over). Each pick is a
         // (trait, rarity) pair chosen with the usual rarity and weapon-specific odds, then reweighted:
         //  - a pair costing more than what's left keeps (left / cost)^strictness of its weight, so a cheap item can
-        //    still roll a big trait, just rarely (strictness 0 is a pure minimum, higher approaches a maximum);
+        //    still roll a big trait, just rarely (strictness 0 ignores overshoot, higher keeps it small);
         //  - a pair much cheaper than the target per remaining trait slot is made less likely, so a big target buys
         //    rarer traits instead of running into the trait cap on Commons;
         //  - a pair that would leave the target out of reach of the remaining slots is skipped (reachability), and
@@ -207,12 +207,19 @@ namespace EntadFramework
                 {
                     // ...and a real trait the picker could still return beside it, or it would never be paid back
                     var pickable = candidates.Where(p => !p.IsDrawback && CanRoll(p, chances, allowed, weight)).ToList();
-                    var payable = new HashSet<EntadTraitDef>(candidates.Where(d => d.IsDrawback
-                        && pickable.Any(p => !p.ConflictsWith(d) && !d.ConflictsWith(p))));
+                    // Per drawback, the most a real trait that can share the item with it could add, so the
+                    // reachability check below isn't counting a trait the drawback rules out
+                    var payable = new Dictionary<EntadTraitDef, float>();
+                    foreach (var d in candidates)
+                    {
+                        if (!d.IsDrawback) continue;
+                        var partners = pickable.Where(p => !p.ConflictsWith(d) && !d.ConflictsWith(p)).ToList();
+                        if (partners.Count > 0) payable[d] = MaxRollablePoints(partners, chances, allowed, weight);
+                    }
                     if (payable.Count > 0)
                         pick = chances.PickWhere(candidates, weight, allowed,
-                            (d, r) => payable.Contains(d) && left - d.PointsAt(r) > Epsilon
-                                && left - d.PointsAt(r) <= (slotsLeft - 1) * best + Epsilon, null, out rolled);
+                            (d, r) => payable.TryGetValue(d, out float bestWith) && left - d.PointsAt(r) > Epsilon
+                                && left - d.PointsAt(r) <= (slotsLeft - 1) * bestWith + Epsilon, null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
                 if (pick == null && remaining <= Epsilon) break;
@@ -220,14 +227,12 @@ namespace EntadFramework
                 {
                     // Reachability: a pick has to leave the target within reach of the slots after it, at the most a
                     // single trait can still be worth here. Never binds on small targets; on big ones it steers the
-                    // last slots toward big traits so the trait cap doesn't stop the item well short. The last slot
-                    // is left to the overshoot falloff (so a high strictness can still finish under the target)
-                    // unless nothing can reach the target, when it goes straight to the costliest trait.
+                    // last slots toward big traits so the trait cap doesn't stop the item well short. On the last
+                    // slot reach is 0, so it has to meet the target (the target is a minimum) and the overshoot
+                    // falloff only chooses by how far over; when nothing can meet it, the costliest trait is taken.
                     float reach = (slotsLeft - 1) * best;
-                    bool lastSlot = slotsLeft == 1;
-                    if (!(lastSlot && left > best + Epsilon))
-                        pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => !d.IsDrawback && (lastSlot || left - d.PointsAt(r) <= reach + Epsilon),
+                    pick = chances.PickWhere(candidates, weight, allowed,
+                        (d, r) => !d.IsDrawback && left - d.PointsAt(r) <= reach + Epsilon,
                         (d, r) =>
                         {
                             float c = d.PointsAt(r);

@@ -107,7 +107,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_PsychicWard</defName>
     <label>Psychic Ward</label>
-    <description>Dulls the psychic senses of whoever wears or wields it, shielding them from psychic drones.</description>
+    <description>Dulls the psychic senses of whoever wears or wields it, softening the effect of psychic drones.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
