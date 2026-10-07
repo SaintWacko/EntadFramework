@@ -267,8 +267,19 @@ namespace EntadFramework
             return n == 0 ? 0.5f : sum / n;
         }
 
-        // Market value added by this trait: scales with rarity and where the roll landed
-        public float MarketValueOffset() => EntadTraitDef.BaseMarketValueAt(Rarity) * (0.5f + RollQuality());
+        // Market value added by this trait, from the item's value before any entad part (baseValue). By default each
+        // point adds a share of that value plus flat silver (settings), so the same trait is worth more on a charge
+        // rifle than on a bow. A def's own marketValuePercent/marketValueOffset replace the point price. Where the
+        // roll landed moves it +/-25%; drawbacks skip that, since "high in its range" isn't consistently better or
+        // worse for them.
+        public float MarketValueOffset(float baseValue)
+        {
+            float value = def.HasMarketValueOverride
+                ? (baseValue * (float.IsNaN(def.marketValuePercent) ? 0f : def.marketValuePercent)
+                    + (float.IsNaN(def.marketValueOffset) ? 0f : def.marketValueOffset)) * def.ValueScaleAt(Rarity)
+                : def.PointsAt(Rarity) * (baseValue * EntadSettings.ValuePercentPerPoint + EntadSettings.ValueSilverPerPoint);
+            return def.IsDrawback ? value : value * (0.75f + 0.5f * RollQuality());
+        }
     }
 
     public partial class CompEntad : ThingComp, IRenameable
@@ -552,6 +563,18 @@ namespace EntadFramework
             if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true, fromSpawn: true);
         }
 
+        // Set while BaseMarketValue reads the stat, so StatPart_Entad leaves this item's market value untouched
+        [System.ThreadStatic] internal static Thing baseValueFor;
+
+        // The item's market value without any entad part: material, quality and everything else vanilla counts
+        public float BaseMarketValue()
+        {
+            var prev = baseValueFor;
+            baseValueFor = parent;
+            try { return parent.GetStatValue(StatDefOf.MarketValue); }
+            finally { baseValueFor = prev; }
+        }
+
         public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
         {
             base.PostDeSpawn(map, mode);
@@ -675,6 +698,7 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) yield break;
 
             string unknown = "EF_Unknown".Translate();
+            float baseValue = BaseMarketValue();
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("EF_Card_Intro".Translate());
             foreach (var m in activeTraits)
@@ -747,10 +771,10 @@ namespace EntadFramework
                         sb.AppendLine(" - " + "EF_Card_MealThought".Translate(m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName));
                 }
                 if (m.AnyHidden) sb.AppendLine(" - " + unknown);
-                if (!m.AnyHidden) sb.AppendLine(" - " + "EF_Card_MarketValue".Translate(m.MarketValueOffset().ToStringMoney()));
+                if (!m.AnyHidden) sb.AppendLine(" - " + "EF_Card_MarketValue".Translate(m.MarketValueOffset(baseValue).ToStringMoneyOffset()));
             }
             if (activeTraits.Any(m => m.AnyHidden))
-                sb.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney()));
+                sb.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
 
             foreach (var e in DamageDisplayStats()) yield return e;
 

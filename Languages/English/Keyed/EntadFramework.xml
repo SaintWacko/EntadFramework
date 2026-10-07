@@ -90,8 +90,8 @@
   <EF_Card_MealNutrition>Meal nutrition x{0}</EF_Card_MealNutrition>
   <EF_Card_MealQuality>Meal quality {0}</EF_Card_MealQuality>
   <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
-  <EF_Card_MarketValue>Market value +{0}</EF_Card_MarketValue>
-  <EF_Card_Unidentified>Unidentified properties: market value +{0}</EF_Card_Unidentified>
+  <EF_Card_MarketValue>Market value {0}</EF_Card_MarketValue>
+  <EF_Card_Unidentified>Unidentified properties: traders pay {0} more for the mystery.</EF_Card_Unidentified>
 
   <!-- Weapon section of the info card. {0} = trait, {1} = damage type. -->
   <EF_Stat_DamageType>Entad damage type</EF_Stat_DamageType>
@@ -108,8 +108,8 @@
   <EF_Stat_ExtraTotalDesc>Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.</EF_Stat_ExtraTotalDesc>
 
   <!-- Stat explanations (the breakdown when hovering a stat) -->
-  <EF_Explain_TraitValue>{0} ({1}): +{2}</EF_Explain_TraitValue>
-  <EF_Explain_Unidentified>Unidentified entad properties: +{0}</EF_Explain_Unidentified>
+  <EF_Explain_TraitValue>{0} ({1}): {2}</EF_Explain_TraitValue>
+  <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
   <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
 
   <!-- Abilities. {0} = ability, {1} = building. -->
@@ -153,6 +153,13 @@
   <EF_Settings_DrawbackChance>Chance an item can have drawbacks: {0}</EF_Settings_DrawbackChance>
   <EF_Settings_MaxDrawbacks>Most drawbacks per item: {0}</EF_Settings_MaxDrawbacks>
   <EF_Settings_Drawbacks_Desc>Drawbacks are traits with a cost below zero. Each one adds its points back to the target, so the item gets more or better traits to make up for it.</EF_Settings_Drawbacks_Desc>
+  <EF_Settings_MarketValue>Market value</EF_Settings_MarketValue>
+  <EF_Settings_ValuePercent>Value per trait point: {0} of the item's base value</EF_Settings_ValuePercent>
+  <EF_Settings_ValueSilver>Plus per trait point: {0}</EF_Settings_ValueSilver>
+  <EF_Settings_Value_Desc>Each trait adds both amounts for every point it costs, more for a good roll and less for a poor one. The base value is the item's normal value, material and quality included. Drawbacks subtract value. Colony wealth, which sets raid size, counts every trait, including unidentified ones.</EF_Settings_Value_Desc>
+  <EF_Settings_ValueFloor>Lowest value with drawbacks: {0} of base value</EF_Settings_ValueFloor>
+  <EF_Settings_MysteryBonus>Mystery premium: {0} of base value</EF_Settings_MysteryBonus>
+  <EF_Settings_MysteryBonus_Desc>Traders only pay for identified traits. An item with anything unidentified gets this premium instead, however many traits are hidden.</EF_Settings_MysteryBonus_Desc>
 
   <EF_Settings_Search>Search:</EF_Settings_Search>
   <EF_Settings_EnableShown>Enable shown</EF_Settings_EnableShown>

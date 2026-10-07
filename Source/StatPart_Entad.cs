@@ -14,6 +14,9 @@ namespace EntadFramework
             if (!req.HasThing || !EntadCompInjector.MayHaveComp(req.Thing.def)) return;
             var comp = req.Thing.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty()) return;
+            bool isValue = parentStat == StatDefOf.MarketValue;
+            // CompEntad.BaseMarketValue: the value before any entad part, which trait prices are a share of
+            if (isValue && CompEntad.baseValueFor == req.Thing) return;
 
             bool offsetsViaWearer = OffsetsViaWearer(req);
             // Set only while the pawn's "Relevant gear" line is being built (Patch_InfoTextLineFromGear), so the
@@ -33,24 +36,36 @@ namespace EntadFramework
 
             // A bound item held by someone outside the bloodline: its trait stats don't apply. Market value and
             // durability are the item's own and stay. An item nobody holds counts as active (ActiveFor(null)).
-            bool userActive = parentStat == StatDefOf.MarketValue || parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            bool userActive = isValue || parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            // Market value by context. Wealth (and so raid size) counts every trait: the storyteller isn't fooled by a
+            // trait nobody has found yet. Traders price only what's identified, plus one mystery premium if anything
+            // isn't. The item's own card shows identified traits only. Trade prices are read while a TradeSession is
+            // open (the deal is built after the session starts), and nothing caches market value between reads.
+            bool trade = isValue && TradeSession.Active;
+            bool valueSkipsHidden = trade || EntadWearerStats.infoCardThing == req.Thing;
+            float baseValue = val, traitValue = 0f;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
                 // Stat effects apply whether or not they've been revealed; only displays leave them out (skipHidden).
-                // The MarketValueOffset/unidentified term below is not gated: unrevealed traits already show as the
-                // flat "unidentified" bonus. (A trait's own statOffsets on MarketValue, if any, are gated like others.)
+                // (A trait's own statOffsets on MarketValue, if any, are gated like other stats.)
                 bool apply = userActive && (!skipHidden || m.IsRevealed(EntadEffectKind.Stat));
                 for (int i = 0; apply && !offsetsViaWearer && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
                 for (int i = 0; apply && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
-                // Identified traits add their normal value; unidentified ones share one fixed bonus (below)
-                if (parentStat == StatDefOf.MarketValue && !m.AnyHidden) val += m.MarketValueOffset();
-                else if (parentStat == StatDefOf.MarketValue) unidentified = true;
+                if (!isValue) continue;
+                if (m.AnyHidden) unidentified = true;
+                if (!m.AnyHidden || !valueSkipsHidden) traitValue += m.MarketValueOffset(baseValue);
             }
-            if (unidentified) val += EntadTraitDef.UnidentifiedMarketValue;
+            if (isValue)
+            {
+                // Drawbacks can't take the item below the settings' share of its base value
+                traitValue = UnityEngine.Mathf.Max(traitValue, -(1f - EntadSettings.ValueFloor) * baseValue);
+                if (trade && unidentified) traitValue += baseValue * EntadSettings.MysteryBonus;
+                val += traitValue;
+            }
             // Durability: every entad, by its highest trait rarity. Visible from the start, so never hidden.
             if (parentStat == StatDefOf.MaxHitPoints) val *= comp.DurabilityFactor;
         }
@@ -76,6 +91,7 @@ namespace EntadFramework
 
             string explanation = "";
             bool unidentified = false;
+            float baseValue = parentStat == StatDefOf.MarketValue ? comp.BaseMarketValue() : 0f;
             bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
             foreach (var m in comp.activeTraits)
             {
@@ -84,7 +100,7 @@ namespace EntadFramework
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;
-                    else explanation += "\n" + "EF_Explain_TraitValue".Translate(def.LabelCap, m.Rarity.Label(), m.MarketValueOffset().ToStringMoney());
+                    else explanation += "\n" + "EF_Explain_TraitValue".Translate(def.LabelCap, m.Rarity.Label(), m.MarketValueOffset(baseValue).ToStringMoneyOffset());
                     continue;
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
@@ -94,7 +110,9 @@ namespace EntadFramework
                     if (def.statFactors[i].stat == parentStat)
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
             }
-            if (unidentified) explanation += "\n" + "EF_Explain_Unidentified".Translate(EntadTraitDef.UnidentifiedMarketValue.ToStringMoney());
+            // The premium only exists in trade, so that's the only place it's explained
+            if (unidentified && TradeSession.Active)
+                explanation += "\n" + "EF_Explain_Unidentified".Translate((baseValue * EntadSettings.MysteryBonus).ToStringMoney());
             if (parentStat == StatDefOf.MaxHitPoints)
                 explanation += "\n" + "EF_Explain_Durability".Translate(comp.HighestRarity.Label(), comp.DurabilityFactor.ToStringPercent());
             return explanation.NullOrEmpty() ? null : explanation;

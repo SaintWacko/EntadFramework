@@ -74,6 +74,18 @@ namespace EntadFramework
         public const float DefaultOvershootStrictness = 1f;
         public static float OvershootStrictness = DefaultOvershootStrictness;
 
+        // Market value (CompEntad.MarketValueOffset): per generation point, a share of the item's base value plus
+        // flat silver; drawbacks can't take an item below ValueFloor of its base; traders add MysteryBonus of the
+        // base value for an item with anything unidentified.
+        public const float DefaultValuePercentPerPoint = 0.1f;
+        public static float ValuePercentPerPoint = DefaultValuePercentPerPoint;
+        public const float DefaultValueSilverPerPoint = 50f;
+        public static float ValueSilverPerPoint = DefaultValueSilverPerPoint;
+        public const float DefaultValueFloor = 0.1f;
+        public static float ValueFloor = DefaultValueFloor;
+        public const float DefaultMysteryBonus = 0.25f;
+        public static float MysteryBonus = DefaultMysteryBonus;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -100,6 +112,10 @@ namespace EntadFramework
             MaxDrawbacks = DefaultMaxDrawbacks;
             MaxTraits = DefaultMaxTraits;
             OvershootStrictness = DefaultOvershootStrictness;
+            ValuePercentPerPoint = DefaultValuePercentPerPoint;
+            ValueSilverPerPoint = DefaultValueSilverPerPoint;
+            ValueFloor = DefaultValueFloor;
+            MysteryBonus = DefaultMysteryBonus;
             ResetRarityWeights();
         }
 
@@ -131,6 +147,14 @@ namespace EntadFramework
             MaxTraits = Mathf.Clamp(MaxTraits, 1, 10);
             Scribe_Values.Look(ref OvershootStrictness, "overshootStrictness", DefaultOvershootStrictness);
             OvershootStrictness = Mathf.Clamp(OvershootStrictness, 0f, 4f);
+            Scribe_Values.Look(ref ValuePercentPerPoint, "valuePercentPerPoint", DefaultValuePercentPerPoint);
+            ValuePercentPerPoint = Mathf.Clamp(ValuePercentPerPoint, 0f, 1f);
+            Scribe_Values.Look(ref ValueSilverPerPoint, "valueSilverPerPoint", DefaultValueSilverPerPoint);
+            ValueSilverPerPoint = Mathf.Clamp(ValueSilverPerPoint, 0f, 1000f);
+            Scribe_Values.Look(ref ValueFloor, "valueFloor", DefaultValueFloor);
+            ValueFloor = Mathf.Clamp01(ValueFloor);
+            Scribe_Values.Look(ref MysteryBonus, "mysteryBonus", DefaultMysteryBonus);
+            MysteryBonus = Mathf.Clamp(MysteryBonus, 0f, 2f);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -343,6 +367,21 @@ namespace EntadFramework
             list.Label("EF_Settings_MaxDrawbacks".Translate(EntadSettings.MaxDrawbacks));
             EntadSettings.MaxDrawbacks = Mathf.RoundToInt(list.Slider(EntadSettings.MaxDrawbacks, 0f, 5f));
             list.Label("EF_Settings_Drawbacks_Desc".Translate());
+            list.Gap();
+
+            Section(list, "EF_Settings_MarketValue");
+            list.Label("EF_Settings_ValuePercent".Translate(EntadSettings.ValuePercentPerPoint.ToStringPercent()));
+            EntadSettings.ValuePercentPerPoint = Mathf.Round(list.Slider(EntadSettings.ValuePercentPerPoint, 0f, 0.5f) * 100f) / 100f;
+            list.Label("EF_Settings_ValueSilver".Translate(EntadSettings.ValueSilverPerPoint.ToStringMoney()));
+            EntadSettings.ValueSilverPerPoint = Mathf.Round(list.Slider(EntadSettings.ValueSilverPerPoint, 0f, 500f) / 5f) * 5f;
+            list.Label("EF_Settings_Value_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent()));
+            EntadSettings.ValueFloor = Mathf.Round(list.Slider(EntadSettings.ValueFloor, 0f, 1f) * 20f) / 20f;
+            list.Gap();
+            list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
+            EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_MysteryBonus_Desc".Translate());
         }
 
         private static void DoRarity(Listing_Standard list)

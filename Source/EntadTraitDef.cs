@@ -255,6 +255,21 @@ namespace EntadFramework
 
         public bool IsDrawback => BasePoints < 0f;
 
+        // Optional fixed price, replacing the point-based one (CompEntad.MarketValueOffset): a share of the item's
+        // base value and/or flat silver, at this def's own rarity. For a trait that's cheap to roll but valuable to
+        // own, or the reverse. Setting either one replaces the whole point price.
+        public float marketValuePercent = float.NaN;
+        public float marketValueOffset = float.NaN;
+
+        public bool HasMarketValueOverride => !float.IsNaN(marketValuePercent) || !float.IsNaN(marketValueOffset);
+
+        // A scaling trait's fixed price follows its points when it rolls above its own rarity
+        public float ValueScaleAt(EntadRarity at)
+        {
+            float own = BasePoints;
+            return scalesWithRarity && UnityEngine.Mathf.Abs(own) > 0.0001f ? PointsAt(at) / own : 1f;
+        }
+
         // Cost when rolled at a rarity: scaling traits follow the settings' point table relative to their own rarity
         public float PointsAt(EntadRarity at)
         {
@@ -538,25 +553,6 @@ namespace EntadFramework
                     if (a.stat == b.stat) return true;
             }
             return false;
-        }
-
-        // Flat value added once to an item with any unidentified trait, instead of those traits' own value
-        // (between a common and an uncommon trait)
-        public const float UnidentifiedMarketValue = 60f;
-
-        // Base market value contributed by a trait of this rarity
-        public static float BaseMarketValueAt(EntadRarity at)
-        {
-            {
-                switch (at)
-                {
-                    case EntadRarity.Uncommon: return 100f;
-                    case EntadRarity.Rare: return 300f;
-                    case EntadRarity.Epic: return 800f;
-                    case EntadRarity.Legendary: return 2000f;
-                    default: return 30f;
-                }
-            }
         }
 
         public static float MoodEffectOf(ThoughtDef t) => t.stages[0].baseMoodEffect;
