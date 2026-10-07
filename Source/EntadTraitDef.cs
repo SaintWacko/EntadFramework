@@ -54,7 +54,8 @@ namespace EntadFramework
         FuelCapacity,
         PowerGeneration,
         PowerConsumption,
-        TemperatureControlPower
+        TemperatureControlPower,
+        StorageCapacity        // item stacks per cell on storage buildings (EntadStorage.cs)
     }
 
     // A multiplier on a building property, rolled between min and max when applied to an item
@@ -83,8 +84,16 @@ namespace EntadFramework
         private static float BasePowerConsumption(CompProperties_Power pp) =>
             BasePowerConsumptionField?.GetValue(pp) is float f ? f : 0f;
 
+        // LWM's Deep Storage sets capacity in its own comp, which a vanilla capacity patch doesn't reach
+        private static bool HasDeepStorageComp(ThingDef td) =>
+            td.comps != null && td.comps.Any(c => c.compClass != null && c.compClass.FullName == "LWM.DeepStorage.CompDeepStorage");
+
         public bool AppliesTo(ThingDef td)
         {
+            if (property == EntadBuildingProperty.StorageCapacity)
+                return td?.thingClass != null && typeof(Building_Storage).IsAssignableFrom(td.thingClass)
+                    && !typeof(Building_Bookcase).IsAssignableFrom(td.thingClass) && !HasDeepStorageComp(td)
+                    && (!EntadStorage_ASF.IsDef(td) || EntadStorage_ASF.Supported);
             if (td?.comps == null) return false;
             foreach (var c in td.comps)
             {
@@ -115,6 +124,7 @@ namespace EntadFramework
                     case EntadBuildingProperty.FuelCapacity: return "EF_Prop_FuelCapacity".Translate();
                     case EntadBuildingProperty.PowerConsumption: return "EF_Prop_PowerConsumption".Translate();
                     case EntadBuildingProperty.TemperatureControlPower: return "EF_Prop_TemperatureControlPower".Translate();
+                    case EntadBuildingProperty.StorageCapacity: return "EF_Prop_StorageCapacity".Translate();
                     default: return "EF_Prop_PowerGeneration".Translate();
                 }
             }

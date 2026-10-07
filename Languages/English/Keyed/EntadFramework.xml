@@ -17,6 +17,7 @@
   <EF_Prop_PowerConsumption>Power consumption</EF_Prop_PowerConsumption>
   <EF_Prop_TemperatureControlPower>Heating/cooling power</EF_Prop_TemperatureControlPower>
   <EF_Prop_PowerGeneration>Power generation</EF_Prop_PowerGeneration>
+  <EF_Prop_StorageCapacity>Stacks per cell</EF_Prop_StorageCapacity>
 
   <!-- Item: inspect pane, gizmo, messages. {0} = item, {1} = trait. -->
   <EF_Unknown>???</EF_Unknown>

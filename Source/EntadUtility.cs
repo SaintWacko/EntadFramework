@@ -50,8 +50,10 @@ namespace EntadFramework
         {
             if (def.building == null || def.designationCategory == null) return false;
             if (IsSingleUse(def)) return false;
-            // Quality is not required: workbenches, lights, heaters etc. count too
-            return FurnitureCategories.Contains(def.designationCategory.defName);
+            // Quality is not required: workbenches, lights, heaters etc. count too. Storage counts whatever its build
+            // menu tab (storage mods often add their own, such as Adaptive Storage's).
+            return FurnitureCategories.Contains(def.designationCategory.defName)
+                || (def.thingClass != null && typeof(Building_Storage).IsAssignableFrom(def.thingClass));
         }
 
         // Traps and explosive buildings (mines, firefoam poppers, ...) are used up when they trigger, so they never

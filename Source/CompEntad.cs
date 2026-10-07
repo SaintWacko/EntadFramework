@@ -482,6 +482,7 @@ namespace EntadFramework
             // Trait changes are rare (generation, dev tools), so clearing every affected stat here is cheap and keeps
             // the game's stat caches for the item and its holder from serving a pre-change value.
             ClearStatCaches();
+            EntadStorage.Refresh(this, parent.Spawned);
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);
@@ -546,6 +547,13 @@ namespace EntadFramework
             base.PostSpawnSetup(respawningAfterLoad);
             spawnedTick = Find.TickManager.TicksGame;
             if (!activeTraits.NullOrEmpty()) EntadFuel.Refresh(parent, this);
+            if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true);
+        }
+
+        public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+        {
+            base.PostDeSpawn(map, mode);
+            EntadStorage.Refresh(this, false);
         }
 
         public void RemoveTrait(AppliedEntadTrait trait)

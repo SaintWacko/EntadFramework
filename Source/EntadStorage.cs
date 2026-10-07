@@ -1,0 +1,136 @@
+using System.Collections.Generic;
+using System.Reflection;
+using HarmonyLib;
+using RimWorld;
+using UnityEngine;
+using Verse;
+
+namespace EntadFramework
+{
+    // The StorageCapacity building property: more item stacks per cell on a storage building.
+    //
+    // Vanilla, and every storage mod that leaves capacity to vanilla, asks GridsUtility.GetMaxItemsAllowedInCell,
+    // which reads the cell's edifice's MaxItemsInCell. A postfix there covers all of them, including subclasses that
+    // override MaxItemsInCell. Adaptive Storage Framework is the exception: it keeps its own per-cell capacity table
+    // (which its hauling prefilter, valid-item tracking and UI all read), so for its buildings the factor goes into
+    // that table instead (EntadStorage_ASF) and the grid postfix leaves them alone, or they'd be scaled twice.
+    //
+    // LWM's Deep Storage decides capacity in its own comp and isn't supported: BuildingPropertyRange.AppliesTo keeps
+    // the trait off buildings carrying its comp, so it never rolls where it would do nothing.
+    public static class EntadStorage
+    {
+        // Spawned storage buildings whose factor isn't 1. The grid postfix runs for every capacity check in the game,
+        // so it starts with an empty-check and then a single dictionary lookup on the edifice. ASF buildings are in
+        // here too, only so a capacity check on them can reveal the trait; they're scaled through their own table.
+        private static readonly Dictionary<Building, CompEntad> active = new Dictionary<Building, CompEntad>();
+        private static readonly HashSet<Building> asfBuildings = new HashSet<Building>();
+
+        public static void Clear() { active.Clear(); asfBuildings.Clear(); }
+
+        // From CompEntad on spawn, despawn and trait changes
+        public static void Refresh(CompEntad comp, bool spawned)
+        {
+            if (!(comp.parent is Building_Storage b)) return;
+            bool scaled = spawned && Mathf.Abs(comp.PropertyFactor(EntadBuildingProperty.StorageCapacity) - 1f) > 0.001f;
+            bool asf = EntadStorage_ASF.Is(b);
+            if (scaled) active[b] = comp;
+            else active.Remove(b);
+            if (scaled && asf) asfBuildings.Add(b);
+            else asfBuildings.Remove(b);
+            if (asf && spawned) EntadStorage_ASF.Recalculate(b);
+        }
+
+        public static int Scaled(int baseCount, float factor) =>
+            factor <= 1f ? Mathf.Max(1, Mathf.RoundToInt(baseCount * factor)) : Mathf.Max(baseCount + 1, Mathf.RoundToInt(baseCount * factor));
+
+        internal static void Postfix_GetMaxItemsAllowedInCell(IntVec3 c, Map map, ref int __result)
+        {
+            if (active.Count == 0 || map == null) return;
+            var edifice = c.GetEdifice(map);
+            if (edifice == null || !active.TryGetValue(edifice, out var comp)) return;
+            comp.RevealProperty(EntadBuildingProperty.StorageCapacity);
+            if (!asfBuildings.Contains(edifice)) __result = Scaled(__result, comp.PropertyFactor(EntadBuildingProperty.StorageCapacity));
+        }
+    }
+
+    [HarmonyPatch(typeof(GridsUtility), nameof(GridsUtility.GetMaxItemsAllowedInCell))]
+    public static class Patch_GetMaxItemsAllowedInCell_EntadStorage
+    {
+        public static void Postfix(IntVec3 c, Map map, ref int __result) => EntadStorage.Postfix_GetMaxItemsAllowedInCell(c, map, ref __result);
+    }
+
+    // Clears the registry for each new or loaded game; spawning re-registers every building
+    public class EntadStorageReset : GameComponent
+    {
+        public EntadStorageReset(Game game) { EntadStorage.Clear(); }
+    }
+
+    // Adaptive Storage Framework (adaptive.storage.framework), reached by reflection so nothing here needs it loaded.
+    // Its ThingClass fills a per-cell capacity table from DefaultMaxItemsInCell() when it initialises (PostMake, and
+    // on load), and sums it into TotalSlots. We scale DefaultMaxItemsInCell, then rebuild the table on spawn and on
+    // trait changes the way its own PostInitialize does, since traits are usually added after PostMake already ran.
+    public static class EntadStorage_ASF
+    {
+        public static readonly System.Type ThingClass = AccessTools.TypeByName("AdaptiveStorage.ThingClass");
+
+        private static readonly MethodInfo initMaxItems = ThingClass == null ? null : AccessTools.Method(ThingClass, "InitializeMaxItemsByCell");
+        private static readonly MethodInfo initStored = ThingClass == null ? null : AccessTools.Method(ThingClass, "InitializeStoredThings");
+        private static readonly FieldInfo maxItemsByCell = ThingClass == null ? null : AccessTools.Field(ThingClass, "_maxItemsByCell");
+        private static readonly FieldInfo currentSlotLimit = ThingClass == null ? null : AccessTools.Field(ThingClass, "_currentSlotLimit");
+        private static readonly PropertyInfo totalSlots = ThingClass == null ? null : AccessTools.Property(ThingClass, "TotalSlots");
+        private static readonly PropertyInfo currentSlotLimitProp = ThingClass == null ? null : AccessTools.Property(ThingClass, "CurrentSlotLimit");
+
+        // Every member we touch was found; if ASF renames one, its buildings are simply left out (AppliesTo)
+        public static readonly bool Supported = ThingClass != null && initMaxItems != null && initStored != null && maxItemsByCell != null
+            && currentSlotLimit != null && totalSlots?.GetSetMethod(true) != null && currentSlotLimitProp?.GetSetMethod(true) != null
+            && AccessTools.Method(ThingClass, "DefaultMaxItemsInCell") != null;
+
+        public static bool Is(Thing t) => ThingClass != null && ThingClass.IsInstanceOfType(t);
+        public static bool IsDef(ThingDef td) => ThingClass != null && td.thingClass != null && ThingClass.IsAssignableFrom(td.thingClass);
+
+        private static bool warned;
+
+        public static void Recalculate(Building b)
+        {
+            if (!Supported) return;
+            try
+            {
+                initMaxItems.Invoke(b, null);
+                int sum = 0;
+                foreach (int n in (int[])maxItemsByCell.GetValue(b)) sum += n;
+                totalSlots.SetValue(b, sum);
+                // What PostInitialize does: nudge the stored limit so the setter reruns UpdateMaxItemsInCell with it
+                int limit = (int)currentSlotLimit.GetValue(b);
+                currentSlotLimit.SetValue(b, limit == int.MaxValue ? limit - 1 : limit + 1);
+                currentSlotLimitProp.SetValue(b, limit);
+                // Re-sort what's on the cells into stored and overflow against the new capacity
+                if (b.Spawned) initStored.Invoke(b, null);
+            }
+            catch (System.Exception e)
+            {
+                if (!warned) Log.Warning($"[Entad Framework] Couldn't apply an entad storage trait to an Adaptive Storage building ({b}); it keeps its normal capacity: {e}");
+                warned = true;
+            }
+        }
+    }
+
+    [HarmonyPatch]
+    public static class Patch_ASF_DefaultMaxItemsInCell
+    {
+        public static bool Prepare() => EntadStorage_ASF.Supported;
+
+        public static MethodBase TargetMethod() => AccessTools.Method(EntadStorage_ASF.ThingClass, "DefaultMaxItemsInCell");
+
+        public static void Postfix(Building __instance, ref int __result)
+        {
+            // While loading, the item's traits aren't settled yet (defs removed since the save are still null);
+            // the spawn that follows recalculates
+            if (Scribe.mode != LoadSaveMode.Inactive) return;
+            var comp = __instance.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.Count == 0) return;
+            float factor = comp.PropertyFactor(EntadBuildingProperty.StorageCapacity);
+            if (Mathf.Abs(factor - 1f) <= 0.001f) return;
+            __result = EntadStorage.Scaled(__result, factor);
+        }
+    }
+}
