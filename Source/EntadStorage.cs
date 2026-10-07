@@ -101,6 +101,7 @@ namespace EntadFramework
         // The info card's "stacks per cell" and "total storage capacity" rows, which ASF builds once from the values
         // at that time. Optional: without it capacity still works, the card just shows the unscaled numbers.
         private static readonly FieldInfo statDrawEntries = ThingClass == null ? null : AccessTools.Field(ThingClass, "_statDrawEntries");
+        private static readonly ConstructorInfo statDrawEntriesCtor = statDrawEntries == null ? null : AccessTools.Constructor(statDrawEntries.FieldType, new[] { ThingClass });
 
         // Every member we touch was found; if ASF renames one, its buildings are simply left out (AppliesTo)
         public static readonly bool Supported = ThingClass != null && initMaxItems != null && initStored != null && maxItemsByCell != null
@@ -141,7 +142,7 @@ namespace EntadFramework
                 currentSlotLimitProp.SetValue(b, limit);
                 // Re-sort what's on the cells into stored and overflow against the new capacity
                 if (b.Spawned) initStored.Invoke(b, null);
-                if (statDrawEntries != null) statDrawEntries.SetValue(b, System.Activator.CreateInstance(statDrawEntries.FieldType, b));
+                if (statDrawEntriesCtor != null) statDrawEntries.SetValue(b, statDrawEntriesCtor.Invoke(new object[] { b }));
             }
             catch (System.Exception e)
             {
