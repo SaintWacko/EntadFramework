@@ -39,7 +39,7 @@ namespace EntadFramework
             stale.Clear();
             foreach (var k in active.Keys) if (!k.Spawned) stale.Add(k);
             foreach (var k in stale) { active.Remove(k); asfBuildings.Remove(k); }
-            bool scaled = spawned && Mathf.Abs(comp.PropertyFactor(EntadBuildingProperty.StorageCapacity) - 1f) > 0.001f;
+            bool scaled = spawned && b.def.building?.maxItemsInCell >= 2 && IsScaled(comp);
             bool asf = EntadStorage_ASF.Is(b);
             if (scaled) active[b] = comp;
             else active.Remove(b);
@@ -47,6 +47,8 @@ namespace EntadFramework
             else asfBuildings.Remove(b);
             if (asf && spawned && !fromSpawn) EntadStorage_ASF.Recalculate(b);
         }
+
+        public static bool IsScaled(CompEntad comp) => Mathf.Abs(comp.PropertyFactor(EntadBuildingProperty.StorageCapacity) - 1f) > 0.001f;
 
         public static int Scaled(int baseCount, float factor) =>
             factor <= 1f ? Mathf.Max(1, Mathf.RoundToInt(baseCount * factor)) : Mathf.Max(baseCount + 1, Mathf.RoundToInt(baseCount * factor));
@@ -80,6 +82,7 @@ namespace EntadFramework
     public static class EntadStorage_ASF
     {
         public static readonly System.Type ThingClass = AccessTools.TypeByName("AdaptiveStorage.ThingClass");
+        private static readonly System.Type ExtensionType = AccessTools.TypeByName("AdaptiveStorage.Extension");
 
         private static readonly MethodInfo initMaxItems = ThingClass == null ? null : AccessTools.Method(ThingClass, "InitializeMaxItemsByCell");
         private static readonly MethodInfo initStored = ThingClass == null ? null : AccessTools.Method(ThingClass, "InitializeStoredThings");
@@ -100,10 +103,10 @@ namespace EntadFramework
         // so the factor would barely apply; the trait stays off those
         public static bool HasCellTable(ThingDef td)
         {
-            if (td.modExtensions == null) return false;
+            if (td.modExtensions == null || ExtensionType == null) return false;
             foreach (var ext in td.modExtensions)
             {
-                if (ext?.GetType().FullName != "AdaptiveStorage.Extension") continue;
+                if (ext == null || !ExtensionType.IsInstanceOfType(ext)) continue;
                 var f = AccessTools.Field(ext.GetType(), "maxItemsByCell");
                 return f == null || f.GetValue(ext) != null;
             }
@@ -147,7 +150,7 @@ namespace EntadFramework
         public static void Postfix(Building __instance)
         {
             var comp = __instance.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.Count == 0) return;
+            if (comp == null || comp.activeTraits.Count == 0 || !EntadStorage.IsScaled(comp)) return;
             EntadStorage_ASF.Recalculate(__instance);
         }
     }
