@@ -65,7 +65,8 @@ namespace EntadFramework
     {
         public static void Postfix(Building_Storage __instance)
         {
-            if (!EntadCompInjector.MayHaveComp(__instance.def)) return;
+            // Only the player's own storage, like vanilla's body of this method: not an item dropped on an enemy shelf
+            if (__instance.Faction != Faction.OfPlayer || !EntadCompInjector.MayHaveComp(__instance.def)) return;
             __instance.TryGetComp<CompEntad>()?.RevealProperty(EntadBuildingProperty.StorageCapacity, 1);
         }
     }
@@ -157,7 +158,9 @@ namespace EntadFramework
         public static void Postfix(Building __instance)
         {
             var comp = __instance.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.Count == 0 || !EntadStorage.IsScaled(comp)) return;
+            // Any traits, not only scaled ones: a trait change while minified may have returned the factor to 1, and
+            // ASF keeps the table it built back then
+            if (comp == null || comp.activeTraits.Count == 0) return;
             EntadStorage_ASF.Recalculate(__instance);
         }
     }
