@@ -104,6 +104,15 @@ namespace EntadFramework
             return result;
         }
 
+        // Player-buildable furniture that costs nothing (meditation, sleeping and party spots, marriage and caravan
+        // spots): a marked patch of floor, not an item, so random generation never picks it. It can still become an
+        // entad by name or through the API on a placed one, and already-saved ones keep their traits.
+        public static bool IsFreeFurniture(ThingDef def)
+        {
+            return def != null && def.BuildableByPlayer && def.costList.NullOrEmpty() && def.costStuffCount <= 0
+                && (KindOf(def) & EntadItemKind.Furniture) != EntadItemKind.None;
+        }
+
         public static bool IsEntadCompatible(ThingDef def)
         {
             return KindOf(def) != EntadItemKind.None;

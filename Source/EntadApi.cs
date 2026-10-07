@@ -282,6 +282,8 @@ namespace EntadFramework
                 EntadUtility.IsEntadCompatible(d)
                 && (EntadUtility.KindOf(d) & request.kinds) != EntadItemKind.None
                 && (request.thingWhitelist.Count == 0 || request.thingWhitelist.Contains(d))
+                // Free spots only when a caller whitelists them by name
+                && (!EntadUtility.IsFreeFurniture(d) || request.thingWhitelist.Contains(d))
                 && !request.thingBlacklist.Contains(d)
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
