@@ -26,8 +26,11 @@ namespace EntadFramework
     public enum EntadKillVictims
     {
         Any,
-        Hostile,     // hostile to the killer as it died: raiders, mechanoids, insects, manhunters, berserkers.
-                     // Not a hunted animal, a slaughtered one or an executed prisoner.
+        Hostile,     // hostile to the killer as it died (GenHostility.HostileTo): raiders, mechanoids, insects, and a
+                     // manhunter or berserker killed outright. Not a hunted animal, a slaughtered one or an executed
+                     // prisoner. Edge cases from vanilla's rules: downing ends most mental states, so a manhunter
+                     // downed and then finished off is a plain wild animal again; and a berserk killer is hostile to
+                     // everyone, so its colony mates count.
         Humanlike    // people, whatever their side
     }
 

@@ -622,6 +622,9 @@ namespace EntadFramework
             if (HasMood && thoughtHours.min > thoughtHours.max) yield return $"{defName}: thoughtHours min is greater than max";
             if (weaponProperties != null && weaponProperties.Any(w => w.min > w.max)) yield return $"{defName}: invalid weaponProperties range";
             // (killThought is checked as the Kill trigger it becomes)
+            if (killVictims != EntadKillVictims.Any && (killThought == null || (triggers != null && triggers.Any(t =>
+                    t.on == EntadTriggerEvent.Kill && t.thought == killThought && t.victims != killVictims))))
+                yield return $"{defName}: killVictims only applies to killThought; set 'victims' on a written-out Kill trigger instead";
             if (triggers != null)
                 foreach (var t in triggers)
                     foreach (var e in t.ConfigErrors(defName)) yield return e;
