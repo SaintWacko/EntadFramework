@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
+  <!-- Marks a trade caravan member who identifies entads for silver (EntadAppraisal.cs) -->
+  <HediffDef>
+    <defName>Entad_Appraiser</defName>
+    <label>entad appraiser</label>
+    <description>This person can identify entads. For a fee, they reveal every hidden trait of an item, but they can only examine a few items each day.</description>
+    <hediffClass>EntadFramework.Hediff_EntadAppraiser</hediffClass>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <defaultLabelColor>(0.85, 0.75, 1)</defaultLabelColor>
+  </HediffDef>
+
   <!-- Given while an entad with the Clarity trait is worn or wielded (equippedHediffs) -->
   <HediffDef>
     <defName>Entad_Hediff_Clarity</defName>

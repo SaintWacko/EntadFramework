@@ -86,6 +86,22 @@ namespace EntadFramework
         public const float DefaultMysteryBonus = 0.25f;
         public static float MysteryBonus = DefaultMysteryBonus;
 
+        // Appraisers (EntadAppraisal.cs): chance a trade caravan brings one / a settlement has one, price per item
+        // (a share of player wealth, never below the minimum), each appraiser's daily maximum (rolled once) and the
+        // lowest number they can do on a day.
+        public const float DefaultCaravanAppraiserChance = 0.25f;
+        public static float CaravanAppraiserChance = DefaultCaravanAppraiserChance;
+        public const float DefaultSettlementAppraiserChance = 0.25f;
+        public static float SettlementAppraiserChance = DefaultSettlementAppraiserChance;
+        public const int DefaultIdentifyMinPrice = 100;
+        public static int IdentifyMinPrice = DefaultIdentifyMinPrice;
+        public const float DefaultIdentifyWealthFraction = 0.001f;
+        public static float IdentifyWealthFraction = DefaultIdentifyWealthFraction;
+        public static readonly IntRange DefaultAppraiserMax = new IntRange(3, 6);
+        public static IntRange AppraiserMax = DefaultAppraiserMax;
+        public const int DefaultAppraiserDailyMin = 1;
+        public static int AppraiserDailyMin = DefaultAppraiserDailyMin;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -116,6 +132,12 @@ namespace EntadFramework
             ValueSilverPerPoint = DefaultValueSilverPerPoint;
             ValueFloor = DefaultValueFloor;
             MysteryBonus = DefaultMysteryBonus;
+            CaravanAppraiserChance = DefaultCaravanAppraiserChance;
+            SettlementAppraiserChance = DefaultSettlementAppraiserChance;
+            IdentifyMinPrice = DefaultIdentifyMinPrice;
+            IdentifyWealthFraction = DefaultIdentifyWealthFraction;
+            AppraiserMax = DefaultAppraiserMax;
+            AppraiserDailyMin = DefaultAppraiserDailyMin;
             ResetRarityWeights();
         }
 
@@ -155,6 +177,18 @@ namespace EntadFramework
             ValueFloor = Mathf.Clamp01(ValueFloor);
             Scribe_Values.Look(ref MysteryBonus, "mysteryBonus", DefaultMysteryBonus);
             MysteryBonus = Mathf.Clamp01(MysteryBonus);
+            Scribe_Values.Look(ref CaravanAppraiserChance, "caravanAppraiserChance", DefaultCaravanAppraiserChance);
+            CaravanAppraiserChance = Mathf.Clamp01(CaravanAppraiserChance);
+            Scribe_Values.Look(ref SettlementAppraiserChance, "settlementAppraiserChance", DefaultSettlementAppraiserChance);
+            SettlementAppraiserChance = Mathf.Clamp01(SettlementAppraiserChance);
+            Scribe_Values.Look(ref IdentifyMinPrice, "identifyMinPrice", DefaultIdentifyMinPrice);
+            IdentifyMinPrice = Mathf.Clamp(IdentifyMinPrice, 0, 2000);
+            Scribe_Values.Look(ref IdentifyWealthFraction, "identifyWealthFraction", DefaultIdentifyWealthFraction);
+            IdentifyWealthFraction = Mathf.Clamp(IdentifyWealthFraction, 0f, 0.01f);
+            Scribe_Values.Look(ref AppraiserMax, "appraiserMax", DefaultAppraiserMax);
+            AppraiserMax = new IntRange(Mathf.Clamp(AppraiserMax.min, 1, 20), Mathf.Clamp(AppraiserMax.max, Mathf.Clamp(AppraiserMax.min, 1, 20), 20));
+            Scribe_Values.Look(ref AppraiserDailyMin, "appraiserDailyMin", DefaultAppraiserDailyMin);
+            AppraiserDailyMin = Mathf.Clamp(AppraiserDailyMin, 1, 20);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -382,6 +416,26 @@ namespace EntadFramework
             list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
             EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_MysteryBonus_Desc".Translate());
+            list.Gap();
+
+            Section(list, "EF_Settings_Appraisers");
+            list.Label("EF_Settings_CaravanAppraiser".Translate(EntadSettings.CaravanAppraiserChance.ToStringPercent()));
+            EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
+            EntadSettings.SettlementAppraiserChance = Mathf.Round(list.Slider(EntadSettings.SettlementAppraiserChance, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_Appraiser_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_IdentifyMinPrice".Translate(EntadSettings.IdentifyMinPrice.ToStringMoney()));
+            EntadSettings.IdentifyMinPrice = Mathf.RoundToInt(list.Slider(EntadSettings.IdentifyMinPrice, 0f, 2000f) / 10f) * 10;
+            list.Label("EF_Settings_IdentifyWealth".Translate((EntadSettings.IdentifyWealthFraction).ToStringPercent("0.##")));
+            EntadSettings.IdentifyWealthFraction = Mathf.Round(list.Slider(EntadSettings.IdentifyWealthFraction, 0f, 0.01f) * 10000f) / 10000f;
+            list.Label("EF_Settings_IdentifyPrice_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_AppraiserMax".Translate(EntadSettings.AppraiserMax.min, EntadSettings.AppraiserMax.max));
+            Widgets.IntRange(list.GetRect(28f), 0x45465041, ref EntadSettings.AppraiserMax, 1, 20);
+            list.Label("EF_Settings_AppraiserDailyMin".Translate(EntadSettings.AppraiserDailyMin));
+            EntadSettings.AppraiserDailyMin = Mathf.RoundToInt(list.Slider(EntadSettings.AppraiserDailyMin, 1f, 20f));
+            list.Label("EF_Settings_AppraiserDaily_Desc".Translate());
         }
 
         private static void DoRarity(Listing_Standard list)

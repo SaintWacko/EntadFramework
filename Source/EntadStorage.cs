@@ -77,10 +77,11 @@ namespace EntadFramework
         public static void Postfix(IntVec3 c, Map map, ref int __result) => EntadStorage.Postfix_GetMaxItemsAllowedInCell(c, map, ref __result);
     }
 
-    // Clears the registry for each new or loaded game; spawning re-registers every building
+    // Clears static state for each new or loaded game: the storage and appraiser registries (spawning and loading
+    // re-register) and the trade-window flag
     public class EntadStorageReset : GameComponent
     {
-        public EntadStorageReset(Game game) { EntadStorage.Clear(); EntadTrade.Reset(); }
+        public EntadStorageReset(Game game) { EntadStorage.Clear(); EntadTrade.Reset(); EntadAppraisal.Reset(); }
     }
 
     // Adaptive Storage Framework (adaptive.storage.framework), reached by reflection so nothing here needs it loaded.

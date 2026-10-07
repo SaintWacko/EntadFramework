@@ -30,6 +30,22 @@
 {0}</EF_Alert_WrongBloodlineDesc>
   <EF_Alert_WrongBloodlineLine>{0}: {1}</EF_Alert_WrongBloodlineLine>
   <EF_Rename>Rename</EF_Rename>
+
+  <!-- Appraisers: identify entads for silver -->
+  <EF_Appraiser_LeftToday>Can identify {0} more items today (at most {1} a day).</EF_Appraiser_LeftToday>
+  <EF_Appraise_Option>Ask {0} to identify entads</EF_Appraise_Option>
+  <EF_Appraise_CannotTalk>{0}: unable to talk</EF_Appraise_CannotTalk>
+  <EF_Appraise_Command>Identify entads</EF_Appraise_Command>
+  <EF_Appraise_CommandDesc>An appraiser in {0} will identify entads your caravan carries, revealing all of an item's hidden traits for a fee.</EF_Appraise_CommandDesc>
+  <EF_Appraise_Title>Entad appraisal: {0}</EF_Appraise_Title>
+  <EF_Appraise_TitleSettlement>Entad appraisal: {0}</EF_Appraise_TitleSettlement>
+  <EF_Appraise_LeftToday>Items they can still identify today: {0}</EF_Appraise_LeftToday>
+  <EF_Appraise_PriceLine>Price per item: {0}. Silver available: {1}</EF_Appraise_PriceLine>
+  <EF_Appraise_None>You have no entads with hidden traits that the appraiser can see.</EF_Appraise_None>
+  <EF_Appraise_Button>Identify ({0})</EF_Appraise_Button>
+  <EF_Appraise_NoneLeft>They can't identify any more items today. They'll be able to again after midnight.</EF_Appraise_NoneLeft>
+  <EF_Appraise_NoSilver>Not enough silver.</EF_Appraise_NoSilver>
+  <EF_Appraise_Done>The appraiser identified {0}: {1}.</EF_Appraise_Done>
   <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>
 
   <!-- Item info card: the "Entad traits" row and its tooltip -->
@@ -154,6 +170,16 @@
   <EF_Settings_DrawbackChance>Chance an item can have drawbacks: {0}</EF_Settings_DrawbackChance>
   <EF_Settings_MaxDrawbacks>Most drawbacks per item: {0}</EF_Settings_MaxDrawbacks>
   <EF_Settings_Drawbacks_Desc>Drawbacks are traits with a cost below zero. Each one adds its points back to the target, so the item gets more or better traits to make up for it.</EF_Settings_Drawbacks_Desc>
+  <EF_Settings_Appraisers>Appraisers</EF_Settings_Appraisers>
+  <EF_Settings_CaravanAppraiser>Chance a trade caravan brings an appraiser: {0}</EF_Settings_CaravanAppraiser>
+  <EF_Settings_SettlementAppraiser>Chance a settlement has an appraiser: {0}</EF_Settings_SettlementAppraiser>
+  <EF_Settings_Appraiser_Desc>Appraisers identify entads for silver, revealing every hidden trait of one item. A settlement's chance is rolled once, the first time a caravan visits it. Factions from other mods may set their own chances.</EF_Settings_Appraiser_Desc>
+  <EF_Settings_IdentifyMinPrice>Lowest price per item: {0}</EF_Settings_IdentifyMinPrice>
+  <EF_Settings_IdentifyWealth>Price per item: {0} of colony wealth</EF_Settings_IdentifyWealth>
+  <EF_Settings_IdentifyPrice_Desc>Colony wealth is the total across all your colonies and caravans, the same figure raids are sized from. The price is whichever of the two amounts is higher.</EF_Settings_IdentifyPrice_Desc>
+  <EF_Settings_AppraiserMax>Most items an appraiser can identify in a day: {0} to {1}</EF_Settings_AppraiserMax>
+  <EF_Settings_AppraiserDailyMin>Fewest items on any one day: {0}</EF_Settings_AppraiserDailyMin>
+  <EF_Settings_AppraiserDaily_Desc>Each appraiser's daily maximum is picked from the range when they first appear. At each local midnight, the number they can do that day is picked between the fewest and their maximum.</EF_Settings_AppraiserDaily_Desc>
   <EF_Settings_MarketValue>Market value</EF_Settings_MarketValue>
   <EF_Settings_ValuePercent>Value per trait point: {0} of the item's base value</EF_Settings_ValuePercent>
   <EF_Settings_ValueSilver>Plus per trait point: {0}</EF_Settings_ValueSilver>

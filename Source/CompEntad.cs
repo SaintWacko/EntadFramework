@@ -38,11 +38,11 @@ namespace EntadFramework
 
         public bool AnyHidden => (def.EffectKinds & ~revealedKinds) != EntadEffectKind.None;
 
-        public void Reveal(EntadEffectKind kind)
+        public void Reveal(EntadEffectKind kind, bool announce = true)
         {
             if (IsRevealed(kind)) return;
             revealedKinds |= kind;
-            owner?.RevealedChanged(this, kind);
+            owner?.RevealedChanged(this, kind, announce);
         }
 
         public void Hide() { revealedKinds = EntadEffectKind.None; owner?.RevealedChanged(this, EntadEffectKind.All, false); }
@@ -339,6 +339,12 @@ namespace EntadFramework
                 if (hiddenState == 0) hiddenState = activeTraits.Any(m => m.AnyHidden) ? 1 : 2;
                 return hiddenState == 1;
             }
+        }
+
+        // Everything at once, without a message per trait (the caller says what was found)
+        public void RevealAll()
+        {
+            for (int i = 0; i < activeTraits.Count; i++) activeTraits[i].Reveal(EntadEffectKind.All, false);
         }
 
         public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)

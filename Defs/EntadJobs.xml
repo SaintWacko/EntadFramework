@@ -16,4 +16,12 @@
     <suspendable>false</suspendable>
     <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
   </JobDef>
+
+  <!-- Walking up to a caravan's entad appraiser to open the appraisal window (EntadAppraisal.cs) -->
+  <JobDef>
+    <defName>Entad_Appraise</defName>
+    <driverClass>EntadFramework.JobDriver_EntadAppraise</driverClass>
+    <reportString>talking to TargetA.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
 </Defs>
