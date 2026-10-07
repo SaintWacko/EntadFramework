@@ -200,6 +200,8 @@ namespace EntadFramework
                 float left = remaining;
                 EntadTraitDef pick = null;
                 EntadRarity rolled = EntadRarity.Common;
+                // The most one real trait could still add here, for the reachability checks below
+                float best = MaxRollablePoints(candidates, chances, allowed, weight);
                 // A drawback needs a real trait before it and a free slot after it to spend its points on
                 if (drawbacksLeft > 0 && hasRealTrait && slotsLeft > 1)
                 {
@@ -209,7 +211,8 @@ namespace EntadFramework
                         && pickable.Any(p => !p.ConflictsWith(d) && !d.ConflictsWith(p))));
                     if (payable.Count > 0)
                         pick = chances.PickWhere(candidates, weight, allowed,
-                            (d, r) => payable.Contains(d) && left - d.PointsAt(r) > Epsilon, null, out rolled);
+                            (d, r) => payable.Contains(d) && left - d.PointsAt(r) > Epsilon
+                                && left - d.PointsAt(r) <= (slotsLeft - 1) * best + Epsilon, null, out rolled);
                     if (pick != null) drawbacksLeft--;
                 }
                 if (pick == null && remaining <= Epsilon) break;
@@ -217,11 +220,14 @@ namespace EntadFramework
                 {
                     // Reachability: a pick has to leave the target within reach of the slots after it, at the most a
                     // single trait can still be worth here. Never binds on small targets; on big ones it steers the
-                    // last slots toward big traits so the trait cap doesn't stop the item well short.
-                    float best = MaxRollablePoints(candidates, chances, allowed, weight);
+                    // last slots toward big traits so the trait cap doesn't stop the item well short. The last slot
+                    // is left to the overshoot falloff (so a high strictness can still finish under the target)
+                    // unless nothing can reach the target, when it goes straight to the costliest trait.
                     float reach = (slotsLeft - 1) * best;
-                    pick = chances.PickWhere(candidates, weight, allowed,
-                        (d, r) => !d.IsDrawback && left - d.PointsAt(r) <= reach + Epsilon,
+                    bool lastSlot = slotsLeft == 1;
+                    if (!(lastSlot && left > best + Epsilon))
+                        pick = chances.PickWhere(candidates, weight, allowed,
+                        (d, r) => !d.IsDrawback && (lastSlot || left - d.PointsAt(r) <= reach + Epsilon),
                         (d, r) =>
                         {
                             float c = d.PointsAt(r);
