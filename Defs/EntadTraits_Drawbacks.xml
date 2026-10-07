@@ -7,11 +7,12 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Haunting</defName>
     <label>Haunting</label>
-    <description>Each kill leaves the wielder uneasy for a day.</description>
+    <description>Each enemy the wielder kills leaves them uneasy for a day.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>
     <killThought>Entad_Thought_Haunted</killThought>
+    <killVictims>Hostile</killVictims>
     <exclusiveWith><li>Entad_BattleJoy</li></exclusiveWith>
   </EntadFramework.EntadTraitDef>
   <ThoughtDef>

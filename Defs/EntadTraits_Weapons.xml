@@ -50,10 +50,11 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BattleJoy</defName>
     <label>Battle Joy</label>
-    <description>The wielder feels a rush of joy with every kill.</description>
+    <description>The wielder feels a rush of joy with every enemy they kill.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <killThought>Entad_Thought_BattleJoy</killThought>
+    <killVictims>Hostile</killVictims>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavySlugs</defName>

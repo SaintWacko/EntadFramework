@@ -56,6 +56,8 @@
   <EF_Persona_EquipConfirm>Are you sure you want to equip it?</EF_Persona_EquipConfirm>
   <EF_Card_TriggerLimited>{0}: {1} ({2})</EF_Card_TriggerLimited>
   <EF_Trigger_Kill>On a kill</EF_Trigger_Kill>
+  <EF_Trigger_KillHostile>On killing an enemy</EF_Trigger_KillHostile>
+  <EF_Trigger_KillHumanlike>On killing a person</EF_Trigger_KillHumanlike>
   <EF_Trigger_WakeUp>On waking up</EF_Trigger_WakeUp>
   <EF_Trigger_BillDone>On finishing a bill</EF_Trigger_BillDone>
   <EF_Trigger_JobDone>On finishing {0}</EF_Trigger_JobDone>

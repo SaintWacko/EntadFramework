@@ -364,6 +364,8 @@ namespace EntadFramework
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
         // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
         public ThoughtDef killThought;
+        // Which kills give killThought (the shorthand trigger's 'victims')
+        public EntadKillVictims killVictims = EntadKillVictims.Any;
 
         // Persona weapons (EntadPersona.cs). A persona trait makes the weapon bond to the first pawn who equips it,
         // as vanilla's persona weapons do: one bonded weapon per pawn, nobody else can equip it, and the bond ends
@@ -402,7 +404,7 @@ namespace EntadFramework
             if (killThought != null && (triggers == null || !triggers.Any(t => t.on == EntadTriggerEvent.Kill && t.thought == killThought)))
             {
                 if (triggers == null) triggers = new List<EntadTrigger>();
-                triggers.Add(new EntadTrigger { on = EntadTriggerEvent.Kill, thought = killThought });
+                triggers.Add(new EntadTrigger { on = EntadTriggerEvent.Kill, thought = killThought, victims = killVictims });
             }
         }
 

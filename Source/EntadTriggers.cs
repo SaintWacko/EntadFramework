@@ -22,6 +22,15 @@ namespace EntadFramework
         Use          // furniture: someone used it (see EntadUseKind)
     }
 
+    // Which kills a Kill trigger counts. Any includes hunting and slaughter.
+    public enum EntadKillVictims
+    {
+        Any,
+        Hostile,     // hostile to the killer as it died: raiders, mechanoids, insects, manhunters, berserkers.
+                     // Not a hunted animal, a slaughtered one or an executed prisoner.
+        Humanlike    // people, whatever their side
+    }
+
     // Furniture use, as the job-end hook tells it apart
     [System.Flags]
     public enum EntadUseKind
@@ -41,6 +50,7 @@ namespace EntadFramework
         public EntadTriggerEvent on;
         public EntadUseKind use = EntadUseKind.Any;   // Use only
         public List<JobDef> jobs;                     // JobDone only
+        public EntadKillVictims victims = EntadKillVictims.Any; // Kill only
         public float chance = 1f;
         public float cooldownHours;                   // per item: shared by everyone who uses it
 
@@ -85,6 +95,8 @@ namespace EntadFramework
                         foreach (EntadUseKind k in new[] { EntadUseKind.Sleep, EntadUseKind.Eat, EntadUseKind.Work, EntadUseKind.Recreation, EntadUseKind.Other })
                             if ((use & k) != 0) kinds.Add(("EF_UseKind_" + k).Translate());
                         return "EF_Trigger_UseKinds".Translate(string.Join(", ", kinds));
+                    case EntadTriggerEvent.Kill:
+                        return victims == EntadKillVictims.Any ? "EF_Trigger_Kill".Translate() : ("EF_Trigger_Kill" + victims).Translate();
                     default:
                         return ("EF_Trigger_" + on).Translate();
                 }
@@ -134,6 +146,7 @@ namespace EntadFramework
             if (!HasEffect) yield return $"{owner}: a trigger on {on} has no effect";
             if (on == EntadTriggerEvent.JobDone && jobs.NullOrEmpty()) yield return $"{owner}: a JobDone trigger needs jobs";
             if (on != EntadTriggerEvent.Use && use != EntadUseKind.Any) yield return $"{owner}: 'use' only applies to Use triggers";
+            if (on != EntadTriggerEvent.Kill && victims != EntadKillVictims.Any) yield return $"{owner}: 'victims' only applies to Kill triggers";
             if (chance <= 0f || chance > 1f) yield return $"{owner}: trigger chance must be above 0 and at most 1";
             if (cooldownHours < 0f) yield return $"{owner}: trigger cooldownHours can't be negative";
             for (int k = 0; k < ValueCount; k++)
@@ -181,16 +194,28 @@ namespace EntadFramework
 
         // Gear events: every worn or wielded entad that works for this pawn, checked now so a weapon dropped by the
         // event itself (downing drops it) still counts
-        public static void FromGear(Pawn pawn, EntadTriggerEvent ev, JobDef job = null)
+        public static void FromGear(Pawn pawn, EntadTriggerEvent ev, JobDef job = null, Pawn victim = null)
         {
             if (pawn == null || !Any(ev)) return;
             var eq = pawn.equipment?.AllEquipmentListForReading;
-            if (eq != null) for (int i = 0; i < eq.Count; i++) FromItem(pawn, eq[i], ev, job);
+            if (eq != null) for (int i = 0; i < eq.Count; i++) FromItem(pawn, eq[i], ev, job, victim);
             var ap = pawn.apparel?.WornApparel;
-            if (ap != null) for (int i = 0; i < ap.Count; i++) FromItem(pawn, ap[i], ev, job);
+            if (ap != null) for (int i = 0; i < ap.Count; i++) FromItem(pawn, ap[i], ev, job, victim);
         }
 
-        private static void FromItem(Pawn pawn, Thing item, EntadTriggerEvent ev, JobDef job)
+        // Kill victims: called from RecordsUtility.Notify_PawnKilled, which vanilla runs before the victim despawns
+        // or loses its mental state, so a manhunter or berserker still reads as hostile here
+        private static bool VictimMatches(EntadKillVictims victims, Pawn victim, Pawn killer)
+        {
+            switch (victims)
+            {
+                case EntadKillVictims.Hostile: return victim != null && victim.HostileTo(killer);
+                case EntadKillVictims.Humanlike: return victim?.RaceProps?.Humanlike == true;
+                default: return true;
+            }
+        }
+
+        private static void FromItem(Pawn pawn, Thing item, EntadTriggerEvent ev, JobDef job, Pawn victim)
         {
             var comp = item.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.Count == 0 || !comp.ActiveFor(pawn)) return;
@@ -202,6 +227,7 @@ namespace EntadFramework
                 {
                     if (ts[i].on != ev) continue;
                     if (ev == EntadTriggerEvent.JobDone && (ts[i].jobs == null || !ts[i].jobs.Contains(job))) continue;
+                    if (ev == EntadTriggerEvent.Kill && !VictimMatches(ts[i].victims, victim, pawn)) continue;
                     TryQueue(pawn, m, i, null);
                 }
             }
@@ -355,7 +381,7 @@ namespace EntadFramework
     [HarmonyPatch(typeof(RecordsUtility), nameof(RecordsUtility.Notify_PawnKilled))]
     public static class Patch_RecordsUtility_PawnKilled_EntadTrigger
     {
-        public static void Postfix(Pawn killer) => EntadTriggers.FromGear(killer, EntadTriggerEvent.Kill);
+        public static void Postfix(Pawn killed, Pawn killer) => EntadTriggers.FromGear(killer, EntadTriggerEvent.Kill, victim: killed);
     }
 
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PostApplyDamage))]
