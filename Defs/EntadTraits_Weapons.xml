@@ -43,6 +43,8 @@
     <description>Rain, fog and smoke do nothing to spoil its aim.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <!-- Only matters in bad weather or smoke -->
+    <points>3</points>
     <ignoreAccuracyMaluses>true</ignoreAccuracyMaluses>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>

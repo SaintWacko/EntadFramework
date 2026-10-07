@@ -111,6 +111,8 @@
     <description>The wearer's steps feel lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
+    <!-- Move speed helps in every fight and every job -->
+    <points>3</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
       <li><stat>MoveSpeed</stat><min>0.2</min><max>0.8</max></li>
@@ -345,6 +347,7 @@
     <description>Meals are finished quickly.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
+    <points>0.5</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
       <li><stat>EatingSpeed</stat><min>0.2</min><max>0.8</max></li>
@@ -356,6 +359,8 @@
     <description>The wearer is striking to behold.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
+    <!-- +2 beauty is vanilla's whole Beautiful trait -->
+    <points>2</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
       <li><stat>PawnBeauty</stat><min>0.5</min><max>2</max></li>
@@ -400,6 +405,7 @@
     <description>Flames refuse to take hold.</description>
     <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
+    <points>0.5</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors>
       <li><stat>Flammability</stat><min>0.1</min><max>0.5</max></li>
@@ -411,6 +417,7 @@
     <description>Time barely touches it.</description>
     <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
     <rarity>Common</rarity>
+    <points>0.5</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors>
       <li><stat>DeteriorationRate</stat><min>0.2</min><max>0.6</max></li>
