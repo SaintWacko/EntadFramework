@@ -425,7 +425,7 @@ namespace EntadFramework
             EntadSettings.SettlementAppraiserChance = Mathf.Round(list.Slider(EntadSettings.SettlementAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_Appraiser_Desc".Translate());
             list.Gap();
-            list.Label("EF_Settings_IdentifyMinPrice".Translate(EntadSettings.IdentifyMinPrice.ToStringMoney()));
+            list.Label("EF_Settings_IdentifyMinPrice".Translate(((float)EntadSettings.IdentifyMinPrice).ToStringMoney()));
             EntadSettings.IdentifyMinPrice = Mathf.RoundToInt(list.Slider(EntadSettings.IdentifyMinPrice, 0f, 2000f) / 10f) * 10;
             list.Label("EF_Settings_IdentifyWealth".Translate((EntadSettings.IdentifyWealthFraction).ToStringPercent("0.##")));
             EntadSettings.IdentifyWealthFraction = Mathf.Round(list.Slider(EntadSettings.IdentifyWealthFraction, 0f, 0.01f) * 10000f) / 10000f;

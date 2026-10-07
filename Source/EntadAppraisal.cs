@@ -7,6 +7,7 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
+using Verse.Sound;
 
 namespace EntadFramework
 {
@@ -337,7 +338,7 @@ namespace EntadFramework
             float y = inRect.y + 38f;
             Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "EF_Appraise_LeftToday".Translate(left));
             y += 24f;
-            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "EF_Appraise_PriceLine".Translate(price.ToStringMoney(), available.ToStringMoney()));
+            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "EF_Appraise_PriceLine".Translate(((float)price).ToStringMoney(), ((float)available).ToStringMoney()));
             y += 30f;
 
             var outRect = new Rect(inRect.x, y, inRect.width, inRect.height - y + inRect.y - CloseButSize.y - 10f);
@@ -365,7 +366,7 @@ namespace EntadFramework
                 Text.Anchor = TextAnchor.UpperLeft;
                 Widgets.InfoCardButton(buttonRect.x - 28f, row.y + 5f, t);
                 bool can = left > 0 && available >= price;
-                if (Widgets.ButtonText(buttonRect, "EF_Appraise_Button".Translate(price.ToStringMoney()), active: can) && can)
+                if (Widgets.ButtonText(buttonRect, "EF_Appraise_Button".Translate(((float)price).ToStringMoney()), active: can) && can)
                     identified = t;
                 if (!can) TooltipHandler.TipRegion(buttonRect, left <= 0 ? "EF_Appraise_NoneLeft".Translate() : "EF_Appraise_NoSilver".Translate());
             }
