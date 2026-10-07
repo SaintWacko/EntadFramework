@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Weapon and apparel traits: kill, wake, bill, damage and meal triggers, equipped hediffs and wearer stats.
+       Strong triggered effects carry points above their rarity's default. -->
+
+  <!-- Weapons -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Vampiric</defName>
+    <label>Vampiric</label>
+    <description>Each kill closes some of the wielder's wounds, worst first.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <points>5</points>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <heal>4~10</heal>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_HuntersFeast</defName>
+    <label>Hunter's Feast</label>
+    <description>Each kill leaves the wielder a little less hungry.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <food>0.1~0.25</food>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Weapons and apparel -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Clotting</defName>
+    <label>Clotting</label>
+    <description>Wounds on whoever wears or wields this bleed 40% slower.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <equippedHediffs><li>Entad_Hediff_Clotting</li></equippedHediffs>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_Clotting</defName>
+    <label>entad clotting</label>
+    <description>An entad this person carries slows their bleeding.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <stages>
+      <li>
+        <totalBleedFactor>0.6</totalBleedFactor>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Regenerating</defName>
+    <label>Regenerating</label>
+    <description>Whoever wears or wields this heals from injuries far faster.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <points>8</points>
+    <statOffsets>
+      <li><stat>InjuryHealingFactor</stat><min>0.5</min><max>1</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sleepless</defName>
+    <label>Sleepless</label>
+    <description>Whoever wears or wields this tires more slowly.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets>
+      <li><stat>RestFallRateFactor</stat><min>-0.3</min><max>-0.15</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sustaining</defName>
+    <label>Sustaining</label>
+    <description>Whoever wears or wields this gets hungry 30% slower.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <equippedHediffs><li>Entad_Hediff_Sustaining</li></equippedHediffs>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_Sustaining</defName>
+    <label>entad sustenance</label>
+    <description>An entad this person carries keeps them fed.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <stages>
+      <li>
+        <hungerRateFactor>0.7</hungerRateFactor>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_PsychicWard</defName>
+    <label>Psychic Ward</label>
+    <description>Dulls the psychic senses of whoever wears or wields it, shielding them from psychic drones.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets>
+      <li><stat>PsychicSensitivity</stat><min>-0.25</min><max>-0.1</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_MorningVigor</defName>
+    <label>Morning Vigor</label>
+    <description>Whoever wears or wields this wakes up eager to work, and works faster for a few hours.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>WakeUp</on>
+        <hediff>Entad_Hediff_MorningVigor</hediff>
+        <hediffHours>3~5</hediffHours>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_MorningVigor</defName>
+    <label>morning vigor</label>
+    <description>Woke up full of energy. Works faster for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets>
+          <WorkSpeedGlobal>0.1</WorkSpeedGlobal>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_AdrenalSurge</defName>
+    <label>Adrenal Surge</label>
+    <description>When whoever wears or wields this is hurt, they feel half as much pain and move faster for a while. It can only do this twice a day.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <points>5</points>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <hediff>Entad_Hediff_AdrenalSurge</hediff>
+        <hediffHours>1~1.5</hediffHours>
+        <cooldownHours>12</cooldownHours>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AdrenalSurge</defName>
+    <label>adrenal surge</label>
+    <description>A rush of energy from an entad. Pain is dulled and movement is quicker.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <painFactor>0.5</painFactor>
+        <capMods>
+          <li>
+            <capacity>Moving</capacity>
+            <offset>0.15</offset>
+          </li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_CraftsmansPride</defName>
+    <label>Craftsman's Pride</label>
+    <description>Finishing a bill sometimes leaves whoever wears or wields this proud of their work.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>BillDone</on>
+        <chance>0.3</chance>
+        <cooldownHours>2</cooldownHours>
+        <thought>Entad_Thought_CraftsmansPride</thought>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_CraftsmansPride</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>proud of my work</label>
+        <description>I made that, and it came out well.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Gourmand</defName>
+    <label>Gourmand</label>
+    <description>Whoever wears or wields this enjoys every meal, and gets some recreation from eating.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Eat</on>
+        <joy>0.1~0.2</joy>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+</Defs>

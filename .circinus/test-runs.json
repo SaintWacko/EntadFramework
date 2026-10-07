@@ -120,8 +120,8 @@
     },
     {
       "startedAt": 1791342084376,
-      "endedAt": null,
-      "reason": null,
+      "endedAt": 1791342591749,
+      "reason": "game-closed",
       "errorClasses": 0,
       "conversationId": "01a10393-d946-7005-8287-ccd1b2d18c4b"
     }
