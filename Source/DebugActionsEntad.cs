@@ -195,5 +195,17 @@ namespace EntadFramework
             if (comp == null) return;
             foreach (var m in comp.activeTraits.ToList()) m.Hide();
         }
+
+        // Testing appraisers without waiting on the caravan chance. The pawn still needs to be in a trade caravan
+        // that's trading (spawn one with the vanilla trader caravan incident) for the option to appear.
+        [DebugAction(category = "Entad Framework", name = "Make entad appraiser", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void MakeAppraiser(Pawn p)
+        {
+            if (p.health.hediffSet.GetFirstHediff<Hediff_EntadAppraiser>() != null) { Messages.Message($"{p.LabelShort} is already an appraiser.", MessageTypeDefOf.RejectInput, false); return; }
+            var hediff = (Hediff_EntadAppraiser)HediffMaker.MakeHediff(EntadAppraisalDefOf.Entad_Appraiser, p);
+            hediff.state = AppraiserState.Roll(1f);
+            p.health.AddHediff(hediff);
+            Messages.Message($"{p.LabelShort} is now an entad appraiser (max {hediff.state.max} a day).", MessageTypeDefOf.NeutralEvent, false);
+        }
     }
 }
