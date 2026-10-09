@@ -433,8 +433,9 @@ namespace EntadFramework
         }
     }
 
-    // A trade caravan may bring an appraiser: one of its guards (the trader if it has none), so the caravan's size
-    // and strength don't change
+    // A trade caravan may bring an appraiser: one of its guards, so the caravan's size and strength don't change.
+    // Never the trader, so the two roles (and their overhead icons and right-click options) stay on different pawns;
+    // a caravan with no guards simply has no appraiser.
     [HarmonyPatch(typeof(PawnGroupKindWorker_Trader), "GeneratePawns")]
     public static class Patch_TraderGeneratePawns_EntadAppraiser
     {
@@ -443,10 +444,17 @@ namespace EntadFramework
             if (parms?.faction == null || parms.faction.IsPlayer || outPawns.NullOrEmpty()) return;
             if (!Rand.Chance(EntadAppraisal.CaravanChance(parms.faction))) return;
             bool Eligible(Pawn p) => p.RaceProps.Humanlike && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave && !p.Dead;
-            var guards = outPawns.Where(p => Eligible(p) && p.TraderKind == null
-                && groupMaker?.guards != null && groupMaker.guards.Any(g => g.kind == p.kindDef)).ToList();
-            Pawn chosen = guards.Count > 0 ? guards.RandomElement() : outPawns.FirstOrDefault(p => Eligible(p) && p.TraderKind != null);
-            if (chosen == null) return;
+            // GetTraderCaravanRole, not TraderKind == null: slaves for sale are in outPawns too, with the caravan's
+            // faction and no guest status. The role check classes PawnKindDefOf.Slave as Chattel, but a trader kind
+            // may sell a custom slaveKindDef, which it would call Guard, so those kinds are excluded by hand.
+            // The trader pawn's kind first: when parms.traderKind is null (caravan meetings) GeneratePawns picks one
+            // into a local and only stores it on the trader
+            var traderKind = outPawns.Select(p => p.trader?.traderKind).FirstOrDefault(k => k != null) ?? parms.traderKind;
+            var slaveKinds = traderKind?.stockGenerators?.OfType<StockGenerator_Slaves>()
+                .Select(g => g.slaveKindDef).Where(k => k != null).ToList();
+            bool ForSale(Pawn p) => slaveKinds != null && slaveKinds.Contains(p.kindDef);
+            if (!outPawns.Where(p => Eligible(p) && p.GetTraderCaravanRole() == TraderCaravanRole.Guard && !ForSale(p))
+                .TryRandomElement(out Pawn chosen)) return;
             var hediff = (Hediff_EntadAppraiser)HediffMaker.MakeHediff(EntadAppraisalDefOf.Entad_Appraiser, chosen);
             hediff.state = AppraiserState.Roll(1f);
             chosen.health.AddHediff(hediff);
@@ -457,16 +465,16 @@ namespace EntadFramework
     // the overlay is queued; this draws the same pulsing quad at the same spot, with our texture, and skips the
     // vanilla draw. Copies OverlayDrawer.RenderQuestionMarkOverlay, which is private.
     [HarmonyPatch(typeof(OverlayDrawer), "RenderQuestionMarkOverlay")]
+    [StaticConstructorOnStartup]
     public static class Patch_RenderQuestionMark_EntadAppraiser
     {
         private static readonly AccessTools.FieldRef<OverlayDrawer, DrawBatch> drawBatch =
             AccessTools.FieldRefAccess<OverlayDrawer, DrawBatch>("drawBatch");
-        private static Material iconMat;
+        private static readonly Material iconMat = MaterialPool.MatFrom("UI/Overlays/EntadAppraiser", ShaderDatabase.MetaOverlay);
 
         public static bool Prefix(OverlayDrawer __instance, Thing t)
         {
             if (!(t is Pawn p) || !EntadAppraisal.CanAppraiseNow(p, out _)) return true;
-            if (iconMat == null) iconMat = MaterialPool.MatFrom("UI/Overlays/EntadAppraiser", ShaderDatabase.MetaOverlay);
 
             Vector3 drawPos = t.DrawPos;
             drawPos.y = AltitudeLayer.MetaOverlays.AltitudeFor() + 0.21951221f;
