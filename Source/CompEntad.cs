@@ -113,7 +113,7 @@ namespace EntadFramework
                 && (triggerValues?.Count ?? 0) == TriggerValueCount(def);
         }
 
-        private static int TriggerValueCount(EntadTraitDef d) => (d.triggers?.Count ?? 0) * EntadTrigger.ValueCount;
+        private static int TriggerValueCount(EntadTraitDef def) => (def.triggers?.Count ?? 0) * EntadTrigger.ValueCount;
 
         private void RerollMismatchedLists()
         {
@@ -166,105 +166,105 @@ namespace EntadFramework
             return applied;
         }
 
-        // Furniture abilities with charges: charges left, and the tick the next one comes back
+        // Abilities with charges: charges left, and the tick the next one comes back
         public List<int> abilityCharges = new List<int>();
 
         // Returns the charges currently available for ability i, adding any that have come back by now
-        public int ChargesLeft(int i, int max, int cooldown)
+        public int ChargesLeft(int abilityIndex, int max, int cooldown)
         {
-            while (abilityCharges.Count <= i) abilityCharges.Add(max);
-            int c = abilityCharges[i];
+            while (abilityCharges.Count <= abilityIndex) abilityCharges.Add(max);
+            int charges = abilityCharges[abilityIndex];
             int now = Find.TickManager.TicksGame;
-            while (c < max && now >= AbilityReadyTick(i))
+            while (charges < max && now >= AbilityReadyTick(abilityIndex))
             {
-                c++;
-                SetAbilityReadyTick(i, c < max ? AbilityReadyTick(i) + cooldown : 0);
+                charges++;
+                SetAbilityReadyTick(abilityIndex, charges < max ? AbilityReadyTick(abilityIndex) + cooldown : 0);
             }
-            abilityCharges[i] = c;
-            return c;
+            abilityCharges[abilityIndex] = charges;
+            return charges;
         }
 
-        public void UseCharge(int i, int max, int cooldown)
+        public void UseCharge(int abilityIndex, int max, int cooldown)
         {
-            int c = ChargesLeft(i, max, cooldown);
-            if (c >= max) SetAbilityReadyTick(i, Find.TickManager.TicksGame + cooldown);
-            abilityCharges[i] = c - 1;
+            int charges = ChargesLeft(abilityIndex, max, cooldown);
+            if (charges >= max) SetAbilityReadyTick(abilityIndex, Find.TickManager.TicksGame + cooldown);
+            abilityCharges[abilityIndex] = charges - 1;
         }
 
         // Reloadable abilities: charges stored on the item while nobody has the ability (full when never set)
-        public int StoredCharges(int i)
+        public int StoredCharges(int abilityIndex)
         {
-            while (abilityCharges.Count <= i) abilityCharges.Add(def.abilityCharges);
-            return abilityCharges[i];
+            while (abilityCharges.Count <= abilityIndex) abilityCharges.Add(def.abilityCharges);
+            return abilityCharges[abilityIndex];
         }
 
-        public void SetStoredCharges(int i, int c)
+        public void SetStoredCharges(int abilityIndex, int charges)
         {
-            while (abilityCharges.Count <= i) abilityCharges.Add(def.abilityCharges);
-            abilityCharges[i] = c;
+            while (abilityCharges.Count <= abilityIndex) abilityCharges.Add(def.abilityCharges);
+            abilityCharges[abilityIndex] = charges;
         }
 
-        public int AbilityReadyTick(int i) => i < abilityReadyTicks.Count ? abilityReadyTicks[i] : 0;
+        public int AbilityReadyTick(int abilityIndex) => abilityIndex < abilityReadyTicks.Count ? abilityReadyTicks[abilityIndex] : 0;
 
-        public void SetAbilityReadyTick(int i, int tick)
+        public void SetAbilityReadyTick(int abilityIndex, int tick)
         {
-            while (abilityReadyTicks.Count <= i) abilityReadyTicks.Add(0);
-            abilityReadyTicks[i] = tick;
+            while (abilityReadyTicks.Count <= abilityIndex) abilityReadyTicks.Add(0);
+            abilityReadyTicks[abilityIndex] = tick;
         }
 
         public int ThoughtDurationTicks => UnityEngine.Mathf.Max(1, (int)(thoughtHours * GenDate.TicksPerHour));
 
-        public float OffsetFor(int i) => i < offsetValues.Count ? offsetValues[i] : 0f;
-        public float ExtraDamageFor(int i) => i < extraDamageValues.Count ? extraDamageValues[i] : 0f;
-        public float BuildingFactorFor(int i) => i < buildingValues.Count ? buildingValues[i] : 1f;
-        public float FactorFor(int i) => i < factorValues.Count ? factorValues[i] : 1f;
-        public float WeaponValueFor(int i) => i < weaponValues.Count ? weaponValues[i] : def.weaponProperties[i].Neutral;
+        public float OffsetFor(int offsetValueIndex) => offsetValueIndex < offsetValues.Count ? offsetValues[offsetValueIndex] : 0f;
+        public float ExtraDamageFor(int damageValueIndex) => damageValueIndex < extraDamageValues.Count ? extraDamageValues[damageValueIndex] : 0f;
+        public float BuildingFactorFor(int buildingFactorValueIndex) => buildingFactorValueIndex < buildingValues.Count ? buildingValues[buildingFactorValueIndex] : 1f;
+        public float FactorFor(int factorValueIndex) => factorValueIndex < factorValues.Count ? factorValues[factorValueIndex] : 1f;
+        public float WeaponValueFor(int weaponValueIndex) => weaponValueIndex < weaponValues.Count ? weaponValues[weaponValueIndex] : def.weaponProperties[weaponValueIndex].Neutral;
 
         // Trigger i's rolled amount k (EntadTrigger.Heal, Rest...); the middle of the range when there's no roll
-        public float TriggerValue(int i, int k)
+        public float TriggerValue(int triggerIndex, int triggerValue)
         {
-            int idx = i * EntadTrigger.ValueCount + k;
-            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[i].RangeAt(k).Average * def.RarityScale(Rarity);
+            int idx = triggerIndex * EntadTrigger.ValueCount + triggerValue;
+            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[triggerIndex].RangeAt(triggerValue).Average * def.RarityScale(Rarity);
         }
 
-        public int TriggerReadyTick(int i) => i < triggerReadyTicks.Count ? triggerReadyTicks[i] : 0;
+        public int TriggerReadyTick(int triggerIndex) => triggerIndex < triggerReadyTicks.Count ? triggerReadyTicks[triggerIndex] : 0;
 
-        public void SetTriggerReadyTick(int i, int tick)
+        public void SetTriggerReadyTick(int triggerIndex, int tick)
         {
-            while (triggerReadyTicks.Count <= i) triggerReadyTicks.Add(0);
-            triggerReadyTicks[i] = tick;
+            while (triggerReadyTicks.Count <= triggerIndex) triggerReadyTicks.Add(0);
+            triggerReadyTicks[triggerIndex] = tick;
         }
 
         // Average position (0..1) of the rolled values within their ranges
-        public float RollQuality()
+        public float CalculateRollQuality()
         {
-            float sum = 0f;
-            int n = 0;
+            float rollQualitySum = 0f;
+            int totalTraits = 0;
             float scale = def.RarityScale(Rarity);
             if (def.statOffsets != null)
-                for (int i = 0; i < def.statOffsets.Count; i++) { sum += def.statOffsets[i].NormalizeScaled(OffsetFor(i), scale, false); n++; }
+                for (int i = 0; i < def.statOffsets.Count; i++) { rollQualitySum += def.statOffsets[i].NormalizeScaled(OffsetFor(i), scale, false); totalTraits++; }
             if (def.statFactors != null)
-                for (int i = 0; i < def.statFactors.Count; i++) { sum += def.statFactors[i].NormalizeScaled(FactorFor(i), scale, true); n++; }
+                for (int i = 0; i < def.statFactors.Count; i++) { rollQualitySum += def.statFactors[i].NormalizeScaled(FactorFor(i), scale, true); totalTraits++; }
             if (def.extraDamage != null)
-                for (int i = 0; i < def.extraDamage.Count; i++) { sum += def.extraDamage[i].NormalizeScaled(ExtraDamageFor(i), scale); n++; }
+                for (int i = 0; i < def.extraDamage.Count; i++) { rollQualitySum += def.extraDamage[i].NormalizeScaled(ExtraDamageFor(i), scale); totalTraits++; }
             if (def.buildingFactors != null)
-                for (int i = 0; i < def.buildingFactors.Count; i++) { sum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); n++; }
+                for (int i = 0; i < def.buildingFactors.Count; i++) { rollQualitySum += def.buildingFactors[i].NormalizeScaled(BuildingFactorFor(i), scale); totalTraits++; }
             if (def.weaponProperties != null)
-                for (int i = 0; i < def.weaponProperties.Count; i++) { sum += def.weaponProperties[i].NormalizeScaled(WeaponValueFor(i), scale); n++; }
+                for (int i = 0; i < def.weaponProperties.Count; i++) { rollQualitySum += def.weaponProperties[i].NormalizeScaled(WeaponValueFor(i), scale); totalTraits++; }
             if (def.triggers != null)
                 for (int i = 0; i < def.triggers.Count; i++)
                     for (int k = 0; k < EntadTrigger.ValueCount; k++)
                     {
-                        var r = def.triggers[i].RangeAt(k);
-                        if (r.max - r.min <= 0.0001f) continue;
-                        sum += UnityEngine.Mathf.InverseLerp(r.min * scale, r.max * scale, TriggerValue(i, k)); n++;
+                        var triggerRange = def.triggers[i].RangeAt(k);
+                        if (triggerRange.max - triggerRange.min <= 0.0001f) continue;
+                        rollQualitySum += UnityEngine.Mathf.InverseLerp(triggerRange.min * scale, triggerRange.max * scale, TriggerValue(i, k)); totalTraits++;
                     }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
-            { sum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); n++; }
-            if (thought != null) { sum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; n++; }
+            { rollQualitySum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); totalTraits++; }
+            if (thought != null) { rollQualitySum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; totalTraits++; }
             var f = def.mealNutritionFactor;
-            if (f.max - f.min > 0.0001f) { sum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); n++; }
-            return n == 0 ? 0.5f : sum / n;
+            if (f.max - f.min > 0.0001f) { rollQualitySum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); totalTraits++; }
+            return totalTraits == 0 ? 0.5f : rollQualitySum / totalTraits;
         }
 
         // Market value added by this trait, from the item's value before any entad part (baseValue). By default each
@@ -278,7 +278,7 @@ namespace EntadFramework
                 ? (baseValue * (float.IsNaN(def.marketValuePercent) ? 0f : def.marketValuePercent)
                     + (float.IsNaN(def.marketValueOffset) ? 0f : def.marketValueOffset)) * def.ValueScaleAt(Rarity)
                 : def.PointsAt(Rarity) * (baseValue * EntadSettings.ValuePercentPerPoint + EntadSettings.ValueSilverPerPoint);
-            return def.IsDrawback ? value : value * (0.75f + 0.5f * RollQuality());
+            return def.IsDrawback ? value : value * (0.75f + 0.5f * CalculateRollQuality());
         }
     }
 
@@ -309,21 +309,21 @@ namespace EntadFramework
             if (wearerOffsets == null)
             {
                 // Filled in a local and published at the end, so a throw mid-build can't leave a half-built cache
-                var built = new Dictionary<StatDef, KeyValuePair<float, float>>();
-                foreach (var m in activeTraits)
+                var offsetDict = new Dictionary<StatDef, KeyValuePair<float, float>>();
+                foreach (var trait in activeTraits)
                 {
-                    var offsets = m.def.statOffsets;
+                    var offsets = trait.def.statOffsets;
                     if (offsets == null) continue;
-                    for (int i = 0; i < offsets.Count; i++)
+                    for (int offsetIndex = 0; offsetIndex < offsets.Count; offsetIndex++)
                     {
-                        StatDef s = offsets[i].stat;
-                        if (s == null || !EntadTraitDef.IsWearerStat(s)) continue;
-                        built.TryGetValue(s, out var cur);
-                        float v = m.OffsetFor(i);
-                        built[s] = new KeyValuePair<float, float>(cur.Key + v, cur.Value + (m.IsRevealed(EntadEffectKind.Stat) ? 0f : v));
+                        StatDef offsetStat = offsets[offsetIndex].stat;
+                        if (offsetStat == null || !EntadTraitDef.IsWearerStat(offsetStat)) continue;
+                        offsetDict.TryGetValue(offsetStat, out var cur);
+                        float offsetValue = trait.OffsetFor(offsetIndex);
+                        offsetDict[offsetStat] = new KeyValuePair<float, float>(cur.Key + offsetValue, cur.Value + (trait.IsRevealed(EntadEffectKind.Stat) ? 0f : offsetValue));
                     }
                 }
-                wearerOffsets = built;
+                wearerOffsets = offsetDict;
             }
             if (wearerOffsets.Count > 0 && wearerOffsets.TryGetValue(stat, out var e)) { hiddenPart = e.Value; return e.Key; }
             hiddenPart = 0f;
@@ -456,10 +456,10 @@ namespace EntadFramework
             if (Find.TickManager.TicksGame - spawnedTick < minAgeTicks) return;
             for (int t = 0; t < activeTraits.Count; t++)
             {
-                var m = activeTraits[t];
-                if (m.def.buildingFactors == null || m.IsRevealed(EntadEffectKind.Building)) continue;
-                for (int i = 0; i < m.def.buildingFactors.Count; i++)
-                    if (m.def.buildingFactors[i].property == property) { m.Reveal(EntadEffectKind.Building); break; }
+                var trait = activeTraits[t];
+                if (trait.def.buildingFactors == null || trait.IsRevealed(EntadEffectKind.Building)) continue;
+                for (int i = 0; i < trait.def.buildingFactors.Count; i++)
+                    if (trait.def.buildingFactors[i].property == property) { trait.Reveal(EntadEffectKind.Building); break; }
             }
         }
 
@@ -469,7 +469,7 @@ namespace EntadFramework
         // The refuelable's def-shared properties, kept while EntadFuel has swapped in a per-item copy
         internal CompProperties originalRefuelableProps;
 
-        public bool FuelHidden => activeTraits.Any(m => !m.def.AllFuelTypes.NullOrEmpty() && !m.IsRevealed(EntadEffectKind.Fuel));
+        public bool FuelHidden => activeTraits.Any(trait => !trait.def.AllFuelTypes.NullOrEmpty() && !trait.IsRevealed(EntadEffectKind.Fuel));
 
         // Product of this item's factors for a building property; cached since it's read from hot paths
         public float PropertyFactor(EntadBuildingProperty property)
@@ -479,14 +479,14 @@ namespace EntadFramework
                 propertyFactors = new float[System.Enum.GetValues(typeof(EntadBuildingProperty)).Length];
                 for (int i = 0; i < propertyFactors.Length; i++) propertyFactors[i] = 1f;
                 hiddenPropertyMask = 0;
-                foreach (var m in activeTraits)
+                foreach (var trait in activeTraits)
                 {
-                    if (m.def.buildingFactors == null) continue;
-                    bool hidden = !m.IsRevealed(EntadEffectKind.Building);
-                    for (int i = 0; i < m.def.buildingFactors.Count; i++)
+                    if (trait.def.buildingFactors == null) continue;
+                    bool hidden = !trait.IsRevealed(EntadEffectKind.Building);
+                    for (int i = 0; i < trait.def.buildingFactors.Count; i++)
                     {
-                        propertyFactors[(int)m.def.buildingFactors[i].property] *= m.BuildingFactorFor(i);
-                        if (hidden) hiddenPropertyMask |= 1 << (int)m.def.buildingFactors[i].property;
+                        propertyFactors[(int)trait.def.buildingFactors[i].property] *= trait.BuildingFactorFor(i);
+                        if (hidden) hiddenPropertyMask |= 1 << (int)trait.def.buildingFactors[i].property;
                     }
                 }
             }
