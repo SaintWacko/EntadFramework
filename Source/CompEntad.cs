@@ -602,14 +602,14 @@ namespace EntadFramework
             if (holder != null) EntadMoods.SyncEquipped(holder);
             PersonaTraitRemoved(trait);
             if (trait.def.abilities != null && holder != null)
-                foreach (var a in trait.def.abilities)
-                    if (!activeTraits.Any(m => m.def.abilities != null && m.def.abilities.Contains(a)) && holder.abilities?.GetAbility(a) != null)
-                        holder.abilities.RemoveAbility(a);
+                foreach (var ability in trait.def.abilities)
+                    if (!activeTraits.Any(trait => trait.def.abilities != null && trait.def.abilities.Contains(ability)) && holder.abilities?.GetAbility(ability) != null)
+                        holder.abilities.RemoveAbility(ability);
         }
 
         public void ClearTraits()
         {
-            foreach (var m in activeTraits.ToList()) RemoveTrait(m);
+            foreach (var trait in activeTraits.ToList()) RemoveTrait(trait);
         }
 
         public override void PostExposeData()
@@ -624,7 +624,7 @@ namespace EntadFramework
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
-                activeTraits.RemoveAll(m => m == null || m.def == null);
+                activeTraits.RemoveAll(trait => trait == null || trait.def == null);
                 // Removed traits load as their replacement (Patch_BackCompatibleDefName). An old item that had both
                 // the old trait and its replacement, or two old traits with one replacement, would now hold the same
                 // trait twice and apply it twice: keep the higher-rarity copy, so the item's durability doesn't drop.
@@ -642,7 +642,7 @@ namespace EntadFramework
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;
-                foreach (var m in activeTraits) m.owner = this;
+                foreach (var trait in activeTraits) trait.owner = this;
                 // A bond whose persona trait is gone (def removed or renamed away) mustn't hold the pawn's slot
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
@@ -690,12 +690,12 @@ namespace EntadFramework
         {
             if (activeTraits.NullOrEmpty()) return null;
             string unknown = "EF_Unknown".Translate();
-            string s = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
+            string inspectString = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
             // Plain: an item in the inspect pane is on the map, so it has no holder for the red to be about
-            if (IsBound) s += "\n" + "EF_BoundTo".Translate(BoundNames);
+            if (IsBound) inspectString += "\n" + "EF_BoundTo".Translate(BoundNames);
             string bond = PersonaInspectLine;
-            if (bond != null) s += "\n" + bond;
-            return s;
+            if (bond != null) inspectString += "\n" + bond;
+            return inspectString;
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -705,94 +705,94 @@ namespace EntadFramework
 
             string unknown = "EF_Unknown".Translate();
             float baseValue = BaseMarketValue();
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("EF_Card_Intro".Translate());
-            foreach (var m in activeTraits)
+            var infoString = new System.Text.StringBuilder();
+            infoString.AppendLine("EF_Card_Intro".Translate());
+            foreach (var trait in activeTraits)
             {
-                if (m.NameHidden)
+                if (trait.NameHidden)
                 {
-                    sb.Append("\n").AppendLine(unknown.Colorize(ColoredText.TipSectionTitleColor));
+                    infoString.Append("\n").AppendLine(unknown.Colorize(ColoredText.TipSectionTitleColor));
                     continue;
                 }
-                sb.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(m.def.LabelCap.Resolve(), m.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
-                if (!m.AnyHidden) sb.AppendLine(m.def.description);
-                for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statOffsets != null && i < m.def.statOffsets.Count; i++)
+                infoString.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(trait.def.LabelCap.Resolve(), trait.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
+                if (!trait.AnyHidden) infoString.AppendLine(trait.def.description);
+                for (int i = 0; trait.IsRevealed(EntadEffectKind.Stat) && trait.def.statOffsets != null && i < trait.def.statOffsets.Count; i++)
                 {
-                    var s = m.def.statOffsets[i].stat;
-                    if (s == null || !m.def.UsesStat(s, parent)) continue;
-                    float v = m.OffsetFor(i);
+                    var stat = trait.def.statOffsets[i].stat;
+                    if (stat == null || !trait.def.UsesStat(stat, parent)) continue;
+                    float statValue = trait.OffsetFor(i);
                     // Offsets are added before the stat is finalized, so they read in the unfinalized style (as vanilla's
                     // StatModifier.ValueToStringAsOffset does): shooting accuracy +3 is three skill levels, not +300%
-                    sb.AppendLine(" - " + "EF_Card_StatOffset".Translate(s.LabelCap, s.Worker.ValueToString(v, false, ToStringNumberSense.Offset)));
+                    infoString.AppendLine(" - " + "EF_Card_StatOffset".Translate(stat.LabelCap, stat.Worker.ValueToString(statValue, false, ToStringNumberSense.Offset)));
                 }
-                for (int i = 0; m.IsRevealed(EntadEffectKind.Stat) && m.def.statFactors != null && i < m.def.statFactors.Count; i++)
+                for (int i = 0; trait.IsRevealed(EntadEffectKind.Stat) && trait.def.statFactors != null && i < trait.def.statFactors.Count; i++)
                 {
-                    var s = m.def.statFactors[i].stat;
-                    if (s == null || !m.def.UsesStat(s, parent)) continue;
-                    sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(s.LabelCap, m.FactorFor(i).ToStringPercent()));
+                    var stat = trait.def.statFactors[i].stat;
+                    if (stat == null || !trait.def.UsesStat(stat, parent)) continue;
+                    infoString.AppendLine(" - " + "EF_Card_StatFactor".Translate(stat.LabelCap, trait.FactorFor(i).ToStringPercent()));
                 }
-                if (m.thought != null && m.IsRevealed(EntadEffectKind.Mood))
+                if (trait.thought != null && trait.IsRevealed(EntadEffectKind.Mood))
                 {
-                    sb.AppendLine(" - " + "EF_Card_Mood".Translate(m.thought.stages?.FirstOrDefault()?.LabelCap ?? m.thought.defName,
-                        EntadTraitDef.MoodEffectOf(m.thought).ToString("+0.#;-0.#"), m.thoughtHours.ToString("0.#")));
+                    infoString.AppendLine(" - " + "EF_Card_Mood".Translate(trait.thought.stages?.FirstOrDefault()?.LabelCap ?? trait.thought.defName,
+                        EntadTraitDef.MoodEffectOf(trait.thought).ToString("+0.#;-0.#"), trait.thoughtHours.ToString("0.#")));
                 }
-                if (m.def.HasDamageEffect && m.IsRevealed(EntadEffectKind.Damage))
+                if (trait.def.HasDamageEffect && trait.IsRevealed(EntadEffectKind.Damage))
                 {
-                    if (m.def.changeDamageType != null) sb.AppendLine(" - " + "EF_Card_DamageType".Translate(m.def.changeDamageType.LabelCap));
-                    for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
-                        sb.AppendLine(" - " + "EF_Card_ExtraDamage".Translate(m.def.extraDamage[i].damageType.label, m.ExtraDamageFor(i).ToString("0.#")));
+                    if (trait.def.changeDamageType != null) infoString.AppendLine(" - " + "EF_Card_DamageType".Translate(trait.def.changeDamageType.LabelCap));
+                    for (int i = 0; trait.def.extraDamage != null && i < trait.def.extraDamage.Count; i++)
+                        infoString.AppendLine(" - " + "EF_Card_ExtraDamage".Translate(trait.def.extraDamage[i].damageType.label, trait.ExtraDamageFor(i).ToString("0.#")));
                 }
-                if (m.def.HasWeaponEffect && m.IsRevealed(EntadEffectKind.Damage))
+                if (trait.def.HasWeaponEffect && trait.IsRevealed(EntadEffectKind.Damage))
                 {
-                    for (int i = 0; m.def.weaponProperties != null && i < m.def.weaponProperties.Count; i++)
-                        sb.AppendLine(" - " + "EF_Card_StatOffset".Translate(m.def.weaponProperties[i].Label, m.def.weaponProperties[i].ValueString(m.WeaponValueFor(i))));
-                    if (m.def.ignoreAccuracyMaluses) sb.AppendLine(" - " + "EF_Card_IgnoresAccuracyMaluses".Translate());
+                    for (int i = 0; trait.def.weaponProperties != null && i < trait.def.weaponProperties.Count; i++)
+                        infoString.AppendLine(" - " + "EF_Card_StatOffset".Translate(trait.def.weaponProperties[i].Label, trait.def.weaponProperties[i].ValueString(trait.WeaponValueFor(i))));
+                    if (trait.def.ignoreAccuracyMaluses) infoString.AppendLine(" - " + "EF_Card_IgnoresAccuracyMaluses".Translate());
                 }
-                for (int i = 0; m.IsRevealed(EntadEffectKind.Trigger) && m.def.triggers != null && i < m.def.triggers.Count; i++)
+                for (int i = 0; trait.IsRevealed(EntadEffectKind.Trigger) && trait.def.triggers != null && i < trait.def.triggers.Count; i++)
                 {
-                    int ti = i;
-                    sb.AppendLine(" - " + m.def.triggers[i].Line(k => m.TriggerValue(ti, k)));
+                    int triggerIndex = i;
+                    infoString.AppendLine(" - " + trait.def.triggers[i].Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
                 }
-                if (m.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(m)) sb.AppendLine(" - " + line);
-                if (!m.def.equippedHediffs.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Hediff))
-                    sb.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", m.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
-                if (!m.def.AllFuelTypes.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Fuel))
-                    sb.AppendLine(" - " + (m.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", m.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
-                for (int i = 0; m.IsRevealed(EntadEffectKind.Building) && m.def.buildingFactors != null && i < m.def.buildingFactors.Count; i++)
-                    sb.AppendLine(" - " + "EF_Card_StatFactor".Translate(m.def.buildingFactors[i].Label, m.BuildingFactorFor(i).ToStringPercent()));
-                if (!m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
+                if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
+                if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
+                    infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
+                if (!trait.def.AllFuelTypes.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Fuel))
+                    infoString.AppendLine(" - " + (trait.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", trait.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
+                for (int i = 0; trait.IsRevealed(EntadEffectKind.Building) && trait.def.buildingFactors != null && i < trait.def.buildingFactors.Count; i++)
+                    infoString.AppendLine(" - " + "EF_Card_StatFactor".Translate(trait.def.buildingFactors[i].Label, trait.BuildingFactorFor(i).ToStringPercent()));
+                if (!trait.def.abilities.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Ability))
                 {
-                    sb.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", m.def.abilities.Select(a => a.LabelCap.ToString()))));
-                    if (m.def.IsReloadable)
-                        foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == m))
-                            sb.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
+                    infoString.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", trait.def.abilities.Select(a => a.LabelCap.ToString()))));
+                    if (trait.def.IsReloadable)
+                        foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == trait))
+                            infoString.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
                 }
-                if (m.def.HasMealEffect && m.IsRevealed(EntadEffectKind.Meal))
+                if (trait.def.HasMealEffect && trait.IsRevealed(EntadEffectKind.Meal))
                 {
-                    if (m.def.mealNutritionFactor.min != 1f || m.def.mealNutritionFactor.max != 1f)
-                        sb.AppendLine(" - " + "EF_Card_MealNutrition".Translate(m.mealNutritionFactor.ToStringPercent()));
-                    if (m.def.mealQualityOffset != 0)
-                        sb.AppendLine(" - " + "EF_Card_MealQuality".Translate(m.def.mealQualityOffset.ToString("+0;-0")));
-                    if (m.def.mealThought != null)
-                        sb.AppendLine(" - " + "EF_Card_MealThought".Translate(m.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? m.def.mealThought.defName));
+                    if (trait.def.mealNutritionFactor.min != 1f || trait.def.mealNutritionFactor.max != 1f)
+                        infoString.AppendLine(" - " + "EF_Card_MealNutrition".Translate(trait.mealNutritionFactor.ToStringPercent()));
+                    if (trait.def.mealQualityOffset != 0)
+                        infoString.AppendLine(" - " + "EF_Card_MealQuality".Translate(trait.def.mealQualityOffset.ToString("+0;-0")));
+                    if (trait.def.mealThought != null)
+                        infoString.AppendLine(" - " + "EF_Card_MealThought".Translate(trait.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? trait.def.mealThought.defName));
                 }
-                if (m.AnyHidden) sb.AppendLine(" - " + unknown);
-                if (!m.AnyHidden) sb.AppendLine(" - " + "EF_Card_MarketValue".Translate(m.MarketValueOffset(baseValue).ToStringMoneyOffset()));
+                if (trait.AnyHidden) infoString.AppendLine(" - " + unknown);
+                if (!trait.AnyHidden) infoString.AppendLine(" - " + "EF_Card_MarketValue".Translate(trait.MarketValueOffset(baseValue).ToStringMoneyOffset()));
             }
             if (activeTraits.Any(m => m.AnyHidden))
-                sb.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
+                infoString.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
 
             foreach (var e in DamageDisplayStats()) yield return e;
 
             if (IsBound)
             {
                 Pawn holder = Holder;
-                if (holder != null && !ActiveFor(holder)) sb.Append("\n").AppendLine("EF_Card_InactiveFor".Translate(holder.LabelShort));
+                if (holder != null && !ActiveFor(holder)) infoString.Append("\n").AppendLine("EF_Card_InactiveFor".Translate(holder.LabelShort));
                 yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_BoundLabel".Translate(), BoundLine(BoundNames),
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
-            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, sb.ToString().TrimEnd(), 4000);
+            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, infoString.ToString().TrimEnd(), 4000);
         }
     }
 
@@ -811,24 +811,24 @@ namespace EntadFramework
             var cat = parent.def.IsRangedWeapon ? StatCategoryDefOf.Weapon_Ranged : StatCategoryDefOf.Weapon_Melee;
             int order = 5500;
             float total = 0f;
-            foreach (var m in activeTraits)
+            foreach (var trait in activeTraits)
             {
-                if (!m.IsRevealed(EntadEffectKind.Damage)) continue;
+                if (!trait.IsRevealed(EntadEffectKind.Damage)) continue;
                 // Burst and stopping power values are folded into vanilla's own rows (Patch_ThingDef_SpecialDisplayStats_EntadWeapon)
-                if (m.def.ignoreAccuracyMaluses)
+                if (trait.def.ignoreAccuracyMaluses)
                     yield return new StatDrawEntry(cat, "EF_Stat_IgnoresAccuracyMaluses".Translate(), "Yes".Translate(),
-                        "EF_Stat_IgnoresAccuracyMalusesDesc".Translate(m.def.LabelCap), order++);
-                if (!m.def.HasDamageEffect) continue;
-                if (m.def.changeDamageType != null)
-                    yield return new StatDrawEntry(cat, "EF_Stat_DamageType".Translate(), m.def.changeDamageType.LabelCap,
-                        "EF_Stat_DamageTypeDesc".Translate(m.def.LabelCap, m.def.changeDamageType.label), order++);
-                for (int i = 0; m.def.extraDamage != null && i < m.def.extraDamage.Count; i++)
+                        "EF_Stat_IgnoresAccuracyMalusesDesc".Translate(trait.def.LabelCap), order++);
+                if (!trait.def.HasDamageEffect) continue;
+                if (trait.def.changeDamageType != null)
+                    yield return new StatDrawEntry(cat, "EF_Stat_DamageType".Translate(), trait.def.changeDamageType.LabelCap,
+                        "EF_Stat_DamageTypeDesc".Translate(trait.def.LabelCap, trait.def.changeDamageType.label), order++);
+                for (int i = 0; trait.def.extraDamage != null && i < trait.def.extraDamage.Count; i++)
                 {
-                    float v = m.ExtraDamageFor(i);
-                    total += v;
-                    var d = m.def.extraDamage[i].damageType;
-                    yield return new StatDrawEntry(cat, "EF_Stat_ExtraDamage".Translate(d.label), "+" + v.ToString("0.#"),
-                        "EF_Stat_ExtraDamageDesc".Translate(m.def.LabelCap, d.label), order++);
+                    float extraDamageValue = trait.ExtraDamageFor(i);
+                    total += extraDamageValue;
+                    var damageType = trait.def.extraDamage[i].damageType;
+                    yield return new StatDrawEntry(cat, "EF_Stat_ExtraDamage".Translate(damageType.label), "+" + extraDamageValue.ToString("0.#"),
+                        "EF_Stat_ExtraDamageDesc".Translate(trait.def.LabelCap, damageType.label), order++);
                 }
             }
             if (total > 0f)
