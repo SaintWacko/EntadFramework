@@ -1,8 +1,0 @@
-<Defs>
-  <JobDef>
-    <defName>Entad_UseFurnitureAbility</defName>
-    <driverClass>EntadFramework.JobDriver_UseEntadFurniture</driverClass>
-    <reportString>activating TargetA.</reportString>
-    <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
-  </JobDef>
-</Defs>

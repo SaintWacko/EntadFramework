@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Drawbacks for any entad (persona drawbacks are in EntadTraits_Persona.xml). Negative points: generation only
+       takes one on an item allowed drawbacks, and spends the points it gives back on more traits. They don't scale
+       with rarity. A drawback on the same stat as a benefit (Heavy and Swiftness, Brittle and Sturdy...) can't share
+       an item with it. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Haunting</defName>
+    <label>Haunting</label>
+    <description>Each enemy the wielder kills leaves them uneasy for a day.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <killThought>Entad_Thought_Haunted</killThought>
+    <killVictims>Hostile</killVictims>
+    <exclusiveWith><li>Entad_BattleJoy</li></exclusiveWith>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_Haunted</defName>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>haunted by a kill</label>
+        <description>My weapon won't let me forget the one I killed.</description>
+        <baseMoodEffect>-4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Heavy</defName>
+    <label>Heavy</label>
+    <description>Far heavier than it looks, and slows down whoever carries it.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>MoveSpeed</stat><min>-0.5</min><max>-0.2</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Brittle</defName>
+    <label>Brittle</label>
+    <description>Breaks more easily than it should.</description>
+    <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statFactors>
+      <li><stat>MaxHitPoints</stat><min>0.6</min><max>0.8</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Garish</defName>
+    <label>Garish</label>
+    <description>Unpleasant to look at, somehow.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>Beauty</stat><min>-3</min><max>-1</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Kindling</defName>
+    <label>Kindling</label>
+    <description>Catches fire far too easily.</description>
+    <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statFactors>
+      <li><stat>Flammability</stat><min>1.3</min><max>1.6</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Draining</defName>
+    <label>Draining</label>
+    <description>Whoever wears or wields this tires faster.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>RestFallRateFactor</stat><min>0.15</min><max>0.3</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Unnerving</defName>
+    <label>Unnerving</label>
+    <description>Whoever wears or wields this is a little closer to breaking under stress.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <statOffsets>
+      <li><stat>MentalBreakThreshold</stat><min>0.02</min><max>0.05</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RestlessDreams</defName>
+    <label>Restless Dreams</label>
+    <description>Whoever sleeps here sometimes has bad dreams.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Sleep</use>
+        <chance>0.2</chance>
+        <thought>Entad_Thought_BadDreams</thought>
+      </li>
+    </triggers>
+    <exclusiveWith><li>Entad_Dreamweaver</li></exclusiveWith>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_BadDreams</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>bad dream</label>
+        <description>I had an awful dream last night.</description>
+        <baseMoodEffect>-4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

@@ -1,0 +1,127 @@
+<Defs>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BrightHearth</defName>
+    <label>Bright</label>
+    <description>Burns with a wider, warmer glow than it should.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <buildingFactors>
+      <li>
+        <property>LightRadius</property>
+        <min>1.25</min>
+        <max>2</max>
+      </li>
+      <li>
+        <property>HeatOutput</property>
+        <min>1.1</min>
+        <max>1.5</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_FrugalBurner</defName>
+    <label>Frugal</label>
+    <description>Needs less fuel to run and holds more of it.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <buildingFactors>
+      <li>
+        <property>FuelConsumptionRate</property>
+        <min>0.5</min>
+        <max>0.8</max>
+      </li>
+      <li>
+        <property>FuelCapacity</property>
+        <min>1.25</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_OverflowingGenerator</defName>
+    <label>Overflowing</label>
+    <description>Generates more power than it has any right to.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Epic</rarity>
+    <buildingFactors>
+      <li>
+        <property>PowerGeneration</property>
+        <min>1.2</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SerenityFocus</defName>
+    <label>Serene</label>
+    <description>A stronger meditation focus.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <statOffsets>
+      <li>
+        <stat>MeditationFocusStrength</stat>
+        <min>0.1</min>
+        <max>0.3</max>
+      </li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_PotentCooling</defName>
+    <label>Potent</label>
+    <description>Heats or cools much harder than it should.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <buildingFactors>
+      <li>
+        <property>TemperatureControlPower</property>
+        <min>1.25</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_ThriftyDevice</defName>
+    <label>Thrifty</label>
+    <description>Draws less power than it should.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <buildingFactors>
+      <li>
+        <property>PowerConsumption</property>
+        <min>0.4</min>
+        <max>0.8</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_StoneBurner</defName>
+    <label>Stone-Burning</label>
+    <description>Somehow burns rock instead of wood.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Epic</rarity>
+    <replaceFuel>true</replaceFuel>
+    <fuelCategories>
+      <li>StoneBlocks</li>
+    </fuelCategories>
+  </EntadFramework.EntadTraitDef>
+</Defs>

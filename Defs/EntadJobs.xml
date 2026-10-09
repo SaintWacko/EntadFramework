@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- A pawn walks to entad furniture and uses one of its abilities (EntadFurnitureAbilities.cs) -->
+  <JobDef>
+    <defName>Entad_UseFurnitureAbility</defName>
+    <driverClass>EntadFramework.JobDriver_UseEntadFurniture</driverClass>
+    <reportString>activating TargetA.</reportString>
+    <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
+  </JobDef>
+
+  <!-- Reloading a reloadable entad ability (EntadReload.cs). Same shape as vanilla's Reload job. -->
+  <JobDef>
+    <defName>Entad_Reload</defName>
+    <driverClass>EntadFramework.JobDriver_EntadReload</driverClass>
+    <reportString>reloading TargetA.</reportString>
+    <suspendable>false</suspendable>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+
+  <!-- Walking up to a caravan's entad appraiser to open the appraisal window (EntadAppraisal.cs) -->
+  <JobDef>
+    <defName>Entad_Appraise</defName>
+    <driverClass>EntadFramework.JobDriver_EntadAppraise</driverClass>
+    <reportString>talking to TargetA.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
+</Defs>

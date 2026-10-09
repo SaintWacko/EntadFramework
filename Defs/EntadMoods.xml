@@ -1,0 +1,64 @@
+<Defs>
+  <ThoughtDef>
+    <defName>Entad_Thought_Contentment</defName>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>entad contentment</label>
+        <description>Something about this object makes me feel at ease.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Entad_Thought_BattleJoy</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>battle joy</label>
+        <description>My weapon sang when it struck them down.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Contentment</defName>
+    <label>Contentment</label>
+    <description>Whoever holds or uses this item feels strangely at ease.</description>
+    <categories>
+      <li>Weapon</li>
+      <li>Apparel</li>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Common</rarity>
+    <thought>Entad_Thought_Contentment</thought>
+    <thoughtHours>
+      <min>6</min>
+      <max>24</max>
+    </thoughtHours>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RandomGoodMood</defName>
+    <label>Fickle Cheer</label>
+    <description>Whoever holds or uses this item is overcome by a random good feeling.</description>
+    <categories>
+      <li>Weapon</li>
+      <li>Apparel</li>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <thoughtMoodRange>
+      <min>2</min>
+      <max>8</max>
+    </thoughtMoodRange>
+    <thoughtHours>
+      <min>4</min>
+      <max>12</max>
+    </thoughtHours>
+  </EntadFramework.EntadTraitDef>
+</Defs>

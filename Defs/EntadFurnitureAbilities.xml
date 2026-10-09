@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <HediffDef>
+    <defName>Entad_RestfulCalm</defName>
+    <label>restful calm</label>
+    <description>A deep, settled calm that dulls pain without clouding the mind.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.7, 1.0, 0.7)</defaultLabelColor>
+    <stages>
+      <li>
+        <painFactor>0.5</painFactor>
+      </li>
+    </stages>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+
+  <AbilityDef>
+    <defName>Entad_RestfulSigh</defName>
+    <label>restful sigh</label>
+    <description>Halves the user's pain for 4 hours.</description>
+    <iconPath>UI/Commands/Draft</iconPath>
+    <cooldownTicksRange>60000~60000</cooldownTicksRange>
+    <targetRequired>false</targetRequired>
+    <!-- Abilities default to hostile, which would mark the pawn as in combat every time it rests -->
+    <hostile>false</hostile>
+    <!-- The hediff's own disappearsAfterTicks is overwritten by CompAbilityEffect_GiveHediff with this duration
+         (seconds; 167 s = about 10000 ticks, 4 in-game hours). Without it the hediff would vanish on its next tick. -->
+    <statBases>
+      <Ability_Duration>167</Ability_Duration>
+    </statBases>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <label>restful sigh</label>
+      <range>0</range>
+      <targetable>false</targetable>
+      <targetParams>
+        <canTargetSelf>true</canTargetSelf>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="CompProperties_AbilityGiveHediff">
+        <compClass>CompAbilityEffect_GiveHediff</compClass>
+        <hediffDef>Entad_RestfulCalm</hediffDef>
+        <onlyApplyToSelf>true</onlyApplyToSelf>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RestfulChair</defName>
+    <label>Restful</label>
+    <description>Once a day, a pawn can pause by it for a few seconds and come away with their pain halved for 4 hours.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <abilityCastTicks>250</abilityCastTicks>
+    <abilities>
+      <li>Entad_RestfulSigh</li>
+    </abilities>
+  </EntadFramework.EntadTraitDef>
+</Defs>

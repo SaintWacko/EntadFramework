@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- More vanilla psycasts as limited-use abilities (see EntadTraits_Psycasts.xml). Requires Royalty: without it these
+       traits don't load. -->
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_RageEcho</defName>
+    <label>Rage Echo</label>
+    <description>Grants the ability to drive a target berserk. It recharges over three days.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <points>5</points>
+    <abilities><li>Berserk</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>180000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Veil</defName>
+    <label>Veil</label>
+    <description>Grants the ability to turn a person invisible for a short time. It recharges over two days.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <points>8</points>
+    <abilities><li>Invisibility</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>120000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_NumbingTouch</defName>
+    <label>Numbing Touch</label>
+    <description>Grants the ability to block a person's pain for a while. It holds two charges, which recharge over a day.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Painblock</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Quenching</defName>
+    <label>Quenching</label>
+    <description>Grants the ability to skip water onto an area, putting out fires. It recharges over a day.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Waterskip</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Reloadable: one charge that only comes back by reloading with steel -->
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Bulwark</defName>
+    <label>Bulwark</label>
+    <description>Grants the ability to raise a short-lived wall of rock. It holds one charge, and is reloaded with 25 steel.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <abilities><li>Wallraise</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityAmmo>Steel</abilityAmmo>
+    <abilityAmmoPerCharge>25</abilityAmmoPerCharge>
+    <abilityReloadTicks>120</abilityReloadTicks>
+  </EntadFramework.EntadTraitDef>
+</Defs>

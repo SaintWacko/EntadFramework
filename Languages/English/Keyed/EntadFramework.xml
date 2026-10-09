@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- Rarities -->
+  <EF_Rarity_Common>Common</EF_Rarity_Common>
+  <EF_Rarity_Uncommon>Uncommon</EF_Rarity_Uncommon>
+  <EF_Rarity_Rare>Rare</EF_Rarity_Rare>
+  <EF_Rarity_Epic>Epic</EF_Rarity_Epic>
+  <EF_Rarity_Legendary>Legendary</EF_Rarity_Legendary>
+  <EF_Rarity_Variable>Variable</EF_Rarity_Variable>
+
+  <!-- Building properties a trait can change -->
+  <EF_Prop_LightRadius>Light radius</EF_Prop_LightRadius>
+  <EF_Prop_HeatOutput>Heat output</EF_Prop_HeatOutput>
+  <EF_Prop_FuelConsumptionRate>Fuel consumption rate</EF_Prop_FuelConsumptionRate>
+  <EF_Prop_FuelCapacity>Fuel capacity</EF_Prop_FuelCapacity>
+  <EF_Prop_PowerConsumption>Power consumption</EF_Prop_PowerConsumption>
+  <EF_Prop_TemperatureControlPower>Heating/cooling power</EF_Prop_TemperatureControlPower>
+  <EF_Prop_PowerGeneration>Power generation</EF_Prop_PowerGeneration>
+  <EF_Prop_StorageCapacity>Stacks per cell</EF_Prop_StorageCapacity>
+
+  <!-- Item: inspect pane, gizmo, messages. {0} = item, {1} = trait. -->
+  <EF_Unknown>???</EF_Unknown>
+  <EF_InspectTraits>Entad Traits: {0}</EF_InspectTraits>
+  <EF_TraitRevealed>Something about {0} has revealed itself: {1}.</EF_TraitRevealed>
+  <EF_BoundTo>Bound to: {0}</EF_BoundTo>
+  <EF_Alert_WrongBloodline>Entad bound to another bloodline</EF_Alert_WrongBloodline>
+  <EF_Alert_WrongBloodlineDesc>These pawns are using entads bound to another bloodline. The items work as ordinary items, but their entad traits do nothing for them:
+
+{0}</EF_Alert_WrongBloodlineDesc>
+  <EF_Alert_WrongBloodlineLine>{0}: {1}</EF_Alert_WrongBloodlineLine>
+  <EF_Rename>Rename</EF_Rename>
+
+  <!-- Appraisers: identify entads for silver -->
+  <EF_Appraiser_LeftToday>Items left to identify today: {0} (at most {1} a day).</EF_Appraiser_LeftToday>
+  <EF_Appraise_Option>Ask {0} to identify entads</EF_Appraise_Option>
+  <EF_Appraise_CannotTalk>{0}: unable to talk</EF_Appraise_CannotTalk>
+  <EF_Appraise_Command>Identify entads</EF_Appraise_Command>
+  <EF_Appraise_CommandDesc>An appraiser in {0} will identify entads your caravan carries, revealing all of an item's hidden traits for a fee.</EF_Appraise_CommandDesc>
+  <EF_Appraise_Title>Entad appraisal: {0}</EF_Appraise_Title>
+  <EF_Appraise_TitleSettlement>Entad appraisal: {0}</EF_Appraise_TitleSettlement>
+  <EF_Appraise_LeftToday>Items they can still identify today: {0}</EF_Appraise_LeftToday>
+  <EF_Appraise_PriceLine>Price per item: {0}. Silver available: {1}</EF_Appraise_PriceLine>
+  <EF_Appraise_None>You have no entads with hidden traits that the appraiser can see.</EF_Appraise_None>
+  <EF_Appraise_Button>Identify ({0})</EF_Appraise_Button>
+  <EF_Appraise_NoneLeft>They can't identify any more items today. They'll be able to again after midnight.</EF_Appraise_NoneLeft>
+  <EF_Appraise_NoSilver>Not enough silver.</EF_Appraise_NoSilver>
+  <EF_Appraise_Done>The appraiser identified {0}: {1}.</EF_Appraise_Done>
+  <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>
+
+  <!-- Item info card: the "Entad traits" row and its tooltip -->
+  <EF_Card_TraitsLabel>Entad traits</EF_Card_TraitsLabel>
+  <EF_Card_Intro>This item's entad traits.</EF_Card_Intro>
+  <EF_Card_BoundLabel>Bound to</EF_Card_BoundLabel>
+  <EF_Card_BoundDesc>This entad is bound. Anyone can use it as an ordinary item, but its traits only work for the pawns it is bound to and their descendants. Its durability, value and effects on a building apply regardless.</EF_Card_BoundDesc>
+  <EF_Card_InactiveFor>Its traits do nothing for {0}, who is not of a bound bloodline.</EF_Card_InactiveFor>
+  <EF_Card_TraitHeader>{0} ({1})</EF_Card_TraitHeader>
+  <EF_Card_StatOffset>{0} {1}</EF_Card_StatOffset>
+  <EF_Card_StatFactor>{0} x{1}</EF_Card_StatFactor>
+  <EF_Card_Mood>Mood: {0} ({1}) ({2}h)</EF_Card_Mood>
+  <EF_Card_DamageType>Damage type: {0}</EF_Card_DamageType>
+  <EF_Card_ExtraDamage>Extra {0} damage +{1}</EF_Card_ExtraDamage>
+  <EF_Card_IgnoresAccuracyMaluses>Ignores weather, smoke and other accuracy penalties</EF_Card_IgnoresAccuracyMaluses>
+  <EF_Card_Trigger>{0}: {1}</EF_Card_Trigger>
+  <EF_Card_Persona>Bonds to the first person who equips it. Nobody else can wield it until they die.</EF_Card_Persona>
+  <EF_Card_Secretive>Keeps its other traits secret until they show themselves.</EF_Card_Secretive>
+  <EF_Card_NeverBond>Never bonds: anyone can wield it.</EF_Card_NeverBond>
+  <EF_Card_BondedHediffs>While bonded: {0}</EF_Card_BondedHediffs>
+  <EF_Card_BondedThought>While bonded: {0} ({1} mood)</EF_Card_BondedThought>
+  <EF_Card_OtherWeaponThought>When the bonded person wields another weapon: {0} ({1} mood)</EF_Card_OtherWeaponThought>
+  <EF_Card_KillThirst>After {0} days without a kill: {1} ({2} mood)</EF_Card_KillThirst>
+  <EF_Persona_EquipWarning>{0} has a persona. Once it bonds to a wielder, it will refuse to be wielded by anyone else.</EF_Persona_EquipWarning>
+  <EF_Persona_EquipConfirm>Are you sure you want to equip it?</EF_Persona_EquipConfirm>
+  <EF_Card_TriggerLimited>{0}: {1} ({2})</EF_Card_TriggerLimited>
+  <EF_Trigger_Kill>On a kill</EF_Trigger_Kill>
+  <EF_Trigger_KillHostile>On killing an enemy</EF_Trigger_KillHostile>
+  <EF_Trigger_KillHumanlike>On killing a person</EF_Trigger_KillHumanlike>
+  <EF_Trigger_WakeUp>On waking up</EF_Trigger_WakeUp>
+  <EF_Trigger_BillDone>On finishing a bill</EF_Trigger_BillDone>
+  <EF_Trigger_JobDone>On finishing {0}</EF_Trigger_JobDone>
+  <EF_Trigger_TakeDamage>On taking damage</EF_Trigger_TakeDamage>
+  <EF_Trigger_Downed>On being downed</EF_Trigger_Downed>
+  <EF_Trigger_Eat>On eating</EF_Trigger_Eat>
+  <EF_Trigger_Use>After using it</EF_Trigger_Use>
+  <EF_Trigger_UseKinds>After {0} here</EF_Trigger_UseKinds>
+  <EF_UseKind_Sleep>sleeping</EF_UseKind_Sleep>
+  <EF_UseKind_Eat>eating</EF_UseKind_Eat>
+  <EF_UseKind_Work>working</EF_UseKind_Work>
+  <EF_UseKind_Recreation>relaxing</EF_UseKind_Recreation>
+  <EF_UseKind_Other>other use</EF_UseKind_Other>
+  <EF_TriggerEffect_Heal>heals {0} HP</EF_TriggerEffect_Heal>
+  <EF_TriggerEffect_Rest>restores {0} rest</EF_TriggerEffect_Rest>
+  <EF_TriggerEffect_Food>restores {0} food</EF_TriggerEffect_Food>
+  <EF_TriggerEffect_Joy>restores {0} recreation</EF_TriggerEffect_Joy>
+  <EF_TriggerEffect_Hediff>gives {0}</EF_TriggerEffect_Hediff>
+  <EF_TriggerEffect_HediffFor>gives {0} for {1} hours</EF_TriggerEffect_HediffFor>
+  <EF_TriggerEffect_Thought>mood: {0}</EF_TriggerEffect_Thought>
+  <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
+  <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
+  <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
+  <EF_Card_Reloadable>Charges {0} / {1}, reloaded with {2} ({3} per charge)</EF_Card_Reloadable>
+  <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
+  <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
+  <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>
+  <EF_Card_GrantsAbility>Grants ability: {0}</EF_Card_GrantsAbility>
+  <EF_Card_MealNutrition>Meal nutrition x{0}</EF_Card_MealNutrition>
+  <EF_Card_MealQuality>Meal quality {0}</EF_Card_MealQuality>
+  <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
+  <EF_Card_MarketValue>Market value {0}</EF_Card_MarketValue>
+  <EF_Card_Unidentified>Unidentified properties: traders pay {0} more for the mystery.</EF_Card_Unidentified>
+
+  <!-- Weapon section of the info card. {0} = trait, {1} = damage type. -->
+  <EF_Stat_DamageType>Entad damage type</EF_Stat_DamageType>
+  <EF_Stat_DamageTypeDesc>{0}: this weapon's attacks deal {1} damage instead of their usual type.</EF_Stat_DamageTypeDesc>
+  <EF_Stat_ExtraDamage>Entad {0} damage</EF_Stat_ExtraDamage>
+  <EF_Stat_ExtraDamageDesc>{0}: each hit deals this much additional {1} damage, on top of the weapon's normal damage. It is not reduced by or added to the Damage stat above.</EF_Stat_ExtraDamageDesc>
+  <EF_Weapon_BurstShotCount>Burst shot count</EF_Weapon_BurstShotCount>
+  <EF_Weapon_BurstShotSpeed>Burst shot speed</EF_Weapon_BurstShotSpeed>
+  <EF_Weapon_StoppingPower>Stopping power</EF_Weapon_StoppingPower>
+  <EF_Stat_EntadTraits>Entad traits</EF_Stat_EntadTraits>
+  <EF_Stat_IgnoresAccuracyMaluses>Entad ignores accuracy penalties</EF_Stat_IgnoresAccuracyMaluses>
+  <EF_Stat_IgnoresAccuracyMalusesDesc>{0}: shots from this weapon ignore the accuracy and range penalties from weather and from blind smoke.</EF_Stat_IgnoresAccuracyMalusesDesc>
+  <EF_Stat_ExtraTotal>Entad extra damage per hit</EF_Stat_ExtraTotal>
+  <EF_Stat_ExtraTotalDesc>Total additional damage, of other damage types, dealt with every hit by this weapon's entad traits.</EF_Stat_ExtraTotalDesc>
+
+  <!-- Stat explanations (the breakdown when hovering a stat) -->
+  <EF_Explain_TraitValue>{0} ({1}): {2}</EF_Explain_TraitValue>
+  <EF_Explain_ValueFloor>Drawbacks can't lower the value below {0} of base: {1}</EF_Explain_ValueFloor>
+  <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
+  <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
+
+  <!-- Abilities. {0} = ability, {1} = building. -->
+  <EF_AbilityUnknown>The effect of this ability is not yet known.</EF_AbilityUnknown>
+  <EF_Activate>Activate {0} ({1})</EF_Activate>
+  <EF_ActivateCharges>Activate {0} ({1}) [{2}/{3}]</EF_ActivateCharges>
+  <EF_OnCooldown>{0} (on cooldown: {1})</EF_OnCooldown>
+
+  <!-- Settings -->
+  <EF_Tab_General>General</EF_Tab_General>
+  <EF_Tab_Rarity>Rarity and durability</EF_Tab_Rarity>
+  <EF_Tab_Traits>Traits</EF_Tab_Traits>
+  <EF_Settings_Reset>Reset to defaults</EF_Settings_Reset>
+  <EF_Settings_Reset_Tip>Resets the General and Rarity and durability tabs. Which traits are enabled is left as it is.</EF_Settings_Reset_Tip>
+
+  <EF_Settings_Discovery>Discovery</EF_Settings_Discovery>
+  <EF_Settings_HideTraits>Hide traits until revealed</EF_Settings_HideTraits>
+  <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
+  <EF_Settings_Generation>Generation</EF_Settings_Generation>
+  <EF_Settings_WeaponWeight>Weapon-specific trait weight: x{0}</EF_Settings_WeaponWeight>
+  <EF_Settings_WeaponWeight_Desc>How much more likely traits made for weapons (damage, accuracy, ...) are than general ones when generating for a weapon. 1 = no preference.</EF_Settings_WeaponWeight_Desc>
+  <EF_Settings_UniqueChance>Unique and persona weapons get entad traits: {0}</EF_Settings_UniqueChance>
+  <EF_Settings_UniqueChance_Desc>Chance that a vanilla unique or persona weapon gets random entad traits when it's picked for them. These weapons already have their own weapon traits. Traits added by name are not affected.</EF_Settings_UniqueChance_Desc>
+
+  <EF_Settings_RarityCurve>Rarity curve</EF_Settings_RarityCurve>
+  <EF_Settings_RarityCurve_Desc>Relative chance of each rarity when a trait is picked. Rarities with no eligible trait are skipped and the rest are renormalised.</EF_Settings_RarityCurve_Desc>
+  <EF_Settings_WeightRow>{0}: weight {1} ({2} of the total)</EF_Settings_WeightRow>
+  <EF_Settings_Multipliers>Rarity multipliers</EF_Settings_Multipliers>
+  <EF_Settings_Multipliers_Desc>How much a rarity widens the min/max of traits that scale with rarity. Offsets are multiplied; factors scale their distance from 100%. A trait is capped at the highest rarity where its values stay valid (for example a factor never drops to zero).</EF_Settings_Multipliers_Desc>
+  <EF_Settings_Durability>Durability</EF_Settings_Durability>
+  <EF_Settings_Durability_Desc>Max hit points multiplier for every item with at least one entad trait, set by the highest rarity among its traits.</EF_Settings_Durability_Desc>
+  <EF_Settings_FactorRow>{0}: x{1}</EF_Settings_FactorRow>
+  <EF_Settings_Points>Generation points</EF_Settings_Points>
+  <EF_Settings_Points_Desc>What a trait at each rarity counts toward an item's point target, when the trait doesn't set its own value. A trait that scales with rarity has its cost multiplied by the same ratio between its own rarity and the rolled one.</EF_Settings_Points_Desc>
+  <EF_Settings_PointRow>{0}: {1} points</EF_Settings_PointRow>
+  <EF_Settings_PointTarget>Point target per item: {0} to {1}</EF_Settings_PointTarget>
+  <EF_Settings_PointTarget_Desc>Traits are picked until the item reaches its target, and the last trait can go over it. A bigger target gives more traits and opens up rarer ones. Used when the mod generating the item doesn't set its own target.</EF_Settings_PointTarget_Desc>
+  <EF_Settings_Overshoot>Overshoot strictness: {0}</EF_Settings_Overshoot>
+  <EF_Settings_Overshoot_Desc>How strongly traits that would take an item well past its target are held back. At 0 the target is only a minimum and rare traits turn up on cheap items as often as anywhere. At 1, a Legendary trait shows up on roughly 1 in 100 items with a target of 2. Higher values keep items closer to their target.</EF_Settings_Overshoot_Desc>
+  <EF_Settings_MaxTraits>Most traits per item: {0}</EF_Settings_MaxTraits>
+  <EF_Settings_DrawbackChance>Chance an item can have drawbacks: {0}</EF_Settings_DrawbackChance>
+  <EF_Settings_MaxDrawbacks>Most drawbacks per item: {0}</EF_Settings_MaxDrawbacks>
+  <EF_Settings_Drawbacks_Desc>Drawbacks are traits with a cost below zero. Each one adds its points back to the target, so the item gets more or better traits to make up for it.</EF_Settings_Drawbacks_Desc>
+  <EF_Settings_Appraisers>Appraisers</EF_Settings_Appraisers>
+  <EF_Settings_CaravanAppraiser>Chance a trade caravan brings an appraiser: {0}</EF_Settings_CaravanAppraiser>
+  <EF_Settings_SettlementAppraiser>Chance a settlement has an appraiser: {0}</EF_Settings_SettlementAppraiser>
+  <EF_Settings_Appraiser_Desc>Appraisers identify entads for silver, revealing every hidden trait of one item. A settlement's chance is rolled once, the first time a caravan visits it. Factions from other mods may set their own chances.</EF_Settings_Appraiser_Desc>
+  <EF_Settings_IdentifyMinPrice>Lowest price per item: {0}</EF_Settings_IdentifyMinPrice>
+  <EF_Settings_IdentifyWealth>Price per item: {0} of colony wealth</EF_Settings_IdentifyWealth>
+  <EF_Settings_IdentifyPrice_Desc>Colony wealth is the total across all your colonies and caravans, the same figure raids are sized from. The price is whichever of the two amounts is higher.</EF_Settings_IdentifyPrice_Desc>
+  <EF_Settings_AppraiserMax>Most items an appraiser can identify in a day: {0} to {1}</EF_Settings_AppraiserMax>
+  <EF_Settings_AppraiserDailyMin>Fewest items on any one day: {0}</EF_Settings_AppraiserDailyMin>
+  <EF_Settings_AppraiserDaily_Desc>Each appraiser's daily maximum is picked from the range when they first appear. At each local midnight, the number they can do that day is picked between the fewest and their maximum.</EF_Settings_AppraiserDaily_Desc>
+  <EF_Settings_MarketValue>Market value</EF_Settings_MarketValue>
+  <EF_Settings_ValuePercent>Value per trait point: {0} of the item's base value</EF_Settings_ValuePercent>
+  <EF_Settings_ValueSilver>Plus per trait point: {0}</EF_Settings_ValueSilver>
+  <EF_Settings_Value_Desc>Each trait adds both amounts for every point it costs, more for a good roll and less for a poor one. The base value is the item's normal value, material and quality included. Drawbacks subtract value. Colony wealth, which sets raid size, counts every trait, including unidentified ones.</EF_Settings_Value_Desc>
+  <EF_Settings_ValueFloor>Lowest value with drawbacks: {0} of base value</EF_Settings_ValueFloor>
+  <EF_Settings_MysteryBonus>Mystery premium: {0} of base value</EF_Settings_MysteryBonus>
+  <EF_Settings_MysteryBonus_Desc>Traders only pay for identified traits. An item with anything unidentified gets this premium instead, however many traits are hidden.</EF_Settings_MysteryBonus_Desc>
+
+  <EF_Settings_Search>Search:</EF_Settings_Search>
+  <EF_Settings_EnableShown>Enable shown</EF_Settings_EnableShown>
+  <EF_Settings_DisableShown>Disable shown</EF_Settings_DisableShown>
+  <EF_Settings_TraitCounts>{0} of {1} traits shown, {2} disabled. Disabled traits are never picked when generating items.</EF_Settings_TraitCounts>
+  <EF_Settings_TraitRow>{0} ({1})</EF_Settings_TraitRow>
+  <EF_Summary_Damage>Damage</EF_Summary_Damage>
+  <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
+  <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
+
+</LanguageData>

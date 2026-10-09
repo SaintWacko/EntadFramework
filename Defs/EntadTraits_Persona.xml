@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Persona weapons (EntadPersona.cs). Persona rolls like any Rare weapon trait; bond traits, Freewielder and
+       Secretive only roll on a weapon that already has it. A persona weapon's traits start revealed unless it's
+       Secretive. Negative points mark drawbacks: generation takes one only on an item allowed drawbacks, and
+       spends the points it gives back on more traits. The bond thoughts use vanilla's weapon-trait thought classes, so {WEAPON} is the
+       weapon's name, and need no DLC. -->
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Persona</defName>
+    <label>Persona</label>
+    <description>An intelligent persona lives in this weapon. It usually bonds with its first wielder and refuses anyone else, and the two fight with a speed and precision neither could manage alone.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <persona>true</persona>
+    <partialStats>true</partialStats>
+    <!-- At Rare these match the persona monosword against the plain one: +8% damage, 20% faster attacks -->
+    <statFactors>
+      <li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.08</min><max>1.08</max></li>
+      <li><stat>MeleeWeapon_CooldownMultiplier</stat><min>0.8</min><max>0.8</max></li>
+      <li><stat>RangedWeapon_DamageMultiplier</stat><min>1.08</min><max>1.08</max></li>
+      <li><stat>RangedWeapon_Cooldown</stat><min>0.8</min><max>0.8</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Freewielder</defName>
+    <label>Freewielder</label>
+    <description>This weapon's persona doesn't form bonds. Anyone can pick it up and use it.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <points>1</points>
+    <neverBond>true</neverBond>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Secretive</defName>
+    <label>Secretive</label>
+    <description>This weapon's persona won't say what it can do. Its other traits stay hidden until they show themselves in use.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <points>-1</points>
+    <secretive>true</secretive>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_KindWhispers</defName>
+    <label>Kind Whispers</label>
+    <description>The persona is kind and supportive, and whispers encouragement to whoever it's bonded with.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <points>2</points>
+    <bondedThought>Entad_BondedThoughtKind</bondedThought>
+    <exclusivityTags><li>EntadBondedThought</li></exclusivityTags>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_BondedThoughtKind</defName>
+    <thoughtClass>Thought_Situational</thoughtClass>
+    <workerClass>ThoughtWorker_WeaponTraitBonded</workerClass>
+    <stages>
+      <li>
+        <label>{WEAPON}'s kind whispers</label>
+        <description>{WEAPON}, my bonded weapon, keeps whispering kind things to me.</description>
+        <baseMoodEffect>6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_MadMuttering</defName>
+    <label>Mad Muttering</label>
+    <description>The persona is neurotic and never stops muttering to whoever it's bonded with.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <bondedThought>Entad_BondedThoughtMuttering</bondedThought>
+    <exclusivityTags><li>EntadBondedThought</li></exclusivityTags>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_BondedThoughtMuttering</defName>
+    <thoughtClass>Thought_Situational</thoughtClass>
+    <workerClass>ThoughtWorker_WeaponTraitBonded</workerClass>
+    <stages>
+      <li>
+        <label>{WEAPON}'s muttering</label>
+        <description>{WEAPON}, my bonded weapon, mutters in my head. It's hard to ignore.</description>
+        <baseMoodEffect>-3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Gluttonous</defName>
+    <label>Gluttonous</label>
+    <description>The persona loves food and passes its appetite on: whoever it's bonded with gets hungry 50% faster.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <bondedHediffs><li>Entad_Hediff_PersonaHunger</li></bondedHediffs>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_PersonaHunger</defName>
+    <label>persona hunger</label>
+    <description>Hunger is increased by the psychic influence of a bonded weapon.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <duplicationAllowed>false</duplicationAllowed>
+    <stages>
+      <li>
+        <hungerRateFactorOffset>0.5</hungerRateFactorOffset>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Jealous</defName>
+    <label>Jealous</label>
+    <description>The persona flies into a rage when the person bonded to it uses another weapon.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <otherWeaponThought>Entad_JealousRage</otherWeaponThought>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_JealousRage</defName>
+    <thoughtClass>Thought_WeaponTraitNotEquipped</thoughtClass>
+    <durationDays>1</durationDays>
+    <stages>
+      <li>
+        <label>{WEAPON}'s jealousy</label>
+        <description>My bonded weapon {WEAPON} is jealous that I'm using another weapon. I can feel it screaming into my head.</description>
+        <baseMoodEffect>-15</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_KillThirst</defName>
+    <label>Kill Thirst</label>
+    <description>The persona finds purpose in bloodshed. After 20 days without a kill it grows angry and complains to whoever is bonded with it.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <killThirstThought>Entad_KillThirstThought</killThirstThought>
+    <killThirstDays>20</killThirstDays>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_KillThirstThought</defName>
+    <thoughtClass>Thought_Situational</thoughtClass>
+    <workerClass>ThoughtWorker_WeaponTraitKillNeed</workerClass>
+    <stages>
+      <li>
+        <label>{WEAPON}'s kill thirst</label>
+        <description>My bonded weapon {WEAPON} is angry it has gone so long without killing. I can feel its rage.</description>
+        <baseMoodEffect>-4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

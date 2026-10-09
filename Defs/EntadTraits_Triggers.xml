@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Triggered effects (EntadTriggers.cs): "when X happens, do Y". Amounts scale with rarity; chance and cooldown don't. -->
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_LastStand</defName>
+    <label>Last Stand</label>
+    <description>When the person wearing or wielding this item is downed, it closes their worst wounds. It can only do this once a day.</description>
+    <categories>
+      <li>Weapon</li>
+      <li>Apparel</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Downed</on>
+        <heal>30~40</heal>
+        <cooldownHours>24</cooldownHours>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_MendingRest</defName>
+    <label>Mending Rest</label>
+    <description>Anyone who sleeps here wakes with their injuries partly mended.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Sleep</use>
+        <heal>6~10</heal>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+</Defs>

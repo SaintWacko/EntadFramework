@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <!-- RimWorld runs on Unity's Mono with the .NET Framework 4.7.2 surface -->
+        <TargetFramework>net472</TargetFramework>
+        <RootNamespace>EntadFramework</RootNamespace>
+        <AssemblyName>EntadFramework</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Deterministic>true</Deterministic>
+        <OutputPath>..\Assemblies\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <!-- Dependent mods (Forge Frenzy) and bug reports can tell builds apart by this -->
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Product>Entad Framework</Product>
+        <Authors>SaintWacko</Authors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <Optimize>true</Optimize>
+        <DebugType>none</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <Optimize>false</Optimize>
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Reference assemblies for RimWorld + Unity, so the project builds on any machine without a game install.
+             Pinned: a floating version can pull a prerelease ref assembly on restore. -->
+        <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+        <!-- Pinned to an exact version so builds are reproducible. Compile-only: the Harmony mod (brrainz.harmony,
+             2.4.2 at the time of writing) supplies the runtime DLL, and a 2.4.x reference binds to it fine, so it is
+             never copied to Assemblies/. Shipping our own 0Harmony.dll is what breaks other mods. -->
+        <PackageReference Include="Lib.Harmony" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+    </ItemGroup>
+</Project>

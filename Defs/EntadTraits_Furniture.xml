@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Furniture traits: fuel, and Use triggers. A Use trigger only rolls on furniture that can be used that way
+       (beds for Sleep, tables and chairs for Eat, workbenches for Work). -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Capacious</defName>
+    <label>Capacious</label>
+    <description>Holds far more fuel than it should.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <buildingFactors>
+      <li>
+        <property>FuelCapacity</property>
+        <min>1.5</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Bottomless</defName>
+    <label>Bottomless</label>
+    <description>Holds far more than it has any right to. Each cell fits extra stacks of items.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <buildingFactors>
+      <li>
+        <property>StorageCapacity</property>
+        <min>1.5</min>
+        <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Hayburner</defName>
+    <label>Hayburner</label>
+    <description>Also burns hay, on top of its usual fuel.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <fuelTypes><li>Hay</li></fuelTypes>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_ConvivialTable</defName>
+    <label>Convivial</label>
+    <description>Meals taken here feel like good company.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Eat</use>
+        <thought>Entad_Thought_Convivial</thought>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_Convivial</defName>
+    <durationDays>0.25</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>convivial meal</label>
+        <description>That meal felt like a good dinner with friends.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Dreamweaver</defName>
+    <label>Dreamweaver</label>
+    <description>Whoever sleeps here sometimes has wonderful dreams.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Sleep</use>
+        <chance>0.3</chance>
+        <thought>Entad_Thought_SweetDreams</thought>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_SweetDreams</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>wonderful dream</label>
+        <description>I had the most wonderful dream last night.</description>
+        <baseMoodEffect>6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_TirelessBench</defName>
+    <label>Tireless</label>
+    <description>Working here is oddly refreshing.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Work</use>
+        <rest>0.05~0.1</rest>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+</Defs>
