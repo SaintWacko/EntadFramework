@@ -81,7 +81,7 @@ namespace EntadFramework
         public bool IsEmpty => state == PortableSpaceState.Empty;
 
         // Thing's private flag behind PreSwapMap. Null if a game version renames it: things then load unflagged.
-        private static readonly HarmonyLib.AccessTools.FieldRef<Thing, bool> BeingMoved = MakeBeingMoved();
+        internal static readonly HarmonyLib.AccessTools.FieldRef<Thing, bool> BeingMoved = MakeBeingMoved();
 
         private static HarmonyLib.AccessTools.FieldRef<Thing, bool> MakeBeingMoved()
         {
@@ -583,8 +583,13 @@ namespace EntadFramework
                 {
                     // Broken up as if destroyed in place: the usual share of its cost (slag for metal, frames give
                     // back their stored materials), its kill leavings and filth, all around the drop cell. Then
-                    // destroyed for real, so its comps clean up. PostSwapMap first clears the moved-flag PreSwapMap set.
-                    t.PostSwapMap();
+                    // destroyed for real, so its comps clean up. Only the moved flag is cleared first, not PostSwapMap:
+                    // the thing has no map, and after a load PreSwapMap never ran for it (see ExposeData).
+                    if (PortableSpace.BeingMoved != null) PortableSpace.BeingMoved(t) = false;
+                    // A grave's corpse or a casket's sleeper would be deleted by a Vanish destroy: drop them first.
+                    // Frames are left alone: DoLeavingsFor gives back their stored materials at the destroyed share.
+                    if (!(t is Frame) && t is IThingHolder holder)
+                        holder.GetDirectlyHeldThings()?.TryDropAll(near, map, ThingPlaceMode.Near);
                     GenLeaving.DoLeavingsFor(t, map, DestroyMode.KillFinalize, CellRect.SingleCell(near));
                     t.Destroy(DestroyMode.Vanish);
                     return;
