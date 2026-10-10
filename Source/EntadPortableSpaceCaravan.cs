@@ -30,9 +30,14 @@ namespace EntadFramework
     // Beds: every bed set up in the room is a caravan bed (Caravan_BedsTracker.GetUsableBeds), any kind, since the
     // room is already furnished; vanilla's bed_caravansCanUse (bedrolls only) is about carrying a bed, not this.
     //
-    // Room items don't tick while held, so food in a room doesn't rot.
+    // Room items don't tick while held, so food in a room doesn't rot (the caravan's rot estimate still counts it).
+    //
+    // The Royalty shuttle permit loads AllInventoryItems into the shuttle: room items are held back from that list
+    // while it launches, so they stay in their room (Patch_CallShuttleLaunch_Space).
     public static class EntadSpaceCaravan
     {
+        internal static bool holdBack;
+
         // Spaces holding a room, in this game. Pruned when asked; registered by PortableSpace.SetRoom and on load.
         private static readonly List<PortableSpace> holding = new List<PortableSpace>();
         private static Game game;
@@ -177,7 +182,7 @@ namespace EntadFramework
     {
         public static void Postfix(Caravan caravan, List<Thing> __result)
         {
-            if (__result == null || !EntadSpaceCaravan.AnyHolding) return;
+            if (__result == null || EntadSpaceCaravan.holdBack || !EntadSpaceCaravan.AnyHolding) return;
             var spaces = EntadSpaceCaravan.Holding;
             for (int i = 0; i < spaces.Count; i++)
                 if (EntadSpaceCaravan.CarriedIn(spaces[i], caravan)) EntadSpaceCaravan.AppendItems(spaces[i], __result);
@@ -217,10 +222,34 @@ namespace EntadFramework
             if (to == null) return false;
             ThingOwner from = item.holdingOwner;
             Thing piece = item.SplitOff(numToMove);
-            if (!to.inventory.innerContainer.TryAdd(piece) && piece.holdingOwner == null && !piece.Destroyed)
-                from.TryAdd(piece, false);
+            if (to.inventory.innerContainer.TryAdd(piece) || piece.holdingOwner != null || piece.Destroyed) return false;
+            if (from != null && from.TryAdd(piece, false)) return false;
+            // Nowhere to keep it, as vanilla's GiveThing does: a thing with no holder would be dropped from the save
+            Log.Error($"[Entad Framework] Could not move {piece} out of a portable space; it was lost.");
+            piece.Destroy();
             return false;
         }
+    }
+
+    // The shuttle permit's Launch is a local function, compiled to a generated name, so it's found by name at
+    // startup. If a game version renames it, Prepare skips the patch and room items ride in the shuttle as loose
+    // items, which loses nothing.
+    [HarmonyPatch]
+    public static class Patch_CallShuttleLaunch_Space
+    {
+        private static System.Reflection.MethodBase Find()
+        {
+            var root = typeof(RoyalTitlePermitWorker_CallShuttle);
+            foreach (var t in new[] { root }.Concat(root.GetNestedTypes(AccessTools.all)))
+                foreach (var m in AccessTools.GetDeclaredMethods(t))
+                    if (m.Name.Contains("CallShuttleToCaravan") && m.Name.Contains("g__Launch")) return m;
+            return null;
+        }
+
+        public static bool Prepare() => Find() != null;
+        public static System.Reflection.MethodBase TargetMethod() => Find();
+        public static void Prefix() => EntadSpaceCaravan.holdBack = true;
+        public static void Finalizer() => EntadSpaceCaravan.holdBack = false;
     }
 
     [HarmonyPatch(typeof(Dialog_SplitCaravan), "TrySplitCaravan")]

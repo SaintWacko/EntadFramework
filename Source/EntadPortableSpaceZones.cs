@@ -172,10 +172,9 @@ namespace EntadFramework
 
         // Sets stored zones down. A part cut from a zone that is still on this map goes back into that zone where it
         // touches it (a room set back down where it was captured, or a placed room picked up), along with the far
-        // pieces SplitApart made of it; 'mergeIntoOriginal' (picking up) puts every cell back regardless. Anything
-        // else becomes a new zone, kept separate from neighbours of the same kind. Cells that can't hold a zone now
-        // are left out.
-        public static void SetDownZones(List<StoredZone> zones, Map map, Func<IntVec3, IntVec3> toMap, bool mergeIntoOriginal)
+        // pieces SplitApart made of it. Anything else becomes a new zone, kept separate from neighbours of the same
+        // kind. Cells that can't hold a zone now are left out.
+        public static void SetDownZones(List<StoredZone> zones, Map map, Func<IntVec3, IntVec3> toMap)
         {
             if (zones.NullOrEmpty()) return;
             foreach (StoredZone sz in zones)

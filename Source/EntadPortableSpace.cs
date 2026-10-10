@@ -69,7 +69,7 @@ namespace EntadFramework
     // destroys one of them (a caravan using the room's items, EntadPortableSpaceCaravan.cs) removes it from the room
     // the ordinary way. 'room' stays the saved record and keeps each thing's place; Contents is rebuilt from it after a
     // load, and PruneRoom drops whatever vanilla took out meanwhile.
-    public class PortableSpace : IExposable, IThingHolder
+    public class PortableSpace : IExposable, IThingHolder, IThingHolderEvents<Thing>
     {
         public PortableSpaceState state = PortableSpaceState.Empty;
 
@@ -110,6 +110,17 @@ namespace EntadFramework
         public ThingOwner GetDirectlyHeldThings() => Contents;
         public void GetChildHolders(List<IThingHolder> outChildren) => ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, Contents);
 
+        // A thing vanilla takes out (a caravan selling or moving it) leaves the room for good: clear the 'being moved'
+        // flag PreSwapMap set, or its next spawn would skip spawn-time logic (spawnedTick, quest signals, sound)
+        public void Notify_ItemAdded(Thing item) { }
+
+        public void Notify_ItemRemoved(Thing item)
+        {
+            if (!releasing && item != null && BeingMoved != null) BeingMoved(item) = false;
+        }
+
+        private bool releasing;
+
         // The room as just lifted: recorded and put in the container
         internal void SetRoom(List<StoredThing> stored)
         {
@@ -124,7 +135,9 @@ namespace EntadFramework
         internal void ReleaseRoom()
         {
             if (contents == null) return;
-            for (int i = contents.Count - 1; i >= 0; i--) contents.Remove(contents[i]);
+            releasing = true;
+            try { for (int i = contents.Count - 1; i >= 0; i--) contents.Remove(contents[i]); }
+            finally { releasing = false; }
         }
 
         // Drops from the record what left the room while it was held: eaten, sold, abandoned, moved to a pawn
@@ -595,7 +608,7 @@ namespace EntadFramework
             space.ReleaseRoom();
             SetDown(things, map, rect);
             SetDownRoofs(cells, map);
-            EntadSpaceZones.SetDownZones(space.roomZones, map, l => ToMap(l, origin, rot, w, h), false);
+            EntadSpaceZones.SetDownZones(space.roomZones, map, l => ToMap(l, origin, rot, w, h));
             EntadSpaceZones.SetDownAreas(space.roomAreas, map, l => ToMap(l, origin, rot, w, h));
 
             space.room = new List<StoredThing>();
@@ -621,7 +634,7 @@ namespace EntadFramework
             SetDownFloors(cells, map);
             SetDown(space.displaced.Select(st => (st.thing, st.pos, st.rot)).ToList(), map, rect);
             SetDownRoofs(cells, map);
-            EntadSpaceZones.SetDownZones(space.displacedZones, map, c => c, true);
+            EntadSpaceZones.SetDownZones(space.displacedZones, map, c => c);
             EntadSpaceZones.SetDownAreas(space.displacedAreas, map, c => c);
 
             space.displaced = new List<StoredThing>();
