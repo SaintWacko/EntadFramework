@@ -426,7 +426,7 @@ namespace EntadFramework
 
         public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;
 
-        // Portable space (EntadPortableSpace.cs), worn apparel only: the item can lift a rectangle of the map (buildings,
+        // Portable space (EntadPortableSpace.cs), worn apparel or a wielded weapon: the item can lift a rectangle of the map (buildings,
         // items, plants, floors, built roofs) into itself and set it down elsewhere. Width and height are rolled
         // separately in this range and multiplied by the rarity scale, then rounded. 0..0 means unused.
         public FloatRange portableSpace = new FloatRange(0f, 0f);

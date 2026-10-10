@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- Portable space: the air shimmers over the area while the wearer folds or unfolds it
+  <!-- Portable space: the air shimmers over the area while the holder folds or unfolds it
        (JobDriver_UsePortableSpace). A slow, faint version of the psycast area distortion. -->
   <FleckDef ParentName="FleckGlowDistortBackground">
     <defName>Entad_SpaceShimmer</defName>
