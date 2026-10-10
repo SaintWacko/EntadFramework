@@ -12,7 +12,9 @@ namespace EntadFramework
     //
     // Empty: the holder captures a rectangle of exactly the rolled size. Everything in it except pawns goes into the
     // item: buildings, items, plants, chunks, filth, blueprints and frames, built floors and built roofs. Natural
-    // terrain, natural rock and thick roofs stay on the map.
+    // terrain and natural rock stay on the map. Overhead mountain (thick roof) is never moved or replaced: the room
+    // can be set down under it (its own roof is skipped on those cells), and lifting a room from under it stores
+    // a built roof there instead.
     // Holding: the holder sets the room down somewhere, rotated as they like. What is already there is swapped into
     // the item and kept apart from the room: player buildings, plants, chunks, filth, floors and roofs. Other items
     // and pawns are pushed out of the rectangle. Natural rock, non-player buildings and fog refuse the spot.
@@ -63,9 +65,75 @@ namespace EntadFramework
         }
     }
 
-    public class PortableSpace : IExposable
+    // Also the container its room's things sit in while held (Contents), so vanilla code that takes, eats, sells or
+    // destroys one of them (a caravan using the room's items, EntadPortableSpaceCaravan.cs) removes it from the room
+    // the ordinary way. 'room' stays the saved record and keeps each thing's place; Contents is rebuilt from it after a
+    // load, and PruneRoom drops whatever vanilla took out meanwhile.
+    public class PortableSpace : IExposable, IThingHolder
     {
         public PortableSpaceState state = PortableSpaceState.Empty;
+
+        // The trait this belongs to, set by SpaceOf and CompEntad's load fix-up. Not saved.
+        internal AppliedEntadTrait trait;
+
+        private ThingOwner<Thing> contents;
+        private bool contentsFilled;
+
+        public ThingWithComps Item => trait?.owner?.parent;
+
+        // The pawn wearing, wielding or carrying (inventory) the item, if any
+        public Pawn Carrier
+        {
+            get
+            {
+                IThingHolder h = Item?.ParentHolder;
+                return (h as Pawn_ApparelTracker)?.pawn ?? (h as Pawn_EquipmentTracker)?.pawn ?? (h as Pawn_InventoryTracker)?.pawn;
+            }
+        }
+
+        public ThingOwner<Thing> Contents
+        {
+            get
+            {
+                if (contents == null) contents = new ThingOwner<Thing>(this, false, LookMode.Reference);
+                if (!contentsFilled)
+                {
+                    contentsFilled = true;
+                    if (state == PortableSpaceState.Holding)
+                        foreach (var s in room) if (s?.thing != null && s.thing.holdingOwner == null && !s.thing.Destroyed) contents.TryAdd(s.thing, false);
+                }
+                return contents;
+            }
+        }
+
+        public IThingHolder ParentHolder => Item?.ParentHolder;
+        public ThingOwner GetDirectlyHeldThings() => Contents;
+        public void GetChildHolders(List<IThingHolder> outChildren) => ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, Contents);
+
+        // The room as just lifted: recorded and put in the container
+        internal void SetRoom(List<StoredThing> stored)
+        {
+            ReleaseRoom();
+            room = stored;
+            contentsFilled = true;
+            foreach (var s in room) Contents.TryAdd(s.thing, false);
+            EntadSpaceCaravan.Register(this);
+        }
+
+        // Takes everything out of the container (before the room is set down or spilled). 'room' is left as it is.
+        internal void ReleaseRoom()
+        {
+            if (contents == null) return;
+            for (int i = contents.Count - 1; i >= 0; i--) contents.Remove(contents[i]);
+        }
+
+        // Drops from the record what left the room while it was held: eaten, sold, abandoned, moved to a pawn
+        internal void PruneRoom()
+        {
+            if (state != PortableSpaceState.Holding) return;
+            var c = Contents;
+            room.RemoveAll(s => s?.thing == null || s.thing.Destroyed || s.thing.Spawned || (s.thing.holdingOwner != null && s.thing.holdingOwner != c));
+        }
 
         // The room, in room coordinates: (0,0) to (width-1, height-1) as captured
         public List<StoredThing> room = new List<StoredThing>();
@@ -107,6 +175,7 @@ namespace EntadFramework
 
         public void ExposeData()
         {
+            if (Scribe.mode == LoadSaveMode.Saving) PruneRoom();
             Scribe_Values.Look(ref state, "state", PortableSpaceState.Empty);
             Scribe_Collections.Look(ref room, "room", LookMode.Deep);
             Scribe_Collections.Look(ref roomCells, "roomCells", LookMode.Deep);
@@ -139,6 +208,8 @@ namespace EntadFramework
                     foreach (var s in room) BeingMoved(s.thing) = true;
                     foreach (var s in displaced) BeingMoved(s.thing) = true;
                 }
+                // Contents fills itself from 'room' on first use
+                if (state == PortableSpaceState.Holding) EntadSpaceCaravan.Register(this);
             }
         }
     }
@@ -151,7 +222,12 @@ namespace EntadFramework
         public static int Width(AppliedEntadTrait trait) => trait.spaceValues.Count > 0 ? Mathf.Max(1, Mathf.RoundToInt(trait.spaceValues[0])) : 1;
         public static int Height(AppliedEntadTrait trait) => trait.spaceValues.Count > 1 ? Mathf.Max(1, Mathf.RoundToInt(trait.spaceValues[1])) : 1;
 
-        public static PortableSpace SpaceOf(AppliedEntadTrait trait) => trait.space ?? (trait.space = new PortableSpace());
+        public static PortableSpace SpaceOf(AppliedEntadTrait trait)
+        {
+            if (trait.space == null) trait.space = new PortableSpace();
+            trait.space.trait = trait;
+            return trait.space;
+        }
 
         public static int WorkTicks(AppliedEntadTrait trait) => Mathf.Max(60, Width(trait) * Height(trait) * TicksPerCell);
 
@@ -388,8 +464,9 @@ namespace EntadFramework
                 GenSpawn.Spawn(t, from, map); // nowhere else: leave it where it was rather than lose it
         }
 
-        // Takes the rectangle's floors and built roofs off the map
-        private static List<StoredCell> LiftCells(Map map, CellRect rect, bool allRoofs)
+        // Takes the rectangle's floors and built roofs off the map. Overhead mountain (thick roof) always stays where it
+        // is; lifting a room ('thickAsBuilt') stores a built roof in its place, so the room keeps a roof there.
+        private static List<StoredCell> LiftCells(Map map, CellRect rect, bool thickAsBuilt)
         {
             var cells = new List<StoredCell>();
             foreach (IntVec3 c in rect)
@@ -402,11 +479,12 @@ namespace EntadFramework
                     map.terrainGrid.RemoveTopLayer(c, false);
                 }
                 RoofDef roof = map.roofGrid.RoofAt(c);
-                if (roof != null && (allRoofs || !roof.isThickRoof))
+                if (roof != null && !roof.isThickRoof)
                 {
                     sc.roof = roof;
                     map.roofGrid.SetRoof(c, null);
                 }
+                else if (roof != null && thickAsBuilt) sc.roof = RoofDefOf.RoofConstructed;
                 if (sc.floor != null || sc.roof != null) cells.Add(sc);
             }
             return cells;
@@ -425,7 +503,7 @@ namespace EntadFramework
         private static void SetDownRoofs(IEnumerable<(IntVec3 cell, StoredCell sc)> cells, Map map)
         {
             foreach (var (c, sc) in cells)
-                if (sc.roof != null) map.roofGrid.SetRoof(c, sc.roof);
+                if (sc.roof != null && map.roofGrid.RoofAt(c)?.isThickRoof != true) map.roofGrid.SetRoof(c, sc.roof);
         }
 
         // ---- The three actions ----
@@ -443,8 +521,8 @@ namespace EntadFramework
                 stored.Add(new StoredThing { thing = t, pos = p, rot = r });
             }
             LiftAll(things, map);
-            space.room = stored;
-            space.roomCells = LiftCells(map, rect, false);
+            space.SetRoom(stored);
+            space.roomCells = LiftCells(map, rect, true);
             foreach (var sc in space.roomCells) sc.cell = ToLocal(sc.cell, origin, rot, w, h);
             space.roomZones = EntadSpaceZones.LiftZones(map, rect, c => ToLocal(c, origin, rot, w, h));
             space.roomAreas = EntadSpaceZones.LiftAreas(map, rect, c => ToLocal(c, origin, rot, w, h));
@@ -499,7 +577,7 @@ namespace EntadFramework
             }
             space.displaced = swap.Select(t => new StoredThing { thing = t, pos = t.Position, rot = t.Rotation }).ToList();
             LiftAll(swap, map);
-            space.displacedCells = LiftCells(map, rect, true);
+            space.displacedCells = LiftCells(map, rect, false);
             // Before the room's things spawn: a wall landing on a zone cell would otherwise trim that zone itself
             space.displacedZones = EntadSpaceZones.LiftZones(map, rect, c => c);
             space.displacedAreas = EntadSpaceZones.LiftAreas(map, rect, c => c);
@@ -508,11 +586,13 @@ namespace EntadFramework
             var cells = space.roomCells.Select(sc => (ToMap(sc.cell, origin, rot, w, h), sc)).ToList();
             SetDownFloors(cells, map);
             var things = new List<(Thing, IntVec3, Rot4)>();
+            space.PruneRoom();
             foreach (var st in space.room)
             {
                 Transform(st.thing.def, st.pos, st.rot, l => ToMap(l, origin, rot, w, h), rot.AsInt, out IntVec3 p, out Rot4 r);
                 things.Add((st.thing, p, r));
             }
+            space.ReleaseRoom();
             SetDown(things, map, rect);
             SetDownRoofs(cells, map);
             EntadSpaceZones.SetDownZones(space.roomZones, map, l => ToMap(l, origin, rot, w, h), false);
@@ -586,7 +666,9 @@ namespace EntadFramework
             if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0)
                 Messages.Message((item.Destroyed ? "EF_Space_LostOffMap" : "EF_Space_LostOnRemove").Translate(item.LabelNoCount), MessageTypeDefOf.NegativeEvent, false);
             var loose = new List<Thing>();
+            space.PruneRoom();
             if (space.state == PortableSpaceState.Holding) loose.AddRange(space.room.Select(s => s.thing));
+            space.ReleaseRoom();
             Map placedMap = space.PlacedMap;
             if (space.state == PortableSpaceState.Placed && placedMap != null)
             {

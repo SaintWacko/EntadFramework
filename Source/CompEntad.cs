@@ -660,7 +660,11 @@ namespace EntadFramework
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;
-                foreach (var trait in activeTraits) trait.owner = this;
+                foreach (var trait in activeTraits)
+                {
+                    trait.owner = this;
+                    if (trait.space != null) trait.space.trait = trait;
+                }
                 // A bond whose persona trait is gone (def removed or renamed away) mustn't hold the pawn's slot
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
