@@ -437,9 +437,36 @@ namespace EntadFramework
             AfterChange(map, rect);
         }
 
+        // The moment the area folds away or unfolds: a skip flash and sound at the middle, smaller skip flashes
+        // scattered over the area and a dust puff from each cell. Large areas sample their cells so a 21x21 room
+        // doesn't spawn hundreds of flecks in one frame.
+        private const int MaxPuffs = 80;
+
+        public static void PlayEffect(Map map, CellRect rect, bool unfolding)
+        {
+            var center = rect.CenterVector3;
+            float size = Mathf.Max(rect.Width, rect.Height);
+            SoundDef sound = unfolding && SoundDefOf.Psycast_Skip_Exit != null ? SoundDefOf.Psycast_Skip_Exit : SoundDefOf.Psycast_Skip_Entry;
+            sound?.PlayOneShot(new TargetInfo(rect.CenterCell, map));
+
+            FleckDef flash = DefDatabase<FleckDef>.GetNamedSilentFail("PlainFlash");
+            if (flash != null) FleckMaker.Static(center, map, flash, size * 1.5f);
+            FleckMaker.Static(center, map, FleckDefOf.PsycastSkipFlashEntry, size * 0.6f);
+
+            var cells = rect.Cells.ToList();
+            if (cells.Count > MaxPuffs) cells = cells.InRandomOrder().Take(MaxPuffs).ToList();
+            foreach (IntVec3 c in cells)
+            {
+                Vector3 loc = c.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f));
+                FleckMaker.ThrowDustPuffThick(loc, map, Rand.Range(1.2f, 2f), new Color(1f, 1f, 1f, 0.8f));
+                if (Rand.Chance(0.15f)) FleckMaker.Static(loc, map, FleckDefOf.PsycastSkipFlashEntry, Rand.Range(0.8f, 1.4f));
+            }
+        }
+
         public static void Capture(PortableSpace space, Map map, IntVec3 origin, Rot4 rot, int w, int h)
         {
             LiftRoom(space, map, origin, rot, w, h);
+            PlayEffect(map, RectAt(origin, rot, w, h), false);
             space.state = PortableSpaceState.Holding;
         }
 
@@ -479,6 +506,7 @@ namespace EntadFramework
             space.origin = origin;
             space.rot = rot;
             AfterChange(map, rect);
+            PlayEffect(map, rect, true);
         }
 
         public static void PickUp(PortableSpace space, Map map, int w, int h)
@@ -498,6 +526,7 @@ namespace EntadFramework
             space.state = PortableSpaceState.Holding;
             space.mapId = -1;
             AfterChange(map, rect);
+            PlayEffect(map, rect, false);
         }
 
         private static void AfterChange(Map map, CellRect rect)
