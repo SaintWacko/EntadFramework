@@ -551,8 +551,8 @@ namespace EntadFramework
             space.mapId = -1;
         }
 
-        // The item was destroyed. What it holds lands near where it was; buildings that can't be packed up are lost
-        // along with floors and roofs. A placed room stays where it is, and what it displaced lands beside it.
+        // The item was destroyed. What it holds lands near where it was; buildings that can't be packed up break
+        // apart into what vanilla leaves when one is destroyed (Drop), and floors and roofs are lost. A placed room stays where it is, and what it displaced lands beside it.
         public static void Spill(PortableSpace space, Map map, IntVec3 near, Thing item)
         {
             if (space == null) return;
@@ -579,7 +579,16 @@ namespace EntadFramework
             Thing drop = t;
             if (t.def.category == ThingCategory.Building)
             {
-                if (!t.def.Minifiable) return;
+                if (!t.def.Minifiable)
+                {
+                    // Broken up as if destroyed in place: the usual share of its cost (slag for metal, frames give
+                    // back their stored materials), its kill leavings and filth, all around the drop cell. Then
+                    // destroyed for real, so its comps clean up. PostSwapMap first clears the moved-flag PreSwapMap set.
+                    t.PostSwapMap();
+                    GenLeaving.DoLeavingsFor(t, map, DestroyMode.KillFinalize, CellRect.SingleCell(near));
+                    t.Destroy(DestroyMode.Vanish);
+                    return;
+                }
                 drop = t.MakeMinified();
             }
             else if (t.def.category != ThingCategory.Item) return;
