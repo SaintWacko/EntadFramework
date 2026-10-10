@@ -8,12 +8,12 @@ using Verse.Sound;
 
 namespace EntadFramework
 {
-    // Portable space (trait property portableSpace, worn apparel only). The item holds one rectangle of a map.
+    // Portable space (trait property portableSpace, worn apparel or a wielded weapon). The item holds one rectangle of a map.
     //
-    // Empty: the wearer captures a rectangle of exactly the rolled size. Everything in it except pawns goes into the
+    // Empty: the holder captures a rectangle of exactly the rolled size. Everything in it except pawns goes into the
     // item: buildings, items, plants, chunks, filth, blueprints and frames, built floors and built roofs. Natural
     // terrain, natural rock and thick roofs stay on the map.
-    // Holding: the wearer sets the room down somewhere, rotated as they like. What is already there is swapped into
+    // Holding: the holder sets the room down somewhere, rotated as they like. What is already there is swapped into
     // the item and kept apart from the room: player buildings, plants, chunks, filth, floors and roofs. Other items
     // and pawns are pushed out of the rectangle. Natural rock, non-player buildings and fog refuse the spot.
     // Placed: the item remembers the map, rectangle and rotation, and can only pick that same rectangle up again. The

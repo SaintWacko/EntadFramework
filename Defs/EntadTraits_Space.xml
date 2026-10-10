@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- Portable space (EntadPortableSpace.cs): worn apparel lifts a rectangle of the map into itself and sets it down
+  <!-- Portable space (EntadPortableSpace.cs): worn apparel or a wielded weapon lifts a rectangle of the map into itself and sets it down
        elsewhere. Width and height roll separately in portableSpace and scale with rarity (3-7 at Common, 9-21 at
        Legendary with the default multipliers). -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_PortableSpace</defName>
     <label>portable space</label>
-    <description>Holds a room. The wearer can fold a patch of ground of a fixed size into it, with everything built and stored there, and unfold it somewhere else. Whatever was standing on the new spot is kept safe inside until the room is folded up again.</description>
+    <description>Holds a room. Whoever carries it can fold a patch of ground of a fixed size into it, with everything built and stored there, and unfold it somewhere else. Whatever was standing on the new spot is kept safe inside until the room is folded up again.</description>
     <categories>
       <li>Apparel</li>
       <li>Weapon</li>
