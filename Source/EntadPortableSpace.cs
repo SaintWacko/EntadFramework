@@ -635,6 +635,14 @@ namespace EntadFramework
         static EntadSpaceJobDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadSpaceJobDefOf)); }
     }
 
+    [DefOf]
+    public static class EntadSpaceFleckDefOf
+    {
+        public static FleckDef Entad_SpaceShimmer;
+
+        static EntadSpaceFleckDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadSpaceFleckDefOf)); }
+    }
+
     // A: where the pawn stands. B: the room's origin cell. C: the worn item. count: the trait's index on the item.
     // takeInventoryDelay: the rotation. What the job does follows the space's state when it finishes.
     public class JobDriver_UsePortableSpace : JobDriver
@@ -669,12 +677,32 @@ namespace EntadFramework
                 var rect = EntadPortableSpace.RectAt(job.targetB.Cell, new Rot4(job.takeInventoryDelay), EntadPortableSpace.Width(t), EntadPortableSpace.Height(t));
                 pawn.rotationTracker.FaceCell(rect.CenterCell);
             };
+            work.tickAction = Shimmer;
             yield return work;
 
             Toil finish = ToilMaker.MakeToil("UsePortableSpace");
             finish.initAction = () => Finish();
             finish.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return finish;
+        }
+
+        // While the pawn works, the air over the area shimmers: a few faint distortions and sparks every few ticks,
+        // more for a bigger area. Visual only, and skipped when nobody can see the map.
+        private void Shimmer()
+        {
+            if (!pawn.IsHashIntervalTick(6) || pawn.Map != Find.CurrentMap) return;
+            var t = Trait;
+            if (t == null) return;
+            CellRect rect = EntadPortableSpace.RectAt(job.targetB.Cell, new Rot4(job.takeInventoryDelay), EntadPortableSpace.Width(t), EntadPortableSpace.Height(t));
+            Map map = pawn.Map;
+            int count = Mathf.Clamp(rect.Area / 20 + 1, 1, 6);
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 loc = new Vector3(Rand.Range(rect.minX, rect.maxX + 1f), 0f, Rand.Range(rect.minZ, rect.maxZ + 1f));
+                if (!loc.ShouldSpawnMotesAt(map)) continue;
+                FleckMaker.Static(loc, map, EntadSpaceFleckDefOf.Entad_SpaceShimmer, Rand.Range(0.7f, 1.3f));
+                if (Rand.Chance(0.35f)) FleckMaker.ThrowMicroSparks(loc, map);
+            }
         }
 
         private void Finish()
