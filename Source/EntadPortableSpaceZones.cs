@@ -32,9 +32,13 @@ namespace EntadFramework
         public bool allowSow = true;
         public bool allowCut = true;
         public List<IntVec3> cells = new List<IntVec3>();
+        // Zones made from the far pieces of the zone the rectangle cut (SplitApart): folded back on pick-up
+        public List<int> splitIds = new List<int>();
 
         public void ExposeData()
         {
+            Scribe_Collections.Look(ref splitIds, "splitIds", LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && splitIds == null) splitIds = new List<int>();
             Scribe_Values.Look(ref kind, "kind");
             Scribe_Values.Look(ref id, "id", -1);
             Scribe_Values.Look(ref whole, "whole");
@@ -134,15 +138,16 @@ namespace EntadFramework
         {
             if (z.cells.Count == 0) return;
             var left = new HashSet<IntVec3>(z.cells);
-            var piece = Flood(z.cells[0], left);
+            Flood(z.cells[0], left); // the piece that stays in z
             while (left.Count > 0)
             {
-                piece = Flood(left.First(), left);
+                var piece = Flood(left.First(), left);
                 foreach (IntVec3 c in piece) z.RemoveCell(c);
                 Zone part = Make(template, map, false);
                 if (part == null) continue;
                 foreach (IntVec3 c in piece) part.AddCell(c);
                 if (template.hidden) part.Hidden = true;
+                template.splitIds.Add(part.ID);
             }
         }
 
@@ -179,6 +184,7 @@ namespace EntadFramework
                 Zone zone = null;
                 if (mergeIntoOriginal && !sz.whole)
                     zone = map.zoneManager.AllZones.FirstOrDefault(z => z.ID == sz.id && KindOf(z) == sz.kind);
+                if (zone != null) FoldBack(zone, sz, map);
                 bool made = zone == null;
                 if (made)
                 {
@@ -187,6 +193,21 @@ namespace EntadFramework
                 }
                 foreach (IntVec3 c in cells) zone.AddCell(c);
                 if (made && sz.hidden) zone.Hidden = true;
+            }
+        }
+
+        // Picking up: the pieces SplitApart cut off the original go back into it, if they are still there
+        private static void FoldBack(Zone original, StoredZone sz, Map map)
+        {
+            if (sz.splitIds.NullOrEmpty()) return;
+            foreach (int id in sz.splitIds)
+            {
+                Zone part = map.zoneManager.AllZones.FirstOrDefault(z => z.ID == id && z != original && KindOf(z) == sz.kind);
+                if (part == null) continue;
+                var moved = part.cells.ToList();
+                part.Delete(false);
+                foreach (IntVec3 c in moved)
+                    if (map.zoneManager.ZoneAt(c) == null) original.AddCell(c);
             }
         }
 
