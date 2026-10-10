@@ -699,7 +699,7 @@ namespace EntadFramework
             for (int i = 0; i < count; i++)
             {
                 Vector3 loc = new Vector3(Rand.Range(rect.minX, rect.maxX + 1f), 0f, Rand.Range(rect.minZ, rect.maxZ + 1f));
-                if (!loc.ShouldSpawnMotesAt(map)) continue;
+                if (!loc.ShouldSpawnMotesAt(map, drawOffscreen: false)) continue;
                 FleckMaker.Static(loc, map, EntadSpaceFleckDefOf.Entad_SpaceShimmer, Rand.Range(0.7f, 1.3f));
                 if (Rand.Chance(0.35f)) FleckMaker.ThrowMicroSparks(loc, map);
             }
