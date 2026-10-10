@@ -170,9 +170,11 @@ namespace EntadFramework
             return piece;
         }
 
-        // Sets stored zones down. 'mergeIntoOriginal' (picking a room up): the cells a placed room took from a zone
-        // that is still there go back into it; otherwise each stored zone becomes a new one, kept separate from
-        // any neighbour of the same kind. Cells that can't hold a zone now are left out.
+        // Sets stored zones down. A part cut from a zone that is still on this map goes back into that zone where it
+        // touches it (a room set back down where it was captured, or a placed room picked up), along with the far
+        // pieces SplitApart made of it; 'mergeIntoOriginal' (picking up) puts every cell back regardless. Anything
+        // else becomes a new zone, kept separate from neighbours of the same kind. Cells that can't hold a zone now
+        // are left out.
         public static void SetDownZones(List<StoredZone> zones, Map map, Func<IntVec3, IntVec3> toMap, bool mergeIntoOriginal)
         {
             if (zones.NullOrEmpty()) return;
@@ -181,29 +183,83 @@ namespace EntadFramework
                 if (sz?.cells == null) continue;
                 var cells = sz.cells.Select(toMap).Where(c => CanHoldZone(c, map, sz)).ToList();
                 if (cells.Count == 0) continue;
-                Zone zone = null;
-                if (mergeIntoOriginal && !sz.whole)
-                    zone = map.zoneManager.AllZones.FirstOrDefault(z => z.ID == sz.id && KindOf(z) == sz.kind);
-                if (zone != null) FoldBack(zone, sz, map);
-                bool made = zone == null;
-                if (made)
+                Zone original = sz.whole ? null
+                    : map.zoneManager.AllZones.FirstOrDefault(z => z.ID == sz.id && KindOf(z) == sz.kind);
+                if (original != null)
                 {
-                    zone = Make(sz, map, sz.whole);
-                    if (zone == null) continue;
+                    if (mergeIntoOriginal)
+                    {
+                        foreach (IntVec3 c in cells) original.AddCell(c);
+                        cells.Clear();
+                    }
+                    else cells = MergeTouching(original, cells);
+                    FoldBack(original, sz, map, mergeIntoOriginal);
+                    if (!mergeIntoOriginal && cells.Count > 0) cells = MergeTouching(original, cells);
                 }
+                if (cells.Count == 0) continue;
+                Zone zone = Make(sz, map, sz.whole);
+                if (zone == null) continue;
                 foreach (IntVec3 c in cells) zone.AddCell(c);
-                if (made && sz.hidden) zone.Hidden = true;
+                if (sz.hidden) zone.Hidden = true;
             }
         }
 
-        // Picking up: the pieces SplitApart cut off the original go back into it, if they are still there
-        private static void FoldBack(Zone original, StoredZone sz, Map map)
+        // Adds the pieces of 'cells' that touch 'zone' (directly or through a piece already added) to it and
+        // returns the cells left over
+        private static List<IntVec3> MergeTouching(Zone zone, List<IntVec3> cells)
+        {
+            var left = new HashSet<IntVec3>(cells);
+            var pieces = new List<List<IntVec3>>();
+            while (left.Count > 0) pieces.Add(Flood(left.First(), left));
+            bool grew = true;
+            while (grew)
+            {
+                grew = false;
+                for (int i = pieces.Count - 1; i >= 0; i--)
+                {
+                    if (!Touches(zone, pieces[i])) continue;
+                    foreach (IntVec3 c in pieces[i]) zone.AddCell(c);
+                    pieces.RemoveAt(i);
+                    grew = true;
+                }
+            }
+            return pieces.SelectMany(p => p).ToList();
+        }
+
+        private static bool Touches(Zone zone, List<IntVec3> piece)
+        {
+            ZoneManager zm = zone.zoneManager;
+            foreach (IntVec3 c in piece)
+                for (int i = 0; i < 4; i++)
+                {
+                    IntVec3 n = c + GenAdj.CardinalDirections[i];
+                    if (n.InBounds(zone.Map) && zm.ZoneAt(n) == zone) return true;
+                }
+            return false;
+        }
+
+        // The pieces SplitApart cut off the original go back into it, if they are still there (and, unless 'always',
+        // only once they touch it again, so the original never ends up in pieces)
+        private static void FoldBack(Zone original, StoredZone sz, Map map, bool always)
         {
             if (sz.splitIds.NullOrEmpty()) return;
-            foreach (int id in sz.splitIds)
+            bool grew = true;
+            while (grew)
             {
-                Zone part = map.zoneManager.AllZones.FirstOrDefault(z => z.ID == id && z != original && KindOf(z) == sz.kind);
-                if (part == null) continue;
+                grew = false;
+                foreach (int id in sz.splitIds)
+                {
+                    Zone part = map.zoneManager.AllZones.FirstOrDefault(z => z.ID == id && z != original && KindOf(z) == sz.kind);
+                    if (part == null || !(always || Touches(original, part.cells))) continue;
+                    Absorb(original, part, map);
+                    grew = true;
+                }
+            }
+        }
+
+        private static void Absorb(Zone original, Zone part, Map map)
+        {
+            {
                 var moved = part.cells.ToList();
                 part.Delete(false);
                 foreach (IntVec3 c in moved)

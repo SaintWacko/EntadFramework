@@ -200,9 +200,9 @@
 
   <!-- Portable space -->
   <EF_Space_Capture>capture space</EF_Space_Capture>
-  <EF_Space_CaptureDesc>Fold a {1}x{2} area into {0}: buildings, items, plants, chunks, built floors and built roofs. Pawns, natural rock and overhead mountain stay. Press Q or E to rotate.</EF_Space_CaptureDesc>
+  <EF_Space_CaptureDesc>Fold a {1}x{2} area into {0}: buildings, items, plants, chunks, built floors, built roofs, stockpiles, growing zones and areas. Pawns, natural rock and overhead mountain stay. Press Q or E to rotate.</EF_Space_CaptureDesc>
   <EF_Space_Place>place space</EF_Space_Place>
-  <EF_Space_PlaceDesc>Unfold the {1}x{2} room held in {0}. Trees, plants, chunks, floors, roofs and your own buildings on the spot are kept inside until the room is picked up again; other items and pawns are moved aside. Press Q or E to rotate.</EF_Space_PlaceDesc>
+  <EF_Space_PlaceDesc>Unfold the {1}x{2} room held in {0}. Trees, plants, chunks, floors, roofs, zones, areas and your own buildings on the spot are kept inside until the room is picked up again; other items and pawns are moved aside. Press Q or E to rotate.</EF_Space_PlaceDesc>
   <EF_Space_PickUp>pick up space</EF_Space_PickUp>
   <EF_Space_PickUpDesc>Fold the {1}x{2} room from {0} back up, with anything built in it since, and put back what was there before. Hover to see the area.</EF_Space_PickUpDesc>
   <EF_Space_UnknownDesc>{0} can do something here. Nobody knows what yet.</EF_Space_UnknownDesc>
