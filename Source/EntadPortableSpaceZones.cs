@@ -116,12 +116,53 @@ namespace EntadFramework
                     sz.allowSow = g.allowSow;
                     sz.allowCut = g.allowCut;
                 }
-                // No CheckContiguous on what stays: vanilla's would delete the smaller piece of a zone cut in two
                 if (sz.whole) z.Delete(false);
-                else foreach (IntVec3 c in inside) z.RemoveCell(c);
+                else
+                {
+                    foreach (IntVec3 c in inside) z.RemoveCell(c);
+                    SplitApart(z, sz, map);
+                }
                 result.Add(sz);
             }
             return result;
+        }
+
+        // What stays of a zone the rectangle cut through can be in pieces. Vanilla's CheckContiguous (run when a
+        // wall lands on a zone, or the player edits zones) keeps only the piece joined to the zone's first cell and
+        // silently drops the rest, so every other piece becomes its own zone with the same settings now.
+        private static void SplitApart(Zone z, StoredZone template, Map map)
+        {
+            if (z.cells.Count == 0) return;
+            var left = new HashSet<IntVec3>(z.cells);
+            var piece = Flood(z.cells[0], left);
+            while (left.Count > 0)
+            {
+                piece = Flood(left.First(), left);
+                foreach (IntVec3 c in piece) z.RemoveCell(c);
+                Zone part = Make(template, map, false);
+                if (part == null) continue;
+                foreach (IntVec3 c in piece) part.AddCell(c);
+                if (template.hidden) part.Hidden = true;
+            }
+        }
+
+        // The cells of 'left' joined to 'start' (4-way), taken out of 'left'
+        private static List<IntVec3> Flood(IntVec3 start, HashSet<IntVec3> left)
+        {
+            var piece = new List<IntVec3>();
+            var open = new Queue<IntVec3>();
+            if (left.Remove(start)) open.Enqueue(start);
+            while (open.Count > 0)
+            {
+                IntVec3 c = open.Dequeue();
+                piece.Add(c);
+                for (int i = 0; i < 4; i++)
+                {
+                    IntVec3 n = c + GenAdj.CardinalDirections[i];
+                    if (left.Remove(n)) open.Enqueue(n);
+                }
+            }
+            return piece;
         }
 
         // Sets stored zones down. 'mergeIntoOriginal' (picking a room up): the cells a placed room took from a zone
@@ -141,7 +182,7 @@ namespace EntadFramework
                 bool made = zone == null;
                 if (made)
                 {
-                    zone = Make(sz, map);
+                    zone = Make(sz, map, sz.whole);
                     if (zone == null) continue;
                 }
                 foreach (IntVec3 c in cells) zone.AddCell(c);
@@ -149,7 +190,7 @@ namespace EntadFramework
             }
         }
 
-        private static Zone Make(StoredZone sz, Map map)
+        private static Zone Make(StoredZone sz, Map map, bool keepName)
         {
             ZoneManager zm = map.zoneManager;
             Zone zone;
@@ -172,7 +213,7 @@ namespace EntadFramework
             }
             // A whole zone keeps its name (unless this map already uses it) and colour; a split-off part gets its
             // own, so it can be told apart from the zone it was cut from
-            if (sz.whole)
+            if (keepName)
             {
                 if (!sz.label.NullOrEmpty() && !zm.AllZones.Any(z => z.label == sz.label)) zone.label = sz.label;
                 zone.color = sz.color;
