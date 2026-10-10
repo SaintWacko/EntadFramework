@@ -505,6 +505,8 @@ namespace EntadFramework
                 }
                 else if (roof != null && thickAsBuilt)
                     sc.roof = remembered != null && remembered.TryGetValue(c, out RoofDef own) ? own : RoofDefOf.RoofConstructed;
+                // The mountain over it collapsed while it was placed: the room still gets its own roof back
+                else if (roof == null && remembered != null && remembered.TryGetValue(c, out RoofDef lost)) sc.roof = lost;
                 if (sc.floor != null || sc.roof != null) cells.Add(sc);
             }
             return cells;
@@ -711,6 +713,7 @@ namespace EntadFramework
             space.roomAreas = new List<StoredArea>();
             space.displacedZones = new List<StoredZone>();
             space.displacedAreas = new List<StoredArea>();
+            space.underMountain = new List<StoredCell>();
             space.state = PortableSpaceState.Empty;
             if (map == null) return;
             if (!near.IsValid || !near.InBounds(map)) near = DropCellFinder.TradeDropSpot(map);
