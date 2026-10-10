@@ -162,6 +162,9 @@ namespace EntadFramework
         public List<StoredCell> displacedCells = new List<StoredCell>();
         public List<StoredZone> displacedZones = new List<StoredZone>();
         public List<StoredArea> displacedAreas = new List<StoredArea>();
+        // Map cells the room was set down on under overhead mountain, with the room's own roof there (null = open
+        // sky), so picking it up gives back what it had rather than a built roof
+        public List<StoredCell> underMountain = new List<StoredCell>();
 
         public bool IsEmpty => state == PortableSpaceState.Empty;
 
@@ -201,8 +204,10 @@ namespace EntadFramework
             Scribe_Collections.Look(ref roomAreas, "roomAreas", LookMode.Deep);
             Scribe_Collections.Look(ref displacedZones, "displacedZones", LookMode.Deep);
             Scribe_Collections.Look(ref displacedAreas, "displacedAreas", LookMode.Deep);
+            Scribe_Collections.Look(ref underMountain, "underMountain", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                underMountain = underMountain ?? new List<StoredCell>();
                 roomZones = roomZones ?? new List<StoredZone>();
                 roomAreas = roomAreas ?? new List<StoredArea>();
                 displacedZones = displacedZones ?? new List<StoredZone>();
@@ -478,8 +483,9 @@ namespace EntadFramework
         }
 
         // Takes the rectangle's floors and built roofs off the map. Overhead mountain (thick roof) always stays where it
-        // is; lifting a room ('thickAsBuilt') stores a built roof in its place, so the room keeps a roof there.
-        private static List<StoredCell> LiftCells(Map map, CellRect rect, bool thickAsBuilt)
+        // is. Lifting a room ('thickAsBuilt') stores, under it, the room's own roof from when it was set down there
+        // ('remembered', null = open sky), or a built roof for a room captured from under a mountain.
+        private static List<StoredCell> LiftCells(Map map, CellRect rect, bool thickAsBuilt, Dictionary<IntVec3, RoofDef> remembered = null)
         {
             var cells = new List<StoredCell>();
             foreach (IntVec3 c in rect)
@@ -497,7 +503,8 @@ namespace EntadFramework
                     sc.roof = roof;
                     map.roofGrid.SetRoof(c, null);
                 }
-                else if (roof != null && thickAsBuilt) sc.roof = RoofDefOf.RoofConstructed;
+                else if (roof != null && thickAsBuilt)
+                    sc.roof = remembered != null && remembered.TryGetValue(c, out RoofDef own) ? own : RoofDefOf.RoofConstructed;
                 if (sc.floor != null || sc.roof != null) cells.Add(sc);
             }
             return cells;
@@ -522,7 +529,7 @@ namespace EntadFramework
         // ---- The three actions ----
 
         // Lifts the rectangle into the room store, in room coordinates. Shared by capture and pick-up.
-        private static void LiftRoom(PortableSpace space, Map map, IntVec3 origin, Rot4 rot, int w, int h)
+        private static void LiftRoom(PortableSpace space, Map map, IntVec3 origin, Rot4 rot, int w, int h, Dictionary<IntVec3, RoofDef> remembered = null)
         {
             CellRect rect = RectAt(origin, rot, w, h);
             var things = ThingsIn(map, rect).Where(t => !Ignored(t) && !IsNaturalRock(t)).ToList();
@@ -535,7 +542,7 @@ namespace EntadFramework
             }
             LiftAll(things, map);
             space.SetRoom(stored);
-            space.roomCells = LiftCells(map, rect, true);
+            space.roomCells = LiftCells(map, rect, true, remembered);
             foreach (var sc in space.roomCells) sc.cell = ToLocal(sc.cell, origin, rot, w, h);
             space.roomZones = EntadSpaceZones.LiftZones(map, rect, c => ToLocal(c, origin, rot, w, h));
             space.roomAreas = EntadSpaceZones.LiftAreas(map, rect, c => ToLocal(c, origin, rot, w, h));
@@ -597,6 +604,13 @@ namespace EntadFramework
 
             // Set the room down
             var cells = space.roomCells.Select(sc => (ToMap(sc.cell, origin, rot, w, h), sc)).ToList();
+            // Under overhead mountain the room's roof isn't set down: remember it (or that there was none) for pick-up
+            var roomRoof = new Dictionary<IntVec3, RoofDef>();
+            foreach (var (c, sc) in cells) roomRoof[c] = sc.roof;
+            space.underMountain = new List<StoredCell>();
+            foreach (IntVec3 c in rect)
+                if (map.roofGrid.RoofAt(c)?.isThickRoof == true)
+                    space.underMountain.Add(new StoredCell { cell = c, roof = roomRoof.TryGetValue(c, out RoofDef own) ? own : null });
             SetDownFloors(cells, map);
             var things = new List<(Thing, IntVec3, Rot4)>();
             space.PruneRoom();
@@ -628,7 +642,10 @@ namespace EntadFramework
             IntVec3 origin = space.origin;
             Rot4 rot = space.rot;
             CellRect rect = RectAt(origin, rot, w, h);
-            LiftRoom(space, map, origin, rot, w, h);
+            var remembered = new Dictionary<IntVec3, RoofDef>();
+            foreach (var sc in space.underMountain) remembered[sc.cell] = sc.roof;
+            LiftRoom(space, map, origin, rot, w, h, remembered);
+            space.underMountain = new List<StoredCell>();
 
             var cells = space.displacedCells.Select(sc => (sc.cell, sc)).ToList();
             SetDownFloors(cells, map);
@@ -663,6 +680,7 @@ namespace EntadFramework
         public static void CheckPlacedMap(PortableSpace space)
         {
             if (space.state != PortableSpaceState.Placed || space.PlacedMap != null) return;
+            space.underMountain = new List<StoredCell>();
             space.displaced = new List<StoredThing>();
             space.displacedCells = new List<StoredCell>();
             space.displacedZones = new List<StoredZone>();
