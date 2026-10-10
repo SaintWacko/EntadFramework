@@ -17,6 +17,9 @@ namespace EntadFramework
         // EntadTrigger.ValueCount rolls per trigger (heal, rest, food, joy, hediff hours), and when each is ready again
         public List<float> triggerValues = new List<float>();
         public List<int> triggerReadyTicks = new List<int>();
+        // Portable space: rolled width and height (EntadPortableSpace.cs), and what the space holds
+        public List<float> spaceValues = new List<float>();
+        public PortableSpace space;
         public ThoughtDef thought;
         public float thoughtHours;
         public float mealNutritionFactor = 1f;
@@ -65,6 +68,8 @@ namespace EntadFramework
             Scribe_Collections.Look(ref weaponValues, "weaponValues", LookMode.Value);
             Scribe_Collections.Look(ref triggerValues, "triggerValues", LookMode.Value);
             Scribe_Collections.Look(ref triggerReadyTicks, "triggerReadyTicks", LookMode.Value);
+            Scribe_Collections.Look(ref spaceValues, "spaceValues", LookMode.Value);
+            Scribe_Deep.Look(ref space, "space");
             Scribe_Defs.Look(ref thought, "thought");
             Scribe_Values.Look(ref thoughtHours, "thoughtHours");
             Scribe_Values.Look(ref mealNutritionFactor, "mealNutritionFactor", 1f);
@@ -100,6 +105,7 @@ namespace EntadFramework
                 weaponValues = weaponValues ?? new List<float>();
                 triggerValues = triggerValues ?? new List<float>();
                 triggerReadyTicks = triggerReadyTicks ?? new List<int>();
+                spaceValues = spaceValues ?? new List<float>();
             }
         }
 
@@ -110,8 +116,11 @@ namespace EntadFramework
                 && (extraDamageValues?.Count ?? 0) == (def.extraDamage?.Count ?? 0)
                 && (buildingValues?.Count ?? 0) == (def.buildingFactors?.Count ?? 0)
                 && (weaponValues?.Count ?? 0) == (def.weaponProperties?.Count ?? 0)
-                && (triggerValues?.Count ?? 0) == TriggerValueCount(def);
+                && (triggerValues?.Count ?? 0) == TriggerValueCount(def)
+                && (spaceValues?.Count ?? 0) == SpaceValueCount(def);
         }
+
+        private static int SpaceValueCount(EntadTraitDef def) => def.HasPortableSpace ? 2 : 0;
 
         private static int TriggerValueCount(EntadTraitDef def) => (def.triggers?.Count ?? 0) * EntadTrigger.ValueCount;
 
@@ -124,6 +133,8 @@ namespace EntadFramework
             if ((buildingValues?.Count ?? 0) != (def.buildingFactors?.Count ?? 0)) buildingValues = fresh.buildingValues;
             if ((weaponValues?.Count ?? 0) != (def.weaponProperties?.Count ?? 0)) weaponValues = fresh.weaponValues;
             if ((triggerValues?.Count ?? 0) != TriggerValueCount(def)) { triggerValues = fresh.triggerValues; triggerReadyTicks?.Clear(); }
+            // An empty space can take a new size; one holding a room keeps the size the room was captured at
+            if ((spaceValues?.Count ?? 0) != SpaceValueCount(def) && (space == null || space.IsEmpty)) spaceValues = fresh.spaceValues;
         }
 
         private void RerollValues()
@@ -137,6 +148,7 @@ namespace EntadFramework
             weaponValues = fresh.weaponValues;
             triggerValues = fresh.triggerValues;
             triggerReadyTicks?.Clear();
+            if (space == null || space.IsEmpty) spaceValues = fresh.spaceValues;
             thought = fresh.thought;
             thoughtHours = fresh.thoughtHours;
             mealNutritionFactor = fresh.mealNutritionFactor;
@@ -159,6 +171,8 @@ namespace EntadFramework
             if (def.triggers != null)
                 foreach (var t in def.triggers)
                     for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.RangeAt(k).RandomInRange * scale);
+            if (def.HasPortableSpace)
+                for (int k = 0; k < 2; k++) applied.spaceValues.Add(UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(def.portableSpace.RandomInRange * scale)));
             applied.thought = def.thought;
             if (def.HasMoodRange) applied.thought = def.MoodCandidates().RandomElementWithFallback();
             if (applied.thought != null) applied.thoughtHours = def.thoughtHours.RandomInRange;
@@ -262,6 +276,9 @@ namespace EntadFramework
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { rollQualitySum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); totalTraits++; }
             if (thought != null) { rollQualitySum += def.thoughtHours.max - def.thoughtHours.min > 0.0001f ? UnityEngine.Mathf.InverseLerp(def.thoughtHours.min, def.thoughtHours.max, thoughtHours) : 0.5f; totalTraits++; }
+            if (def.HasPortableSpace && def.portableSpace.max - def.portableSpace.min > 0.0001f)
+                for (int k = 0; k < spaceValues.Count; k++)
+                { rollQualitySum += UnityEngine.Mathf.InverseLerp(def.portableSpace.min * scale, def.portableSpace.max * scale, spaceValues[k]); totalTraits++; }
             var f = def.mealNutritionFactor;
             if (f.max - f.min > 0.0001f) { rollQualitySum += UnityEngine.Mathf.InverseLerp(f.min, f.max, mealNutritionFactor); totalTraits++; }
             return totalTraits == 0 ? 0.5f : rollQualitySum / totalTraits;
@@ -753,6 +770,7 @@ namespace EntadFramework
                     int triggerIndex = i;
                     infoString.AppendLine(" - " + trait.def.triggers[i].Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
                 }
+                if (trait.def.HasPortableSpace && trait.IsRevealed(EntadEffectKind.Space)) infoString.AppendLine(" - " + EntadPortableSpace.CardLine(trait));
                 if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
                 if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
                     infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));

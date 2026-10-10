@@ -57,6 +57,7 @@ namespace EntadFramework
         {
             base.PostDestroy(mode, previousMap);
             Unbond();
+            SpillSpaces(previousMap);
         }
 
         public void Bond(Pawn pawn)

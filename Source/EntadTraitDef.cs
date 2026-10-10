@@ -234,7 +234,8 @@ namespace EntadFramework
         Hediff = 128,    // equipped hediffs: they show on the health tab, so they reveal the moment the item is equipped
         Trigger = 256,   // "when X happens, do Y" effects (EntadTriggers): revealed the first time one fires
         Bond = 512,      // persona bond effects (EntadPersona): the persona tells its wielder everything when it bonds
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond
+        Space = 1024,    // portable space (EntadPortableSpace): revealed the first time its gizmo is used
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space
     }
 
     public class EntadTraitDef : Def
@@ -425,6 +426,17 @@ namespace EntadFramework
 
         public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;
 
+        // Portable space (EntadPortableSpace.cs), worn apparel only: the item can lift a rectangle of the map (buildings,
+        // items, plants, floors, built roofs) into itself and set it down elsewhere. Width and height are rolled
+        // separately in this range and multiplied by the rarity scale, then rounded. 0..0 means unused.
+        public FloatRange portableSpace = new FloatRange(0f, 0f);
+
+        public bool HasPortableSpace => portableSpace.max > 0f;
+
+        // Smallest and largest side length at a rarity (at least 1)
+        public int PortableSideMin(EntadRarity at) => System.Math.Max(1, UnityEngine.Mathf.RoundToInt(portableSpace.min * RarityScale(at)));
+        public int PortableSideMax(EntadRarity at) => System.Math.Max(1, UnityEngine.Mathf.RoundToInt(portableSpace.max * RarityScale(at)));
+
         // "When X happens, do Y" (EntadTriggers.cs). Use triggers are for furniture; every other event is for worn or
         // wielded gear, so one trait can't mix the two.
         public List<EntadTrigger> triggers;
@@ -545,6 +557,7 @@ namespace EntadFramework
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
             if (thought != null && thought == other.thought) return true;
+            if (HasPortableSpace && other.HasPortableSpace) return true;
 
             foreach (var a in AllRanges())
             {
@@ -613,6 +626,7 @@ namespace EntadFramework
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
+                if (HasPortableSpace) kinds |= EntadEffectKind.Space;
                 return kinds;
             }
         }
@@ -660,6 +674,7 @@ namespace EntadFramework
             if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
             if (!float.IsNaN(points) && points == 0f) yield return $"{defName}: points 0 lets generation add it for free until the trait cap; use a small positive value";
             if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
+            if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
         }
 
@@ -699,6 +714,8 @@ namespace EntadFramework
             if (IsReloadable && !td.IsWeapon && !td.IsApparel) return false;
             if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
+            // Worn gear only: the wearer carries the space around and uses it from their gizmos
+            if (HasPortableSpace && !td.IsApparel) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
