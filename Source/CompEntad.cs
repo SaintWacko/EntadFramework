@@ -612,6 +612,7 @@ namespace EntadFramework
             // Clear while the trait is still listed: ClearStatCaches walks activeTraits, so after removal the
             // removed trait's own stats would never be cleared.
             ClearStatCaches();
+            SpillSpaceOnRemove(trait);
             activeTraits.Remove(trait);
             if (scaleHp) RescaleHitPoints(hpFraction);
             TraitsChanged();

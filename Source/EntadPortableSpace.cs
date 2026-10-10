@@ -110,6 +110,10 @@ namespace EntadFramework
                 displacedCells = displacedCells ?? new List<StoredCell>();
                 room.RemoveAll(s => s?.thing == null);
                 displaced.RemoveAll(s => s?.thing == null);
+                // The 'being moved' flag PreSwapMap set isn't saved; without it they'd spawn as newly built
+                // (plants re-checking leaflessness, quest spawn signals, spawn-time comp logic)
+                foreach (var s in room) s.thing.PreSwapMap();
+                foreach (var s in displaced) s.thing.PreSwapMap();
             }
         }
     }
@@ -285,20 +289,28 @@ namespace EntadFramework
             return 2;
         }
 
-        private static void Lift(Thing t, Map map)
-        {
-            map.reservationManager.ReleaseAllForTarget(t);
-            map.physicalInteractionReservationManager.ReleaseAllForTarget(t);
-            map.designationManager.RemoveAllDesignationsOn(t);
-            t.PreSwapMap();
-            if (t.Spawned) t.DeSpawn(DestroyMode.WillReplace);
-        }
-
-        // Lifts every thing in the list, last-spawned first
+        // Lifts every thing in the list, last-spawned first. Like GenerateGravship, every thing is flagged as being
+        // moved before any of them despawns, so a despawning building never sees an unflagged neighbour.
         private static void LiftAll(List<Thing> things, Map map)
         {
             things.SortByDescending(SpawnOrder);
-            foreach (Thing t in things) if (!t.Destroyed && t.Spawned) Lift(t, map);
+            things.RemoveAll(t => t.Destroyed || !t.Spawned);
+            foreach (Thing t in things)
+            {
+                map.reservationManager.ReleaseAllForTarget(t);
+                map.physicalInteractionReservationManager.ReleaseAllForTarget(t);
+                map.designationManager.RemoveAllDesignationsOn(t);
+                t.PreSwapMap();
+            }
+            var fogBlockers = new List<Thing>();
+            foreach (Thing t in things)
+            {
+                if (!t.Spawned) continue;
+                t.DeSpawn(DestroyMode.WillReplace);
+                if (t.def.MakeFog) fogBlockers.Add(t);
+            }
+            // DeSpawn skips the fog update under WillReplace: a lifted wall must still reveal what was behind it
+            foreach (Thing t in fogBlockers) map.fogGrid.Notify_FogBlockerRemoved(t);
         }
 
         // Spawns stored things in order, pushing pawns off each footprint first
@@ -346,8 +358,9 @@ namespace EntadFramework
         {
             IntVec3 from = t.Position;
             t.DeSpawn();
-            if (!GenPlace.TryPlaceThing(t, from, map, ThingPlaceMode.Near, null, c => !keepOut.Contains(c), null, Mathf.Max(keepOut.Width, keepOut.Height)))
-                GenPlace.TryPlaceThing(t, from, map, ThingPlaceMode.Near);
+            if (!GenPlace.TryPlaceThing(t, from, map, ThingPlaceMode.Near, null, c => !keepOut.Contains(c), null, Mathf.Max(keepOut.Width, keepOut.Height))
+                && !GenPlace.TryPlaceThing(t, from, map, ThingPlaceMode.Near))
+                GenSpawn.Spawn(t, from, map); // nowhere else: leave it where it was rather than lose it
         }
 
         // Takes the rectangle's floors and built roofs off the map
@@ -498,9 +511,11 @@ namespace EntadFramework
 
         // The item was destroyed. What it holds lands near where it was; buildings that can't be packed up are lost
         // along with floors and roofs. A placed room stays where it is, and what it displaced lands beside it.
-        public static void Spill(PortableSpace space, Map map, IntVec3 near)
+        public static void Spill(PortableSpace space, Map map, IntVec3 near, Thing item)
         {
             if (space == null) return;
+            if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0)
+                Messages.Message("EF_Space_LostOffMap".Translate(item.LabelNoCount), MessageTypeDefOf.NegativeEvent, false);
             var loose = new List<Thing>();
             if (space.state == PortableSpaceState.Holding) loose.AddRange(space.room.Select(s => s.thing));
             Map placedMap = space.PlacedMap;
@@ -526,7 +541,7 @@ namespace EntadFramework
                 drop = t.MakeMinified();
             }
             else if (t.def.category != ThingCategory.Item) return;
-            GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near);
+            if (GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near)) t.PostSwapMap();
         }
 
         // ---- UI ----
@@ -794,6 +809,7 @@ namespace EntadFramework
             if (activeTraits.NullOrEmpty()) yield break;
             Pawn wearer = Holder;
             if (wearer == null || !wearer.Spawned || !wearer.IsColonistPlayerControlled) yield break;
+            lastWearer = wearer; // also catches a wearer from before a load
             if (!ActiveFor(wearer) && !(BindsOnFirstUse && !IsBound)) yield break;
             for (int i = 0; i < activeTraits.Count; i++)
                 if (activeTraits[i].def.HasPortableSpace) yield return SpaceGizmo(wearer, i);
@@ -843,12 +859,37 @@ namespace EntadFramework
             return cmd;
         }
 
+        // The pawn wearing this now, kept past the moment the item is destroyed: a destroyed worn item has already
+        // left its wearer when PostDestroy runs, and its own Position is wherever it last lay on the ground.
+        // Not saved: after a load it is set again the first time the wearer's gizmos are drawn.
+        private Pawn lastWearer;
+
+        public override void Notify_Unequipped(Pawn pawn)
+        {
+            base.Notify_Unequipped(pawn);
+            if (lastWearer == pawn) lastWearer = null;
+        }
+
         // Called from PostDestroy (EntadPersona.cs)
         private void SpillSpaces(Map map)
         {
+            IntVec3 near = parent.Position;
+            if (lastWearer != null && lastWearer.MapHeld == map) near = lastWearer.PositionHeld;
+            else if (lastWearer != null) near = IntVec3.Invalid;
             for (int i = 0; i < activeTraits.Count; i++)
-                if (activeTraits[i].space != null && !activeTraits[i].space.IsEmpty)
-                    EntadPortableSpace.Spill(activeTraits[i].space, map, parent.Position);
+                SpillSpace(activeTraits[i], map, near);
+        }
+
+        private void SpillSpace(AppliedEntadTrait trait, Map map, IntVec3 near)
+        {
+            if (trait.space != null && !trait.space.IsEmpty) EntadPortableSpace.Spill(trait.space, map, near, parent);
+        }
+
+        // RemoveTrait: whatever the space holds lands next to the item
+        private void SpillSpaceOnRemove(AppliedEntadTrait trait)
+        {
+            Pawn holder = Holder;
+            SpillSpace(trait, parent.MapHeld, holder != null && holder.Spawned ? holder.Position : parent.PositionHeld);
         }
     }
 }
