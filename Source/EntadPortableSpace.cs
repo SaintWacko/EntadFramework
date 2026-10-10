@@ -690,7 +690,7 @@ namespace EntadFramework
         // more for a bigger area. Visual only, and skipped when nobody can see the map.
         private void Shimmer()
         {
-            if (!pawn.IsHashIntervalTick(6) || pawn.Map != Find.CurrentMap) return;
+            if (!pawn.IsHashIntervalTick(10) || pawn.Map != Find.CurrentMap) return;
             var t = Trait;
             if (t == null) return;
             CellRect rect = EntadPortableSpace.RectAt(job.targetB.Cell, new Rot4(job.takeInventoryDelay), EntadPortableSpace.Width(t), EntadPortableSpace.Height(t));

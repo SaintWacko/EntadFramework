@@ -16,7 +16,7 @@
         <_distortionIntensity>0.035</_distortionIntensity>
         <_brightnessMultiplier>1.12</_brightnessMultiplier>
       </shaderParameters>
-      <drawSize>2.2</drawSize>
+      <drawSize>1.4</drawSize>
     </graphicData>
   </FleckDef>
 </Defs>
