@@ -220,4 +220,5 @@
   <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
   <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
   <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
+  <EF_Space_AreaLimit>This map already has the most allowed areas it can hold, so the room's cells from {0} were not marked.</EF_Space_AreaLimit>
 </LanguageData>

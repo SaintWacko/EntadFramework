@@ -70,6 +70,8 @@ namespace EntadFramework
         // The room, in room coordinates: (0,0) to (width-1, height-1) as captured
         public List<StoredThing> room = new List<StoredThing>();
         public List<StoredCell> roomCells = new List<StoredCell>();
+        public List<StoredZone> roomZones = new List<StoredZone>();
+        public List<StoredArea> roomAreas = new List<StoredArea>();
 
         // While placed: where, and what the room displaced (map coordinates)
         public int mapId = -1;
@@ -77,6 +79,8 @@ namespace EntadFramework
         public Rot4 rot;
         public List<StoredThing> displaced = new List<StoredThing>();
         public List<StoredCell> displacedCells = new List<StoredCell>();
+        public List<StoredZone> displacedZones = new List<StoredZone>();
+        public List<StoredArea> displacedAreas = new List<StoredArea>();
 
         public bool IsEmpty => state == PortableSpaceState.Empty;
 
@@ -111,8 +115,16 @@ namespace EntadFramework
             Scribe_Values.Look(ref rot, "rot");
             Scribe_Collections.Look(ref displaced, "displaced", LookMode.Deep);
             Scribe_Collections.Look(ref displacedCells, "displacedCells", LookMode.Deep);
+            Scribe_Collections.Look(ref roomZones, "roomZones", LookMode.Deep);
+            Scribe_Collections.Look(ref roomAreas, "roomAreas", LookMode.Deep);
+            Scribe_Collections.Look(ref displacedZones, "displacedZones", LookMode.Deep);
+            Scribe_Collections.Look(ref displacedAreas, "displacedAreas", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                roomZones = roomZones ?? new List<StoredZone>();
+                roomAreas = roomAreas ?? new List<StoredArea>();
+                displacedZones = displacedZones ?? new List<StoredZone>();
+                displacedAreas = displacedAreas ?? new List<StoredArea>();
                 room = room ?? new List<StoredThing>();
                 roomCells = roomCells ?? new List<StoredCell>();
                 displaced = displaced ?? new List<StoredThing>();
@@ -434,6 +446,8 @@ namespace EntadFramework
             space.room = stored;
             space.roomCells = LiftCells(map, rect, false);
             foreach (var sc in space.roomCells) sc.cell = ToLocal(sc.cell, origin, rot, w, h);
+            space.roomZones = EntadSpaceZones.LiftZones(map, rect, c => ToLocal(c, origin, rot, w, h));
+            space.roomAreas = EntadSpaceZones.LiftAreas(map, rect, c => ToLocal(c, origin, rot, w, h));
             AfterChange(map, rect);
         }
 
@@ -486,6 +500,9 @@ namespace EntadFramework
             space.displaced = swap.Select(t => new StoredThing { thing = t, pos = t.Position, rot = t.Rotation }).ToList();
             LiftAll(swap, map);
             space.displacedCells = LiftCells(map, rect, true);
+            // Before the room's things spawn: a wall landing on a zone cell would otherwise trim that zone itself
+            space.displacedZones = EntadSpaceZones.LiftZones(map, rect, c => c);
+            space.displacedAreas = EntadSpaceZones.LiftAreas(map, rect, c => c);
 
             // Set the room down
             var cells = space.roomCells.Select(sc => (ToMap(sc.cell, origin, rot, w, h), sc)).ToList();
@@ -498,9 +515,13 @@ namespace EntadFramework
             }
             SetDown(things, map, rect);
             SetDownRoofs(cells, map);
+            EntadSpaceZones.SetDownZones(space.roomZones, map, l => ToMap(l, origin, rot, w, h), false);
+            EntadSpaceZones.SetDownAreas(space.roomAreas, map, l => ToMap(l, origin, rot, w, h));
 
             space.room = new List<StoredThing>();
             space.roomCells = new List<StoredCell>();
+            space.roomZones = new List<StoredZone>();
+            space.roomAreas = new List<StoredArea>();
             space.state = PortableSpaceState.Placed;
             space.mapId = map.uniqueID;
             space.origin = origin;
@@ -520,9 +541,13 @@ namespace EntadFramework
             SetDownFloors(cells, map);
             SetDown(space.displaced.Select(st => (st.thing, st.pos, st.rot)).ToList(), map, rect);
             SetDownRoofs(cells, map);
+            EntadSpaceZones.SetDownZones(space.displacedZones, map, c => c, true);
+            EntadSpaceZones.SetDownAreas(space.displacedAreas, map, c => c);
 
             space.displaced = new List<StoredThing>();
             space.displacedCells = new List<StoredCell>();
+            space.displacedZones = new List<StoredZone>();
+            space.displacedAreas = new List<StoredArea>();
             space.state = PortableSpaceState.Holding;
             space.mapId = -1;
             AfterChange(map, rect);
@@ -547,6 +572,8 @@ namespace EntadFramework
             if (space.state != PortableSpaceState.Placed || space.PlacedMap != null) return;
             space.displaced = new List<StoredThing>();
             space.displacedCells = new List<StoredCell>();
+            space.displacedZones = new List<StoredZone>();
+            space.displacedAreas = new List<StoredArea>();
             space.state = PortableSpaceState.Empty;
             space.mapId = -1;
         }
@@ -567,6 +594,10 @@ namespace EntadFramework
             }
             space.room = new List<StoredThing>();
             space.displaced = new List<StoredThing>();
+            space.roomZones = new List<StoredZone>();
+            space.roomAreas = new List<StoredArea>();
+            space.displacedZones = new List<StoredZone>();
+            space.displacedAreas = new List<StoredArea>();
             space.state = PortableSpaceState.Empty;
             if (map == null) return;
             if (!near.IsValid || !near.InBounds(map)) near = DropCellFinder.TradeDropSpot(map);
