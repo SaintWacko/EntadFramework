@@ -223,7 +223,12 @@ namespace EntadFramework
             ThingOwner from = item.holdingOwner;
             Thing piece = item.SplitOff(numToMove);
             if (to.inventory.innerContainer.TryAdd(piece) || piece.holdingOwner != null || piece.Destroyed) return false;
-            if (from != null && from.TryAdd(piece, false)) return false;
+            if (from != null && from.TryAdd(piece, false))
+            {
+                // Back in the room after all: it is still a moved thing (SplitOff's removal cleared the flag)
+                if (PortableSpace.BeingMoved != null) PortableSpace.BeingMoved(piece) = true;
+                return false;
+            }
             // Nowhere to keep it, as vanilla's GiveThing does: a thing with no holder would be dropped from the save
             Log.Error($"[Entad Framework] Could not move {piece} out of a portable space; it was lost.");
             piece.Destroy();
@@ -246,7 +251,15 @@ namespace EntadFramework
             return null;
         }
 
-        public static bool Prepare() => Find() != null;
+        private static bool warned;
+
+        public static bool Prepare()
+        {
+            if (Find() != null) return true;
+            if (!warned) Log.Warning("[Entad Framework] Shuttle permit launch not found: room items will board a called shuttle as loose items.");
+            warned = true;
+            return false;
+        }
         public static System.Reflection.MethodBase TargetMethod() => Find();
         public static void Prefix() => EntadSpaceCaravan.holdBack = true;
         public static void Finalizer() => EntadSpaceCaravan.holdBack = false;
