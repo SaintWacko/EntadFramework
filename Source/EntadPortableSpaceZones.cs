@@ -187,14 +187,11 @@ namespace EntadFramework
                     : map.zoneManager.AllZones.FirstOrDefault(z => z.ID == sz.id && KindOf(z) == sz.kind);
                 if (original != null)
                 {
-                    if (mergeIntoOriginal)
-                    {
-                        foreach (IntVec3 c in cells) original.AddCell(c);
-                        cells.Clear();
-                    }
-                    else cells = MergeTouching(original, cells);
-                    FoldBack(original, sz, map, mergeIntoOriginal);
-                    if (!mergeIntoOriginal && cells.Count > 0) cells = MergeTouching(original, cells);
+                    // Only pieces that touch go in, even on pick-up: a zone in pieces gets its smaller pieces dropped
+                    // by vanilla's CheckContiguous later; a piece across a real gap stays its own zone instead
+                    cells = MergeTouching(original, cells);
+                    FoldBack(original, sz, map, false);
+                    if (cells.Count > 0) cells = MergeTouching(original, cells);
                 }
                 if (cells.Count == 0) continue;
                 Zone zone = Make(sz, map, sz.whole);
