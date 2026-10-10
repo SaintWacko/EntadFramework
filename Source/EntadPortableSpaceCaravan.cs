@@ -223,7 +223,9 @@ namespace EntadFramework
             ThingOwner from = item.holdingOwner;
             Thing piece = item.SplitOff(numToMove);
             if (to.inventory.innerContainer.TryAdd(piece) || piece.holdingOwner != null || piece.Destroyed) return false;
-            if (from != null && from.TryAdd(piece, false))
+            // Part of a stack: back onto the stack it came from, which the room's record already holds
+            if (piece != item && !item.Destroyed && item.TryAbsorbStack(piece, true)) return false;
+            if (piece == item && from != null && from.TryAdd(piece, false))
             {
                 // Back in the room after all: it is still a moved thing (SplitOff's removal cleared the flag)
                 if (PortableSpace.BeingMoved != null) PortableSpace.BeingMoved(piece) = true;
