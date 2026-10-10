@@ -601,7 +601,8 @@ namespace EntadFramework
                 drop = t.MakeMinified();
             }
             else if (t.def.category != ThingCategory.Item) return;
-            if (!GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near)) return;
+            if (!GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near)
+                && !GenPlace.TryPlaceThing(drop, DropCellFinder.TradeDropSpot(map), map, ThingPlaceMode.Near)) return;
             // A minified building has no map of its own: clear only the moved flag, so it installs as normal
             if (drop == t) t.PostSwapMap();
             else if (PortableSpace.BeingMoved != null) PortableSpace.BeingMoved(t) = false;
