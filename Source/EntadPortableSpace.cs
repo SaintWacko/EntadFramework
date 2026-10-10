@@ -589,7 +589,11 @@ namespace EntadFramework
                     // A grave's corpse or a casket's sleeper would be deleted by a Vanish destroy: drop them first.
                     // Frames are left alone: DoLeavingsFor gives back their stored materials at the destroyed share.
                     if (!(t is Frame) && t is IThingHolder holder)
-                        holder.GetDirectlyHeldThings()?.TryDropAll(near, map, ThingPlaceMode.Near);
+                    {
+                        var held = holder.GetDirectlyHeldThings();
+                        if (held != null && !held.TryDropAll(near, map, ThingPlaceMode.Near))
+                            held.TryDropAll(DropCellFinder.TradeDropSpot(map), map, ThingPlaceMode.Near);
+                    }
                     GenLeaving.DoLeavingsFor(t, map, DestroyMode.KillFinalize, CellRect.SingleCell(near));
                     t.Destroy(DestroyMode.Vanish);
                     return;
@@ -597,7 +601,10 @@ namespace EntadFramework
                 drop = t.MakeMinified();
             }
             else if (t.def.category != ThingCategory.Item) return;
-            if (GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near)) t.PostSwapMap();
+            if (!GenPlace.TryPlaceThing(drop, near, map, ThingPlaceMode.Near)) return;
+            // A minified building has no map of its own: clear only the moved flag, so it installs as normal
+            if (drop == t) t.PostSwapMap();
+            else if (PortableSpace.BeingMoved != null) PortableSpace.BeingMoved(t) = false;
         }
 
         // ---- UI ----
