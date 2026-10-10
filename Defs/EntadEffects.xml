@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Portable space: the air shimmers over the area while the holder folds or unfolds it
+       (JobDriver_UsePortableSpace). A slow, faint version of the psycast area distortion. -->
+  <FleckDef ParentName="FleckGlowDistortBackground">
+    <defName>Entad_SpaceShimmer</defName>
+    <fleckSystemClass>FleckSystemThrown</fleckSystemClass>
+    <altitudeLayer>MoteOverheadLow</altitudeLayer>
+    <fadeInTime>0.5</fadeInTime>
+    <solidTime>0.4</solidTime>
+    <fadeOutTime>0.7</fadeOutTime>
+    <growthRate>0.3</growthRate>
+    <graphicData>
+      <texPath>Things/Mote/Black</texPath>
+      <shaderParameters>
+        <_distortionIntensity>0.035</_distortionIntensity>
+        <_brightnessMultiplier>1.12</_brightnessMultiplier>
+      </shaderParameters>
+      <drawSize>1.4</drawSize>
+    </graphicData>
+  </FleckDef>
+</Defs>

@@ -24,4 +24,13 @@
     <reportString>talking to TargetA.</reportString>
     <casualInterruptible>false</casualInterruptible>
   </JobDef>
+
+  <!-- Capturing, placing or picking up a portable space (EntadPortableSpace.cs) -->
+  <JobDef>
+    <defName>Entad_UsePortableSpace</defName>
+    <driverClass>EntadFramework.JobDriver_UsePortableSpace</driverClass>
+    <reportString>unfolding a portable space.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+    <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
+  </JobDef>
 </Defs>

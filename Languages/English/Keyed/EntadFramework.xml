@@ -197,4 +197,27 @@
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
   <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
 
+
+  <!-- Portable space -->
+  <EF_Space_Capture>capture space</EF_Space_Capture>
+  <EF_Space_CaptureDesc>Fold a {1}x{2} area into {0}: buildings, items, plants, chunks, built floors and built roofs. Pawns, natural rock and overhead mountain stay. Press Q or E to rotate.</EF_Space_CaptureDesc>
+  <EF_Space_Place>place space</EF_Space_Place>
+  <EF_Space_PlaceDesc>Unfold the {1}x{2} room held in {0}. Trees, plants, chunks, floors, roofs and your own buildings on the spot are kept inside until the room is picked up again; other items and pawns are moved aside. Press Q or E to rotate.</EF_Space_PlaceDesc>
+  <EF_Space_PickUp>pick up space</EF_Space_PickUp>
+  <EF_Space_PickUpDesc>Fold the {1}x{2} room from {0} back up, with anything built in it since, and put back what was there before. Hover to see the area.</EF_Space_PickUpDesc>
+  <EF_Space_UnknownDesc>{0} can do something here. Nobody knows what yet.</EF_Space_UnknownDesc>
+  <EF_Space_Card>Portable space: {0}x{1}, {2}</EF_Space_Card>
+  <EF_Space_StateEmpty>empty</EF_Space_StateEmpty>
+  <EF_Space_StateHolding>holding a room</EF_Space_StateHolding>
+  <EF_Space_StatePlaced>room placed</EF_Space_StatePlaced>
+  <EF_Space_OutOfBounds>The area runs off the map.</EF_Space_OutOfBounds>
+  <EF_Space_Fogged>Part of the area is unexplored.</EF_Space_Fogged>
+  <EF_Space_NaturalRock>There is rock in the way.</EF_Space_NaturalRock>
+  <EF_Space_ForeignBuilding>{0} is not yours to move.</EF_Space_ForeignBuilding>
+  <EF_Space_CrossesEdge>{0} sticks out of the area.</EF_Space_CrossesEdge>
+  <EF_Space_Unsupported>{0} can't stand on {1}.</EF_Space_Unsupported>
+  <EF_Space_NoStandCell>{0} can't reach the edge of the area.</EF_Space_NoStandCell>
+  <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
+  <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
+  <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
 </LanguageData>
