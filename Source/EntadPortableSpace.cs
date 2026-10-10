@@ -80,6 +80,15 @@ namespace EntadFramework
 
         public bool IsEmpty => state == PortableSpaceState.Empty;
 
+        // Thing's private flag behind PreSwapMap. Null if a game version renames it: things then load unflagged.
+        private static readonly HarmonyLib.AccessTools.FieldRef<Thing, bool> BeingMoved = MakeBeingMoved();
+
+        private static HarmonyLib.AccessTools.FieldRef<Thing, bool> MakeBeingMoved()
+        {
+            var field = HarmonyLib.AccessTools.Field(typeof(Thing), "beingTransportedOnGravship");
+            return field != null ? HarmonyLib.AccessTools.FieldRefAccess<Thing, bool>(field) : null;
+        }
+
         public Map PlacedMap
         {
             get
@@ -111,9 +120,13 @@ namespace EntadFramework
                 room.RemoveAll(s => s?.thing == null);
                 displaced.RemoveAll(s => s?.thing == null);
                 // The 'being moved' flag PreSwapMap set isn't saved; without it they'd spawn as newly built
-                // (plants re-checking leaflessness, quest spawn signals, spawn-time comp logic)
-                foreach (var s in room) s.thing.PreSwapMap();
-                foreach (var s in displaced) s.thing.PreSwapMap();
+                // (plants re-checking leaflessness, quest spawn signals, spawn-time comp logic). Only the flag is set:
+                // PreSwapMap itself runs comp logic that needs a map (the fleshmass heart's reads Map).
+                if (BeingMoved != null)
+                {
+                    foreach (var s in room) BeingMoved(s.thing) = true;
+                    foreach (var s in displaced) BeingMoved(s.thing) = true;
+                }
             }
         }
     }
@@ -514,7 +527,7 @@ namespace EntadFramework
         public static void Spill(PortableSpace space, Map map, IntVec3 near, Thing item)
         {
             if (space == null) return;
-            if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0)
+            if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0 && item.Destroyed)
                 Messages.Message("EF_Space_LostOffMap".Translate(item.LabelNoCount), MessageTypeDefOf.NegativeEvent, false);
             var loose = new List<Thing>();
             if (space.state == PortableSpaceState.Holding) loose.AddRange(space.room.Select(s => s.thing));
@@ -867,7 +880,8 @@ namespace EntadFramework
         public override void Notify_Unequipped(Pawn pawn)
         {
             base.Notify_Unequipped(pawn);
-            if (lastWearer == pawn) lastWearer = null;
+            // A destroyed item is unequipped on its way out, before PostDestroy needs to know who wore it
+            if (lastWearer == pawn && !parent.Destroyed) lastWearer = null;
         }
 
         // Called from PostDestroy (EntadPersona.cs)
