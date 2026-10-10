@@ -556,8 +556,8 @@ namespace EntadFramework
         public static void Spill(PortableSpace space, Map map, IntVec3 near, Thing item)
         {
             if (space == null) return;
-            if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0 && item.Destroyed)
-                Messages.Message("EF_Space_LostOffMap".Translate(item.LabelNoCount), MessageTypeDefOf.NegativeEvent, false);
+            if (space.state == PortableSpaceState.Holding && map == null && space.room.Count > 0)
+                Messages.Message((item.Destroyed ? "EF_Space_LostOffMap" : "EF_Space_LostOnRemove").Translate(item.LabelNoCount), MessageTypeDefOf.NegativeEvent, false);
             var loose = new List<Thing>();
             if (space.state == PortableSpaceState.Holding) loose.AddRange(space.room.Select(s => s.thing));
             Map placedMap = space.PlacedMap;

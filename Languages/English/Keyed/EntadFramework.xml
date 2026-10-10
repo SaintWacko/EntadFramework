@@ -218,5 +218,6 @@
   <EF_Space_Unsupported>{0} can't stand on {1}.</EF_Space_Unsupported>
   <EF_Space_NoStandCell>{0} can't reach the edge of the area.</EF_Space_NoStandCell>
   <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
+  <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
   <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
 </LanguageData>
