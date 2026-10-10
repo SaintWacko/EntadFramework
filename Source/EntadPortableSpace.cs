@@ -13,8 +13,8 @@ namespace EntadFramework
     // Empty: the holder captures a rectangle of exactly the rolled size. Everything in it except pawns goes into the
     // item: buildings, items, plants, chunks, filth, blueprints and frames, built floors and built roofs. Natural
     // terrain and natural rock stay on the map. Overhead mountain (thick roof) is never moved or replaced: the room
-    // can be set down under it (its own roof is skipped on those cells), and lifting a room from under it stores
-    // a built roof there instead.
+    // can be set down under it (its own roof is skipped on those cells and remembered, so picking it up gives back
+    // that roof or open sky), and a room captured from under it gets a built roof there.
     // Holding: the holder sets the room down somewhere, rotated as they like. What is already there is swapped into
     // the item and kept apart from the room: player buildings, plants, chunks, filth, floors and roofs. Other items
     // and pawns are pushed out of the rectangle. Natural rock, non-player buildings and fog refuse the spot.
