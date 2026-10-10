@@ -287,6 +287,14 @@ namespace EntadFramework
         public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
     }
 
+    // The dialog's 'select travel supplies automatically' tops food up to the trip length with the same calculator
+    [HarmonyPatch(typeof(Dialog_FormCaravan), "SelectApproximateBestTravelSupplies")]
+    public static class Patch_FormCaravanAutoSupplies_Space
+    {
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+    }
+
     [HarmonyPatch(typeof(DaysWorthOfFoodCalculator), "ApproxDaysWorthOfFood", new[] { typeof(List<Pawn>), typeof(List<ThingDefCount>), typeof(PlanetTile), typeof(IgnorePawnsInventoryMode), typeof(Faction), typeof(WorldPath), typeof(float), typeof(int), typeof(bool) })]
     public static class Patch_DaysOfFoodRooms_Space
     {
@@ -326,36 +334,29 @@ namespace EntadFramework
         public static bool Prefix(TransferableImmutable transferable, Rect rect)
         {
             int stored = 0;
-            float mass = 0f;
             PortableSpace space = null;
             var things = transferable.things;
             for (int i = 0; i < things.Count; i++)
             {
                 var s = EntadSpaceCaravan.SpaceHolding(things[i]);
                 if (s != null) { stored += things[i].stackCount; space = space ?? s; }
-                else mass += things[i].GetStatValue(StatDefOf.Mass) * things[i].stackCount;
             }
             if (stored == 0) return true;
+            if (stored == transferable.TotalStackCount)
+            {
+                Draw(rect, "EF_Space_Stored".Translate(), "EF_Space_StoredTip".Translate(space.Item?.LabelShort ?? ""));
+                return false;
+            }
             // A row can mix room items with the same items from a pack: the weight shown is the pack's part
-            if (stored == transferable.TotalStackCount) Patch_DrawMassThing_Space.Draw(rect, "EF_Space_Stored".Translate(), "EF_Space_StoredTip".Translate(space.Item?.LabelShort ?? ""));
-            else Patch_DrawMassThing_Space.Draw(rect, mass.ToStringMass(), "EF_Space_PartlyStoredTip".Translate(stored));
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(CaravanThingsTabUtility), nameof(CaravanThingsTabUtility.DrawMass), new[] { typeof(Thing), typeof(Rect) })]
-    public static class Patch_DrawMassThing_Space
-    {
-        public static bool Prefix(Thing thing, Rect rect)
-        {
-            var space = EntadSpaceCaravan.SpaceHolding(thing);
-            if (space == null) return true;
-            Draw(rect, "EF_Space_Stored".Translate(), "EF_Space_StoredTip".Translate(space.Item?.LabelShort ?? ""));
+            float mass = 0f;
+            for (int i = 0; i < things.Count; i++)
+                if (EntadSpaceCaravan.SpaceHolding(things[i]) == null) mass += things[i].GetStatValue(StatDefOf.Mass) * things[i].stackCount;
+            Draw(rect, mass.ToStringMass(), "EF_Space_PartlyStoredTip".Translate(stored));
             return false;
         }
 
         // As vanilla draws the mass column
-        internal static void Draw(Rect rect, string label, string tip)
+        private static void Draw(Rect rect, string label, string tip)
         {
             GUI.color = TransferableOneWayWidget.ItemMassColor;
             Text.Anchor = TextAnchor.MiddleLeft;
