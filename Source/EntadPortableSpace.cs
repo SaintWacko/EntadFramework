@@ -4,6 +4,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.Sound;
 
 namespace EntadFramework
 {
@@ -232,7 +233,8 @@ namespace EntadFramework
                 if (IsForeignBuilding(t)) return "EF_Space_ForeignBuilding".Translate(t.LabelShort);
                 // Pawns and pushed items are moved aside, so only what stays in the rectangle must fit inside it
                 bool moves = placing && t.def.category == ThingCategory.Item && !IsChunk(t);
-                if (!moves && !rect.Contains(t.OccupiedRect())) return "EF_Space_CrossesEdge".Translate(t.LabelShort);
+                CellRect occ = t.OccupiedRect();
+                if (!moves && !(rect.Contains(occ.Min) && rect.Contains(occ.Max))) return "EF_Space_CrossesEdge".Translate(t.LabelShort);
             }
             return true;
         }
