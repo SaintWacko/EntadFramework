@@ -714,8 +714,8 @@ namespace EntadFramework
             if (IsReloadable && !td.IsWeapon && !td.IsApparel) return false;
             if (!equippedHediffs.NullOrEmpty() && !td.IsWeapon && !td.IsApparel) return false;
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
-            // Worn gear only: the wearer carries the space around and uses it from their gizmos
-            if (HasPortableSpace && !td.IsApparel) return false;
+            // Carried gear only (worn apparel or a wielded weapon): the holder uses the space from their gizmos
+            if (HasPortableSpace && !td.IsApparel && !td.IsWeapon) return false;
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 

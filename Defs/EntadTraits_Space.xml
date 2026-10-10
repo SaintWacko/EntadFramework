@@ -7,7 +7,10 @@
     <defName>Entad_PortableSpace</defName>
     <label>portable space</label>
     <description>Holds a room. The wearer can fold a patch of ground of a fixed size into it, with everything built and stored there, and unfold it somewhere else. Whatever was standing on the new spot is kept safe inside until the room is folded up again.</description>
-    <categories><li>Apparel</li></categories>
+    <categories>
+      <li>Apparel</li>
+      <li>Weapon</li>
+    </categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <points>3</points>

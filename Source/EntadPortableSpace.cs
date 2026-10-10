@@ -876,6 +876,12 @@ namespace EntadFramework
         public override IEnumerable<Gizmo> CompGetWornGizmosExtra()
         {
             foreach (var g in base.CompGetWornGizmosExtra()) yield return g;
+            foreach (var g in SpaceGizmos()) yield return g;
+        }
+
+        // Worn apparel (above) and equipped weapons (Patch_EquipmentTracker_GetGizmos_Space) share these
+        internal IEnumerable<Gizmo> SpaceGizmos()
+        {
             if (activeTraits.NullOrEmpty()) yield break;
             Pawn wearer = Holder;
             if (wearer == null || !wearer.Spawned || !wearer.IsColonistPlayerControlled) yield break;
@@ -929,9 +935,9 @@ namespace EntadFramework
             return cmd;
         }
 
-        // The pawn wearing this now, kept past the moment the item is destroyed: a destroyed worn item has already
+        // The pawn wearing or wielding this now, kept past the moment the item is destroyed: a destroyed item has already
         // left its wearer when PostDestroy runs, and its own Position is wherever it last lay on the ground.
-        // Not saved: after a load it is set again the first time the wearer's gizmos are drawn.
+        // Not saved: after a load it is set again the first time the holder's gizmos are drawn.
         private Pawn lastWearer;
 
         public override void Notify_Unequipped(Pawn pawn)
@@ -961,6 +967,30 @@ namespace EntadFramework
         {
             Pawn holder = Holder;
             SpillSpace(trait, parent.MapHeld, holder != null && holder.Spawned ? holder.Position : parent.PositionHeld);
+        }
+    }
+
+    // Equipped weapons: vanilla only asks the weapon's CompEquippable for extra gizmos (ThingComp has no equipped
+    // hook), so the space gizmo is appended to the equipment tracker's own list. Shown drafted or not, like worn
+    // apparel's. Wraps the iterator rather than replacing it, so other mods' gizmos and postfixes are untouched.
+    [HarmonyLib.HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.GetGizmos))]
+    public static class Patch_EquipmentTracker_GetGizmos_Space
+    {
+        public static void Postfix(Pawn_EquipmentTracker __instance, ref IEnumerable<Gizmo> __result)
+        {
+            __result = With(__result, __instance);
+        }
+
+        private static IEnumerable<Gizmo> With(IEnumerable<Gizmo> original, Pawn_EquipmentTracker tracker)
+        {
+            foreach (var g in original) yield return g;
+            var list = tracker.AllEquipmentListForReading;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var comp = list[i].GetComp<CompEntad>();
+                if (comp == null) continue;
+                foreach (var g in comp.SpaceGizmos()) yield return g;
+            }
         }
     }
 }
