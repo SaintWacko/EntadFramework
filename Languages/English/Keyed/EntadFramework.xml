@@ -200,7 +200,7 @@
 
   <!-- Portable space -->
   <EF_Space_Capture>capture space</EF_Space_Capture>
-  <EF_Space_CaptureDesc>Fold a {1}x{2} area into {0}: buildings, items, plants, chunks, built floors, built roofs, stockpiles, growing zones and areas. Pawns, natural rock and overhead mountain stay. Press Q or E to rotate.</EF_Space_CaptureDesc>
+  <EF_Space_CaptureDesc>Fold a {1}x{2} area into {0}: buildings, items, plants, chunks, built floors, built roofs, stockpiles, growing zones and areas. Pawns, natural rock and rock roofs stay. Press Q or E to rotate.</EF_Space_CaptureDesc>
   <EF_Space_Place>place space</EF_Space_Place>
   <EF_Space_PlaceDesc>Unfold the {1}x{2} room held in {0}. Trees, plants, chunks, floors, roofs, zones, areas and your own buildings on the spot are kept inside until the room is picked up again; other items and pawns are moved aside. Press Q or E to rotate.</EF_Space_PlaceDesc>
   <EF_Space_PickUp>pick up space</EF_Space_PickUp>
@@ -220,5 +220,8 @@
   <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
   <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
   <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
+  <EF_Space_Stored>stored</EF_Space_Stored>
+  <EF_Space_StoredTip>Stored in the room held by {0}. Weighs nothing while it travels with it.</EF_Space_StoredTip>
+  <EF_Space_PartlyStoredTip>{0} of these are stored in a room held by an entad and weigh nothing. The weight shown is for the rest.</EF_Space_PartlyStoredTip>
   <EF_Space_AreaLimit>This map already has the most allowed areas it can hold, so the room's cells from {0} were not marked.</EF_Space_AreaLimit>
 </LanguageData>

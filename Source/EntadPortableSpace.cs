@@ -12,8 +12,8 @@ namespace EntadFramework
     //
     // Empty: the holder captures a rectangle of exactly the rolled size. Everything in it except pawns goes into the
     // item: buildings, items, plants, chunks, filth, blueprints and frames, built floors and built roofs. Natural
-    // terrain and natural rock stay on the map. Overhead mountain (thick roof) is never moved or replaced: the room
-    // can be set down under it (its own roof is skipped on those cells and remembered, so picking it up gives back
+    // terrain and natural rock stay on the map. Rock roofs (overhead mountain and thin rock roof: RoofDef.isNatural)
+    // are never moved or replaced: the room can be set down under them (its own roof is skipped on those cells and remembered, so picking it up gives back
     // that roof or open sky), and a room captured from under it gets a built roof there.
     // Holding: the holder sets the room down somewhere, rotated as they like. What is already there is swapped into
     // the item and kept apart from the room: player buildings, plants, chunks, filth, floors and roofs. Other items
@@ -162,7 +162,7 @@ namespace EntadFramework
         public List<StoredCell> displacedCells = new List<StoredCell>();
         public List<StoredZone> displacedZones = new List<StoredZone>();
         public List<StoredArea> displacedAreas = new List<StoredArea>();
-        // Map cells the room was set down on under overhead mountain, with the room's own roof there (null = open
+        // Map cells the room was set down on under rock roof, with the room's own roof there (null = open
         // sky), so picking it up gives back what it had rather than a built roof
         public List<StoredCell> underMountain = new List<StoredCell>();
 
@@ -482,8 +482,8 @@ namespace EntadFramework
                 GenSpawn.Spawn(t, from, map); // nowhere else: leave it where it was rather than lose it
         }
 
-        // Takes the rectangle's floors and built roofs off the map. Overhead mountain (thick roof) always stays where it
-        // is. Lifting a room ('thickAsBuilt') stores, under it, the room's own roof from when it was set down there
+        // Takes the rectangle's floors and built roofs off the map. Rock roof (overhead mountain, thin rock) always stays
+        // where it is. Lifting a room ('thickAsBuilt') stores, under it, the room's own roof from when it was set down there
         // ('remembered', null = open sky), or a built roof for a room captured from under a mountain.
         private static List<StoredCell> LiftCells(Map map, CellRect rect, bool thickAsBuilt, Dictionary<IntVec3, RoofDef> remembered = null)
         {
@@ -498,7 +498,7 @@ namespace EntadFramework
                     map.terrainGrid.RemoveTopLayer(c, false);
                 }
                 RoofDef roof = map.roofGrid.RoofAt(c);
-                if (roof != null && !roof.isThickRoof)
+                if (roof != null && !roof.isNatural)
                 {
                     sc.roof = roof;
                     map.roofGrid.SetRoof(c, null);
@@ -525,7 +525,7 @@ namespace EntadFramework
         private static void SetDownRoofs(IEnumerable<(IntVec3 cell, StoredCell sc)> cells, Map map)
         {
             foreach (var (c, sc) in cells)
-                if (sc.roof != null && map.roofGrid.RoofAt(c)?.isThickRoof != true) map.roofGrid.SetRoof(c, sc.roof);
+                if (sc.roof != null && map.roofGrid.RoofAt(c)?.isNatural != true) map.roofGrid.SetRoof(c, sc.roof);
         }
 
         // ---- The three actions ----
@@ -606,12 +606,12 @@ namespace EntadFramework
 
             // Set the room down
             var cells = space.roomCells.Select(sc => (ToMap(sc.cell, origin, rot, w, h), sc)).ToList();
-            // Under overhead mountain the room's roof isn't set down: remember it (or that there was none) for pick-up
+            // Under rock roof the room's roof isn't set down: remember it (or that there was none) for pick-up
             var roomRoof = new Dictionary<IntVec3, RoofDef>();
             foreach (var (c, sc) in cells) roomRoof[c] = sc.roof;
             space.underMountain = new List<StoredCell>();
             foreach (IntVec3 c in rect)
-                if (map.roofGrid.RoofAt(c)?.isThickRoof == true)
+                if (map.roofGrid.RoofAt(c)?.isNatural == true)
                     space.underMountain.Add(new StoredCell { cell = c, roof = roomRoof.TryGetValue(c, out RoofDef own) ? own : null });
             SetDownFloors(cells, map);
             var things = new List<(Thing, IntVec3, Rot4)>();

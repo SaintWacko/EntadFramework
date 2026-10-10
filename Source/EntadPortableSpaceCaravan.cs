@@ -267,6 +267,107 @@ namespace EntadFramework
         public static void Finalizer() => EntadSpaceCaravan.holdBack = false;
     }
 
+    // ---- Days of food ----
+    //
+    // Food in a room carried by one of the pawns counts toward days of food on the form-caravan dialog (where room
+    // items aren't transferables) and on a formed caravan's readout (which reads pawns' packs directly). Other callers
+    // (trade, split) already list room items through AllInventoryItems, so the rooms are added only while these two
+    // run, through a flag the private calculator checks.
+    [HarmonyPatch(typeof(DaysWorthOfFoodCalculator), nameof(DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood), new[] { typeof(Caravan) })]
+    public static class Patch_CaravanDaysOfFood_Space
+    {
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+    }
+
+    [HarmonyPatch(typeof(Dialog_FormCaravan), "DaysWorthOfFood", MethodType.Getter)]
+    public static class Patch_FormCaravanDaysOfFood_Space
+    {
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+    }
+
+    [HarmonyPatch(typeof(DaysWorthOfFoodCalculator), "ApproxDaysWorthOfFood", new[] { typeof(List<Pawn>), typeof(List<ThingDefCount>), typeof(PlanetTile), typeof(IgnorePawnsInventoryMode), typeof(Faction), typeof(WorldPath), typeof(float), typeof(int), typeof(bool) })]
+    public static class Patch_DaysOfFoodRooms_Space
+    {
+        internal static bool countRooms;
+
+        public static void Prefix(List<Pawn> pawns, ref List<ThingDefCount> extraFood, IgnorePawnsInventoryMode ignoreInventory)
+        {
+            if (!countRooms || pawns == null || !EntadSpaceCaravan.AnyHolding) return;
+            var spaces = EntadSpaceCaravan.Holding.ToList();
+            List<Thing> items = null;
+            List<ThingDefCount> food = null;
+            foreach (var space in spaces)
+            {
+                Pawn carrier = space.Carrier;
+                if (carrier == null || !pawns.Contains(carrier)) continue;
+                if (space.Item.ParentHolder is Pawn_InventoryTracker && InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(carrier, ignoreInventory)) continue;
+                items = items ?? new List<Thing>();
+                items.Clear();
+                EntadSpaceCaravan.AppendItems(space, items);
+                foreach (Thing t in items)
+                {
+                    if (!t.def.IsNutritionGivingIngestible) continue;
+                    // A copy: the caller's list is vanilla's shared scratch list
+                    food = food ?? (extraFood != null ? new List<ThingDefCount>(extraFood) : new List<ThingDefCount>());
+                    food.Add(new ThingDefCount(t.def, t.stackCount));
+                }
+            }
+            if (food != null) extraFood = food;
+        }
+    }
+
+    // ---- Caravan item tabs: room items show "stored" in place of their weight ----
+
+    [HarmonyPatch(typeof(CaravanThingsTabUtility), nameof(CaravanThingsTabUtility.DrawMass), new[] { typeof(TransferableImmutable), typeof(Rect) })]
+    public static class Patch_DrawMassRow_Space
+    {
+        public static bool Prefix(TransferableImmutable transferable, Rect rect)
+        {
+            int stored = 0;
+            float mass = 0f;
+            PortableSpace space = null;
+            var things = transferable.things;
+            for (int i = 0; i < things.Count; i++)
+            {
+                var s = EntadSpaceCaravan.SpaceHolding(things[i]);
+                if (s != null) { stored += things[i].stackCount; space = space ?? s; }
+                else mass += things[i].GetStatValue(StatDefOf.Mass) * things[i].stackCount;
+            }
+            if (stored == 0) return true;
+            // A row can mix room items with the same items from a pack: the weight shown is the pack's part
+            if (stored == transferable.TotalStackCount) Patch_DrawMassThing_Space.Draw(rect, "EF_Space_Stored".Translate(), "EF_Space_StoredTip".Translate(space.Item?.LabelShort ?? ""));
+            else Patch_DrawMassThing_Space.Draw(rect, mass.ToStringMass(), "EF_Space_PartlyStoredTip".Translate(stored));
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(CaravanThingsTabUtility), nameof(CaravanThingsTabUtility.DrawMass), new[] { typeof(Thing), typeof(Rect) })]
+    public static class Patch_DrawMassThing_Space
+    {
+        public static bool Prefix(Thing thing, Rect rect)
+        {
+            var space = EntadSpaceCaravan.SpaceHolding(thing);
+            if (space == null) return true;
+            Draw(rect, "EF_Space_Stored".Translate(), "EF_Space_StoredTip".Translate(space.Item?.LabelShort ?? ""));
+            return false;
+        }
+
+        // As vanilla draws the mass column
+        internal static void Draw(Rect rect, string label, string tip)
+        {
+            GUI.color = TransferableOneWayWidget.ItemMassColor;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Text.WordWrap = false;
+            Widgets.Label(rect, label);
+            Text.WordWrap = true;
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = Color.white;
+            TooltipHandler.TipRegion(rect, tip);
+        }
+    }
+
     [HarmonyPatch(typeof(Dialog_SplitCaravan), "TrySplitCaravan")]
     public static class Patch_SplitCaravan_Space
     {
