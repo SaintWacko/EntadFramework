@@ -43,6 +43,7 @@ namespace EntadFramework
         public override void Notify_Equipped(Pawn pawn)
         {
             base.Notify_Equipped(pawn);
+            lastWearer = pawn;
             if (bondedPawn == null && pawn?.equipment != null && pawn.equipment.bondedWeapon == null && IsPersona && ActiveFor(pawn))
                 Bond(pawn);
         }
@@ -57,6 +58,7 @@ namespace EntadFramework
         {
             base.PostDestroy(mode, previousMap);
             Unbond();
+            SpillSpaces(previousMap);
         }
 
         public void Bond(Pawn pawn)
