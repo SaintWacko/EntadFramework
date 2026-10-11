@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HuntersFeast</defName>
     <label>Hunter's Feast</label>
-    <description>Each enemy or wild creature the wielder kills leaves them a little less hungry. Slaughtered livestock and executed prisoners don't count.</description>
+    <description>Each enemy or wild creature the wielder kills leaves the wielder a little less hungry. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
