@@ -728,12 +728,17 @@ namespace EntadFramework
             }
             space.room = new List<StoredThing>();
             space.displaced = new List<StoredThing>();
+            // Floors and roofs are lost with the item, so their records go too: a stale list would be saved with
+            // the empty item and applied on its next capture or place
+            space.roomCells = new List<StoredCell>();
+            space.displacedCells = new List<StoredCell>();
             space.roomZones = new List<StoredZone>();
             space.roomAreas = new List<StoredArea>();
             space.displacedZones = new List<StoredZone>();
             space.displacedAreas = new List<StoredArea>();
             space.underMountain = new List<StoredCell>();
             space.state = PortableSpaceState.Empty;
+            space.mapId = -1;
             if (map == null) return;
             if (!near.IsValid || !near.InBounds(map)) near = DropCellFinder.TradeDropSpot(map);
             foreach (Thing t in loose) Drop(t, map, near);
