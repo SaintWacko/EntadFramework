@@ -7,7 +7,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Vampiric</defName>
     <label>Vampiric</label>
-    <description>Each kill closes some of the wielder's wounds, worst first.</description>
+    <description>Each enemy or wild creature the wielder kills closes some of their wounds, worst first. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <points>5</points>
@@ -15,6 +15,7 @@
     <triggers>
       <li>
         <on>Kill</on>
+        <victims>Fight</victims>
         <heal>4~10</heal>
       </li>
     </triggers>
@@ -23,13 +24,14 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HuntersFeast</defName>
     <label>Hunter's Feast</label>
-    <description>Each kill leaves the wielder a little less hungry.</description>
+    <description>Each enemy or wild creature the wielder kills leaves them a little less hungry. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Kill</on>
+        <victims>Fight</victims>
         <food>0.1~0.25</food>
       </li>
     </triggers>
