@@ -110,13 +110,30 @@ namespace EntadFramework
             {
                 var d = pair.def;
                 bool ok = pair.ok;
-                options.Add(new DebugMenuOption(d.defName + (ok ? "" : " (not applicable)"), DebugMenuOptionMode.Action, () =>
+                string label = d.defName + (ok ? "" : " (not applicable)");
+                // A trait that scales picks its rarity in a second list, like Titan Framework's dev action
+                var rarities = ((EntadRarity[])Enum.GetValues(typeof(EntadRarity))).Where(d.CanAppearAt).ToList();
+                if (rarities.Count > 1)
                 {
-                    comp.AddTrait(d, null, true);
-                    Messages.Message($"Applied '{d.LabelCap}' to {thing.Label}.", MessageTypeDefOf.PositiveEvent, false);
-                }));
+                    options.Add(new DebugMenuOption(label + " ...", DebugMenuOptionMode.Action, () =>
+                    {
+                        var sub = rarities.Select(r => new DebugMenuOption($"{r} ({d.PointsAt(r):0.#} points)", DebugMenuOptionMode.Action, () => AddAt(comp, thing, d, r))).ToList();
+                        Find.WindowStack.Add(new Dialog_DebugOptionListLister(sub));
+                    }));
+                }
+                else options.Add(new DebugMenuOption(label, DebugMenuOptionMode.Action, () => AddAt(comp, thing, d, null)));
             }
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        private static void AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
+        {
+            if (!comp.AddTrait(d, rarity, true))
+            {
+                Messages.Message($"Could not apply '{d.LabelCap}' to {thing.Label}.", MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+            Messages.Message($"Applied '{d.LabelCap}'{(rarity.HasValue ? $" at {rarity.Value}" : "")} to {thing.Label}.", MessageTypeDefOf.PositiveEvent, false);
         }
 
         [DebugAction(category = "Entad Framework", name = "Remove specific Entad trait", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
