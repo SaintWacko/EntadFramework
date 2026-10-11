@@ -728,8 +728,8 @@ namespace EntadFramework
             }
             space.room = new List<StoredThing>();
             space.displaced = new List<StoredThing>();
-            // Floors and roofs are lost with the item, so their records go too: a stale list would be saved with
-            // the empty item and applied on its next capture or place
+            // Floors and roofs are lost with the item, so their records go too. Nothing reads them while the space is
+            // empty (capture rewrites roomCells first), so this only keeps dead records out of the save
             space.roomCells = new List<StoredCell>();
             space.displacedCells = new List<StoredCell>();
             space.roomZones = new List<StoredZone>();
