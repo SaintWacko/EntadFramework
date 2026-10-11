@@ -381,6 +381,8 @@ namespace EntadFramework
 
         public static AcceptanceReport CanPlace(PortableSpace space, Map map, IntVec3 origin, Rot4 rot, int w, int h)
         {
+            // What left the room while it was held (sold, eaten) mustn't block a turn
+            space.PruneRoom();
             foreach (var st in space.room)
                 if (TurnBlocks(st, rot)) return "EF_Space_CantTurn".Translate(st.thing.LabelShort);
             CellRect rect = RectAt(origin, rot, w, h);
@@ -1014,7 +1016,7 @@ namespace EntadFramework
             foreach (var st in space.room)
             {
                 ThingDef def = st.thing.def;
-                if (def.category != ThingCategory.Building || def.graphic == null) continue;
+                if (def.category != ThingCategory.Building || def.graphic == null || EntadPortableSpace.TurnBlocks(st, placingRot)) continue;
                 EntadPortableSpace.Transform(def, st.pos, st.rot, l => EntadPortableSpace.ToMap(l, origin, placingRot, w, h), placingRot.AsInt, st.thing.Rotation, out IntVec3 p, out Rot4 r);
                 if (!p.InBounds(Map)) continue;
                 GhostDrawer.DrawGhostThing(p, r, def, def.graphic, col, AltitudeLayer.Blueprint, st.thing, false, st.thing.Stuff);
