@@ -32,7 +32,7 @@ namespace EntadFramework
                      // downed and then finished off is a plain wild animal again; and a berserk killer is hostile to
                      // everyone, so its colony mates count.
         Humanlike,   // people, whatever their side
-        Fight        // Hostile, plus anything wild: no faction and nobody's prisoner or slave. Hunting and a drafted
+        Fight        // Hostile, plus wild animals and wild men: no faction and nobody's prisoner or slave. Hunting and a drafted
                      // shot at a wild animal count; slaughtering livestock, executing a prisoner or killing a slave
                      // doesn't, because those have a faction or a host faction
     }
@@ -218,7 +218,9 @@ namespace EntadFramework
                 case EntadKillVictims.Hostile: return victim != null && victim.HostileTo(killer);
                 case EntadKillVictims.Humanlike: return victim?.RaceProps?.Humanlike == true;
                 case EntadKillVictims.Fight:
-                    return victim != null && (victim.HostileTo(killer) || (victim.Faction == null && victim.HostFaction == null));
+                    // Only animals and wild men count as wild: a downed refugee can also have no faction
+                    return victim != null && (victim.HostileTo(killer)
+                        || ((victim.RaceProps.Animal || victim.IsWildMan()) && victim.Faction == null && victim.HostFaction == null));
                 default: return true;
             }
         }

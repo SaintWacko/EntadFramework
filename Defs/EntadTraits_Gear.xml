@@ -7,7 +7,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Vampiric</defName>
     <label>Vampiric</label>
-    <description>Each enemy or wild creature the wielder kills closes some of their wounds, worst first. Slaughtered livestock and executed prisoners don't count.</description>
+    <description>Each enemy or wild creature the wielder kills closes some of the wielder's wounds, worst first. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <points>5</points>
