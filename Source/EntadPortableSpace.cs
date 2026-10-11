@@ -294,10 +294,17 @@ namespace EntadFramework
         // Where a thing goes after its cells are mapped through 'mapCell' and it turns 'turns' quarter turns. Worked
         // out from the footprint rather than the position, because a building with an even side doesn't sit on its
         // middle cell and rotating its position alone would shift it by one.
+        //
+        // A stored (pos, rot) describes the cells a thing covers, in the frame it is stored in. A building that can't
+        // rotate (rotatable false) keeps its real Rotation on the Thing, but in the room its stored rot turns with the
+        // room like any other, so a 1x2 one captured with the room turned a quarter is stored lying on its side and the
+        // room knows its true footprint. Going back onto a map ('spawnRot', the thing's real Rotation) it must stand
+        // the way it really does: CanPlace refuses the room turns where it would lie on its side (TurnBlocks).
         public static void Transform(ThingDef def, IntVec3 pos, Rot4 thingRot, System.Func<IntVec3, IntVec3> mapCell, int turns,
-            out IntVec3 newPos, out Rot4 newRot)
+            Rot4? spawnRot, out IntVec3 newPos, out Rot4 newRot)
         {
-            newRot = def.rotatable ? new Rot4((thingRot.AsInt + turns + 4) % 4) : thingRot;
+            newRot = new Rot4((thingRot.AsInt + turns + 4) % 4);
+            if (!def.rotatable && spawnRot.HasValue) newRot = spawnRot.Value;
             if (def.size.x == 1 && def.size.z == 1) { newPos = mapCell(pos); return; }
             CellRect from = GenAdj.OccupiedRect(pos, thingRot, def.size);
             IntVec3 a = mapCell(from.Min), b = mapCell(from.Max);
@@ -364,8 +371,18 @@ namespace EntadFramework
 
         public static AcceptanceReport CanCapture(Map map, CellRect rect) => CheckArea(map, rect, false);
 
+        // A room thing that can't rotate and isn't square would lie on its side with the room set down turned 'rot'
+        public static bool TurnBlocks(StoredThing st, Rot4 rot)
+        {
+            ThingDef def = st.thing.def;
+            if (def.rotatable || def.size.x == def.size.z) return false;
+            return new Rot4((st.rot.AsInt + rot.AsInt) % 4).IsHorizontal != st.thing.Rotation.IsHorizontal;
+        }
+
         public static AcceptanceReport CanPlace(PortableSpace space, Map map, IntVec3 origin, Rot4 rot, int w, int h)
         {
+            foreach (var st in space.room)
+                if (TurnBlocks(st, rot)) return "EF_Space_CantTurn".Translate(st.thing.LabelShort);
             CellRect rect = RectAt(origin, rot, w, h);
             var report = CheckArea(map, rect, true);
             if (!report.Accepted) return report;
@@ -385,7 +402,7 @@ namespace EntadFramework
             {
                 var need = st.thing.def.terrainAffordanceNeeded;
                 if (st.thing.def.category != ThingCategory.Building || need == null) continue;
-                Transform(st.thing.def, st.pos, st.rot, l => ToMap(l, origin, rot, w, h), rot.AsInt, out IntVec3 p, out Rot4 r);
+                Transform(st.thing.def, st.pos, st.rot, l => ToMap(l, origin, rot, w, h), rot.AsInt, st.thing.Rotation, out IntVec3 p, out Rot4 r);
                 foreach (IntVec3 c in GenAdj.OccupiedRect(p, r, st.thing.def.size))
                 {
                     TerrainDef ground = floors.TryGetValue(c, out var f) ? f : NaturalTerrain(map, c);
@@ -539,7 +556,7 @@ namespace EntadFramework
             var stored = new List<StoredThing>();
             foreach (Thing t in things)
             {
-                Transform(t.def, t.Position, t.Rotation, c => ToLocal(c, origin, rot, w, h), back, out IntVec3 p, out Rot4 r);
+                Transform(t.def, t.Position, t.Rotation, c => ToLocal(c, origin, rot, w, h), back, null, out IntVec3 p, out Rot4 r);
                 stored.Add(new StoredThing { thing = t, pos = p, rot = r });
             }
             LiftAll(things, map);
@@ -618,7 +635,7 @@ namespace EntadFramework
             space.PruneRoom();
             foreach (var st in space.room)
             {
-                Transform(st.thing.def, st.pos, st.rot, l => ToMap(l, origin, rot, w, h), rot.AsInt, out IntVec3 p, out Rot4 r);
+                Transform(st.thing.def, st.pos, st.rot, l => ToMap(l, origin, rot, w, h), rot.AsInt, st.thing.Rotation, out IntVec3 p, out Rot4 r);
                 things.Add((st.thing, p, r));
             }
             space.ReleaseRoom();
@@ -998,7 +1015,7 @@ namespace EntadFramework
             {
                 ThingDef def = st.thing.def;
                 if (def.category != ThingCategory.Building || def.graphic == null) continue;
-                EntadPortableSpace.Transform(def, st.pos, st.rot, l => EntadPortableSpace.ToMap(l, origin, placingRot, w, h), placingRot.AsInt, out IntVec3 p, out Rot4 r);
+                EntadPortableSpace.Transform(def, st.pos, st.rot, l => EntadPortableSpace.ToMap(l, origin, placingRot, w, h), placingRot.AsInt, st.thing.Rotation, out IntVec3 p, out Rot4 r);
                 if (!p.InBounds(Map)) continue;
                 GhostDrawer.DrawGhostThing(p, r, def, def.graphic, col, AltitudeLayer.Blueprint, st.thing, false, st.thing.Stuff);
             }

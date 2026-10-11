@@ -276,33 +276,34 @@ namespace EntadFramework
     [HarmonyPatch(typeof(DaysWorthOfFoodCalculator), nameof(DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood), new[] { typeof(Caravan) })]
     public static class Patch_CaravanDaysOfFood_Space
     {
-        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
-        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms++;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms--;
     }
 
     [HarmonyPatch(typeof(Dialog_FormCaravan), "DaysWorthOfFood", MethodType.Getter)]
     public static class Patch_FormCaravanDaysOfFood_Space
     {
-        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
-        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms++;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms--;
     }
 
     // The dialog's 'select travel supplies automatically' tops food up to the trip length with the same calculator
     [HarmonyPatch(typeof(Dialog_FormCaravan), "SelectApproximateBestTravelSupplies")]
     public static class Patch_FormCaravanAutoSupplies_Space
     {
-        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms = true;
-        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms = false;
+        public static void Prefix() => Patch_DaysOfFoodRooms_Space.countRooms++;
+        public static void Finalizer() => Patch_DaysOfFoodRooms_Space.countRooms--;
     }
 
     [HarmonyPatch(typeof(DaysWorthOfFoodCalculator), "ApproxDaysWorthOfFood", new[] { typeof(List<Pawn>), typeof(List<ThingDefCount>), typeof(PlanetTile), typeof(IgnorePawnsInventoryMode), typeof(Faction), typeof(WorldPath), typeof(float), typeof(int), typeof(bool) })]
     public static class Patch_DaysOfFoodRooms_Space
     {
-        internal static bool countRooms;
+        // Depth, so one flagged call inside another doesn't switch counting off early
+        internal static int countRooms;
 
         public static void Prefix(List<Pawn> pawns, ref List<ThingDefCount> extraFood, IgnorePawnsInventoryMode ignoreInventory)
         {
-            if (!countRooms || pawns == null || !EntadSpaceCaravan.AnyHolding) return;
+            if (countRooms <= 0 || pawns == null || !EntadSpaceCaravan.AnyHolding) return;
             var spaces = EntadSpaceCaravan.Holding.ToList();
             List<Thing> items = null;
             List<ThingDefCount> food = null;

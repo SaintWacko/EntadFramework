@@ -220,6 +220,7 @@
   <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
   <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
   <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
+  <EF_Space_CantTurn>{0} can't be turned this way. Rotate the room a quarter turn.</EF_Space_CantTurn>
   <EF_Space_Stored>stored</EF_Space_Stored>
   <EF_Space_StoredTip>Stored in the room held by {0}. Weighs nothing while it travels with it.</EF_Space_StoredTip>
   <EF_Space_PartlyStoredTip>{0} of these are stored in a room held by an entad and weigh nothing. The weight shown is for the rest.</EF_Space_PartlyStoredTip>
