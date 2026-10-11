@@ -27,6 +27,7 @@
     <description>Each enemy or wild creature the wielder kills leaves the wielder a little less hungry. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <points>1</points>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
@@ -124,6 +125,7 @@
     <description>Whoever wears or wields this wakes up eager to work, and works faster for a few hours.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
+    <points>1</points>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>

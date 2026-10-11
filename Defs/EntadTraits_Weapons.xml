@@ -53,6 +53,7 @@
     <description>The wielder feels a rush of joy with every enemy they kill.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <points>1</points>
     <killThought>Entad_Thought_BattleJoy</killThought>
     <killVictims>Hostile</killVictims>
   </EntadFramework.EntadTraitDef>
@@ -81,7 +82,7 @@
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
     <scalesWithRarity>true</scalesWithRarity>
-    <statOffsets><li><stat>AccuracyShort</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyMedium</stat><min>0.03</min><max>0.07</max></li><li><stat>AccuracyLong</stat><min>0.03</min><max>0.07</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.1</min><max>1.25</max></li></statFactors>
+    <statOffsets><li><stat>AccuracyShort</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyMedium</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyLong</stat><min>0.06</min><max>0.14</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.5</max></li></statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavyHitter</defName>
@@ -142,7 +143,8 @@
     <label>Stunning</label>
     <description>Targets reel from every hit.</description>
     <categories><li>Weapon</li></categories>
-    <rarity>Uncommon</rarity>
+    <!-- Stun on every hit can lock a target down, burst weapons especially -->
+    <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>Stun</damageType><min>2</min><max>6</max></li></extraDamage>
   </EntadFramework.EntadTraitDef>

@@ -119,6 +119,8 @@
       <li>Furniture</li>
     </categories>
     <rarity>Epic</rarity>
+    <!-- Rare to find, but stone blocks aren't always cheaper than the fuel it replaces -->
+    <points>3</points>
     <replaceFuel>true</replaceFuel>
     <fuelCategories>
       <li>StoneBlocks</li>
