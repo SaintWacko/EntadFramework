@@ -46,15 +46,17 @@ namespace EntadFramework
         public static readonly Dictionary<EntadRarity, float> Durability = new Dictionary<EntadRarity, float>(DefaultDurability);
 
         // Generation points (EntadTraitDef.PointsAt). A trait with no <points> is worth its rarity's value; one that
-        // scales with rarity has its points multiplied by this table relative to its own rarity. Steeper than the
-        // strength multipliers on purpose: a Legendary roll is worth more than the size of its numbers, it's rare.
+        // scales with rarity has its points multiplied by this table relative to its own rarity. Fibonacci (build 149):
+        // steeper than the strength multipliers on purpose, since a Legendary roll is worth more than the size of its
+        // numbers, but no longer the 1/2/4/7/11 table, which priced high rolls of scaling traits out of most targets
+        // (a Legendary Portable Space cost 33).
         public static readonly Dictionary<EntadRarity, float> DefaultPoints = new Dictionary<EntadRarity, float>
         {
             { EntadRarity.Common, 1f },
             { EntadRarity.Uncommon, 2f },
-            { EntadRarity.Rare, 4f },
-            { EntadRarity.Epic, 7f },
-            { EntadRarity.Legendary, 11f },
+            { EntadRarity.Rare, 3f },
+            { EntadRarity.Epic, 5f },
+            { EntadRarity.Legendary, 8f },
         };
 
         public static readonly Dictionary<EntadRarity, float> Points = new Dictionary<EntadRarity, float>(DefaultPoints);
