@@ -205,8 +205,9 @@ namespace EntadFramework
     {
         public static bool NeedsBench(Thing t) => t.def.category == ThingCategory.Item;
 
-        public static Building_ResearchBench FindBench(Pawn pawn, bool forced) =>
-            (Building_ResearchBench)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench),
+        // Nearest to the item, since that is where the carry starts
+        public static Building_ResearchBench FindBench(Pawn pawn, Thing item, bool forced) =>
+            (Building_ResearchBench)GenClosest.ClosestThingReachable(item.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench),
                 PathEndMode.InteractionCell, TraverseParms.For(pawn), validator: b => b is Building_ResearchBench && b.Faction == Faction.OfPlayer
                     && !b.IsForbidden(pawn) && !b.IsBurning() && pawn.CanReserve(b, 1, -1, null, forced)
                     && (!b.def.hasInteractionCell || pawn.CanReserveSittableOrSpot(b.InteractionCell, forced)));
@@ -229,7 +230,8 @@ namespace EntadFramework
             if (pawn.Map.designationManager.DesignationOn(t, EntadDismantleDefOf.Entad_Dismantle) == null) return false;
             if (t.IsForbidden(pawn) || t.IsBurning()) return false;
             if (!pawn.CanReserve(t, 1, -1, null, forced)) return false;
-            if (NeedsBench(t) && FindBench(pawn, forced) == null)
+            // The list check is a count read, sparing the region search on maps with no bench at all
+            if (NeedsBench(t) && (pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.ResearchBench).Count == 0 || FindBench(pawn, t, forced) == null))
             {
                 JobFailReason.Is("EF_DismantleNoBench".Translate());
                 return false;
@@ -240,7 +242,7 @@ namespace EntadFramework
         public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
         {
             if (!NeedsBench(t)) return JobMaker.MakeJob(EntadDismantleDefOf.Entad_DismantleJob, t);
-            var bench = FindBench(pawn, forced);
+            var bench = FindBench(pawn, t, forced);
             if (bench == null) return null;
             var job = JobMaker.MakeJob(EntadDismantleDefOf.Entad_DismantleJob, t, bench);
             job.count = 1;
@@ -295,7 +297,8 @@ namespace EntadFramework
             work.tickIntervalAction = delta =>
             {
                 float speed = pawn.GetStatValue(StatDefOf.ResearchSpeed);
-                if (AtBench) speed *= TargetThingB.GetStatValue(StatDefOf.ResearchSpeedFactor);
+                // Floored so a modded bench at factor 0 can't hold the pawn here forever (the toil has no time limit)
+                if (AtBench) speed *= Mathf.Max(0.1f, TargetThingB.GetStatValue(StatDefOf.ResearchSpeedFactor));
                 workLeft -= speed * delta;
                 pawn.skills?.Learn(SkillDefOf.Intellectual, 0.1f * delta);
                 if (AtBench) pawn.GainComfortFromCellIfPossible(delta, chairsOnly: true);
@@ -305,7 +308,11 @@ namespace EntadFramework
             work.WithEffect(EffecterDefOf.Research, workAt);
             work.WithProgressBar(workAt, () => totalWork <= 0f ? 0f : 1f - workLeft / totalWork);
             // At a bench the item stays in the pawn's hands while it works
-            if (AtBench) work.FailOn(() => pawn.carryTracker.CarriedThing != TargetThingA);
+            if (AtBench)
+            {
+                work.FailOn(() => pawn.carryTracker.CarriedThing != TargetThingA);
+                work.FailOnCannotTouch(TargetIndex.B, PathEndMode.InteractionCell);
+            }
             else work.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
             work.activeSkill = () => SkillDefOf.Intellectual;
             yield return work;
