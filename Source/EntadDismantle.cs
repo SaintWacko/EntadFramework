@@ -126,6 +126,8 @@ namespace EntadFramework
 
             string label = thing.LabelCap;
             if (thing.Spawned) EntadDismantle.Burst(thing.Position, thing.Map);
+            // A casket (sarcophagus) only drops what it holds on Deconstruct or KillFinalize, and deletes it on Vanish
+            if (thing is Building_Casket casket && thing.Spawned) casket.EjectContents();
             if (!thing.Destroyed) thing.Destroy(DestroyMode.Vanish);
 
             if (pawn != null)
