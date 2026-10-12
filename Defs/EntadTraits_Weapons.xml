@@ -44,7 +44,7 @@
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <!-- Only matters in bad weather or smoke -->
-    <points>3</points>
+    <points>2</points>
     <ignoreAccuracyMaluses>true</ignoreAccuracyMaluses>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>

@@ -10,7 +10,7 @@
     <description>Each enemy or wild creature the wielder kills closes some of the wielder's wounds, worst first. Slaughtered livestock and executed prisoners don't count.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
-    <points>5</points>
+    <points>4</points>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
@@ -67,7 +67,7 @@
     <description>Whoever wears or wields this heals from injuries far faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
-    <points>8</points>
+    <points>6</points>
     <statOffsets>
       <li><stat>InjuryHealingFactor</stat><min>0.5</min><max>1</max></li>
     </statOffsets>
@@ -163,7 +163,7 @@
     <description>When whoever wears or wields this is hurt, they feel half as much pain and move faster for a while. It can only do this twice a day.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
-    <points>5</points>
+    <points>4</points>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
