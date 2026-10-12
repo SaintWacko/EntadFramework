@@ -81,6 +81,8 @@
     <description>Every shot is placed with uncanny care and force.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
+    <!-- Accuracy and damage together, doubled in build 147: priced above a plain Epic -->
+    <points>7</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>AccuracyShort</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyMedium</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyLong</stat><min>0.06</min><max>0.14</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.5</max></li></statFactors>
   </EntadFramework.EntadTraitDef>
