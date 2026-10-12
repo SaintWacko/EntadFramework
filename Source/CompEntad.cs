@@ -706,6 +706,7 @@ namespace EntadFramework
                 icon = TexButton.Rename,
                 action = () => Find.WindowStack.Add(new Dialog_RenameEntad(this))
             };
+            if (EntadDismantle.CanDesignate(parent)) yield return EntadDismantle.Gizmo(this);
         }
 
         public override string CompInspectStringExtra()
@@ -800,9 +801,12 @@ namespace EntadFramework
                         infoString.AppendLine(" - " + "EF_Card_MealThought".Translate(trait.def.mealThought.stages?.FirstOrDefault()?.LabelCap ?? trait.def.mealThought.defName));
                 }
                 if (trait.AnyHidden) infoString.AppendLine(" - " + unknown);
-                if (!trait.AnyHidden) infoString.AppendLine(" - " + "EF_Card_MarketValue".Translate(trait.MarketValueOffset(baseValue).ToStringMoneyOffset()));
+                if (!trait.AnyHidden && !IsBound) infoString.AppendLine(" - " + "EF_Card_MarketValue".Translate(trait.MarketValueOffset(baseValue).ToStringMoneyOffset()));
             }
-            if (activeTraits.Any(m => m.AnyHidden))
+            // A bound entad is priced as a flat premium instead of per trait (StatPart_Entad)
+            if (IsBound)
+                infoString.Append("\n").AppendLine("EF_Card_BoundValue".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
+            else if (activeTraits.Any(m => m.AnyHidden))
                 infoString.Append("\n").AppendLine("EF_Card_Unidentified".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
 
             foreach (var e in DamageDisplayStats()) yield return e;

@@ -76,7 +76,7 @@ namespace EntadFramework
     /// Request objects passed in are never modified, so a mod can keep one and reuse it.
     /// Traits the player disabled in the settings are never picked.
     /// </remarks>
-    public static class EntadApi
+    public static partial class EntadApi
     {
         /// <summary>Every trait that could still be added to <paramref name="thing"/>: enabled, not already on it, valid
         /// for its def and allowed by <paramref name="filter"/>. Empty when the thing cannot be an entad.</summary>
