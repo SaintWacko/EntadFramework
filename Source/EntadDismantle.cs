@@ -125,7 +125,8 @@ namespace EntadFramework
                 }
 
             string label = thing.LabelCap;
-            if (thing.Spawned) EntadDismantle.Burst(thing.Position, thing.Map);
+            // Carried to a bench, the item is in the pawn's hands: burst where the pawn stands
+            if (thing.MapHeld != null) EntadDismantle.Burst(thing.PositionHeld, thing.MapHeld);
             // A casket (sarcophagus) only drops what it holds on Deconstruct or KillFinalize, and deletes it on Vanish
             if (thing is Building_Casket casket && thing.Spawned) casket.EjectContents();
             if (!thing.Destroyed) thing.Destroy(DestroyMode.Vanish);
@@ -198,9 +199,18 @@ namespace EntadFramework
         }
     }
 
-    // Research work: walk to each designated entad and dismantle it
+    // Research work. A designated item is carried to the nearest free research bench and dismantled there, faster at a
+    // better bench (ResearchSpeedFactor, as research). An entad building is dismantled where it stands.
     public class WorkGiver_DismantleEntad : WorkGiver_Scanner
     {
+        public static bool NeedsBench(Thing t) => t.def.category == ThingCategory.Item;
+
+        public static Building_ResearchBench FindBench(Pawn pawn, bool forced) =>
+            (Building_ResearchBench)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench),
+                PathEndMode.InteractionCell, TraverseParms.For(pawn), validator: b => b is Building_ResearchBench && b.Faction == Faction.OfPlayer
+                    && !b.IsForbidden(pawn) && !b.IsBurning() && pawn.CanReserve(b, 1, -1, null, forced)
+                    && (!b.def.hasInteractionCell || pawn.CanReserveSittableOrSpot(b.InteractionCell, forced)));
+
         public override PathEndMode PathEndMode => PathEndMode.Touch;
 
         public override Danger MaxPathDanger(Pawn pawn) => Danger.Deadly;
@@ -218,11 +228,24 @@ namespace EntadFramework
         {
             if (pawn.Map.designationManager.DesignationOn(t, EntadDismantleDefOf.Entad_Dismantle) == null) return false;
             if (t.IsForbidden(pawn) || t.IsBurning()) return false;
-            return pawn.CanReserve(t, 1, -1, null, forced);
+            if (!pawn.CanReserve(t, 1, -1, null, forced)) return false;
+            if (NeedsBench(t) && FindBench(pawn, forced) == null)
+            {
+                JobFailReason.Is("EF_DismantleNoBench".Translate());
+                return false;
+            }
+            return true;
         }
 
-        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) =>
-            JobMaker.MakeJob(EntadDismantleDefOf.Entad_DismantleJob, t);
+        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+        {
+            if (!NeedsBench(t)) return JobMaker.MakeJob(EntadDismantleDefOf.Entad_DismantleJob, t);
+            var bench = FindBench(pawn, forced);
+            if (bench == null) return null;
+            var job = JobMaker.MakeJob(EntadDismantleDefOf.Entad_DismantleJob, t, bench);
+            job.count = 1;
+            return job;
+        }
     }
 
     public class JobDriver_DismantleEntad : JobDriver
@@ -230,16 +253,39 @@ namespace EntadFramework
         private float workLeft = -1f;
         private float totalWork;
 
-        public override bool TryMakePreToilReservations(bool errorOnFailed) =>
-            pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+        private bool AtBench => job.targetB.IsValid;
+
+        public override bool TryMakePreToilReservations(bool errorOnFailed)
+        {
+            if (!pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed)) return false;
+            if (!AtBench) return true;
+            if (!pawn.Reserve(job.targetB, job, 1, -1, null, errorOnFailed)) return false;
+            var bench = job.targetB.Thing;
+            return !bench.def.hasInteractionCell || pawn.ReserveSittableOrSpot(bench.InteractionCell, job, errorOnFailed);
+        }
 
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+            // Carried, the item is no longer spawned, so these check only that it still exists
+            this.FailOnDestroyedOrNull(TargetIndex.A);
             this.FailOnThingMissingDesignation(TargetIndex.A, EntadDismantleDefOf.Entad_Dismantle);
             // A dev action or another mod stripped its traits meanwhile: nothing left to dismantle
             this.FailOn(() => TargetThingA.TryGetComp<CompEntad>()?.activeTraits.NullOrEmpty() ?? true);
-            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+            TargetIndex workAt = AtBench ? TargetIndex.B : TargetIndex.A;
+            if (AtBench)
+            {
+                this.FailOnDespawnedNullOrForbidden(TargetIndex.B);
+                this.FailOnBurningImmobile(TargetIndex.B);
+                yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch)
+                    .FailOnSomeonePhysicallyInteracting(TargetIndex.A).FailOnForbidden(TargetIndex.A);
+                yield return Toils_Haul.StartCarryThing(TargetIndex.A);
+                yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.InteractionCell);
+            }
+            else
+            {
+                this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+                yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+            }
 
             Toil work = ToilMaker.MakeToil("DismantleEntad");
             work.initAction = () =>
@@ -248,14 +294,19 @@ namespace EntadFramework
             };
             work.tickIntervalAction = delta =>
             {
-                workLeft -= pawn.GetStatValue(StatDefOf.ResearchSpeed) * delta;
+                float speed = pawn.GetStatValue(StatDefOf.ResearchSpeed);
+                if (AtBench) speed *= TargetThingB.GetStatValue(StatDefOf.ResearchSpeedFactor);
+                workLeft -= speed * delta;
                 pawn.skills?.Learn(SkillDefOf.Intellectual, 0.1f * delta);
+                if (AtBench) pawn.GainComfortFromCellIfPossible(delta, chairsOnly: true);
                 if (workLeft <= 0f) ReadyForNextToil();
             };
             work.defaultCompleteMode = ToilCompleteMode.Never;
-            work.WithEffect(EffecterDefOf.Research, TargetIndex.A);
-            work.WithProgressBar(TargetIndex.A, () => totalWork <= 0f ? 0f : 1f - workLeft / totalWork);
-            work.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+            work.WithEffect(EffecterDefOf.Research, workAt);
+            work.WithProgressBar(workAt, () => totalWork <= 0f ? 0f : 1f - workLeft / totalWork);
+            // At a bench the item stays in the pawn's hands while it works
+            if (AtBench) work.FailOn(() => pawn.carryTracker.CarriedThing != TargetThingA);
+            else work.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
             work.activeSkill = () => SkillDefOf.Intellectual;
             yield return work;
 
