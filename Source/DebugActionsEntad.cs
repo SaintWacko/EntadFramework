@@ -32,14 +32,29 @@ namespace EntadFramework
                 return;
             }
 
-            var applied = EntadApi.ApplyRandomTraitsIgnoringUniqueChance(targetThing);
-            if (applied.Count == 0)
+            // No settings target any more (build 151): pick one, as Generate Random Entad Item does
+            var options = PointOptions(points =>
             {
-                Messages.Message("No applicable EntadTraitDefs for this item!", MessageTypeDefOf.RejectInput, false);
-                return;
-            }
+                var applied = EntadApi.ApplyRandomTraitsIgnoringUniqueChance(targetThing, points);
+                if (applied.Count == 0)
+                {
+                    Messages.Message("No applicable EntadTraitDefs for this item!", MessageTypeDefOf.RejectInput, false);
+                    return;
+                }
+                Messages.Message($"Applied {string.Join(", ", applied.Select(t => t.LabelCap.Resolve()))} to {targetThing.Label} (target {points:0.#})!", MessageTypeDefOf.PositiveEvent, false);
+            });
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
 
-            Messages.Message($"Applied {string.Join(", ", applied.Select(t => t.LabelCap.Resolve()))} to {targetThing.Label}!", MessageTypeDefOf.PositiveEvent, false);
+        private static List<DebugMenuOption> PointOptions(Action<float> act)
+        {
+            var options = new List<DebugMenuOption>();
+            foreach (float p in new[] { 1f, 2f, 3f, 4f, 6f, 8f, 12f, 16f, 24f })
+            {
+                float points = p;
+                options.Add(new DebugMenuOption($"{points} points", DebugMenuOptionMode.Action, () => act(points)));
+            }
+            return options;
         }
 
         [DebugAction(
@@ -54,15 +69,7 @@ namespace EntadFramework
             Map map = Find.CurrentMap;
             if (map == null || !cell.InBounds(map)) return;
 
-            var options = new List<DebugMenuOption>();
-            var r = EntadSettings.PointTarget;
-            options.Add(new DebugMenuOption($"Settings target ({r.min:0.#}-{r.max:0.#} points)", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, r.RandomInRange)));
-            foreach (float p in new[] { 1f, 2f, 4f, 6f, 8f, 12f, 16f, 24f })
-            {
-                float points = p;
-                options.Add(new DebugMenuOption($"{points} points", DebugMenuOptionMode.Action, () => PlaceGenerated(cell, map, points)));
-            }
-            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(PointOptions(points => PlaceGenerated(cell, map, points))));
         }
 
         private static void PlaceGenerated(IntVec3 cell, Map map, float points)

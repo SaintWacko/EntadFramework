@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Evasion offsets dodge in skill levels, as vanilla Nimble does. Vanilla already shows MeleeHitChance gear
+       offsets unfinalized, but not MeleeDodgeChance (no vanilla gear offsets it), so an Evasion +8 would read
+       "+800%" on the pawn's dodge breakdown. Display only: finalizeEquippedStatOffset changes no value. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/StatDef[defName="MeleeDodgeChance"]/finalizeEquippedStatOffset</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/StatDef[defName="MeleeDodgeChance"]</xpath>
+      <value>
+        <finalizeEquippedStatOffset>false</finalizeEquippedStatOffset>
+      </value>
+    </nomatch>
+  </Operation>
+</Patch>

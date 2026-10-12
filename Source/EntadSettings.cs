@@ -46,22 +46,21 @@ namespace EntadFramework
         public static readonly Dictionary<EntadRarity, float> Durability = new Dictionary<EntadRarity, float>(DefaultDurability);
 
         // Generation points (EntadTraitDef.PointsAt). A trait with no <points> is worth its rarity's value; one that
-        // scales with rarity has its points multiplied by this table relative to its own rarity. Steeper than the
-        // strength multipliers on purpose: a Legendary roll is worth more than the size of its numbers, it's rare.
+        // scales with rarity has its points multiplied by this table relative to its own rarity. Fibonacci (build 149):
+        // steeper than the strength multipliers on purpose, since a Legendary roll is worth more than the size of its
+        // numbers, but no longer the 1/2/4/7/11 table, which priced high rolls of scaling traits out of most targets
+        // (a Legendary Portable Space cost 33).
         public static readonly Dictionary<EntadRarity, float> DefaultPoints = new Dictionary<EntadRarity, float>
         {
             { EntadRarity.Common, 1f },
             { EntadRarity.Uncommon, 2f },
-            { EntadRarity.Rare, 4f },
-            { EntadRarity.Epic, 7f },
-            { EntadRarity.Legendary, 11f },
+            { EntadRarity.Rare, 3f },
+            { EntadRarity.Epic, 5f },
+            { EntadRarity.Legendary, 8f },
         };
 
         public static readonly Dictionary<EntadRarity, float> Points = new Dictionary<EntadRarity, float>(DefaultPoints);
 
-        // Point target used when a request doesn't give one
-        public static readonly FloatRange DefaultPointTarget = new FloatRange(2f, 6f);
-        public static FloatRange PointTarget = DefaultPointTarget;
         // Chance an item may take drawbacks (negative points, which buy more traits), and how many
         public const float DefaultDrawbackChance = 0.3f;
         public static float DrawbackChance = DefaultDrawbackChance;
@@ -123,7 +122,6 @@ namespace EntadFramework
             HideTraits = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
-            PointTarget = DefaultPointTarget;
             DrawbackChance = DefaultDrawbackChance;
             MaxDrawbacks = DefaultMaxDrawbacks;
             MaxTraits = DefaultMaxTraits;
@@ -159,8 +157,6 @@ namespace EntadFramework
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
             Scribe_Values.Look(ref UniqueWeaponChance, "uniqueWeaponChance", 0f);
             UniqueWeaponChance = Mathf.Clamp01(UniqueWeaponChance);
-            Scribe_Values.Look(ref PointTarget, "pointTarget", DefaultPointTarget);
-            PointTarget = new FloatRange(Mathf.Max(0.5f, PointTarget.min), Mathf.Max(Mathf.Max(0.5f, PointTarget.min), PointTarget.max));
             Scribe_Values.Look(ref DrawbackChance, "drawbackChance", DefaultDrawbackChance);
             DrawbackChance = Mathf.Clamp01(DrawbackChance);
             Scribe_Values.Look(ref MaxDrawbacks, "maxDrawbacks", DefaultMaxDrawbacks);
@@ -384,11 +380,6 @@ namespace EntadFramework
             list.Label("EF_Settings_UniqueChance_Desc".Translate());
             list.Gap();
 
-            list.Label("EF_Settings_PointTarget".Translate(EntadSettings.PointTarget.min.ToString("0.#"), EntadSettings.PointTarget.max.ToString("0.#")));
-            Widgets.FloatRange(list.GetRect(28f), 0x45465054, ref EntadSettings.PointTarget, 0.5f, 40f, null, ToStringStyle.FloatOne);
-            EntadSettings.PointTarget = new FloatRange(Mathf.Round(EntadSettings.PointTarget.min * 2f) / 2f, Mathf.Round(EntadSettings.PointTarget.max * 2f) / 2f);
-            list.Label("EF_Settings_PointTarget_Desc".Translate());
-            list.Gap();
             list.Label("EF_Settings_Overshoot".Translate(EntadSettings.OvershootStrictness.ToString("0.##")));
             EntadSettings.OvershootStrictness = Mathf.Round(list.Slider(EntadSettings.OvershootStrictness, 0f, 4f) * 4f) / 4f;
             list.Label("EF_Settings_Overshoot_Desc".Translate());

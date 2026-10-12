@@ -35,7 +35,7 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors>
-      <li><stat>MeleeWeapon_CooldownMultiplier</stat><min>0.6</min><max>0.85</max></li>
+      <li><stat>MeleeWeapon_CooldownMultiplier</stat><min>0.75</min><max>0.9</max></li>
     </statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
@@ -148,7 +148,7 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
-      <li><stat>MeleeHitChance</stat><min>0.05</min><max>0.25</max></li>
+      <li><stat>MeleeHitChance</stat><min>2</min><max>8</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
@@ -159,7 +159,7 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
-      <li><stat>MeleeDodgeChance</stat><min>0.05</min><max>0.25</max></li>
+      <li><stat>MeleeDodgeChance</stat><min>2</min><max>8</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
@@ -168,6 +168,8 @@
     <description>Heightened sensitivity to the psychic.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <!-- Only helps psycasters, and makes psychic drones worse for everyone else -->
+    <points>2</points>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
       <li><stat>PsychicSensitivity</stat><min>0.1</min><max>0.4</max></li>

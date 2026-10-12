@@ -46,10 +46,8 @@ namespace EntadFramework
     {
         public EntadTraitFilter traitFilter = new EntadTraitFilter();
         public EntadRarityChances rarityChances = EntadRarityChances.Default;
-        // Point target, a minimum: traits are picked until the item's points reach it, and the last one may go over
-        // (EntadTraitDef.PointsAt). Null: the settings' target. A trait at its own rarity is worth 1 (Common) to 11
-        // (Legendary) by default, so 2-6 is an everyday item.
-        public FloatRange? points;
+        // The point target is not part of the request: every generating call passes it (a float or a FloatRange),
+        // since only the calling mod knows how strong its item should be. There is no settings fallback (build 151).
         // How strongly a trait that would overshoot the target is held back: it keeps (points left / its cost) to
         // this power of its weight. 0 = a pure minimum. Null: the settings'.
         public float? overshootStrictness;
@@ -93,16 +91,13 @@ namespace EntadFramework
         }
 
         /// <summary>Adds random traits to <paramref name="thing"/> until its points reach a target rolled from
-        /// <c>request.points</c>; the last trait may go over it.
+        /// <paramref name="points"/>; the last trait may go over it. A trait at its own rarity is worth 1 (Common) to
+        /// 8 (Legendary) with the default table.
         /// A vanilla unique or persona weapon only gets random traits at the player's "unique and persona weapons"
         /// chance (0% by default); adding a trait by name with <see cref="CompEntad.AddTrait"/> is not limited.</summary>
         /// <returns>The traits added; none when the unique weapon chance fails.</returns>
-        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, EntadApplyRequest request = null)
-        {
-            request = request ?? new EntadApplyRequest();
-            if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
-            return ApplyRandomTraits(thing, request, RollBudget(request));
-        }
+        public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, FloatRange points, EntadApplyRequest request = null) =>
+            ApplyRandomTraits(thing, points.RandomInRange, request);
 
         // Whether PickWhere could ever return this trait: a weight above zero and some rarity it covers that's
         // allowed and has a weight above zero
@@ -133,23 +128,18 @@ namespace EntadFramework
             return best;
         }
 
-        private static float RollBudget(EntadApplyRequest request) => (request.points ?? EntadSettings.PointTarget).RandomInRange;
-
         // The dev tools' "add random traits": skips the unique weapon chance, which a developer pointing at a weapon
         // means to override (GenerateEntadItem's dev action still goes through it)
-        internal static List<EntadTraitDef> ApplyRandomTraitsIgnoringUniqueChance(Thing thing)
-        {
-            var request = new EntadApplyRequest();
-            return ApplyRandomTraits(thing, request, RollBudget(request));
-        }
+        internal static List<EntadTraitDef> ApplyRandomTraitsIgnoringUniqueChance(Thing thing, float points) =>
+            ApplyRandomTraits(thing, new EntadApplyRequest(), points);
 
         /// <summary>Vanilla unique and persona weapons only roll random traits at the settings' chance (0% by default).
         /// Traits added by name (<see cref="CompEntad.AddTrait"/>) are not affected.</summary>
         private static bool PassesUniqueWeaponChance(ThingDef def) =>
             !EntadUtility.IsUniqueWeapon(def) || Rand.Chance(EntadSettings.UniqueWeaponChance);
 
-        /// <summary>As <see cref="ApplyRandomTraits(Thing, EntadApplyRequest)"/>, with a fixed point target (a
-        /// minimum) that overrides <c>request.points</c>. The unique weapon chance applies here too.</summary>
+        /// <summary>As <see cref="ApplyRandomTraits(Thing, FloatRange, EntadApplyRequest)"/>, with a fixed point
+        /// target (a minimum). The unique weapon chance applies here too.</summary>
         public static List<EntadTraitDef> ApplyRandomTraits(Thing thing, float points, EntadApplyRequest request = null)
         {
             if (!PassesUniqueWeaponChance(thing?.def)) return new List<EntadTraitDef>();
@@ -293,22 +283,20 @@ namespace EntadFramework
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 
-        /// <summary>As <see cref="GenerateEntadItem(EntadItemRequest)"/>, with a fixed point target (a minimum)
-        /// that overrides <c>request.points</c>.</summary>
+        /// <summary>As <see cref="GenerateEntadItem(FloatRange, EntadItemRequest)"/>, with a fixed point target (a
+        /// minimum).</summary>
         public static Thing GenerateEntadItem(float points, EntadItemRequest request = null)
         {
             return GenerateEntadItem(request ?? new EntadItemRequest(), points);
         }
 
-        /// <summary>Generates an unspawned item with entad traits. Item defs are tried in random order until one can
-        /// receive at least one trait. Vanilla unique and persona weapon defs are skipped unless the player's "unique
-        /// and persona weapons" chance passes for them.</summary>
+        /// <summary>Generates an unspawned item with entad traits, rolling its point target from
+        /// <paramref name="points"/>. Item defs are tried in random order until one can receive at least one trait.
+        /// Vanilla unique and persona weapon defs are skipped unless the player's "unique and persona weapons" chance
+        /// passes for them.</summary>
         /// <returns>The item, not yet spawned, or null when no item and trait combination fits the request.</returns>
-        public static Thing GenerateEntadItem(EntadItemRequest request = null)
-        {
-            request = request ?? new EntadItemRequest();
-            return GenerateEntadItem(request, RollBudget(request));
-        }
+        public static Thing GenerateEntadItem(FloatRange points, EntadItemRequest request = null) =>
+            GenerateEntadItem(request ?? new EntadItemRequest(), points.RandomInRange);
 
         private static Thing GenerateEntadItem(EntadItemRequest request, float points)
         {

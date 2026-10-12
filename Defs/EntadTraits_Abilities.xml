@@ -8,7 +8,7 @@
     <description>Grants the ability to drive a target berserk. It recharges over three days.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
-    <points>5</points>
+    <points>4</points>
     <abilities><li>Berserk</li></abilities>
     <abilityCharges>1</abilityCharges>
     <abilityCooldownTicks>180000</abilityCooldownTicks>
@@ -21,7 +21,7 @@
     <description>Grants the ability to turn a person invisible for a short time. It recharges over two days.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
-    <points>8</points>
+    <points>6</points>
     <abilities><li>Invisibility</li></abilities>
     <abilityCharges>1</abilityCharges>
     <abilityCooldownTicks>120000</abilityCooldownTicks>

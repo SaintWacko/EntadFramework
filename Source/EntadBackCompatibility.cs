@@ -31,4 +31,30 @@ namespace EntadFramework
             if (RenamedTraits.TryGetValue(defName, out var replacement)) __result = replacement;
         }
     }
+
+    // Defs removed with no replacement (the general drawbacks, build 149: only persona drawbacks remain). Old items
+    // drop the trait (CompEntad removes traits with a null def) and pawns drop the memory, as the game already does;
+    // this only stops ScribeExtractor logging a red "Could not load reference" error for each one.
+    [HarmonyPatch(typeof(BackCompatibility), nameof(BackCompatibility.WasDefRemoved))]
+    public static class Patch_WasDefRemoved
+    {
+        private static readonly HashSet<string> RemovedTraits = new HashSet<string>
+        {
+            "Entad_Haunting", "Entad_Heavy", "Entad_Brittle", "Entad_Garish",
+            "Entad_Kindling", "Entad_Draining", "Entad_Unnerving", "Entad_RestlessDreams",
+        };
+
+        private static readonly HashSet<string> RemovedThoughts = new HashSet<string>
+        {
+            "Entad_Thought_Haunted", "Entad_Thought_BadDreams",
+        };
+
+        // Only reached for a def name that failed to resolve, so it never runs on a normal load
+        public static void Postfix(string defName, Type type, ref bool __result)
+        {
+            if (__result || defName == null) return;
+            if (type == typeof(EntadTraitDef)) __result = RemovedTraits.Contains(defName);
+            else if (type == typeof(RimWorld.ThoughtDef)) __result = RemovedThoughts.Contains(defName);
+        }
+    }
 }
