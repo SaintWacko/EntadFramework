@@ -166,7 +166,7 @@ namespace EntadFramework
             Thing thing = comp.parent;
             if (!IsDesignated(thing) && comp.dismantleWorkDone <= 0f) return null;
             float pct = Mathf.Clamp01(comp.dismantleWorkDone / WorkFor(thing));
-            return "EF_DismantleInspect".Translate(pct.ToStringPercent(), EntadApi.InsightFor(thing).ToString("0.#"), EntadApi.Insight.ToString("0.#"));
+            return (IsDesignated(thing) ? "EF_DismantleInspect" : "EF_DismantlePartial").Translate(pct.ToStringPercent(), EntadApi.InsightFor(thing).ToString("0.#"), EntadApi.Insight.ToString("0.#"));
         }
 
         // Loose items anywhere; buildings only the colony's own
