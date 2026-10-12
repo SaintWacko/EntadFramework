@@ -306,6 +306,9 @@ namespace EntadFramework
 
         public List<AppliedEntadTrait> activeTraits = new List<AppliedEntadTrait>();
 
+        // Dismantling work done so far, kept on the item like an unfinished thing's work so any researcher can resume it
+        public float dismantleWorkDone;
+
         public CompProperties_Entad Props => (CompProperties_Entad)props;
 
         public bool HasTrait(EntadTraitDef def) => activeTraits.Any(m => m.def == def);
@@ -639,6 +642,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref scaledDurability, "scaledDurability", 1f);
             ExposeBinding();
             ExposePersona();
+            Scribe_Values.Look(ref dismantleWorkDone, "dismantleWorkDone", 0f);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -718,6 +722,8 @@ namespace EntadFramework
             if (IsBound) inspectString += "\n" + "EF_BoundTo".Translate(BoundNames);
             string bond = PersonaInspectLine;
             if (bond != null) inspectString += "\n" + bond;
+            string dismantle = EntadDismantle.InspectLine(this);
+            if (dismantle != null) inspectString += "\n" + dismantle;
             return inspectString;
         }
 

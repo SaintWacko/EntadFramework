@@ -160,6 +160,15 @@ namespace EntadFramework
 
         public static float WorkFor(Thing thing) => BaseWork + WorkPerPoint * EntadApi.InsightFor(thing);
 
+        // Inspect line while marked or part-done: progress, and the colony's insight so the player can see the pool
+        public static string InspectLine(CompEntad comp)
+        {
+            Thing thing = comp.parent;
+            if (!IsDesignated(thing) && comp.dismantleWorkDone <= 0f) return null;
+            float pct = Mathf.Clamp01(comp.dismantleWorkDone / WorkFor(thing));
+            return "EF_DismantleInspect".Translate(pct.ToStringPercent(), EntadApi.InsightFor(thing).ToString("0.#"), EntadApi.Insight.ToString("0.#"));
+        }
+
         // Loose items anywhere; buildings only the colony's own
         public static bool CanDesignate(Thing thing) =>
             thing.Spawned && (thing.def.category == ThingCategory.Item || (thing.def.category == ThingCategory.Building && thing.Faction == Faction.OfPlayer));
@@ -252,8 +261,9 @@ namespace EntadFramework
 
     public class JobDriver_DismantleEntad : JobDriver
     {
-        private float workLeft = -1f;
         private float totalWork;
+
+        private CompEntad Comp => TargetThingA?.TryGetComp<CompEntad>();
 
         private bool AtBench => job.targetB.IsValid;
 
@@ -290,23 +300,31 @@ namespace EntadFramework
             }
 
             Toil work = ToilMaker.MakeToil("DismantleEntad");
-            work.initAction = () =>
-            {
-                if (workLeft < 0f) { totalWork = EntadDismantle.WorkFor(TargetThingA); workLeft = totalWork; }
-            };
+            // Progress lives on the item (CompEntad.dismantleWorkDone), so a pawn who stops to eat or sleep drops it and
+            // whoever picks it up next carries on from there, like an unfinished thing at a workbench
+            work.initAction = () => totalWork = EntadDismantle.WorkFor(TargetThingA);
             work.tickIntervalAction = delta =>
             {
+                var comp = Comp;
+                if (comp == null) return;
+                if (totalWork <= 0f) totalWork = EntadDismantle.WorkFor(TargetThingA);
                 float speed = pawn.GetStatValue(StatDefOf.ResearchSpeed);
                 // Floored so a modded bench at factor 0 can't hold the pawn here forever (the toil has no time limit)
                 if (AtBench) speed *= Mathf.Max(0.1f, TargetThingB.GetStatValue(StatDefOf.ResearchSpeedFactor));
-                workLeft -= speed * delta;
+                comp.dismantleWorkDone += speed * delta;
                 pawn.skills?.Learn(SkillDefOf.Intellectual, 0.1f * delta);
                 if (AtBench) pawn.GainComfortFromCellIfPossible(delta, chairsOnly: true);
-                if (workLeft <= 0f) ReadyForNextToil();
+                // Finished in the same tick, rather than handing over to a separate toil, so nothing can leave the pawn
+                // sitting at a full bar
+                if (comp.dismantleWorkDone >= totalWork)
+                {
+                    EntadApi.Dismantle(TargetThingA, pawn);
+                    EndJobWith(JobCondition.Succeeded);
+                }
             };
             work.defaultCompleteMode = ToilCompleteMode.Never;
             work.WithEffect(EffecterDefOf.Research, workAt);
-            work.WithProgressBar(workAt, () => totalWork <= 0f ? 0f : 1f - workLeft / totalWork);
+            work.WithProgressBar(workAt, () => totalWork <= 0f ? 0f : Mathf.Clamp01((Comp?.dismantleWorkDone ?? 0f) / totalWork));
             // At a bench the item stays in the pawn's hands while it works
             if (AtBench)
             {
@@ -316,18 +334,6 @@ namespace EntadFramework
             else work.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
             work.activeSkill = () => SkillDefOf.Intellectual;
             yield return work;
-
-            Toil finish = ToilMaker.MakeToil("FinishDismantleEntad");
-            finish.initAction = () => EntadApi.Dismantle(TargetThingA, pawn);
-            finish.defaultCompleteMode = ToilCompleteMode.Instant;
-            yield return finish;
-        }
-
-        public override void ExposeData()
-        {
-            base.ExposeData();
-            Scribe_Values.Look(ref workLeft, "workLeft", -1f);
-            Scribe_Values.Look(ref totalWork, "totalWork", 0f);
         }
     }
 }
