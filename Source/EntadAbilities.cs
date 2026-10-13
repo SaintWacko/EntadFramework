@@ -263,13 +263,16 @@ namespace EntadFramework
             if (Current.ProgramState != ProgramState.Playing) return;
             var selected = Find.Selector.SelectedObjectsListForReading;
             for (int i = 0; i < selected.Count; i++)
-            {
                 if (selected[i] is Pawn pawn) Hide(msg, pawn);
-                // World-tile abilities are aimed from a caravan, which is what's selected then
-                else if (selected[i] is Caravan caravan)
-                    foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
-            }
+            // World-tile abilities can be aimed from a caravan, which lives in the world selector
+            var world = Find.WorldSelector?.SelectedObjects;
+            if (world != null)
+                for (int i = 0; i < world.Count; i++)
+                    if (world[i] is Caravan caravan)
+                        foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
         }
+
+        private static bool IsLatin(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 
         private static void Hide(Message msg, Pawn pawn)
         {
@@ -279,11 +282,15 @@ namespace EntadFramework
                 string label = a.def.label;
                 if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
                 if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
-                // Whole words only, so a hidden "skip" leaves "farskip" and "waterskip" alone; the evaluator keeps a
-                // translated replacement containing '$' from being read as a substitution
+                // Whole words, so a hidden "skip" leaves "farskip" and "waterskip" alone. The guard is only added on a side
+                // where the label has a Latin letter: a CJK label sits against other characters with no space, and \b
+                // would never match it. The evaluator keeps a translated '$' from being read as a substitution.
+                string pattern = System.Text.RegularExpressions.Regex.Escape(label);
+                if (IsLatin(label[0])) pattern = "(?<![A-Za-z])" + pattern;
+                if (IsLatin(label[label.Length - 1])) pattern += "(?![A-Za-z])";
                 string unknown = "EF_Unknown".Translate().ToString();
-                msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, @"\b" + System.Text.RegularExpressions.Regex.Escape(label) + @"\b",
-                    _ => unknown, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern, _ => unknown,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             }
         }
     }
