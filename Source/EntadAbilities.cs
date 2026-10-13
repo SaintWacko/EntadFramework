@@ -272,9 +272,22 @@ namespace EntadFramework
                         foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
         }
 
-        // Scripts written with spaces between words: Latin (accents too), Greek, Cyrillic, Hebrew, Arabic, Indic.
-        // Thai and Chinese/Japanese/Korean (from U+0E00 up) run words together, so no guard is added there.
-        private static bool IsSpacedLetter(char c) => char.IsLetterOrDigit(c) && c < '\u0E00';
+        // A letter, digit or combining mark (Indic vowel signs, Hebrew/Arabic pointing) in a script where a word ends at a
+        // space. Thai, Lao, Myanmar and Khmer run words together, Chinese and Japanese too, and Korean attaches particles
+        // straight onto nouns, so those get no guard.
+        private static bool IsSpacedLetter(char c)
+        {
+            var cat = char.GetUnicodeCategory(c);
+            bool letter = char.IsLetterOrDigit(c) || cat == System.Globalization.UnicodeCategory.NonSpacingMark
+                || cat == System.Globalization.UnicodeCategory.SpacingCombiningMark;
+            if (!letter) return false;
+            if (c >= '\u0E00' && c <= '\u0EFF') return false; // Thai, Lao
+            if (c >= '\u1000' && c <= '\u109F') return false; // Myanmar
+            if (c >= '\u1780' && c <= '\u17FF') return false; // Khmer
+            if (c >= '\u1100' && c <= '\u11FF') return false; // Hangul jamo
+            if (c >= '\u2E80') return false; // CJK, kana, Hangul syllables and on
+            return true;
+        }
 
         private static void Hide(Message msg, Pawn pawn)
         {
@@ -289,8 +302,8 @@ namespace EntadFramework
                 // space, and a guard would never let it match. The evaluator keeps a translated '$' from being read as a
                 // substitution.
                 string pattern = System.Text.RegularExpressions.Regex.Escape(label);
-                if (IsSpacedLetter(label[0])) pattern = @"(?<![\p{L}\p{N}])" + pattern;
-                if (IsSpacedLetter(label[label.Length - 1])) pattern += @"(?![\p{L}\p{N}])";
+                if (IsSpacedLetter(label[0])) pattern = @"(?<![\p{L}\p{M}\p{N}])" + pattern;
+                if (IsSpacedLetter(label[label.Length - 1])) pattern += @"(?![\p{L}\p{M}\p{N}])";
                 string unknown = "EF_Unknown".Translate().ToString();
                 msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern, _ => unknown,
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
