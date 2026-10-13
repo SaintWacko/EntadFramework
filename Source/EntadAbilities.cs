@@ -275,13 +275,43 @@ namespace EntadFramework
             if (names == null || !names.ContainsValue(true)) return;
 
             // One pass over every name, longest first, so a revealed "farskip" is matched as itself before a hidden "skip"
-            // could match inside it. No word-boundary rule, so it reads the same in any language. The evaluator keeps a
-            // translated '$' from being read as a substitution.
-            string pattern = string.Join("|", names.Keys.OrderByDescending(k => k.Length).Select(System.Text.RegularExpressions.Regex.Escape));
+            // could match inside it. Names in scripts that put spaces between words also have to stand as whole words, so a
+            // pawn called Skipper keeps his name; names in Thai, Chinese and the like can't be bounded that way and rely on
+            // the longest-first order alone. The evaluator keeps a translated '$' from being read as a substitution.
+            string pattern = string.Join("|", names.Keys.OrderByDescending(k => k.Length).Select(Bounded));
             string unknown = "EF_Unknown".Translate().ToString();
             msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern,
                 m => names.TryGetValue(m.Value, out bool hidden) && hidden ? unknown : m.Value,
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        }
+
+        private const string WordChar = @"[\p{L}\p{M}\p{N}]";
+
+        private static string Bounded(string label)
+        {
+            string p = System.Text.RegularExpressions.Regex.Escape(label);
+            if (IsSpacedLetter(label[0])) p = "(?<!" + WordChar + ")" + p;
+            if (IsSpacedLetter(label[label.Length - 1])) p += "(?!" + WordChar + ")";
+            return "(?:" + p + ")";
+        }
+
+        // A letter, digit or combining mark in a script that puts spaces between words. Thai, Lao, Myanmar and Khmer run
+        // words together, Chinese and Japanese too, and Korean attaches particles straight onto nouns: no guard there.
+        private static bool IsSpacedLetter(char c)
+        {
+            var cat = char.GetUnicodeCategory(c);
+            if (!char.IsLetterOrDigit(c) && cat != System.Globalization.UnicodeCategory.NonSpacingMark
+                && cat != System.Globalization.UnicodeCategory.SpacingCombiningMark) return false;
+            if (c >= '\u0E00' && c <= '\u0EFF') return false; // Thai, Lao
+            if (c >= '\u1000' && c <= '\u109F') return false; // Myanmar
+            if (c >= '\u1100' && c <= '\u11FF') return false; // Hangul jamo
+            if (c >= '\u1780' && c <= '\u17FF') return false; // Khmer
+            if (c >= '\u2E80' && c <= '\u9FFF') return false; // CJK, kana
+            if (c >= '\uAC00' && c <= '\uD7FF') return false; // Hangul syllables
+            if (c >= '\uD800' && c <= '\uDFFF') return false; // surrogate halves
+            if (c >= '\uF900' && c <= '\uFAFF') return false; // CJK compatibility
+            if (c >= '\uFF65' && c <= '\uFFDC') return false; // halfwidth kana, Hangul
+            return true;
         }
 
         private static void Collect(string text, Pawn pawn, ref Dictionary<string, bool> names)
