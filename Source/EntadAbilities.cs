@@ -272,7 +272,9 @@ namespace EntadFramework
                         foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
         }
 
-        private static bool IsLatin(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        // Scripts written with spaces between words: Latin (accents too), Greek, Cyrillic, Hebrew, Arabic, Indic.
+        // Thai and Chinese/Japanese/Korean (from U+0E00 up) run words together, so no guard is added there.
+        private static bool IsSpacedLetter(char c) => char.IsLetterOrDigit(c) && c < '\u0E00';
 
         private static void Hide(Message msg, Pawn pawn)
         {
@@ -283,11 +285,12 @@ namespace EntadFramework
                 if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
                 if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
                 // Whole words, so a hidden "skip" leaves "farskip" and "waterskip" alone. The guard is only added on a side
-                // where the label has a Latin letter: a CJK label sits against other characters with no space, and \b
-                // would never match it. The evaluator keeps a translated '$' from being read as a substitution.
+                // where the label ends in a letter of a spaced script: a CJK label sits against other characters with no
+                // space, and a guard would never let it match. The evaluator keeps a translated '$' from being read as a
+                // substitution.
                 string pattern = System.Text.RegularExpressions.Regex.Escape(label);
-                if (IsLatin(label[0])) pattern = "(?<![A-Za-z])" + pattern;
-                if (IsLatin(label[label.Length - 1])) pattern += "(?![A-Za-z])";
+                if (IsSpacedLetter(label[0])) pattern = @"(?<![\p{L}\p{N}])" + pattern;
+                if (IsSpacedLetter(label[label.Length - 1])) pattern += @"(?![\p{L}\p{N}])";
                 string unknown = "EF_Unknown".Translate().ToString();
                 msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern, _ => unknown,
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
