@@ -9,7 +9,7 @@ using Verse.Sound;
 
 namespace EntadFramework
 {
-    // Dismantling (build 152): a researcher takes an entad apart for insight, a colony-wide pool of points that other
+    // Dismantling (build 152): a researcher takes an entad apart for verity, a colony-wide pool of points that other
     // mods spend (Dungeons on scouting a dungeon, a forge mod on making or changing entads). The framework itself
     // only fills the pool and tells listeners what was destroyed. Dismantling always destroys the entad: designate
     // it with the gizmo, and a pawn with Research enabled walks over and does the work.
@@ -34,21 +34,21 @@ namespace EntadFramework
         public QualityCategory? quality;
         /// <summary>Every trait on the item, hidden or not, at the rarity it had.</summary>
         public List<EntadTraitRecord> traits;
-        /// <summary>Insight added to the colony's pool (already added when handlers run).</summary>
-        public float insight;
+        /// <summary>Verity added to the colony's pool (already added when handlers run).</summary>
+        public float verity;
         /// <summary>The pawn who did it; null when a mod dismantled it from code.</summary>
         public Pawn pawn;
         public Map map;
     }
 
-    // The colony's insight pool. Saved with the game.
-    public class EntadInsight : GameComponent
+    // The colony's verity pool. Saved with the game.
+    public class EntadVerity : GameComponent
     {
         private float points;
 
-        public EntadInsight(Game game) { }
+        public EntadVerity(Game game) { }
 
-        public static EntadInsight Instance => Current.Game?.GetComponent<EntadInsight>();
+        public static EntadVerity Instance => Current.Game?.GetComponent<EntadVerity>();
 
         public float Points => points;
 
@@ -63,29 +63,29 @@ namespace EntadFramework
 
     public static partial class EntadApi
     {
-        /// <summary>Raised when an entad is dismantled, after its insight is added to the pool and just before the
+        /// <summary>Raised when an entad is dismantled, after its verity is added to the pool and just before the
         /// item is destroyed. Handlers run one by one; an exception in one is logged and the rest still run.</summary>
         public static event Action<EntadDismantleResult> EntadDismantled;
 
-        /// <summary>The colony's insight: points gained by dismantling entads, for other mods to spend. 0 outside a game.</summary>
-        public static float Insight => EntadInsight.Instance?.Points ?? 0f;
+        /// <summary>The colony's verity: points gained by dismantling entads, for other mods to spend. 0 outside a game.</summary>
+        public static float Verity => EntadVerity.Instance?.Points ?? 0f;
 
-        /// <summary>Adds (or, with a negative amount, removes) insight. The pool never goes below 0.</summary>
-        public static void AddInsight(float amount) => EntadInsight.Instance?.Add(amount);
+        /// <summary>Adds (or, with a negative amount, removes) verity. The pool never goes below 0.</summary>
+        public static void AddVerity(float amount) => EntadVerity.Instance?.Add(amount);
 
-        /// <summary>Spends <paramref name="amount"/> insight if the colony has that much.</summary>
+        /// <summary>Spends <paramref name="amount"/> verity if the colony has that much.</summary>
         /// <returns>False, spending nothing, when there isn't enough or no game is running.</returns>
-        public static bool TrySpendInsight(float amount)
+        public static bool TrySpendVerity(float amount)
         {
-            var pool = EntadInsight.Instance;
+            var pool = EntadVerity.Instance;
             if (pool == null || amount < 0f || pool.Points + 0.0001f < amount) return false;
             pool.Add(-amount);
             return true;
         }
 
-        /// <summary>The insight dismantling <paramref name="thing"/> would give: its traits' generation points at
+        /// <summary>The verity dismantling <paramref name="thing"/> would give: its traits' generation points at
         /// their rarities, drawbacks included, never below 0. Binding makes no difference.</summary>
-        public static float InsightFor(Thing thing)
+        public static float VerityFor(Thing thing)
         {
             var comp = thing?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.NullOrEmpty()) return 0f;
@@ -94,7 +94,7 @@ namespace EntadFramework
             return Mathf.Max(0f, total);
         }
 
-        /// <summary>Dismantles <paramref name="thing"/> at once: adds its insight to the pool, raises
+        /// <summary>Dismantles <paramref name="thing"/> at once: adds its verity to the pool, raises
         /// <see cref="EntadDismantled"/> and destroys it (a portable space inside spills as usual). Works on a held
         /// item too. <paramref name="pawn"/> is only reported to listeners and named in the message.</summary>
         /// <returns>What was dismantled, or null when the thing is not an entad with traits.</returns>
@@ -110,11 +110,11 @@ namespace EntadFramework
                 stuff = thing.Stuff,
                 quality = thing.TryGetQuality(out QualityCategory q) ? q : (QualityCategory?)null,
                 traits = comp.activeTraits.Select(m => new EntadTraitRecord(m.def, m.Rarity)).ToList(),
-                insight = InsightFor(thing),
+                verity = VerityFor(thing),
                 pawn = pawn,
                 map = thing.MapHeld,
             };
-            EntadInsight.Instance?.Add(result.insight);
+            EntadVerity.Instance?.Add(result.verity);
 
             var handlers = EntadDismantled;
             if (handlers != null)
@@ -134,7 +134,7 @@ namespace EntadFramework
             if (pawn != null)
             {
                 string traits = string.Join(", ", result.traits.Select(t => "EF_DismantleTraitEntry".Translate(t.def.LabelCap, t.rarity.Label()).Resolve()));
-                Messages.Message("EF_DismantleMessage".Translate(pawn.LabelShort, label, result.insight.ToString("0.#"), Insight.ToString("0.#"), traits),
+                Messages.Message("EF_DismantleMessage".Translate(pawn.LabelShort, label, result.verity.ToString("0.#"), Verity.ToString("0.#"), traits),
                     new LookTargets(pawn), MessageTypeDefOf.NeutralEvent);
             }
             return result;
@@ -158,15 +158,15 @@ namespace EntadFramework
         // Work in ticks at research speed 1: an hour or so for an everyday entad, longer for a strong one
         public const float BaseWork = 1000f, WorkPerPoint = 500f;
 
-        public static float WorkFor(Thing thing) => BaseWork + WorkPerPoint * EntadApi.InsightFor(thing);
+        public static float WorkFor(Thing thing) => BaseWork + WorkPerPoint * EntadApi.VerityFor(thing);
 
-        // Inspect line while marked or part-done: progress, and the colony's insight so the player can see the pool
+        // Inspect line while marked or part-done: progress, and the colony's verity so the player can see the pool
         public static string InspectLine(CompEntad comp)
         {
             Thing thing = comp.parent;
             if (!IsDesignated(thing) && comp.dismantleWorkDone <= 0f) return null;
             float pct = Mathf.Clamp01(comp.dismantleWorkDone / WorkFor(thing));
-            return (IsDesignated(thing) ? "EF_DismantleInspect" : "EF_DismantlePartial").Translate(pct.ToStringPercent(), EntadApi.InsightFor(thing).ToString("0.#"), EntadApi.Insight.ToString("0.#"));
+            return (IsDesignated(thing) ? "EF_DismantleInspect" : "EF_DismantlePartial").Translate(pct.ToStringPercent(), EntadApi.VerityFor(thing).ToString("0.#"), EntadApi.Verity.ToString("0.#"));
         }
 
         // Loose items anywhere; buildings only the colony's own
@@ -191,7 +191,7 @@ namespace EntadFramework
             return new Command_Toggle
             {
                 defaultLabel = "EF_Dismantle".Translate(),
-                defaultDesc = "EF_DismantleDesc".Translate(EntadApi.InsightFor(thing).ToString("0.#"), EntadApi.Insight.ToString("0.#")),
+                defaultDesc = "EF_DismantleDesc".Translate(EntadApi.VerityFor(thing).ToString("0.#"), EntadApi.Verity.ToString("0.#")),
                 icon = Icon,
                 isActive = () => IsDesignated(thing),
                 toggleAction = () => Toggle(thing),

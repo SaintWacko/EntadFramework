@@ -34,7 +34,7 @@
     <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
   </JobDef>
 
-  <!-- Dismantling an entad for insight (EntadDismantle.cs): designated from the item's gizmo, done as Research -->
+  <!-- Dismantling an entad for verity (EntadDismantle.cs): designated from the item's gizmo, done as Research -->
   <JobDef>
     <defName>Entad_DismantleJob</defName>
     <driverClass>EntadFramework.JobDriver_DismantleEntad</driverClass>

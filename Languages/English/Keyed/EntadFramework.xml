@@ -110,11 +110,11 @@
   <EF_Card_MarketValue>Market value {0}</EF_Card_MarketValue>
   <EF_Card_Unidentified>Unidentified properties: traders pay {0} more for the mystery.</EF_Card_Unidentified>
   <EF_Dismantle>Dismantle</EF_Dismantle>
-  <EF_DismantleDesc>Have a researcher take this entad apart to study its magic. Items are carried to a research bench first, and a better bench works faster; furniture is dismantled where it stands. The entad is destroyed for good, and the colony gains {0} insight (it has {1} now). Click again to cancel.</EF_DismantleDesc>
-  <EF_DismantleInspect>Dismantling: {0} done (gives {1} insight; the colony has {2})</EF_DismantleInspect>
-  <EF_DismantlePartial>Partly dismantled: {0} done (would give {1} insight; the colony has {2})</EF_DismantlePartial>
+  <EF_DismantleDesc>Have a researcher take this entad apart to study its magic. Items are carried to a research bench first, and a better bench works faster; furniture is dismantled where it stands. The entad is destroyed for good, and the colony gains {0} verity (it has {1} now). Click again to cancel.</EF_DismantleDesc>
+  <EF_DismantleInspect>Dismantling: {0} done (gives {1} verity; the colony has {2})</EF_DismantleInspect>
+  <EF_DismantlePartial>Partly dismantled: {0} done (would give {1} verity; the colony has {2})</EF_DismantlePartial>
   <EF_DismantleNoBench>No free research bench to dismantle it at.</EF_DismantleNoBench>
-  <EF_DismantleMessage>{0} dismantled {1}. The colony gained {2} insight and now has {3}. It held: {4}.</EF_DismantleMessage>
+  <EF_DismantleMessage>{0} dismantled {1}. The colony gained {2} verity and now has {3}. It held: {4}.</EF_DismantleMessage>
   <EF_DismantleTraitEntry>{0} ({1})</EF_DismantleTraitEntry>
   <EF_Card_BoundValue>Bound: its traits are no use to anyone else, so it is worth only {0} more than an ordinary item.</EF_Card_BoundValue>
 
