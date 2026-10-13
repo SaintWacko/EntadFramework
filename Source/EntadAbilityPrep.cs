@@ -87,6 +87,8 @@ namespace EntadFramework
                 copy.charges = m.abilityCharges;
                 copy.cooldownPerCharge = true;
             }
+            // One charge is a plain cooldown: drop any charges the source ability had, or it would keep its own 2-5 uses
+            else if (m.abilityCharges == 1) copy.charges = -1;
             if (m.abilityCooldownTicks > 0) copy.cooldownTicksRange = new IntRange(m.abilityCooldownTicks, m.abilityCooldownTicks);
             // Reloadable: no cooldown at all, so vanilla never refills the charges (a per-charge cooldown regains
             // one each time it ends, and a whole cooldown refills them all). Only reloading adds charges.
