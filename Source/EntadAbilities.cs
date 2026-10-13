@@ -3,6 +3,7 @@ using System.Linq;
 using HarmonyLib;
 using Verse;
 using RimWorld;
+using RimWorld.Planet;
 
 namespace EntadFramework
 {
@@ -144,6 +145,17 @@ namespace EntadFramework
         }
     }
 
+    // World-tile abilities (Farskip and the like) are cast through the other overload
+    [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(GlobalTargetInfo) })]
+    public static class Patch_Ability_ActivateGlobal_Reveal
+    {
+        public static void Postfix(Ability __instance)
+        {
+            foreach (var m in EntadAbilities.TraitsGranting(__instance.pawn, __instance.def))
+                m.Reveal(EntadEffectKind.Ability);
+        }
+    }
+
     [HarmonyPatch(typeof(Ability), nameof(Ability.GetGizmos))]
     public static class Patch_Ability_GetGizmos_Hide
     {
@@ -185,6 +197,83 @@ namespace EntadFramework
         {
             var ability = __instance.ability;
             if (ability?.pawn != null && Patch_Ability_GetGizmos_Hide.IsHidden(ability)) __result = TexButton.Info;
+        }
+    }
+
+    // The text beside the cursor while aiming (Chunkskip's chunk count, a conversion chance and so on) says what the
+    // ability does, so leave it out while hidden. Runs only while the player is aiming.
+    [HarmonyPatch(typeof(Verb_CastAbility), "DrawAttachmentExtraLabel")]
+    public static class Patch_VerbCastAbility_ExtraLabel_Hide
+    {
+        public static bool Prefix(Verb_CastAbility __instance)
+        {
+            var ability = __instance.ability;
+            return ability?.pawn == null || !Patch_Ability_GetGizmos_Hide.IsHidden(ability);
+        }
+    }
+
+    // Two-step abilities (Skip and other teleports) draw the def's icon themselves while the destination is picked
+    [HarmonyPatch(typeof(CompAbilityEffect_WithDest), nameof(CompAbilityEffect_WithDest.OnGUI))]
+    public static class Patch_WithDest_OnGUI_Hide
+    {
+        public static bool Prefix(CompAbilityEffect_WithDest __instance, LocalTargetInfo target)
+        {
+            var ability = __instance.parent;
+            if (ability?.pawn == null || !Patch_Ability_GetGizmos_Hide.IsHidden(ability)) return true;
+            GenUI.DrawMouseAttachment(target.IsValid ? TexButton.Info : TexCommand.CannotShoot);
+            return false;
+        }
+    }
+
+    // World-tile abilities: Command_Ability hands the def's icon straight to the world targeter, so swap it once
+    // targeting has begun. Runs once per click on the gizmo.
+    [HarmonyPatch(typeof(Command_Ability), nameof(Command_Ability.ProcessInput))]
+    public static class Patch_CommandAbility_ProcessInput_Hide
+    {
+        private static readonly AccessTools.FieldRef<WorldTargeter, UnityEngine.Texture2D> MouseAttachment =
+            AccessTools.FieldRefAccess<WorldTargeter, UnityEngine.Texture2D>("mouseAttachment");
+
+        public static void Postfix(Command_Ability __instance)
+        {
+            var ability = __instance.Ability;
+            if (ability?.pawn == null || !ability.def.targetWorldCell || !Find.WorldTargeter.IsTargeting) return;
+            if (Patch_Ability_GetGizmos_Hide.IsHidden(ability)) MouseAttachment(Find.WorldTargeter) = TexButton.Info;
+        }
+    }
+
+    // The label beside the cursor on the world map
+    [HarmonyPatch(typeof(Ability), nameof(Ability.WorldMapExtraLabel))]
+    public static class Patch_Ability_WorldMapExtraLabel_Hide
+    {
+        public static void Postfix(Ability __instance, ref TaggedString __result)
+        {
+            if (__instance.pawn != null && Patch_Ability_GetGizmos_Hide.IsHidden(__instance)) __result = TaggedString.Empty;
+        }
+    }
+
+    // Rejections while aiming name the ability ("Waterskip: cells are occupied", "no valid destination for skip").
+    // While a selected pawn holds a hidden entad ability, its name in a rejection message becomes "???". Only
+    // RejectInput messages are looked at, and only while playing, so this costs nothing outside a misclick.
+    [HarmonyPatch(typeof(Messages), nameof(Messages.Message), new[] { typeof(Message), typeof(bool) })]
+    public static class Patch_Messages_HideAbilityName
+    {
+        public static void Prefix(Message msg)
+        {
+            if (msg == null || msg.def != MessageTypeDefOf.RejectInput || msg.text.NullOrEmpty()) return;
+            if (Current.ProgramState != ProgramState.Playing) return;
+            var selected = Find.Selector.SelectedObjectsListForReading;
+            for (int i = 0; i < selected.Count; i++)
+            {
+                if (!(selected[i] is Pawn pawn) || pawn.abilities == null) continue;
+                foreach (Ability a in pawn.abilities.abilities)
+                {
+                    string label = a.def.label;
+                    if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                    if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
+                    msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, System.Text.RegularExpressions.Regex.Escape(label),
+                        "EF_Unknown".Translate().ToString(), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                }
+            }
         }
     }
 
