@@ -336,4 +336,76 @@ namespace EntadFramework
             yield return work;
         }
     }
+
+    // Orders tab: drag over an area to mark every entad in it for dismantling. Same rules as the gizmo: loose items,
+    // and the colony's own furniture.
+    public class Designator_DismantleEntad : Designator
+    {
+        protected override DesignationDef Designation => EntadDismantleDefOf.Entad_Dismantle;
+
+        public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+
+        public Designator_DismantleEntad()
+        {
+            defaultLabel = "EF_DesignatorDismantle".Translate();
+            defaultDesc = "EF_DesignatorDismantleDesc".Translate();
+            icon = EntadDismantle.Icon;
+            soundDragSustain = SoundDefOf.Designate_DragStandard;
+            soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+            useMouseIcon = true;
+            soundSucceeded = SoundDefOf.Designate_Claim;
+        }
+
+        private IEnumerable<Thing> Targets(IntVec3 c)
+        {
+            foreach (Thing t in c.GetThingList(Map))
+                if (CanDesignateThing(t).Accepted) yield return t;
+        }
+
+        public override AcceptanceReport CanDesignateCell(IntVec3 c)
+        {
+            if (!c.InBounds(Map) || c.Fogged(Map)) return false;
+            return Targets(c).Any();
+        }
+
+        public override void DesignateSingleCell(IntVec3 c)
+        {
+            // ToList: designating doesn't change the thing list, but a cell list is not ours to iterate while editing
+            foreach (Thing t in Targets(c).ToList()) DesignateThing(t);
+        }
+
+        public override AcceptanceReport CanDesignateThing(Thing t)
+        {
+            var comp = t.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.NullOrEmpty()) return false;
+            if (!EntadDismantle.CanDesignate(t) || EntadDismantle.IsDesignated(t)) return false;
+            return true;
+        }
+
+        public override void DesignateThing(Thing t) => Map.designationManager.AddDesignation(new Designation(t, Designation));
+
+        public override void SelectedUpdate() => GenUI.RenderMouseoverBracket();
+    }
+
+    // "Entad verity: N" in the inspect pane of every research bench, so the pool is visible without depending on the
+    // research tab, which many players replace. Added at startup to every Building_ResearchBench def, modded ones too.
+    public class CompEntadVerityReadout : ThingComp
+    {
+        public override string CompInspectStringExtra() => "EF_VerityReadout".Translate(EntadApi.Verity.ToString("0.#"));
+    }
+
+    [StaticConstructorOnStartup]
+    public static class EntadVerityReadoutInjector
+    {
+        static EntadVerityReadoutInjector()
+        {
+            foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
+            {
+                if (def.thingClass == null || !typeof(Building_ResearchBench).IsAssignableFrom(def.thingClass)) continue;
+                if (def.comps == null) def.comps = new List<CompProperties>();
+                if (def.comps.Any(c => c.compClass == typeof(CompEntadVerityReadout))) continue;
+                def.comps.Add(new CompProperties(typeof(CompEntadVerityReadout)));
+            }
+        }
+    }
 }

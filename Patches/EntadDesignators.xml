@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Orders tab: drag to mark entads for dismantling (EntadDismantle.cs) -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/DesignationCategoryDef[defName="Orders"]/specialDesignatorClasses</xpath>
+    <value>
+      <li>EntadFramework.Designator_DismantleEntad</li>
+    </value>
+  </Operation>
+</Patch>
