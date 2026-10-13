@@ -1,3 +1,4 @@
+using RimWorld;
 using Verse;
 
 namespace EntadFramework
@@ -16,7 +17,7 @@ namespace EntadFramework
             return comp != null && !comp.activeTraits.NullOrEmpty();
         }
 
-        public static bool CanBeEntad(ThingDef def) => def.HasComp(typeof(CompEntad)) || def.IsMinified();
+        public static bool CanBeEntad(ThingDef def) => def.HasComp(typeof(CompEntad)) || typeof(MinifiedThing).IsAssignableFrom(def.thingClass);
     }
 
     public class SpecialThingFilterWorker_Entad : SpecialThingFilterWorker
