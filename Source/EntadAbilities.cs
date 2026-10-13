@@ -264,15 +264,26 @@ namespace EntadFramework
             var selected = Find.Selector.SelectedObjectsListForReading;
             for (int i = 0; i < selected.Count; i++)
             {
-                if (!(selected[i] is Pawn pawn) || pawn.abilities == null) continue;
-                foreach (Ability a in pawn.abilities.abilities)
-                {
-                    string label = a.def.label;
-                    if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
-                    if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
-                    msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, System.Text.RegularExpressions.Regex.Escape(label),
-                        "EF_Unknown".Translate().ToString(), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                }
+                if (selected[i] is Pawn pawn) Hide(msg, pawn);
+                // World-tile abilities are aimed from a caravan, which is what's selected then
+                else if (selected[i] is Caravan caravan)
+                    foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
+            }
+        }
+
+        private static void Hide(Message msg, Pawn pawn)
+        {
+            if (pawn.abilities == null) return;
+            foreach (Ability a in pawn.abilities.abilities)
+            {
+                string label = a.def.label;
+                if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
+                // Whole words only, so a hidden "skip" leaves "farskip" and "waterskip" alone; the evaluator keeps a
+                // translated replacement containing '$' from being read as a substitution
+                string unknown = "EF_Unknown".Translate().ToString();
+                msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, @"\b" + System.Text.RegularExpressions.Regex.Escape(label) + @"\b",
+                    _ => unknown, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             }
         }
     }
