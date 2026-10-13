@@ -83,6 +83,9 @@ namespace EntadFramework
         public static EntadItemKind KindOf(ThingDef def)
         {
             EntadItemKind kind = EntadItemKind.None;
+            // Gear that only exists while equipped (turret guns, mechanoid weapons and mech apparel, the breach axe
+            // raiders carry, Odyssey's drone scattergun) is deleted the moment it's dropped, so it can't be an entad
+            if (def.destroyOnDrop) return kind;
             if (def.IsWeapon) kind |= EntadItemKind.Weapon;
             if (def.IsApparel) kind |= EntadItemKind.Apparel;
             if (IsFurniture(def)) kind |= EntadItemKind.Furniture;
