@@ -365,7 +365,7 @@ namespace EntadFramework
         public override AcceptanceReport CanDesignateCell(IntVec3 c)
         {
             if (!c.InBounds(Map) || c.Fogged(Map)) return false;
-            return Targets(c).Any();
+            return Targets(c).Any() ? AcceptanceReport.WasAccepted : (AcceptanceReport)"EF_MustDesignateEntad".Translate();
         }
 
         public override void DesignateSingleCell(IntVec3 c)
@@ -391,7 +391,9 @@ namespace EntadFramework
     // research tab, which many players replace. Added at startup to every Building_ResearchBench def, modded ones too.
     public class CompEntadVerityReadout : ThingComp
     {
-        public override string CompInspectStringExtra() => "EF_VerityReadout".Translate(EntadApi.Verity.ToString("0.#"));
+        // The colony's own benches only: ruins and other factions' bases have nothing to do with our pool
+        public override string CompInspectStringExtra() =>
+            parent.Faction == Faction.OfPlayer ? "EF_VerityReadout".Translate(EntadApi.Verity.ToString("0.#")).ToString() : null;
     }
 
     [StaticConstructorOnStartup]

@@ -115,6 +115,7 @@
   <EF_DismantlePartial>Partly dismantled: {0} done (would give {1} verity; the colony has {2})</EF_DismantlePartial>
   <EF_DesignatorDismantle>Dismantle entads</EF_DesignatorDismantle>
   <EF_DesignatorDismantleDesc>Drag over an area to mark every entad in it for dismantling: loose items and the colony's own furniture. A researcher takes each one apart for verity and it is destroyed for good. Use Cancel to unmark.</EF_DesignatorDismantleDesc>
+  <EF_MustDesignateEntad>Must designate an entad.</EF_MustDesignateEntad>
   <EF_VerityReadout>Entad verity: {0}</EF_VerityReadout>
   <EF_DismantleNoBench>No free research bench to dismantle it at.</EF_DismantleNoBench>
   <EF_DismantleMessage>{0} dismantled {1}. The colony gained {2} verity and now has {3}. It held: {4}.</EF_DismantleMessage>
