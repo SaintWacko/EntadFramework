@@ -33,4 +33,33 @@
     <casualInterruptible>false</casualInterruptible>
     <allowOpportunisticPrefix>false</allowOpportunisticPrefix>
   </JobDef>
+
+  <!-- Dismantling an entad for verity (EntadDismantle.cs): designated from the item's gizmo, done as Research -->
+  <JobDef>
+    <defName>Entad_DismantleJob</defName>
+    <driverClass>EntadFramework.JobDriver_DismantleEntad</driverClass>
+    <reportString>dismantling TargetA.</reportString>
+    <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
+  </JobDef>
+
+  <DesignationDef>
+    <defName>Entad_Dismantle</defName>
+    <texturePath>Designations/EntadDismantle</texturePath>
+    <targetType>Thing</targetType>
+  </DesignationDef>
+
+  <WorkGiverDef>
+    <defName>Entad_DismantleEntad</defName>
+    <label>dismantle entads</label>
+    <giverClass>EntadFramework.WorkGiver_DismantleEntad</giverClass>
+    <workType>Research</workType>
+    <verb>dismantle</verb>
+    <gerund>dismantling</gerund>
+    <!-- Ahead of research at a bench (100), which never runs out -->
+    <priorityInType>110</priorityInType>
+    <requiredCapacities>
+      <li>Manipulation</li>
+    </requiredCapacities>
+    <canBeDoneByMechs>false</canBeDoneByMechs>
+  </WorkGiverDef>
 </Defs>

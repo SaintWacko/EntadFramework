@@ -694,7 +694,23 @@ namespace EntadFramework
                 map.pathing.RecalculatePerceivedPathCostAt(c);
             }
             map.roofGrid.Drawer.SetDirty();
-            RoofCollapseCellsFinder.CheckAndRemoveCollpsingRoofs(map);
+            RemoveUnsupportedRoofsNear(map, rect);
+        }
+
+        // Vanilla's CheckAndRemoveCollpsingRoofs, limited to the rectangle and the roof support distance around it: only
+        // holders inside the rectangle changed, so no roof further out can have lost support. The map-wide version runs a
+        // radial support search for every roofed cell on the map, which froze the game for about a second on maps with a
+        // lot of mountain or a large roofed base.
+        private static void RemoveUnsupportedRoofsNear(Map map, CellRect rect)
+        {
+            CellRect near = rect.ExpandedBy(Mathf.CeilToInt(RoofCollapseUtility.RoofMaxSupportDistance)).ClipInsideMap(map);
+            foreach (IntVec3 c in near)
+            {
+                if (!c.Roofed(map)) continue;
+                Building edifice = c.GetEdifice(map);
+                if (edifice == null || !edifice.def.holdsRoof)
+                    RoofCollapseCellsFinder.ProcessRoofHolderDespawned(new CellRect(c.x, c.z, 1, 1), c, map, removalMode: true, canRemoveThickRoof: true);
+            }
         }
 
         // The placed room's map is gone (abandoned, destroyed): the room went with it and the item is empty again

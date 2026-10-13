@@ -109,6 +109,18 @@
   <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
   <EF_Card_MarketValue>Market value {0}</EF_Card_MarketValue>
   <EF_Card_Unidentified>Unidentified properties: traders pay {0} more for the mystery.</EF_Card_Unidentified>
+  <EF_Dismantle>Dismantle</EF_Dismantle>
+  <EF_DismantleDesc>Have a researcher take this entad apart to study its magic. Items are carried to a research bench first, and a better bench works faster; furniture is dismantled where it stands. The entad is destroyed for good, and the colony gains {0} verity (it has {1} now). Click again to cancel.</EF_DismantleDesc>
+  <EF_DismantleInspect>Dismantling: {0} done (gives {1} verity; the colony has {2})</EF_DismantleInspect>
+  <EF_DismantlePartial>Partly dismantled: {0} done (would give {1} verity; the colony has {2})</EF_DismantlePartial>
+  <EF_DesignatorDismantle>Dismantle entads</EF_DesignatorDismantle>
+  <EF_DesignatorDismantleDesc>Drag over an area to mark every loose entad item in it for dismantling. Furniture isn't marked; use its own dismantle button. A researcher takes each one apart for verity and it is destroyed for good. Use Cancel to unmark.</EF_DesignatorDismantleDesc>
+  <EF_MustDesignateEntad>Must designate an entad.</EF_MustDesignateEntad>
+  <EF_VerityReadout>Entad verity: {0}</EF_VerityReadout>
+  <EF_DismantleNoBench>No free research bench to dismantle it at.</EF_DismantleNoBench>
+  <EF_DismantleMessage>{0} dismantled {1}. The colony gained {2} verity and now has {3}. It held: {4}.</EF_DismantleMessage>
+  <EF_DismantleTraitEntry>{0} ({1})</EF_DismantleTraitEntry>
+  <EF_Card_BoundValue>Bound: its traits are no use to anyone else, so it is worth only {0} more than an ordinary item.</EF_Card_BoundValue>
 
   <!-- Weapon section of the info card. {0} = trait, {1} = damage type. -->
   <EF_Stat_DamageType>Entad damage type</EF_Stat_DamageType>
@@ -128,6 +140,7 @@
   <EF_Explain_TraitValue>{0} ({1}): {2}</EF_Explain_TraitValue>
   <EF_Explain_ValueFloor>Drawbacks can't lower the value below {0} of base: {1}</EF_Explain_ValueFloor>
   <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
+  <EF_Explain_Bound>Bound entad, traits priced as a flat premium: {0}</EF_Explain_Bound>
   <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
 
   <!-- Abilities. {0} = ability, {1} = building. -->
@@ -185,7 +198,7 @@
   <EF_Settings_Value_Desc>Each trait adds both amounts for every point it costs, more for a good roll and less for a poor one. The base value is the item's normal value, material and quality included. Drawbacks subtract value. Colony wealth, which sets raid size, counts every trait, including unidentified ones.</EF_Settings_Value_Desc>
   <EF_Settings_ValueFloor>Lowest value with drawbacks: {0} of base value</EF_Settings_ValueFloor>
   <EF_Settings_MysteryBonus>Mystery premium: {0} of base value</EF_Settings_MysteryBonus>
-  <EF_Settings_MysteryBonus_Desc>Traders only pay for identified traits. An item with anything unidentified gets this premium instead, however many traits are hidden.</EF_Settings_MysteryBonus_Desc>
+  <EF_Settings_MysteryBonus_Desc>Traders only pay for identified traits. An item with anything unidentified gets this premium instead, however many traits are hidden. A bound entad is worth its base value plus this premium everywhere, wealth included, since its traits only work for its bloodline.</EF_Settings_MysteryBonus_Desc>
 
   <EF_Settings_Search>Search:</EF_Settings_Search>
   <EF_Settings_EnableShown>Enable shown</EF_Settings_EnableShown>

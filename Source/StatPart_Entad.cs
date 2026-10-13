@@ -43,6 +43,9 @@ namespace EntadFramework
             // open (the deal is built after the session starts), and nothing caches market value between reads.
             bool trade = isValue && EntadTrade.Open;
             bool valueSkipsHidden = trade || EntadWearerStats.infoCardThing == req.Thing;
+            // A bound entad is worth little to anyone outside its bloodline, so in every context (wealth, trade, the
+            // card) its traits are priced as a flat premium, the same share of base as the mystery premium (build 152)
+            bool bound = isValue && comp.IsBound;
             float baseValue = val, traitValue = 0f;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
@@ -55,7 +58,7 @@ namespace EntadFramework
                     if (def.statOffsets[i].stat == parentStat) val += m.OffsetFor(i);
                 for (int i = 0; apply && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat) val *= m.FactorFor(i);
-                if (!isValue) continue;
+                if (!isValue || bound) continue;
                 if (m.AnyHidden) unidentified = true;
                 if (!m.AnyHidden || !valueSkipsHidden) traitValue += m.MarketValueOffset(baseValue);
             }
@@ -63,7 +66,7 @@ namespace EntadFramework
             {
                 // Drawbacks can't take the item below the settings' share of its base value
                 traitValue = UnityEngine.Mathf.Max(traitValue, -(1f - EntadSettings.ValueFloor) * baseValue);
-                if (trade && unidentified) traitValue += baseValue * EntadSettings.MysteryBonus;
+                if ((trade && unidentified) || bound) traitValue += baseValue * EntadSettings.MysteryBonus;
                 val += traitValue;
             }
             // Durability: every entad, by its highest trait rarity. Visible from the start, so never hidden.
@@ -97,10 +100,14 @@ namespace EntadFramework
             float baseValue = parentStat == StatDefOf.MarketValue ? comp.BaseMarketValue() : 0f;
             float traitValue = 0f;
             bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            // Same flat premium as TransformValue, in place of the trait lines
+            bool bound = parentStat == StatDefOf.MarketValue && comp.IsBound;
+            if (bound) explanation += "\n" + "EF_Explain_Bound".Translate((baseValue * EntadSettings.MysteryBonus).ToStringMoneyOffset());
             foreach (var m in comp.activeTraits)
             {
                 var def = m.def;
                 bool known = userActive && m.IsRevealed(EntadEffectKind.Stat);
+                if (bound) continue;
                 if (parentStat == StatDefOf.MarketValue)
                 {
                     if (m.AnyHidden) unidentified = true;

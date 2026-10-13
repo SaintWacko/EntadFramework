@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <SpecialThingFilterDef>
+    <defName>Entad_AllowEntads</defName>
+    <label>allow entads</label>
+    <description>Allow items and packed furniture with entad traits.</description>
+    <parentCategory>Root</parentCategory>
+    <allowedByDefault>true</allowedByDefault>
+    <saveKey>allowEntads</saveKey>
+    <workerClass>EntadFramework.SpecialThingFilterWorker_Entad</workerClass>
+  </SpecialThingFilterDef>
+
+  <SpecialThingFilterDef>
+    <defName>Entad_AllowNonEntads</defName>
+    <label>allow non-entads</label>
+    <description>Allow ordinary gear and packed furniture with no entad traits.</description>
+    <parentCategory>Root</parentCategory>
+    <allowedByDefault>true</allowedByDefault>
+    <saveKey>allowNonEntads</saveKey>
+    <workerClass>EntadFramework.SpecialThingFilterWorker_NonEntad</workerClass>
+  </SpecialThingFilterDef>
+
+</Defs>
