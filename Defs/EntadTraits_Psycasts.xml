@@ -18,6 +18,22 @@
     <abilityCooldownTicks>30000</abilityCooldownTicks>
     <abilityCastTicks>60</abilityCastTicks>
   </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Farskip</defName>
+    <label>Far Skip</label>
+    <description>Grants the ability to skip a target, and anyone near it, to an ally across the world.</description>
+    <categories>
+      <li>Weapon</li>
+      <li>Apparel</li>
+    </categories>
+    <rarity>Rare</rarity>
+    <abilities>
+      <li>Farskip</li>
+    </abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+    <abilityCastTicks>60</abilityCastTicks>
+  </EntadFramework.EntadTraitDef>
   <!-- Reloadable: three charges that only come back by reloading with chemfuel -->
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_StunCharge</defName>

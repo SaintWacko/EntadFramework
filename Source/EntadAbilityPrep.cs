@@ -82,7 +82,7 @@ namespace EntadFramework
                 if (copy.statBases != null)
                     copy.statBases = copy.statBases.Where(s => s.stat != null && !s.stat.defName.Contains("Psyfocus") && !s.stat.defName.Contains("Entropy")).ToList();
             }
-            if (m.abilityCharges > 0)
+            if (m.UsesAbilityCharges)
             {
                 copy.charges = m.abilityCharges;
                 copy.cooldownPerCharge = true;

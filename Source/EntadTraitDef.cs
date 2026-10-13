@@ -528,6 +528,10 @@ namespace EntadFramework
 
         public bool IsReloadable => abilityAmmo != null && abilityCharges > 0 && !abilities.NullOrEmpty();
 
+        // Whether the abilities count charges. A single charge that comes back after the cooldown is just a cooldown, and
+        // counting it would only put "0 / 1" on the gizmo; reloadable traits count even one, since reloading adds charges.
+        public bool UsesAbilityCharges => abilityCharges > 1 || IsReloadable;
+
         // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadTraitDef> exclusiveWith;
 
