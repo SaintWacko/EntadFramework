@@ -261,52 +261,39 @@ namespace EntadFramework
         {
             if (msg == null || msg.def != MessageTypeDefOf.RejectInput || msg.text.NullOrEmpty()) return;
             if (Current.ProgramState != ProgramState.Playing) return;
+            // Every ability name of the selected pawns that appears in the message, and whether any holder has it hidden
+            Dictionary<string, bool> names = null;
             var selected = Find.Selector.SelectedObjectsListForReading;
             for (int i = 0; i < selected.Count; i++)
-                if (selected[i] is Pawn pawn) Hide(msg, pawn);
+                if (selected[i] is Pawn pawn) Collect(msg.text, pawn, ref names);
             // World-tile abilities can be aimed from a caravan, which lives in the world selector
             var world = Find.WorldSelector?.SelectedObjects;
             if (world != null)
                 for (int i = 0; i < world.Count; i++)
                     if (world[i] is Caravan caravan)
-                        foreach (Pawn p in caravan.PawnsListForReading) Hide(msg, p);
+                        foreach (Pawn p in caravan.PawnsListForReading) Collect(msg.text, p, ref names);
+            if (names == null || !names.ContainsValue(true)) return;
+
+            // One pass over every name, longest first, so a revealed "farskip" is matched as itself before a hidden "skip"
+            // could match inside it. No word-boundary rule, so it reads the same in any language. The evaluator keeps a
+            // translated '$' from being read as a substitution.
+            string pattern = string.Join("|", names.Keys.OrderByDescending(k => k.Length).Select(System.Text.RegularExpressions.Regex.Escape));
+            string unknown = "EF_Unknown".Translate().ToString();
+            msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern,
+                m => names.TryGetValue(m.Value, out bool hidden) && hidden ? unknown : m.Value,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
 
-        // A letter, digit or combining mark (Indic vowel signs, Hebrew/Arabic pointing) in a script where a word ends at a
-        // space. Thai, Lao, Myanmar and Khmer run words together, Chinese and Japanese too, and Korean attaches particles
-        // straight onto nouns, so those get no guard.
-        private static bool IsSpacedLetter(char c)
-        {
-            var cat = char.GetUnicodeCategory(c);
-            bool letter = char.IsLetterOrDigit(c) || cat == System.Globalization.UnicodeCategory.NonSpacingMark
-                || cat == System.Globalization.UnicodeCategory.SpacingCombiningMark;
-            if (!letter) return false;
-            if (c >= '\u0E00' && c <= '\u0EFF') return false; // Thai, Lao
-            if (c >= '\u1000' && c <= '\u109F') return false; // Myanmar
-            if (c >= '\u1780' && c <= '\u17FF') return false; // Khmer
-            if (c >= '\u1100' && c <= '\u11FF') return false; // Hangul jamo
-            if (c >= '\u2E80') return false; // CJK, kana, Hangul syllables and on
-            return true;
-        }
-
-        private static void Hide(Message msg, Pawn pawn)
+        private static void Collect(string text, Pawn pawn, ref Dictionary<string, bool> names)
         {
             if (pawn.abilities == null) return;
             foreach (Ability a in pawn.abilities.abilities)
             {
                 string label = a.def.label;
-                if (label.NullOrEmpty() || msg.text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (!Patch_Ability_GetGizmos_Hide.IsHidden(a)) continue;
-                // Whole words, so a hidden "skip" leaves "farskip" and "waterskip" alone. The guard is only added on a side
-                // where the label ends in a letter of a spaced script: a CJK label sits against other characters with no
-                // space, and a guard would never let it match. The evaluator keeps a translated '$' from being read as a
-                // substitution.
-                string pattern = System.Text.RegularExpressions.Regex.Escape(label);
-                if (IsSpacedLetter(label[0])) pattern = @"(?<![\p{L}\p{M}\p{N}])" + pattern;
-                if (IsSpacedLetter(label[label.Length - 1])) pattern += @"(?![\p{L}\p{M}\p{N}])";
-                string unknown = "EF_Unknown".Translate().ToString();
-                msg.text = System.Text.RegularExpressions.Regex.Replace(msg.text, pattern, _ => unknown,
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (label.NullOrEmpty() || text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (names == null) names = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+                bool hidden = Patch_Ability_GetGizmos_Hide.IsHidden(a);
+                names[label] = hidden || (names.TryGetValue(label, out bool before) && before);
             }
         }
     }
