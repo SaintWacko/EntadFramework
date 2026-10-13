@@ -285,7 +285,9 @@ namespace EntadFramework
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         }
 
-        private const string WordChar = @"[\p{L}\p{M}\p{N}]";
+        // A neighbouring letter that would make the match part of a longer word: spaced scripts only, the same ranges
+        // IsSpacedLetter leaves out are subtracted, so "使用Waterskip失败" still counts as the whole name
+        private const string WordChar = @"[\p{L}\p{M}\p{N}-[\u0E00-\u0EFF\u1000-\u109F\u1100-\u11FF\u1780-\u17FF\u2E80-\u9FFF\uAC00-\uD7FF\uF900-\uFAFF\uFF65-\uFFDC]]";
 
         private static string Bounded(string label)
         {
