@@ -176,6 +176,18 @@ namespace EntadFramework
         }
     }
 
+    // While targeting, the cursor carries the verb's icon, which Verb_CastAbility reads straight from the ability def.
+    // Swap it for the same question-mark icon the hidden gizmo shows. Read only while the player is aiming the ability.
+    [HarmonyPatch(typeof(Verb_CastAbility), nameof(Verb_CastAbility.UIIcon), MethodType.Getter)]
+    public static class Patch_VerbCastAbility_UIIcon_Hide
+    {
+        public static void Postfix(Verb_CastAbility __instance, ref UnityEngine.Texture2D __result)
+        {
+            var ability = __instance.ability;
+            if (ability?.pawn != null && Patch_Ability_GetGizmos_Hide.IsHidden(ability)) __result = TexButton.Info;
+        }
+    }
+
     // The tooltip is read straight from the ability, so veil it while the trait is unrevealed
     [HarmonyPatch(typeof(Command_Ability), nameof(Command_Ability.Tooltip), MethodType.Getter)]
     public static class Patch_CommandAbility_Tooltip_Hide

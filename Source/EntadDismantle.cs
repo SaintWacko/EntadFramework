@@ -337,8 +337,8 @@ namespace EntadFramework
         }
     }
 
-    // Orders tab: drag over an area to mark every entad in it for dismantling. Same rules as the gizmo: loose items,
-    // and the colony's own furniture.
+    // Orders tab: drag over an area to mark every loose entad item in it for dismantling. Furniture is left out so a drag
+    // across a room can't catch the beds and tables in it; the gizmo still marks a single piece.
     public class Designator_DismantleEntad : Designator
     {
         protected override DesignationDef Designation => EntadDismantleDefOf.Entad_Dismantle;
@@ -377,6 +377,7 @@ namespace EntadFramework
         public override AcceptanceReport CanDesignateThing(Thing t)
         {
             var comp = t.TryGetComp<CompEntad>();
+            if (t.def.category != ThingCategory.Item) return false;
             if (comp == null || comp.activeTraits.NullOrEmpty()) return false;
             if (!EntadDismantle.CanDesignate(t) || EntadDismantle.IsDesignated(t)) return false;
             return true;
