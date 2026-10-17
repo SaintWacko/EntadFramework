@@ -190,7 +190,7 @@ namespace EntadFramework
 
         public override void GameComponentTick()
         {
-            if (sources.Count == 0) return;
+            if (sources.Count == 0 && visuals.Count == 0) return;
             int now = Find.TickManager.TicksGame;
             for (int i = visuals.Count - 1; i >= 0; i--)
             {
@@ -280,6 +280,7 @@ namespace EntadFramework
             {
                 vis = VisualFor(trait);
                 vis.lastActive = Find.TickManager.TicksGame;
+                vis.activeSource = source;
             }
             bool lines = vis != null && aura.LinkDef != null;
             bool any = false;
@@ -353,6 +354,9 @@ namespace EntadFramework
         {
             public AppliedEntadTrait trait;
             public int lastActive = -999999;
+            // What the last scan worked from. Visuals show only while the aura can still work from the same thing:
+            // a dropped weapon, gear put in a pack or a building that lost power stops them at once.
+            public Thing activeSource;
             public Mote glow;
             private Thing glowOn;
             public readonly Dictionary<Pawn, int> linkHits = new Dictionary<Pawn, int>();
@@ -367,9 +371,9 @@ namespace EntadFramework
                 if (comp?.parent == null || comp.parent.Destroyed || aura == null || !comp.activeTraits.Contains(trait)) return false;
                 // A scan can be up to 15 ticks late off camera, so the aura counts as active until the next one is due
                 int keep = aura.intervalTicks + 15;
-                Thing source = comp.parent.Spawned ? comp.parent : comp.Holder;
+                Thing source = SourceOf(comp);
                 if (source != glowOn) { DestroyAll(); glowOn = source; }
-                bool show = now - lastActive <= keep && source != null && source.Spawned && source.Map == Find.CurrentMap
+                bool show = now - lastActive <= keep && source != null && source == activeSource && source.Spawned && source.Map == Find.CurrentMap
                     && trait.IsRevealed(EntadEffectKind.Aura) && !source.Position.Fogged(source.Map);
                 if (!show)
                 {
@@ -468,7 +472,7 @@ namespace EntadFramework
         {
             var aura = trait.def.aura;
             Map map = source.Map;
-            if (map != Find.CurrentMap || !EntadSettings.AuraEffects || !trait.IsRevealed(EntadEffectKind.Aura) || source.Position.Fogged(map)) return;
+            if (map != Find.CurrentMap || !trait.IsRevealed(EntadEffectKind.Aura) || source.Position.Fogged(map)) return;
             // PsycastAreaEffect is 2.3 tiles across at scale 1 and grows as it fades
             float scale = aura.pulseScale > 0f ? aura.pulseScale : Radius(trait) * 0.7f;
             FleckMaker.Static(source.DrawPos, map, aura.pulseFleck, scale);
