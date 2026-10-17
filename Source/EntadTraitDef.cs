@@ -235,7 +235,8 @@ namespace EntadFramework
         Trigger = 256,   // "when X happens, do Y" effects (EntadTriggers): revealed the first time one fires
         Bond = 512,      // persona bond effects (EntadPersona): the persona tells its wielder everything when it bonds
         Space = 1024,    // portable space (EntadPortableSpace): revealed the first time its gizmo is used
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space
+        Aura = 2048,     // auras (EntadAuras): revealed the first time the aura affects someone in view
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura
     }
 
     public class EntadTraitDef : Def
@@ -394,6 +395,9 @@ namespace EntadFramework
         // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
         // equippedHediffs and removed on unequip unless other active gear also gives them
         public List<HediffDef> equippedHediffs;
+
+        // A hediff given to pawns around the carrier (worn or wielded gear) or around the furniture (EntadAuras.cs)
+        public EntadAura aura;
 
         // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
@@ -631,6 +635,7 @@ namespace EntadFramework
                 if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 if (HasPortableSpace) kinds |= EntadEffectKind.Space;
+                if (aura != null) kinds |= EntadEffectKind.Aura;
                 return kinds;
             }
         }
@@ -679,6 +684,8 @@ namespace EntadFramework
             if (!float.IsNaN(points) && points == 0f) yield return $"{defName}: points 0 lets generation add it for free until the trait cap; use a small positive value";
             if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
             if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
+            if (aura != null)
+                foreach (var e in aura.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
         }
 
@@ -720,6 +727,12 @@ namespace EntadFramework
             if (HasMealEffect && td.surfaceType != SurfaceType.Eat) return false;
             // Carried gear only (worn apparel or a wielded weapon): the holder uses the space from their gizmos
             if (HasPortableSpace && !td.IsApparel && !td.IsWeapon) return false;
+            // Auras come from carried gear or from furniture. Combat-only and sleep/downed rules are about a carrier.
+            if (aura != null)
+            {
+                if (td.building != null) { if (aura.onlyInCombat || aura.affectsSelf) return false; }
+                else if (!td.IsApparel && !td.IsWeapon) return false;
+            }
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
