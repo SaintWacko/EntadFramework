@@ -161,6 +161,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
+            WeaponSpecificWeight = Mathf.Clamp(WeaponSpecificWeight, 1f, 10f);
             Scribe_Values.Look(ref UniqueWeaponChance, "uniqueWeaponChance", 0f);
             UniqueWeaponChance = Mathf.Clamp01(UniqueWeaponChance);
             Scribe_Values.Look(ref DrawbackChance, "drawbackChance", DefaultDrawbackChance);

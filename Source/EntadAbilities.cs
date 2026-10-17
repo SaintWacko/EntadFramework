@@ -75,6 +75,50 @@ namespace EntadFramework
             }
         }
 
+        // Every ability some trait grants, built on first use (after EntadAbilityPrep has swapped in its copies), so the
+        // per-frame checks below return after one lookup for a psycaster's own psycasts
+        private static HashSet<AbilityDef> grantable;
+
+        private static bool Grantable(AbilityDef ability)
+        {
+            if (grantable == null)
+            {
+                var set = new HashSet<AbilityDef>();
+                foreach (var def in DefDatabase<EntadTraitDef>.AllDefsListForReading)
+                    if (def.abilities != null) set.UnionWith(def.abilities);
+                grantable = set;
+            }
+            return grantable.Contains(ability);
+        }
+
+        // Whether gear the pawn wears or wields grants this ability through an active trait, and whether any such trait
+        // is still hidden. Runs every frame for each ability gizmo, tooltip and cursor, so plain loops and no iterators.
+        public static bool Grants(Pawn pawn, AbilityDef ability, out bool hidden)
+        {
+            hidden = false;
+            if (pawn == null || ability == null || !Grantable(ability)) return false;
+            bool any = false;
+            var worn = pawn.apparel?.WornApparel;
+            if (worn != null) for (int i = 0; i < worn.Count; i++) Check(worn[i], pawn, ability, ref any, ref hidden);
+            var held = pawn.equipment?.AllEquipmentListForReading;
+            if (held != null) for (int i = 0; i < held.Count; i++) Check(held[i], pawn, ability, ref any, ref hidden);
+            return any;
+        }
+
+        private static void Check(ThingWithComps item, Pawn pawn, AbilityDef ability, ref bool any, ref bool hidden)
+        {
+            var comp = item.GetComp<CompEntad>();
+            if (comp == null || !comp.ActiveFor(pawn)) return;
+            var traits = comp.activeTraits;
+            for (int i = 0; i < traits.Count; i++)
+            {
+                var abilities = traits[i].def.abilities;
+                if (abilities == null || !abilities.Contains(ability)) continue;
+                any = true;
+                if (!traits[i].IsRevealed(EntadEffectKind.Ability)) hidden = true;
+            }
+        }
+
         public static IEnumerable<AppliedEntadTrait> TraitsGranting(Pawn pawn, AbilityDef ability)
         {
             if (pawn == null) yield break;
@@ -94,43 +138,30 @@ namespace EntadFramework
         }
     }
 
-    [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.Notify_EquipmentAdded))]
-    public static class Patch_EquipmentAdded_Abilities
+    // Equip and unequip. Vanilla's Pawn_EquipmentTracker.Notify_EquipmentAdded/Removed and
+    // Pawn_ApparelTracker.Notify_ApparelAdded/Removed are the only callers of Thing.Notify_Equipped/Unequipped, and
+    // call it last; ThingWithComps passes it on to every comp. Until build 183 this was four Harmony postfixes on those
+    // tracker methods, which ran at the same moment but for every item on every pawn: each piece of apparel put on a
+    // generated raider ran SyncEquipped and its two dictionaries. The overrides run only for entads.
+    public partial class CompEntad
     {
-        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
+        public override void Notify_Equipped(Pawn pawn)
         {
-            EntadAbilities.Grant(__instance.pawn, eq.GetComp<CompEntad>());
-            EntadMoods.SyncEquipped(__instance.pawn);
+            base.Notify_Equipped(pawn);
+            lastWearer = pawn;
+            // The same order as the old postfixes: a persona bond first, then abilities, hediffs and moods
+            BondOnEquip(pawn);
+            EntadAbilities.Grant(pawn, this);
+            EntadMoods.SyncEquipped(pawn);
         }
-    }
 
-    [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.Notify_EquipmentRemoved))]
-    public static class Patch_EquipmentRemoved_Abilities
-    {
-        public static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps eq)
+        public override void Notify_Unequipped(Pawn pawn)
         {
-            EntadAbilities.Revoke(__instance.pawn, eq);
-            EntadMoods.SyncEquipped(__instance.pawn, eq);
-        }
-    }
-
-    [HarmonyPatch(typeof(Pawn_ApparelTracker), nameof(Pawn_ApparelTracker.Notify_ApparelAdded))]
-    public static class Patch_ApparelAdded_Abilities
-    {
-        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
-        {
-            EntadAbilities.Grant(__instance.pawn, apparel.GetComp<CompEntad>());
-            EntadMoods.SyncEquipped(__instance.pawn);
-        }
-    }
-
-    [HarmonyPatch(typeof(Pawn_ApparelTracker), nameof(Pawn_ApparelTracker.Notify_ApparelRemoved))]
-    public static class Patch_ApparelRemoved_Abilities
-    {
-        public static void Postfix(Pawn_ApparelTracker __instance, Apparel apparel)
-        {
-            EntadAbilities.Revoke(__instance.pawn, apparel);
-            EntadMoods.SyncEquipped(__instance.pawn, apparel);
+            base.Notify_Unequipped(pawn);
+            // A destroyed item is unequipped on its way out, before PostDestroy needs to know who wore it
+            if (lastWearer == pawn && !parent.Destroyed) lastWearer = null;
+            EntadAbilities.Revoke(pawn, parent);
+            EntadMoods.SyncEquipped(pawn, parent);
         }
     }
 
@@ -162,29 +193,36 @@ namespace EntadFramework
         private static readonly AccessTools.FieldRef<Command_Ability, string> OriginalLabel = AccessTools.FieldRefAccess<Command_Ability, string>("originalLabel");
         private static readonly AccessTools.FieldRef<Command_Ability, string> PawnLabel = AccessTools.FieldRefAccess<Command_Ability, string>("pawnLabel");
 
-        public static bool IsHidden(Ability ability) =>
-            EntadAbilities.TraitsGranting(ability.pawn, ability.def).Any(m => !m.IsRevealed(EntadEffectKind.Ability));
+        public static bool IsHidden(Ability ability) => EntadAbilities.Grants(ability.pawn, ability.def, out bool hidden) && hidden;
 
         // The game caches the gizmo, so it is updated in place each time it is requested (hiding it, or restoring it once revealed).
         // Command_Ability rebuilds its label from the fields below every frame, so they have to be changed too.
+        // Runs every frame per ability of each selected pawn: abilities no entad grants return after one set lookup, and
+        // the rest are dressed as vanilla's iterator yields them, with no list copy. The gizmo is made lazily inside that
+        // iterator, so it can't simply be edited here before enumeration.
         public static void Postfix(Ability __instance, ref IEnumerable<Command> __result)
         {
-            if (!EntadAbilities.TraitsGranting(__instance.pawn, __instance.def).Any()) return;
-            bool hidden = IsHidden(__instance);
-            var list = __result.ToList();
-            foreach (Command c in list)
+            if (!EntadAbilities.Grants(__instance.pawn, __instance.def, out bool hidden)) return;
+            __result = Dressed(__result, __instance, hidden);
+        }
+
+        private static IEnumerable<Command> Dressed(IEnumerable<Command> source, Ability ability, bool hidden)
+        {
+            foreach (Command c in source)
             {
-                if (!(c is Command_Ability ca)) continue;
-                string label = hidden ? "EF_Unknown".Translate().ToString() : __instance.def.LabelCap.ToString();
-                ca.defaultLabel = label;
-                OriginalLabel(ca) = label;
-                PawnLabel(ca) = label;
-                ca.icon = hidden ? TexButton.Info : __instance.def.uiIcon;
-                ca.iconAngle = 0f;
-                ca.iconOffset = UnityEngine.Vector2.zero;
-                ca.iconDrawScale = 1f;
+                if (c is Command_Ability ca)
+                {
+                    string label = hidden ? "EF_Unknown".Translate().ToString() : ability.def.LabelCap.ToString();
+                    ca.defaultLabel = label;
+                    OriginalLabel(ca) = label;
+                    PawnLabel(ca) = label;
+                    ca.icon = hidden ? TexButton.Info : ability.def.uiIcon;
+                    ca.iconAngle = 0f;
+                    ca.iconOffset = UnityEngine.Vector2.zero;
+                    ca.iconDrawScale = 1f;
+                }
+                yield return c;
             }
-            __result = list;
         }
     }
 

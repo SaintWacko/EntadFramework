@@ -234,7 +234,7 @@ namespace EntadFramework
 
     public static class EntadPortableSpace
     {
-        // Work per cell: 150 ticks per 10 cells, so a 5x5 takes about 6 seconds and a 21x21 about a minute
+        // Work per cell: 150 ticks per 10 cells, so at normal speed a 5x5 takes about 6 seconds and a 21x21 nearly 2 minutes
         public const int TicksPerCell = 15;
 
         public static int Width(AppliedEntadTrait trait) => trait.spaceValues.Count > 0 ? Mathf.Max(1, Mathf.RoundToInt(trait.spaceValues[0])) : 1;
@@ -331,7 +331,8 @@ namespace EntadFramework
         private static bool IsForeignBuilding(Thing t) =>
             t.def.category == ThingCategory.Building && !IsNaturalRock(t) && (t.Faction != Faction.OfPlayer || !t.def.destroyable);
 
-        // Things whose origin cell is in the rectangle; a thing can cover several cells, so each is listed once
+        // Things covering any cell of the rectangle, including ones that cross its edge (the checks refuse or push those);
+        // a thing can cover several cells, so each is listed once
         private static List<Thing> ThingsIn(Map map, CellRect rect)
         {
             var seen = new HashSet<Thing>();
@@ -1147,14 +1148,8 @@ namespace EntadFramework
         // The pawn wearing or wielding this now, kept past the moment the item is destroyed: a destroyed item has already
         // left its wearer when PostDestroy runs, and its own Position is wherever it last lay on the ground.
         // Not saved: after a load it is set again the first time the holder's gizmos are drawn.
+        // Set and cleared in Notify_Equipped / Notify_Unequipped (EntadAbilities.cs).
         private Pawn lastWearer;
-
-        public override void Notify_Unequipped(Pawn pawn)
-        {
-            base.Notify_Unequipped(pawn);
-            // A destroyed item is unequipped on its way out, before PostDestroy needs to know who wore it
-            if (lastWearer == pawn && !parent.Destroyed) lastWearer = null;
-        }
 
         // Called from PostDestroy (EntadPersona.cs)
         private void SpillSpaces(Map map)

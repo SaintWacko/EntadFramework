@@ -403,17 +403,6 @@ namespace EntadFramework
         // Max hit points multiplier every entad gets, visible from the start; 1 for an item without traits
         public float DurabilityFactor => activeTraits.NullOrEmpty() ? 1f : EntadSettings.Durability[HighestRarity];
 
-        // True when some trait's stat effect is still unrevealed (HasHidden also counts mood, fuel, building...).
-        public bool HasHiddenStat
-        {
-            get
-            {
-                for (int i = 0; i < activeTraits.Count; i++)
-                    if (!activeTraits[i].IsRevealed(EntadEffectKind.Stat)) return true;
-                return false;
-            }
-        }
-
         // Called every frame this item's info card draws, after the card computed its stats without hidden traits.
         // Clears the item and its holder: an equipped weapon's card (melee DPS) reads holder stats, which run
         // StatOffsetFromGear over this item under the same flag. Plain loops, no AllRanges iterator, since it is
