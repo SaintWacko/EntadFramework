@@ -141,11 +141,15 @@ namespace EntadFramework
     // Equip and unequip. Vanilla's Pawn_EquipmentTracker.Notify_EquipmentAdded/Removed and
     // Pawn_ApparelTracker.Notify_ApparelAdded/Removed are the only callers of Thing.Notify_Equipped/Unequipped;
     // ThingWithComps passes it on to every comp. Until build 183 this was four Harmony postfixes on those tracker
-    // methods. The two apparel methods call the item last. Notify_EquipmentAdded calls it before telling the pawn's
-    // other bonded weapon, and Notify_EquipmentRemoved calls it before the bladelink and unique weapon comps hear of
-    // the loss; neither of those touches anything of ours, so running there instead of after them changes nothing. The postfixes ran
-    // for every item on every pawn: each piece of apparel put on a
-    // generated raider ran SyncEquipped and its two dictionaries. The overrides run only for entads.
+    // methods, and the two apparel methods call the item last, so nothing moved there. The weapon methods don't:
+    // - Notify_EquipmentAdded then tells the pawn's bonded weapon's CompBladelinkWeapon that another weapon was
+    //   wielded. That line may now see the entad BondOnEquip just bonded, which does nothing, since an entad persona
+    //   never has a CompBladelinkWeapon.
+    // - Notify_EquipmentRemoved calls the item first, then the bladelink and unique weapon comps, whose trait workers
+    //   remove equippedHediffs by def, as RemoveHediffs does. On a unique weapon with entad traits both may act on one
+    //   hediff; whichever runs first, the pawn ends with the same hediffs.
+    // The postfixes also ran for every item on every pawn: each piece of apparel put on a generated raider ran
+    // SyncEquipped and its two dictionaries. The overrides run only for entads.
     public partial class CompEntad
     {
         public override void Notify_Equipped(Pawn pawn)
