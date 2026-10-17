@@ -36,7 +36,7 @@ namespace EntadFramework
         {
             if (!comp.ActiveFor(pawn) || !TryGet(comp, flatIndex, out var trait, out int idx)) return;
             AbilityDef def = trait.def.abilities[idx];
-            int maxCharges = trait.def.abilityCharges;
+            int maxCharges = trait.def.UsesAbilityCharges ? trait.def.abilityCharges : 0;
             int cooldown = Cooldown(trait, def);
             if (maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, cooldown) <= 0 : Find.TickManager.TicksGame < trait.AbilityReadyTick(idx)) return;
 
@@ -120,7 +120,7 @@ namespace EntadFramework
                 bool known = trait.IsRevealed(EntadEffectKind.Ability);
                 string abilityName = known ? def.LabelCap.ToString() : "EF_Unknown".Translate().ToString();
 
-                int maxCharges = trait.def.abilityCharges;
+                int maxCharges = trait.def.UsesAbilityCharges ? trait.def.abilityCharges : 0;
                 int ready = trait.AbilityReadyTick(idx);
                 int charges = maxCharges > 0 ? trait.ChargesLeft(idx, maxCharges, EntadFurnitureAbilities.Cooldown(trait, def)) : 1;
                 if (maxCharges > 0) ready = charges > 0 ? 0 : trait.AbilityReadyTick(idx);

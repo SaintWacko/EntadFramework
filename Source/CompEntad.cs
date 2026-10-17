@@ -521,6 +521,7 @@ namespace EntadFramework
             // Trait changes are rare (generation, dev tools), so clearing every affected stat here is cheap and keeps
             // the game's stat caches for the item and its holder from serving a pre-change value.
             ClearStatCaches();
+            EntadAuras.Refresh(this);
             EntadStorage.Refresh(this, parent.Spawned);
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
@@ -672,6 +673,7 @@ namespace EntadFramework
                 // A bond whose persona trait is gone (def removed or renamed away) mustn't hold the pawn's slot
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
+                EntadAuras.Refresh(this);
             }
         }
 
@@ -783,6 +785,8 @@ namespace EntadFramework
                     infoString.AppendLine(" - " + trait.def.triggers[i].Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
                 }
                 if (trait.def.HasPortableSpace && trait.IsRevealed(EntadEffectKind.Space)) infoString.AppendLine(" - " + EntadPortableSpace.CardLine(trait));
+                if (trait.def.aura?.hediff != null && trait.IsRevealed(EntadEffectKind.Aura))
+                    infoString.AppendLine(" - " + "EF_Card_Aura".Translate(trait.def.aura.hediff.LabelCap, UnityEngine.Mathf.RoundToInt(EntadAuras.Radius(trait))));
                 if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
                 if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
                     infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));

@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Aura traits (EntadAuras.cs): a hediff given to pawns near the carrier of the gear or near the furniture, and
+       refreshed every second while they stay in range and in sight. Each hediff fades about 7 seconds after the
+       pawn leaves. Furniture auras need power when the building uses it. A bound furniture aura reaches everyone,
+       but only while a bound pawn is in range. -->
+
+  <!-- Aura ground glow: Combat Command's mask texture in white, so each aura tints it (EntadAura sets
+       instanceColor from its ringColor or glowColor). The texture ships with Ideology, so without it this def
+       doesn't load and auras show only their ring. Maintained every tick by EntadAuras and fades without it. -->
+  <ThingDef ParentName="MoteBase" MayRequire="Ludeon.RimWorld.Ideology">
+    <defName>Entad_Mote_AuraGlow</defName>
+    <thingClass>MoteAttached</thingClass>
+    <altitudeLayer>LightingOverlay</altitudeLayer>
+    <drawOffscreen>true</drawOffscreen>
+    <mote>
+      <solidTime>9999999</solidTime>
+      <needsMaintenance>true</needsMaintenance>
+      <!-- The mote may tick before EntadAuras maintains it, so it must survive one unmaintained tick or it would
+           be destroyed and respawned every tick. -->
+      <fadeOutUnmaintained>true</fadeOutUnmaintained>
+      <fadeOutTime>0.1</fadeOutTime>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <texPath>Things/Mote/CombatCommandMask</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>2</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <!-- Aura link line: Combat Command's line, drawn through Graphic_Mote so each aura can tint it. Ideology's
+       texture. -->
+  <ThingDef ParentName="MoteBase" MayRequire="Ludeon.RimWorld.Ideology">
+    <defName>Entad_Mote_AuraLink</defName>
+    <thingClass>MoteDualAttached</thingClass>
+    <altitudeLayer>MoteLow</altitudeLayer>
+    <mote>
+      <fadeInTime>0.1</fadeInTime>
+      <fadeOutTime>0.1</fadeOutTime>
+      <solidTime>999999</solidTime>
+      <needsMaintenance>true</needsMaintenance>
+      <fadeOutUnmaintained>true</fadeOutUnmaintained>
+      <rotateTowardsTarget>true</rotateTowardsTarget>
+      <scaleToConnectTargets>true</scaleToConnectTargets>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <shaderType>MoteGlow</shaderType>
+      <texPath>Things/Mote/CombatCommandLinkLine</texPath>
+    </graphicData>
+  </ThingDef>
+
+  <!-- Gear -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_RallyingAura</defName>
+    <label>Rallying</label>
+    <description>In a fight, the carrier steadies their allies. Friendly people and animals within 7 tiles that the carrier can see feel 30% less pain and do 20% more melee damage.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <aura>
+      <radius>6.9</radius>
+      <hediff>Entad_Hediff_AuraRallied</hediff>
+      <affectsAllies>true</affectsAllies>
+      <onlyInCombat>true</onlyInCombat>
+      <ringColor>(1.0, 0.8, 0.35, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AuraRallied</defName>
+    <label>rallied</label>
+    <description>Steadied by an ally's entad. It fades soon after the ally is out of range or the fight ends.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1.0, 0.8, 0.35)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>400</disappearsAfterTicks>
+        <showRemainingTime>false</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <painFactor>0.7</painFactor>
+        <statFactors>
+          <MeleeDamageFactor>1.2</MeleeDamageFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_DreadAura</defName>
+    <label>Dread</label>
+    <description>An aura of dread surrounds the carrier. Living enemies within 8 tiles that the carrier can see lose 10% consciousness and 15% moving. Mechanoids and entities don't feel it.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Legendary</rarity>
+    <aura>
+      <radius>7.9</radius>
+      <hediff>Entad_Hediff_AuraDread</hediff>
+      <affectsEnemies>true</affectsEnemies>
+      <ringColor>(0.7, 0.35, 0.9, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AuraDread</defName>
+    <label>dread</label>
+    <description>Gripped by dread from an enemy's entad. It fades soon after the enemy is out of range.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.6, 0.4, 0.7)</defaultLabelColor>
+    <isBad>true</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>400</disappearsAfterTicks>
+        <showRemainingTime>false</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li>
+            <capacity>Consciousness</capacity>
+            <offset>-0.1</offset>
+          </li>
+          <li>
+            <capacity>Moving</capacity>
+            <offset>-0.15</offset>
+          </li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SteadyingAura</defName>
+    <label>Steadying</label>
+    <description>The carrier and friendly people within 6 tiles that the carrier can see have a mental break threshold 4% lower.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <aura>
+      <radius>5.9</radius>
+      <hediff>Entad_Hediff_AuraSteadied</hediff>
+      <affectsSelf>true</affectsSelf>
+      <affectsAllies>true</affectsAllies>
+      <affectsAnimals>false</affectsAnimals>
+      <ringColor>(0.5, 0.75, 1.0, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AuraSteadied</defName>
+    <label>steadied</label>
+    <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.5, 0.75, 1.0)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>400</disappearsAfterTicks>
+        <showRemainingTime>false</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets>
+          <MentalBreakThreshold>-0.04</MentalBreakThreshold>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <!-- Furniture -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SereneAura</defName>
+    <label>Serene Presence</label>
+    <description>People near this furniture who can see it feel calmer: +3 mood within 5 tiles. The range grows with rarity.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraSerene</hediff>
+      <affectsAllies>true</affectsAllies>
+      <affectsNeutrals>true</affectsNeutrals>
+      <affectsAnimals>false</affectsAnimals>
+      <ringColor>(0.55, 0.9, 0.7, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AuraSerene</defName>
+    <label>serene</label>
+    <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.55, 0.9, 0.7)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>400</disappearsAfterTicks>
+        <showRemainingTime>false</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li />
+    </stages>
+  </HediffDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_AuraSerene</defName>
+    <workerClass>ThoughtWorker_Hediff</workerClass>
+    <hediff>Entad_Hediff_AuraSerene</hediff>
+    <validWhileDespawned>true</validWhileDespawned>
+    <stages>
+      <li>
+        <label>serene presence</label>
+        <description>Something nearby puts me at ease.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_MendingAura</defName>
+    <label>Mending Ward</label>
+    <description>Wounds heal 30% faster on friendly people and animals within 5 tiles of this furniture that can see it. The range grows with rarity.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraMending</hediff>
+      <affectsAllies>true</affectsAllies>
+      <ringColor>(0.95, 0.55, 0.55, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef>
+    <defName>Entad_Hediff_AuraMending</defName>
+    <label>mending ward</label>
+    <description>A nearby entad speeds up healing. It fades soon after leaving its range.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.95, 0.55, 0.55)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>400</disappearsAfterTicks>
+        <showRemainingTime>false</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statFactors>
+          <InjuryHealingFactor>1.3</InjuryHealingFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+</Defs>

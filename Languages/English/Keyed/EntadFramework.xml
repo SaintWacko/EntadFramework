@@ -99,6 +99,7 @@
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
+  <EF_Card_Aura>Aura: {0}, within {1} tiles</EF_Card_Aura>
   <EF_Card_Reloadable>Charges {0} / {1}, reloaded with {2} ({3} per charge)</EF_Card_Reloadable>
   <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
   <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
@@ -158,6 +159,9 @@
 
   <EF_Settings_Discovery>Discovery</EF_Settings_Discovery>
   <EF_Settings_HideTraits>Hide traits until revealed</EF_Settings_HideTraits>
+  <EF_Settings_Visuals>Visuals</EF_Settings_Visuals>
+  <EF_Settings_AuraEffects>Aura glow and links</EF_Settings_AuraEffects>
+  <EF_Settings_AuraEffects_Tip>With Ideology, an active aura you know about lights the ground it covers and draws a line to each pawn it affects. Without Ideology, or with this off, selecting the carrier or furniture outlines the aura's range instead.</EF_Settings_AuraEffects_Tip>
   <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
   <EF_Settings_Generation>Generation</EF_Settings_Generation>
   <EF_Settings_WeaponWeight>Weapon-specific trait weight: x{0}</EF_Settings_WeaponWeight>
@@ -207,6 +211,7 @@
   <EF_Settings_TraitRow>{0} ({1})</EF_Settings_TraitRow>
   <EF_Summary_Damage>Damage</EF_Summary_Damage>
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
+  <EF_Summary_Aura>{0} aura</EF_Summary_Aura>
   <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
 
 
