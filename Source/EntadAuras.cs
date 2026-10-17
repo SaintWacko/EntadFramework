@@ -64,6 +64,43 @@ namespace EntadFramework
         // Below 0: sized from the radius
         public float pulseScale = -1f;
 
+        // With Ideology: Combat Command's soft ground glow, sized to the radius, while the aura is active and known.
+        // It is a plain circle that ignores walls, and it replaces the selection ring while it is up. The ring (which
+        // does stop at walls) shows instead without Ideology, with aura effects off in the settings, or while the
+        // aura is idle.
+        public bool showGlow = true;
+        // Unset (alpha 0) uses ringColor
+        public Color glowColor = new Color(0f, 0f, 0f, 0f);
+        // The glow is additive, so the colour is scaled down by this. 0.125 is about Combat Command's brightness.
+        public float glowStrength = 0.125f;
+        // A different attached mote (a MoteAttached) to use as the glow. Defaults to Entad_Mote_AuraGlow.
+        public ThingDef glowMote;
+
+        // With Ideology: Combat Command's line from each pawn it affects back to the source, while it keeps
+        // affecting them. Skipped when the hediff has its own HediffComp_Link, which draws the line instead.
+        public bool showLinks = true;
+        // Unset (alpha 0) uses ringColor
+        public Color linkColor = new Color(0f, 0f, 0f, 0f);
+        // A different line mote (a MoteDualAttached). Defaults to Entad_Mote_AuraLink.
+        public ThingDef linkMote;
+
+        // Null without Ideology (the default motes don't load), with the effect switched off here or in the settings
+        public ThingDef GlowDef => showGlow && EntadSettings.AuraEffects ? glowMote ?? EntadAuraDefOf.Entad_Mote_AuraGlow : null;
+
+        public ThingDef LinkDef => showLinks && EntadSettings.AuraEffects && !(hediff?.HasComp(typeof(HediffComp_Link)) ?? false)
+            ? linkMote ?? EntadAuraDefOf.Entad_Mote_AuraLink : null;
+
+        public Color LinkInstanceColor => linkColor.a > 0f ? linkColor : ringColor;
+
+        public Color GlowInstanceColor
+        {
+            get
+            {
+                var c = glowColor.a > 0f ? glowColor : ringColor;
+                return new Color(c.r * glowStrength, c.g * glowStrength, c.b * glowStrength, 1f);
+            }
+        }
+
         public bool AffectsSomeone => affectsSelf || affectsAllies || affectsNeutrals || affectsEnemies;
 
         public IEnumerable<string> ConfigErrors(string defName)
@@ -73,6 +110,10 @@ namespace EntadFramework
                 yield return $"{defName}: aura radius {radius} must be above 0 and at most {GenRadial.MaxRadialPatternRadius}";
             if (intervalTicks < 1) yield return $"{defName}: aura intervalTicks must be at least 1";
             if (pulseFleck != null && pulseIntervalTicks < 1) yield return $"{defName}: aura pulseIntervalTicks must be at least 1";
+            if (glowMote != null && !typeof(MoteAttached).IsAssignableFrom(glowMote.thingClass))
+                yield return $"{defName}: aura glowMote {glowMote.defName} must have a MoteAttached thingClass";
+            if (linkMote != null && !typeof(MoteDualAttached).IsAssignableFrom(linkMote.thingClass))
+                yield return $"{defName}: aura linkMote {linkMote.defName} must have a MoteDualAttached thingClass";
             if (!AffectsSomeone) yield return $"{defName}: aura affects nobody: set affectsAllies, affectsEnemies, affectsNeutrals or affectsSelf";
             if (hediff != null && severityPerDay <= 0f)
             {
@@ -88,6 +129,16 @@ namespace EntadFramework
         }
     }
 
+    [DefOf]
+    public static class EntadAuraDefOf
+    {
+        // Combat Command's ground glow and link line, recolourable. Ideology's textures, so null without it.
+        [MayRequireIdeology] public static ThingDef Entad_Mote_AuraGlow;
+        [MayRequireIdeology] public static ThingDef Entad_Mote_AuraLink;
+
+        static EntadAuraDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadAuraDefOf)); }
+    }
+
     // Runs every aura in the game. Only items holding an aura trait are registered (on trait changes and on load),
     // so a game without one costs an empty-list check per tick. Each registered item is looked at once per its
     // interval, staggered by its thing ID, and then only does work when its source is on a map: one pass over the
@@ -101,7 +152,12 @@ namespace EntadFramework
         private static readonly List<CompEntad> sources = new List<CompEntad>();
         private static readonly List<Pawn> tmpHit = new List<Pawn>();
 
-        public EntadAuras(Game game) { sources.Clear(); }
+        // Glow and link motes, one entry per aura trait that has been active recently with visuals on. Motes need
+        // maintaining every tick or they fade, so these are looked at every tick; an entry drops out a little after
+        // its aura goes idle, and no entry is ever made without Ideology or with aura effects off.
+        private static readonly List<AuraVisual> visuals = new List<AuraVisual>();
+
+        public EntadAuras(Game game) { sources.Clear(); visuals.Clear(); }
 
         public static void Refresh(CompEntad comp)
         {
@@ -136,6 +192,18 @@ namespace EntadFramework
         {
             if (sources.Count == 0) return;
             int now = Find.TickManager.TicksGame;
+            for (int i = visuals.Count - 1; i >= 0; i--)
+            {
+                bool keep;
+                try { keep = visuals[i].Tick(now); }
+                catch (System.Exception e)
+                {
+                    // One bad aura (a glowMote that isn't a mote) mustn't stop the others
+                    Log.ErrorOnce($"[Entad Framework] aura visuals for {visuals[i].trait?.def?.defName} failed and were turned off: {e}", (visuals[i].trait?.def?.shortHash ?? 0) ^ 0x6B21);
+                    keep = false;
+                }
+                if (!keep) { visuals[i].DestroyAll(); visuals.RemoveAt(i); }
+            }
             for (int i = sources.Count - 1; i >= 0; i--)
             {
                 var comp = sources[i];
@@ -207,10 +275,22 @@ namespace EntadFramework
                 if (affects) tmpHit.Add(p);
             }
             if (needBound && !boundHere) { tmpHit.Clear(); return; }
+            AuraVisual vis = null;
+            if (aura.GlowDef != null || aura.LinkDef != null)
+            {
+                vis = VisualFor(trait);
+                vis.lastActive = Find.TickManager.TicksGame;
+            }
+            bool lines = vis != null && aura.LinkDef != null;
             bool any = false;
             // Backwards and from a copy: a buildup can kill, which changes the map's pawn list
             for (int i = tmpHit.Count - 1; i >= 0; i--)
-                if (!tmpHit[i].Dead && Give(tmpHit[i], aura)) any = true;
+            {
+                var p = tmpHit[i];
+                if (p.Dead || !Give(p, aura)) continue;
+                any = true;
+                if (lines && p != source) vis.linkHits[p] = vis.lastActive;
+            }
             tmpHit.Clear();
             if (any && !trait.IsRevealed(EntadEffectKind.Aura) && !center.Fogged(map))
                 trait.Reveal(EntadEffectKind.Aura, announce: source.Faction == Faction.OfPlayer);
@@ -218,7 +298,7 @@ namespace EntadFramework
 
         // Range and sight are measured from the source's whole footprint, so a 3x3 bed reaches as far on every side
         // and its own cells don't block it. A pawn's footprint is its one cell.
-        private static bool InRange(CellRect rect, IntVec3 c, float radius) => rect.ClosestCellTo(c).InHorDistOf(c, radius);
+        public static bool InRange(CellRect rect, IntVec3 c, float radius) => rect.ClosestCellTo(c).InHorDistOf(c, radius);
 
         private static bool Sees(CellRect rect, IntVec3 c, Map map) =>
             GenSight.LineOfSight(rect.ClosestCellTo(c), c, map, rect, CellRect.SingleCell(c));
@@ -236,6 +316,22 @@ namespace EntadFramework
             ringCells.Clear();
         }
 
+        private static AuraVisual VisualFor(AppliedEntadTrait trait)
+        {
+            for (int i = 0; i < visuals.Count; i++) if (visuals[i].trait == trait) return visuals[i];
+            var v = new AuraVisual { trait = trait };
+            visuals.Add(v);
+            return v;
+        }
+
+        // While the glow is up it shows the range instead of the ring
+        private static bool GlowUp(AppliedEntadTrait trait)
+        {
+            for (int i = 0; i < visuals.Count; i++)
+                if (visuals[i].trait == trait) return visuals[i].glow != null && !visuals[i].glow.Destroyed;
+            return false;
+        }
+
         public static bool Affects(Thing source, Pawn p, EntadAura aura)
         {
             var r = p.RaceProps;
@@ -249,6 +345,104 @@ namespace EntadFramework
             Faction f = source.Faction;
             bool ally = f != null && (p.Faction == f || (p.Faction != null && p.Faction.RelationKindWith(f) == FactionRelationKind.Ally));
             return ally ? aura.affectsAllies : aura.affectsNeutrals;
+        }
+
+        // Ported from Bastle Framework's BastleTrait_Aura.GlowTick and LinksTick. The motes keep living while they
+        // are maintained every tick and fade out on their own within a tick or two when they aren't.
+        private class AuraVisual
+        {
+            public AppliedEntadTrait trait;
+            public int lastActive = -999999;
+            public Mote glow;
+            private Thing glowOn;
+            public readonly Dictionary<Pawn, int> linkHits = new Dictionary<Pawn, int>();
+            private readonly Dictionary<Pawn, Mote> links = new Dictionary<Pawn, Mote>();
+            private static readonly List<Pawn> tmpPawns = new List<Pawn>();
+
+            // False: drop this entry (its trait is gone, or the aura has been idle for a while)
+            public bool Tick(int now)
+            {
+                var comp = trait.owner;
+                var aura = trait.def.aura;
+                if (comp?.parent == null || comp.parent.Destroyed || aura == null || !comp.activeTraits.Contains(trait)) return false;
+                // A scan can be up to 15 ticks late off camera, so the aura counts as active until the next one is due
+                int keep = aura.intervalTicks + 15;
+                Thing source = comp.parent.Spawned ? comp.parent : comp.Holder;
+                if (source != glowOn) { DestroyAll(); glowOn = source; }
+                bool show = now - lastActive <= keep && source != null && source.Spawned && source.Map == Find.CurrentMap
+                    && trait.IsRevealed(EntadEffectKind.Aura) && !source.Position.Fogged(source.Map);
+                if (!show)
+                {
+                    DestroyAll();
+                    return now - lastActive <= keep * 2;
+                }
+                var gd = aura.GlowDef;
+                if (gd == null) DestroyGlow();
+                else
+                {
+                    if (glow == null || glow.Destroyed)
+                    {
+                        // Entad_Mote_AuraGlow is 2 cells across at scale 1. Range is measured from the footprint, so a
+                        // bigger building's glow is wider by the cells beyond its centre.
+                        IntVec2 size = source.def.size;
+                        float extra = source is Pawn ? 0f : (Mathf.Max(size.x, size.z) - 1) * 0.5f;
+                        glow = MoteMaker.MakeAttachedOverlay(source, gd, Vector3.zero, Radius(trait) + extra + 0.1f);
+                        glow.instanceColor = aura.GlowInstanceColor;
+                    }
+                    glow.Maintain();
+                }
+                var ld = aura.LinkDef;
+                if (ld == null) DestroyLinks();
+                else LinksTick(source, ld, aura, now, keep);
+                return true;
+            }
+
+            private void LinksTick(Thing source, ThingDef ld, EntadAura aura, int now, int keep)
+            {
+                if (linkHits.Count == 0) return;
+                Map map = source.Map;
+                CellRect rect = source.OccupiedRect();
+                float radius = Radius(trait);
+                tmpPawns.Clear();
+                tmpPawns.AddRange(linkHits.Keys);
+                for (int i = 0; i < tmpPawns.Count; i++)
+                {
+                    var p = tmpPawns[i];
+                    links.TryGetValue(p, out var m);
+                    // A line lasts until the next scan could have renewed it, and drops as soon as the pawn leaves range
+                    if (now - linkHits[p] > keep || p.Dead || !p.Spawned || p.Map != map
+                        || !InRange(rect, p.Position, radius) || p.Position.Fogged(map))
+                    {
+                        if (m != null && !m.Destroyed) m.Destroy();
+                        links.Remove(p);
+                        linkHits.Remove(p);
+                        continue;
+                    }
+                    if (m == null || m.Destroyed)
+                    {
+                        m = MoteMaker.MakeInteractionOverlay(ld, p, source);
+                        m.instanceColor = aura.LinkInstanceColor;
+                        links[p] = m;
+                    }
+                    m.Maintain();
+                }
+                tmpPawns.Clear();
+            }
+
+            private void DestroyGlow()
+            {
+                if (glow != null && !glow.Destroyed) glow.Destroy();
+                glow = null;
+            }
+
+            private void DestroyLinks()
+            {
+                foreach (var m in links.Values) if (m != null && !m.Destroyed) m.Destroy();
+                links.Clear();
+                linkHits.Clear();
+            }
+
+            public void DestroyAll() { DestroyGlow(); DestroyLinks(); }
         }
 
         private static bool Give(Pawn p, EntadAura aura)
@@ -274,13 +468,13 @@ namespace EntadFramework
         {
             var aura = trait.def.aura;
             Map map = source.Map;
-            if (map != Find.CurrentMap || !trait.IsRevealed(EntadEffectKind.Aura) || source.Position.Fogged(map)) return;
+            if (map != Find.CurrentMap || !EntadSettings.AuraEffects || !trait.IsRevealed(EntadEffectKind.Aura) || source.Position.Fogged(map)) return;
             // PsycastAreaEffect is 2.3 tiles across at scale 1 and grows as it fades
             float scale = aura.pulseScale > 0f ? aura.pulseScale : Radius(trait) * 0.7f;
             FleckMaker.Static(source.DrawPos, map, aura.pulseFleck, scale);
         }
 
-        // The range ring of each known aura on the selected pawns' gear and on selected furniture. Per frame, but
+        // The range ring of each known aura on the selected pawns' gear and on selected furniture, unless its glow is up. Per frame, but
         // returns at once when no aura exists, and only draws for sources that are selected.
         public override void GameComponentUpdate()
         {
@@ -297,7 +491,7 @@ namespace EntadFramework
                 {
                     var trait = comp.activeTraits[t];
                     var aura = trait.def.aura;
-                    if (aura == null || !aura.showRing || !trait.IsRevealed(EntadEffectKind.Aura)) continue;
+                    if (aura == null || !aura.showRing || !trait.IsRevealed(EntadEffectKind.Aura) || GlowUp(trait)) continue;
                     DrawRing(source, Radius(trait), aura, map);
                 }
             }

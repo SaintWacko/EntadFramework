@@ -5,6 +5,52 @@
        pawn leaves. Furniture auras need power when the building uses it. A bound furniture aura reaches everyone,
        but only while a bound pawn is in range. -->
 
+  <!-- Aura ground glow: Combat Command's mask texture in white, so each aura tints it (EntadAura sets
+       instanceColor from its ringColor or glowColor). The texture ships with Ideology, so without it this def
+       doesn't load and auras show only their ring. Maintained every tick by EntadAuras and fades without it. -->
+  <ThingDef ParentName="MoteBase" MayRequire="Ludeon.RimWorld.Ideology">
+    <defName>Entad_Mote_AuraGlow</defName>
+    <thingClass>MoteAttached</thingClass>
+    <altitudeLayer>LightingOverlay</altitudeLayer>
+    <drawOffscreen>true</drawOffscreen>
+    <mote>
+      <solidTime>9999999</solidTime>
+      <needsMaintenance>true</needsMaintenance>
+      <!-- The mote may tick before EntadAuras maintains it, so it must survive one unmaintained tick or it would
+           be destroyed and respawned every tick. -->
+      <fadeOutUnmaintained>true</fadeOutUnmaintained>
+      <fadeOutTime>0.1</fadeOutTime>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <texPath>Things/Mote/CombatCommandMask</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>2</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <!-- Aura link line: Combat Command's line, drawn through Graphic_Mote so each aura can tint it. Ideology's
+       texture. -->
+  <ThingDef ParentName="MoteBase" MayRequire="Ludeon.RimWorld.Ideology">
+    <defName>Entad_Mote_AuraLink</defName>
+    <thingClass>MoteDualAttached</thingClass>
+    <altitudeLayer>MoteLow</altitudeLayer>
+    <mote>
+      <fadeInTime>0.1</fadeInTime>
+      <fadeOutTime>0.1</fadeOutTime>
+      <solidTime>999999</solidTime>
+      <needsMaintenance>true</needsMaintenance>
+      <fadeOutUnmaintained>true</fadeOutUnmaintained>
+      <rotateTowardsTarget>true</rotateTowardsTarget>
+      <scaleToConnectTargets>true</scaleToConnectTargets>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <shaderType>MoteGlow</shaderType>
+      <texPath>Things/Mote/CombatCommandLinkLine</texPath>
+    </graphicData>
+  </ThingDef>
+
   <!-- Gear -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RallyingAura</defName>

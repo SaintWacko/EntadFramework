@@ -104,6 +104,9 @@ namespace EntadFramework
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
+        // Aura ground glow and link lines (need Ideology). Off: auras show only their range ring when selected.
+        public static bool AuraEffects = true;
+
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
         public static bool IsDisabled(EntadTraitDef def) => DisabledTraits.Contains(def.defName);
@@ -120,6 +123,7 @@ namespace EntadFramework
         public static void ResetToDefaults()
         {
             HideTraits = true;
+            AuraEffects = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -151,6 +155,7 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
+            Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
             var disabled = DisabledTraits.ToList();
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
@@ -370,6 +375,10 @@ namespace EntadFramework
         {
             Section(list, "EF_Settings_Discovery");
             list.CheckboxLabeled("EF_Settings_HideTraits".Translate(), ref EntadSettings.HideTraits, "EF_Settings_HideTraits_Tip".Translate());
+            list.Gap();
+
+            Section(list, "EF_Settings_Visuals");
+            list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
             list.Gap();
 
             Section(list, "EF_Settings_Generation");
