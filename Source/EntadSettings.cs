@@ -104,7 +104,8 @@ namespace EntadFramework
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
-        // Aura ground glow and link lines (need Ideology). Off: auras show only their range ring when selected.
+        // Aura ground glow and link lines (need Ideology). Off: auras show their range ring when selected instead.
+        // Pulse flecks don't need Ideology and aren't affected.
         public static bool AuraEffects = true;
 
         // defNames of traits the player has switched off; they are never picked when generating
