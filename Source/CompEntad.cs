@@ -786,7 +786,7 @@ namespace EntadFramework
                 }
                 if (trait.def.HasPortableSpace && trait.IsRevealed(EntadEffectKind.Space)) infoString.AppendLine(" - " + EntadPortableSpace.CardLine(trait));
                 if (trait.def.aura?.hediff != null && trait.IsRevealed(EntadEffectKind.Aura))
-                    infoString.AppendLine(" - " + "EF_Card_Aura".Translate(trait.def.aura.hediff.LabelCap, EntadAuras.Radius(trait).ToString("0.#")));
+                    infoString.AppendLine(" - " + "EF_Card_Aura".Translate(trait.def.aura.hediff.LabelCap, UnityEngine.Mathf.RoundToInt(EntadAuras.Radius(trait))));
                 if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
                 if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
                     infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));

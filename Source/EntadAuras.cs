@@ -188,6 +188,7 @@ namespace EntadFramework
             if (aura.hediff == null) return;
             Map map = source.Map;
             IntVec3 center = source.Position;
+            CellRect rect = source.OccupiedRect();
             float radius = Radius(trait);
             // Bound furniture works for everyone, but only while someone it is bound to is in range
             bool needBound = source == comp.parent && comp.IsBound;
@@ -197,11 +198,11 @@ namespace EntadFramework
             for (int i = 0; i < pawns.Count; i++)
             {
                 var p = pawns[i];
-                if (p.Dead || !p.Position.InHorDistOf(center, radius)) continue;
+                if (p.Dead || !InRange(rect, p.Position, radius)) continue;
                 bool affects = Affects(source, p, aura);
                 bool check = affects || (needBound && !boundHere);
                 if (!check) continue;
-                if (aura.blockedByWalls && p != source && !GenSight.LineOfSight(center, p.Position, map)) continue;
+                if (aura.blockedByWalls && p != source && !Sees(rect, p.Position, map)) continue;
                 if (needBound && !boundHere && comp.ActiveFor(p)) boundHere = true;
                 if (affects) tmpHit.Add(p);
             }
@@ -213,6 +214,26 @@ namespace EntadFramework
             tmpHit.Clear();
             if (any && !trait.IsRevealed(EntadEffectKind.Aura) && !center.Fogged(map))
                 trait.Reveal(EntadEffectKind.Aura, announce: source.Faction == Faction.OfPlayer);
+        }
+
+        // Range and sight are measured from the source's whole footprint, so a 3x3 bed reaches as far on every side
+        // and its own cells don't block it. A pawn's footprint is its one cell.
+        private static bool InRange(CellRect rect, IntVec3 c, float radius) => rect.ClosestCellTo(c).InHorDistOf(c, radius);
+
+        private static bool Sees(CellRect rect, IntVec3 c, Map map) =>
+            GenSight.LineOfSight(rect.ClosestCellTo(c), c, map, rect, CellRect.SingleCell(c));
+
+        private static readonly List<IntVec3> ringCells = new List<IntVec3>();
+
+        // The cells in range (and in sight, when walls block it), outlined. Only while a source is selected.
+        private static void DrawRing(Thing source, float radius, EntadAura aura, Map map)
+        {
+            CellRect rect = source.OccupiedRect();
+            ringCells.Clear();
+            foreach (IntVec3 c in rect.ExpandedBy(Mathf.CeilToInt(radius)).ClipInsideMap(map))
+                if (InRange(rect, c, radius) && (!aura.blockedByWalls || rect.Contains(c) || Sees(rect, c, map))) ringCells.Add(c);
+            GenDraw.DrawFieldEdges(ringCells, aura.ringColor);
+            ringCells.Clear();
         }
 
         public static bool Affects(Thing source, Pawn p, EntadAura aura)
@@ -277,12 +298,7 @@ namespace EntadFramework
                     var trait = comp.activeTraits[t];
                     var aura = trait.def.aura;
                     if (aura == null || !aura.showRing || !trait.IsRevealed(EntadEffectKind.Aura)) continue;
-                    IntVec3 c = source.Position;
-                    float r = Radius(trait);
-                    if (aura.blockedByWalls)
-                        GenDraw.DrawRadiusRing(c, r, aura.ringColor, x => x.InBounds(map) && GenSight.LineOfSight(c, x, map));
-                    else
-                        GenDraw.DrawRadiusRing(c, r, aura.ringColor);
+                    DrawRing(source, Radius(trait), aura, map);
                 }
             }
         }

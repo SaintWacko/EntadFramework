@@ -92,7 +92,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SteadyingAura</defName>
     <label>Steadying</label>
-    <description>The carrier and friendly people within 6 tiles that the carrier can see are 4% less likely to have a mental break.</description>
+    <description>The carrier and friendly people within 6 tiles that the carrier can see have a mental break threshold 4% lower.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <aura>
@@ -189,7 +189,6 @@
       <radius>4.9</radius>
       <hediff>Entad_Hediff_AuraMending</hediff>
       <affectsAllies>true</affectsAllies>
-      <whileAsleep>true</whileAsleep>
       <ringColor>(0.95, 0.55, 0.55, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
