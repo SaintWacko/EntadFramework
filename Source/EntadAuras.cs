@@ -157,7 +157,7 @@ namespace EntadFramework
         // its aura goes idle, and no entry is ever made without Ideology or with aura effects off.
         private static readonly List<AuraVisual> visuals = new List<AuraVisual>();
 
-        public EntadAuras(Game game) { sources.Clear(); visuals.Clear(); }
+        public EntadAuras(Game game) { sources.Clear(); visuals.Clear(); rings.Clear(); }
 
         public static void Refresh(CompEntad comp)
         {

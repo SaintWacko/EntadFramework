@@ -139,9 +139,11 @@ namespace EntadFramework
     }
 
     // Equip and unequip. Vanilla's Pawn_EquipmentTracker.Notify_EquipmentAdded/Removed and
-    // Pawn_ApparelTracker.Notify_ApparelAdded/Removed are the only callers of Thing.Notify_Equipped/Unequipped, and
-    // call it last; ThingWithComps passes it on to every comp. Until build 183 this was four Harmony postfixes on those
-    // tracker methods, which ran at the same moment but for every item on every pawn: each piece of apparel put on a
+    // Pawn_ApparelTracker.Notify_ApparelAdded/Removed are the only callers of Thing.Notify_Equipped/Unequipped;
+    // ThingWithComps passes it on to every comp. Until build 183 this was four Harmony postfixes on those tracker
+    // methods. Three call the item last, so nothing moved; Notify_EquipmentRemoved calls it first, so Revoke now runs
+    // before the bladelink and unique weapon comps hear of the loss, which touches nothing of ours. The postfixes ran
+    // for every item on every pawn: each piece of apparel put on a
     // generated raider ran SyncEquipped and its two dictionaries. The overrides run only for entads.
     public partial class CompEntad
     {
