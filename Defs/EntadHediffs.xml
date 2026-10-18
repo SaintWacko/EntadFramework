@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
   <!-- Parent for hediffs an entad gives: equipped, trigger, furniture, bond and aura hediffs. Other mods may use it.
-       A healer mech serum would remove one while the item still grants it, and the scenario editor has no use for
-       them, so both are off. Set isBad true for a harmful one; a child's hediffClass replaces this one. -->
+       everCurableByItem is off so a healer mech serum can't remove a harmful one (isBad true) while the item still
+       grants it. A child's hediffClass replaces this one. Buildup auras (severityPerDay) use this parent, not the
+       aura one below. -->
   <HediffDef Name="EntadHediffBase" Abstract="True">
     <hediffClass>HediffWithComps</hediffClass>
     <isBad>false</isBad>
     <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
   </HediffDef>
 
   <!-- Parent for aura hediffs (EntadAuras.cs). Each scan renews the hediff, and it fades 400 ticks after the last
-       one: out of range, out of sight, or the source no longer active. A child that adds its own comps gets them
-       beside this one; list entries are appended, not replaced. -->
+       one: out of range, out of sight, or the source no longer active. A child's comps are added beside this one,
+       so for a different fade time write <comps Inherit="False"> and list its own Disappears comp. -->
   <HediffDef Name="EntadAuraHediffBase" ParentName="EntadHediffBase" Abstract="True">
     <comps>
       <li Class="HediffCompProperties_Disappears">

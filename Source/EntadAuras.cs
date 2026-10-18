@@ -115,12 +115,23 @@ namespace EntadFramework
             if (linkMote != null && !typeof(MoteDualAttached).IsAssignableFrom(linkMote.thingClass))
                 yield return $"{defName}: aura linkMote {linkMote.defName} must have a MoteDualAttached thingClass";
             if (!AffectsSomeone) yield return $"{defName}: aura affects nobody: set affectsAllies, affectsEnemies, affectsNeutrals or affectsSelf";
-            if (hediff != null && severityPerDay <= 0f)
+            if (hediff != null)
             {
                 HediffCompProperties_Disappears d = null;
+                int disappears = 0;
                 if (hediff.comps != null)
-                    foreach (var c in hediff.comps) if (c is HediffCompProperties_Disappears dc) { d = dc; break; }
-                if (d == null)
+                    foreach (var c in hediff.comps) if (c is HediffCompProperties_Disappears dc) { d = d ?? dc; disappears++; }
+                // Give refreshes only the first Disappears comp (TryGetComp), so a second one, e.g. a child of
+                // EntadAuraHediffBase that added its own instead of replacing the inherited list, runs out in range
+                if (disappears > 1)
+                    yield return $"{defName}: aura hediff {hediff.defName} has {disappears} HediffCompProperties_Disappears; only the first is refreshed. Use <comps Inherit=\"False\"> to replace an inherited one";
+                // A buildup aura only adjusts severity and never resets the timer, so the hediff would vanish mid-buildup
+                if (severityPerDay > 0f)
+                {
+                    if (d != null)
+                        yield return $"{defName}: buildup aura hediff {hediff.defName} has a HediffCompProperties_Disappears, which removes it however long the pawn stays in range. Use EntadHediffBase, not EntadAuraHediffBase, and let severity fall off instead";
+                }
+                else if (d == null)
                     yield return $"{defName}: aura hediff {hediff.defName} has no HediffCompProperties_Disappears, so it never wears off after leaving the aura (or set severityPerDay for a buildup)";
                 // +15: off-camera pawns tick in batches, so a refresh can be a little late
                 else if (d.disappearsAfterTicks.min <= intervalTicks + 15)
