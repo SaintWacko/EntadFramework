@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_RestfulCalm</defName>
     <label>restful calm</label>
     <description>A deep, settled calm that dulls pain without clouding the mind.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <defaultLabelColor>(0.7, 1.0, 0.7)</defaultLabelColor>
     <stages>
       <li>

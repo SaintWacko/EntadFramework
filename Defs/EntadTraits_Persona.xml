@@ -99,12 +99,10 @@
     <points>-1</points>
     <bondedHediffs><li>Entad_Hediff_PersonaHunger</li></bondedHediffs>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_PersonaHunger</defName>
     <label>persona hunger</label>
     <description>Hunger is increased by the psychic influence of a bonded weapon.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <duplicationAllowed>false</duplicationAllowed>
     <stages>
       <li>
