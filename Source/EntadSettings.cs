@@ -104,7 +104,8 @@ namespace EntadFramework
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
-        // Aura ground glow and link lines (need Ideology). Off: auras show only their range ring when selected.
+        // Aura ground glow and link lines (need Ideology). Off: auras show their range ring when selected instead.
+        // Pulse flecks don't need Ideology and aren't affected.
         public static bool AuraEffects = true;
 
         // defNames of traits the player has switched off; they are never picked when generating
@@ -160,6 +161,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
             Scribe_Values.Look(ref WeaponSpecificWeight, "weaponSpecificWeight", DefaultWeaponSpecificWeight);
+            WeaponSpecificWeight = Mathf.Clamp(WeaponSpecificWeight, 1f, 10f);
             Scribe_Values.Look(ref UniqueWeaponChance, "uniqueWeaponChance", 0f);
             UniqueWeaponChance = Mathf.Clamp01(UniqueWeaponChance);
             Scribe_Values.Look(ref DrawbackChance, "drawbackChance", DefaultDrawbackChance);

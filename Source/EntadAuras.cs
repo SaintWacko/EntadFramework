@@ -115,12 +115,23 @@ namespace EntadFramework
             if (linkMote != null && !typeof(MoteDualAttached).IsAssignableFrom(linkMote.thingClass))
                 yield return $"{defName}: aura linkMote {linkMote.defName} must have a MoteDualAttached thingClass";
             if (!AffectsSomeone) yield return $"{defName}: aura affects nobody: set affectsAllies, affectsEnemies, affectsNeutrals or affectsSelf";
-            if (hediff != null && severityPerDay <= 0f)
+            if (hediff != null)
             {
                 HediffCompProperties_Disappears d = null;
+                int disappears = 0;
                 if (hediff.comps != null)
-                    foreach (var c in hediff.comps) if (c is HediffCompProperties_Disappears dc) { d = dc; break; }
-                if (d == null)
+                    foreach (var c in hediff.comps) if (c is HediffCompProperties_Disappears dc) { d = d ?? dc; disappears++; }
+                // Give refreshes only the first Disappears comp (TryGetComp), so a second one, e.g. a child of
+                // EntadAuraHediffBase that added its own instead of replacing the inherited list, runs out in range
+                if (disappears > 1)
+                    yield return $"{defName}: aura hediff {hediff.defName} has {disappears} HediffCompProperties_Disappears; only the first is refreshed. Use <comps Inherit=\"False\"> to replace an inherited one";
+                // A buildup aura only adjusts severity and never resets the timer, so the hediff would vanish mid-buildup
+                if (severityPerDay > 0f)
+                {
+                    if (d != null)
+                        yield return $"{defName}: buildup aura hediff {hediff.defName} has a HediffCompProperties_Disappears, which removes it however long the pawn stays in range. Use EntadHediffBase, not EntadAuraHediffBase, and let severity fall off instead";
+                }
+                else if (d == null)
                     yield return $"{defName}: aura hediff {hediff.defName} has no HediffCompProperties_Disappears, so it never wears off after leaving the aura (or set severityPerDay for a buildup)";
                 // +15: off-camera pawns tick in batches, so a refresh can be a little late
                 else if (d.disappearsAfterTicks.min <= intervalTicks + 15)
@@ -157,7 +168,7 @@ namespace EntadFramework
         // its aura goes idle, and no entry is ever made without Ideology or with aura effects off.
         private static readonly List<AuraVisual> visuals = new List<AuraVisual>();
 
-        public EntadAuras(Game game) { sources.Clear(); visuals.Clear(); }
+        public EntadAuras(Game game) { sources.Clear(); visuals.Clear(); rings.Clear(); }
 
         public static void Refresh(CompEntad comp)
         {
@@ -304,17 +315,55 @@ namespace EntadFramework
         private static bool Sees(CellRect rect, IntVec3 c, Map map) =>
             GenSight.LineOfSight(rect.ClosestCellTo(c), c, map, rect, CellRect.SingleCell(c));
 
-        private static readonly List<IntVec3> ringCells = new List<IntVec3>();
+        // The ring's cells, kept per trait between frames. Working them out costs a sight line per cell in range (about
+        // 700 for a radius of 14), so they are redone only when the source moves, the radius or map changes, or every
+        // RingRefreshFrames frames so a wall built or a door shut shows within a third of a second.
+        private class RingCache
+        {
+            public readonly List<IntVec3> cells = new List<IntVec3>();
+            public CellRect rect;
+            public float radius;
+            public Map map;
+            public int builtFrame = -9999;
+            public int drawnFrame;
+        }
+
+        private const int RingRefreshFrames = 20;
+        private static readonly Dictionary<AppliedEntadTrait, RingCache> rings = new Dictionary<AppliedEntadTrait, RingCache>();
+        private static readonly List<AppliedEntadTrait> tmpStaleRings = new List<AppliedEntadTrait>();
+        private static int ringsDrawnThisFrame;
 
         // The cells in range (and in sight, when walls block it), outlined. Only while a source is selected.
-        private static void DrawRing(Thing source, float radius, EntadAura aura, Map map)
+        private static void DrawRing(AppliedEntadTrait trait, Thing source, float radius, EntadAura aura, Map map)
         {
+            int frame = Time.frameCount;
             CellRect rect = source.OccupiedRect();
-            ringCells.Clear();
-            foreach (IntVec3 c in rect.ExpandedBy(Mathf.CeilToInt(radius)).ClipInsideMap(map))
-                if (InRange(rect, c, radius) && (!aura.blockedByWalls || rect.Contains(c) || Sees(rect, c, map))) ringCells.Add(c);
-            GenDraw.DrawFieldEdges(ringCells, aura.ringColor);
-            ringCells.Clear();
+            if (!rings.TryGetValue(trait, out var ring)) rings[trait] = ring = new RingCache();
+            if (ring.map != map || ring.radius != radius || ring.rect != rect || frame - ring.builtFrame >= RingRefreshFrames)
+            {
+                ring.cells.Clear();
+                foreach (IntVec3 c in rect.ExpandedBy(Mathf.CeilToInt(radius)).ClipInsideMap(map))
+                    if (InRange(rect, c, radius) && (!aura.blockedByWalls || rect.Contains(c) || Sees(rect, c, map))) ring.cells.Add(c);
+                ring.map = map;
+                ring.radius = radius;
+                ring.rect = rect;
+                ring.builtFrame = frame;
+            }
+            ring.drawnFrame = frame;
+            ringsDrawnThisFrame++;
+            GenDraw.DrawFieldEdges(ring.cells, aura.ringColor);
+        }
+
+        // Forgets rings not drawn this frame (source deselected, trait removed), so the cache holds only what is on
+        // screen and keeps no removed trait or old map alive. Does nothing in the usual frame where every cached ring
+        // was drawn.
+        private static void PruneRings()
+        {
+            if (rings.Count == ringsDrawnThisFrame) return;
+            int frame = Time.frameCount;
+            foreach (var kv in rings) if (kv.Value.drawnFrame != frame) tmpStaleRings.Add(kv.Key);
+            for (int i = 0; i < tmpStaleRings.Count; i++) rings.Remove(tmpStaleRings[i]);
+            tmpStaleRings.Clear();
         }
 
         private static AuraVisual VisualFor(AppliedEntadTrait trait)
@@ -482,6 +531,13 @@ namespace EntadFramework
         // returns at once when no aura exists, and only draws for sources that are selected.
         public override void GameComponentUpdate()
         {
+            ringsDrawnThisFrame = 0;
+            DrawRings();
+            PruneRings();
+        }
+
+        private static void DrawRings()
+        {
             if (sources.Count == 0 || WorldRendererUtility.WorldRendered) return;
             Map map = Find.CurrentMap;
             if (map == null) return;
@@ -496,7 +552,7 @@ namespace EntadFramework
                     var trait = comp.activeTraits[t];
                     var aura = trait.def.aura;
                     if (aura == null || !aura.showRing || !trait.IsRevealed(EntadEffectKind.Aura) || GlowUp(trait)) continue;
-                    DrawRing(source, Radius(trait), aura, map);
+                    DrawRing(trait, source, Radius(trait), aura, map);
                 }
             }
         }

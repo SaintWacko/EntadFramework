@@ -24,21 +24,28 @@ namespace EntadFramework
         // Additional arbitrary check
         public Predicate<EntadTraitDef> predicate;
 
+        // The sets are public fields, so a caller may well set one to null to mean "no restriction": every check
+        // goes through Has, which treats null like empty.
         public bool Allows(EntadTraitDef def)
         {
-            if (defWhitelist.Count > 0 && !defWhitelist.Contains(def)) return false;
-            if (defBlacklist.Contains(def)) return false;
-            if (rarities.Count > 0 && !rarities.Any(def.CanAppearAt)) return false;
-            if (categories.Count > 0 && (def.categories == null || !def.categories.Any(categories.Contains))) return false;
+            if (Has(defWhitelist) && !defWhitelist.Contains(def)) return false;
+            if (Has(defBlacklist) && defBlacklist.Contains(def)) return false;
+            if (Has(rarities) && !rarities.Any(def.CanAppearAt)) return false;
+            if (Has(categories) && (def.categories == null || !def.categories.Any(categories.Contains))) return false;
 
             if (effectKinds != EntadEffectKind.None && (def.EffectKinds & effectKinds) == EntadEffectKind.None) return false;
 
-            var stats = def.AllRanges().Select(r => r.stat).Where(s => s != null).ToList();
-            if (statBlacklist.Count > 0 && stats.Any(statBlacklist.Contains)) return false;
-            if (statWhitelist.Count > 0 && !stats.Any(statWhitelist.Contains)) return false;
+            if (Has(statBlacklist) || Has(statWhitelist))
+            {
+                var stats = def.AllRanges().Select(r => r.stat).Where(s => s != null).ToList();
+                if (Has(statBlacklist) && stats.Any(statBlacklist.Contains)) return false;
+                if (Has(statWhitelist) && !stats.Any(statWhitelist.Contains)) return false;
+            }
 
             return predicate == null || predicate(def);
         }
+
+        internal static bool Has<T>(HashSet<T> set) => set != null && set.Count > 0;
     }
 
     // Options for choosing and applying traits to an existing thing
@@ -276,10 +283,10 @@ namespace EntadFramework
             return DefDatabase<ThingDef>.AllDefsListForReading.Where(d =>
                 EntadUtility.IsEntadCompatible(d)
                 && (EntadUtility.KindOf(d) & request.kinds) != EntadItemKind.None
-                && (request.thingWhitelist.Count == 0 || request.thingWhitelist.Contains(d))
+                && (!EntadTraitFilter.Has(request.thingWhitelist) || request.thingWhitelist.Contains(d))
                 // Free spots only when a caller whitelists them by name
-                && (!EntadUtility.IsFreeFurniture(d) || request.thingWhitelist.Contains(d))
-                && !request.thingBlacklist.Contains(d)
+                && (!EntadUtility.IsFreeFurniture(d) || (request.thingWhitelist?.Contains(d) ?? false))
+                && !(request.thingBlacklist?.Contains(d) ?? false)
                 && (request.thingPredicate == null || request.thingPredicate(d))).ToList();
         }
 

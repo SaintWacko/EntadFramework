@@ -21,7 +21,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Farskip</defName>
     <label>Far Skip</label>
-    <description>Grants the ability to skip a target, and anyone near it, to an ally across the world.</description>
+    <description>Grants the ability to skip the caster, and anyone near them, to an ally across the world.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>

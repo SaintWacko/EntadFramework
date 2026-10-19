@@ -47,12 +47,10 @@
     <rarity>Uncommon</rarity>
     <equippedHediffs><li>Entad_Hediff_Clotting</li></equippedHediffs>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Clotting</defName>
     <label>entad clotting</label>
     <description>An entad this person carries slows their bleeding.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <stages>
       <li>
@@ -93,12 +91,10 @@
     <rarity>Rare</rarity>
     <equippedHediffs><li>Entad_Hediff_Sustaining</li></equippedHediffs>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Sustaining</defName>
     <label>entad sustenance</label>
     <description>An entad this person carries keeps them fed.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <stages>
       <li>
@@ -135,12 +131,10 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_MorningVigor</defName>
     <label>morning vigor</label>
     <description>Woke up full of energy. Works faster for a while.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <comps>
       <li Class="HediffCompProperties_Disappears">
@@ -174,12 +168,10 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_AdrenalSurge</defName>
     <label>adrenal surge</label>
     <description>A rush of energy from an entad. Pain is dulled and movement is quicker.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <isBad>false</isBad>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <comps>
       <li Class="HediffCompProperties_Disappears">

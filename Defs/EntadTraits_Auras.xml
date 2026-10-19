@@ -66,21 +66,11 @@
       <ringColor>(1.0, 0.8, 0.35, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraRallied</defName>
     <label>rallied</label>
     <description>Steadied by an ally's entad. It fades soon after the ally is out of range or the fight ends.</description>
-    <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1.0, 0.8, 0.35)</defaultLabelColor>
-    <isBad>false</isBad>
-    <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>400</disappearsAfterTicks>
-        <showRemainingTime>false</showRemainingTime>
-      </li>
-    </comps>
     <stages>
       <li>
         <painFactor>0.7</painFactor>
@@ -104,21 +94,12 @@
       <ringColor>(0.7, 0.35, 0.9, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraDread</defName>
     <label>dread</label>
     <description>Gripped by dread from an enemy's entad. It fades soon after the enemy is out of range.</description>
-    <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.6, 0.4, 0.7)</defaultLabelColor>
     <isBad>true</isBad>
-    <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>400</disappearsAfterTicks>
-        <showRemainingTime>false</showRemainingTime>
-      </li>
-    </comps>
     <stages>
       <li>
         <capMods>
@@ -150,21 +131,11 @@
       <ringColor>(0.5, 0.75, 1.0, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraSteadied</defName>
     <label>steadied</label>
     <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
-    <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.5, 0.75, 1.0)</defaultLabelColor>
-    <isBad>false</isBad>
-    <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>400</disappearsAfterTicks>
-        <showRemainingTime>false</showRemainingTime>
-      </li>
-    </comps>
     <stages>
       <li>
         <statOffsets>
@@ -191,21 +162,11 @@
       <ringColor>(0.55, 0.9, 0.7, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraSerene</defName>
     <label>serene</label>
     <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
-    <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.55, 0.9, 0.7)</defaultLabelColor>
-    <isBad>false</isBad>
-    <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>400</disappearsAfterTicks>
-        <showRemainingTime>false</showRemainingTime>
-      </li>
-    </comps>
     <stages>
       <li />
     </stages>
@@ -238,21 +199,11 @@
       <ringColor>(0.95, 0.55, 0.55, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
-  <HediffDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraMending</defName>
     <label>mending ward</label>
     <description>A nearby entad speeds up healing. It fades soon after leaving its range.</description>
-    <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.95, 0.55, 0.55)</defaultLabelColor>
-    <isBad>false</isBad>
-    <everCurableByItem>false</everCurableByItem>
-    <scenarioCanAdd>false</scenarioCanAdd>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>400</disappearsAfterTicks>
-        <showRemainingTime>false</showRemainingTime>
-      </li>
-    </comps>
     <stages>
       <li>
         <statFactors>

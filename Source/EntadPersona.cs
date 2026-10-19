@@ -39,11 +39,9 @@ namespace EntadFramework
 
         public int TicksSinceLastKill => lastKillTick < 0 ? 0 : Find.TickManager.TicksAbs - lastKillTick;
 
-        // Vanilla calls this on equip, before Pawn_EquipmentTracker's own postfixes (EntadAbilities) run
-        public override void Notify_Equipped(Pawn pawn)
+        // Called from Notify_Equipped (EntadAbilities.cs), before abilities are granted
+        private void BondOnEquip(Pawn pawn)
         {
-            base.Notify_Equipped(pawn);
-            lastWearer = pawn;
             if (bondedPawn == null && pawn?.equipment != null && pawn.equipment.bondedWeapon == null && IsPersona && ActiveFor(pawn))
                 Bond(pawn);
         }
@@ -155,7 +153,7 @@ namespace EntadFramework
             if (bondedPawn == null)
             {
                 // Persona added to a weapon already in someone's hands: bond now, as if it had just been equipped
-                if (m.def.persona && parent.ParentHolder is Pawn_EquipmentTracker eqt) Notify_Equipped(eqt.pawn);
+                if (m.def.persona && parent.ParentHolder is Pawn_EquipmentTracker eqt) BondOnEquip(eqt.pawn);
                 return;
             }
             if (!IsPersona) { Unbond(); return; }   // freewielder added
