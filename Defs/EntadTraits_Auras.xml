@@ -55,7 +55,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RallyingAura</defName>
     <label>Rallying</label>
-    <description>In a fight, the carrier steadies their allies. Friendly people and animals within 7 tiles that the carrier can see feel 30% less pain and do 20% more melee damage.</description>
+    <description>Allies fight harder when it's raised among them.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <aura>
@@ -84,7 +84,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_DreadAura</defName>
     <label>Dread</label>
-    <description>An aura of dread surrounds the carrier. Living enemies within 8 tiles that the carrier can see lose 10% consciousness and 15% moving. Mechanoids and entities don't feel it.</description>
+    <description>Those who face it feel a cold weight settle on their limbs.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Legendary</rarity>
     <aura>
@@ -119,7 +119,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SteadyingAura</defName>
     <label>Steadying</label>
-    <description>The carrier and friendly people within 6 tiles that the carrier can see have a mental break threshold 4% lower.</description>
+    <description>Bad news is easier to bear in its company.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <aura>
@@ -148,7 +148,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_WardingAura</defName>
     <label>Warding</label>
-    <description>In a fight, the carrier shields their allies. Friendly people and animals within 6 tiles that the carrier can see take 15% less damage.</description>
+    <description>Blows aimed at its bearer's friends seem to lose heart.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <aura>
@@ -177,7 +177,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SereneAura</defName>
     <label>Serene Presence</label>
-    <description>People near this furniture who can see it feel calmer: +3 mood within 5 tiles. The range grows with rarity.</description>
+    <description>The air around it is a little quieter than anywhere else.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -216,7 +216,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MendingAura</defName>
     <label>Mending Ward</label>
-    <description>Wounds heal 30% faster on friendly people and animals within 5 tiles of this furniture that can see it. The range grows with rarity.</description>
+    <description>Wounds close more willingly in its company.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -244,7 +244,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_DiligentAura</defName>
     <label>Diligent</label>
-    <description>People within 5 tiles of this furniture who can see it work 8% faster. The range grows with rarity.</description>
+    <description>Idle hands grow restless near it.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -273,7 +273,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SanctuaryAura</defName>
     <label>Sanctuary</label>
-    <description>People within 5 tiles of this furniture who can see it have a mental break threshold 5% lower. The range grows with rarity.</description>
+    <description>Near it, the rest of the world feels further away.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -303,7 +303,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_GraspingAura</defName>
     <label>Grasping</label>
-    <description>Enemies within 5 tiles of this furniture that it can see move 25% slower. The range grows with rarity.</description>
+    <description>The ground around it seems reluctant to let go.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>

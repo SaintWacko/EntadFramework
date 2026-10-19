@@ -5,7 +5,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_RageEcho</defName>
     <label>Rage Echo</label>
-    <description>Grants the ability to drive a target berserk. It recharges over three days.</description>
+    <description>Something in it remembers every fury it has ever seen, and can pass one on.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <points>4</points>
@@ -18,7 +18,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Veil</defName>
     <label>Veil</label>
-    <description>Grants the ability to turn a person invisible for a short time. It recharges over two days.</description>
+    <description>Light bends politely around whoever it chooses.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <points>6</points>
@@ -31,7 +31,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_NumbingTouch</defName>
     <label>Numbing Touch</label>
-    <description>Grants the ability to block a person's pain for a while. It holds two charges, which recharge over a day.</description>
+    <description>One touch from it, and the hurt simply goes quiet.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <abilities><li>Painblock</li></abilities>
@@ -43,7 +43,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Quenching</defName>
     <label>Quenching</label>
-    <description>Grants the ability to skip water onto an area, putting out fires. It recharges over a day.</description>
+    <description>It always feels faintly damp, and it's willing to share.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <abilities><li>Waterskip</li></abilities>
@@ -56,7 +56,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Bulwark</defName>
     <label>Bulwark</label>
-    <description>Grants the ability to raise a short-lived wall of rock. It holds one charge, and is reloaded with 25 steel.</description>
+    <description>Feed it steel and it raises stone in your defense.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <abilities><li>Wallraise</li></abilities>

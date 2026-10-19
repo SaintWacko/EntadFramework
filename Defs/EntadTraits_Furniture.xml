@@ -5,7 +5,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Bottomless</defName>
     <label>Bottomless</label>
-    <description>Holds far more than it has any right to. Each cell fits extra stacks of items.</description>
+    <description>Holds far more than it has any right to.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -21,7 +21,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Hayburner</defName>
     <label>Hayburner</label>
-    <description>Also burns hay, on top of its usual fuel.</description>
+    <description>It isn't fussy about what goes into the fire.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <fuelTypes><li>Hay</li></fuelTypes>

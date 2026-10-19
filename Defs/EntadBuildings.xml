@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_FrugalBurner</defName>
     <label>Frugal</label>
-    <description>Needs less fuel to run and holds more of it.</description>
+    <description>A little fuel goes a long way in it.</description>
     <categories>
       <li>Furniture</li>
     </categories>

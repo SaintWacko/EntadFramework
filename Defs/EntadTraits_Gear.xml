@@ -7,7 +7,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Vampiric</defName>
     <label>Vampiric</label>
-    <description>Each enemy or wild creature the wielder kills closes some of the wielder's wounds, worst first. Slaughtered livestock and executed prisoners don't count.</description>
+    <description>It drinks from every death it deals, and shares.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <points>4</points>
@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HuntersFeast</defName>
     <label>Hunter's Feast</label>
-    <description>Each enemy or wild creature the wielder kills leaves the wielder a little less hungry. Slaughtered livestock and executed prisoners don't count.</description>
+    <description>A fresh kill leaves its wielder strangely sated.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <points>1</points>
@@ -42,7 +42,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Clotting</defName>
     <label>Clotting</label>
-    <description>Wounds on whoever wears or wields this bleed 40% slower.</description>
+    <description>Blood seems reluctant to leave whoever carries it.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <equippedHediffs><li>Entad_Hediff_Clotting</li></equippedHediffs>
@@ -62,7 +62,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Regenerating</defName>
     <label>Regenerating</label>
-    <description>Whoever wears or wields this heals from injuries far faster.</description>
+    <description>Flesh knits back together almost while you watch.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <points>6</points>
@@ -74,7 +74,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sleepless</defName>
     <label>Sleepless</label>
-    <description>Whoever wears or wields this tires more slowly.</description>
+    <description>The nights feel shorter with it close by.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -86,7 +86,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sustaining</defName>
     <label>Sustaining</label>
-    <description>Whoever wears or wields this gets hungry 30% slower.</description>
+    <description>Every meal seems to last longer than it should.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <equippedHediffs><li>Entad_Hediff_Sustaining</li></equippedHediffs>
@@ -106,7 +106,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_PsychicWard</defName>
     <label>Psychic Ward</label>
-    <description>Dulls the psychic senses of whoever wears or wields it, softening the effect of psychic drones.</description>
+    <description>A soft hum at the back of the mind drowns out other voices.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -118,7 +118,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MorningVigor</defName>
     <label>Morning Vigor</label>
-    <description>Whoever wears or wields this wakes up eager to work, and works faster for a few hours.</description>
+    <description>Every morning starts like the best one you've ever had.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <points>1</points>
@@ -154,7 +154,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_AdrenalSurge</defName>
     <label>Adrenal Surge</label>
-    <description>When whoever wears or wields this is hurt, they feel half as much pain and move faster for a while. It can only do this twice a day.</description>
+    <description>Pain only seems to wake it up.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <points>4</points>
@@ -195,7 +195,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_CraftsmansPride</defName>
     <label>Craftsman's Pride</label>
-    <description>Finishing a bill sometimes leaves whoever wears or wields this proud of their work.</description>
+    <description>It takes a quiet interest in good work.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <triggers>
@@ -223,7 +223,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Gourmand</defName>
     <label>Gourmand</label>
-    <description>Whoever wears or wields this enjoys every meal, and gets some recreation from eating.</description>
+    <description>Every meal tastes like a small celebration.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>

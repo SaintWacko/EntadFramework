@@ -172,6 +172,7 @@
     <defName>Entad_Searing</defName>
     <label>Searing</label>
     <description>Leaves burns wherever it strikes.</description>
+    <descriptionRanged>Its shots leave burns wherever they land.</descriptionRanged>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -181,6 +182,8 @@
     <defName>Entad_Stunning</defName>
     <label>Stunning</label>
     <description>Targets reel from every hit.</description>
+    <descriptionMelee>Every blow leaves the target reeling.</descriptionMelee>
+    <descriptionRanged>Every shot leaves the target reeling.</descriptionRanged>
     <categories><li>Weapon</li></categories>
     <!-- Stun on every hit can lock a target down, burst weapons especially -->
     <rarity>Rare</rarity>

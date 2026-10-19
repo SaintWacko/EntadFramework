@@ -5,7 +5,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_LastStand</defName>
     <label>Last Stand</label>
-    <description>When the person wearing or wielding this item is downed, it closes their worst wounds. It can only do this once a day.</description>
+    <description>It refuses to let its bearer stay down for long.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>
@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MendingRest</defName>
     <label>Mending Rest</label>
-    <description>Anyone who sleeps here wakes with their injuries partly mended.</description>
+    <description>Sleep here mends more than tiredness.</description>
     <categories>
       <li>Furniture</li>
     </categories>
