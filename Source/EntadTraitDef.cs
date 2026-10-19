@@ -375,10 +375,17 @@ namespace EntadFramework
             if (td.Verbs != null)
                 foreach (var v in td.Verbs)
                 {
-                    if (v.verbClass != null && typeof(Verb_ShootBeam).IsAssignableFrom(v.verbClass)) return false;
+                    // ApplyDamage returns before dealing anything when a beam has no beamDamageDef
+                    if (v.verbClass != null && typeof(Verb_ShootBeam).IsAssignableFrom(v.verbClass) && v.beamDamageDef != null) return false;
                     var proj = v.defaultProjectile;
                     if (proj?.projectile == null) continue;
-                    if (typeof(Projectile_Explosive).IsAssignableFrom(proj.thingClass)) return false;
+                    // A smoke or other harmless blast still lists every thing it reaches as damaged, so extra damage
+                    // would turn it into a damaging one; those launchers stay out
+                    if (typeof(Projectile_Explosive).IsAssignableFrom(proj.thingClass))
+                    {
+                        if (proj.projectile.damageDef != null && !proj.projectile.damageDef.harmsHealth) continue;
+                        return false;
+                    }
                     if (proj.projectile.explosionRadius > 0f) continue;
                     return false;
                 }
