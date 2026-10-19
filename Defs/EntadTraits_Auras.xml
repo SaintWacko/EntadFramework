@@ -311,6 +311,8 @@
       <radius>4.9</radius>
       <hediff>Entad_Hediff_AuraGrasping</hediff>
       <affectsEnemies>true</affectsEnemies>
+      <affectsMechanoids>true</affectsMechanoids>
+      <affectsEntities>true</affectsEntities>
       <ringColor>(0.5, 0.75, 0.4, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>

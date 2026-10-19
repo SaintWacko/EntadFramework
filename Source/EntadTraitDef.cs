@@ -824,7 +824,7 @@ namespace EntadFramework
             }
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
-            // bed lists the stat
+            // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
             if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
