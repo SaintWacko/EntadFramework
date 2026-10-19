@@ -845,20 +845,26 @@ namespace EntadFramework
             // Range and armor penetration multipliers are read only by projectile verbs (Verb_LaunchProjectile's
             // EffectiveRange, ProjectileProperties.GetArmorPenetration): beams, sprays and the like ignore them.
             // Combat Extended's Verb_LaunchProjectileCE derives from Verb, not Verb_LaunchProjectile, but reads both
-            // stats too, hence the name check.
+            // stats too, hence the name check. Range needs no default projectile (a changeable-projectile verb has
+            // none and vanilla still applies the multiplier); penetration needs one that armor can stop.
             if (stat == StatDefOf.RangedWeapon_RangeMultiplier)
                 return td.IsRangedWeapon && td.Verbs.Any(IsProjectileVerb);
             if (stat == StatDefOf.RangedWeapon_ArmorPenetrationMultiplier)
-                return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && v.defaultProjectile.projectile.damageDef?.armorCategory != null);
+                return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && v.defaultProjectile?.projectile?.damageDef?.armorCategory != null);
             if (stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) return td.IsMeleeWeapon;
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
         }
 
-        private static bool IsProjectileVerb(VerbProperties v) =>
-            v.verbClass != null && v.defaultProjectile?.projectile != null
-            && (typeof(Verb_LaunchProjectile).IsAssignableFrom(v.verbClass) || v.verbClass.Name.Contains("LaunchProjectile"));
+        // A verb class that is, or derives from, a class with LaunchProjectile in its name: vanilla's
+        // Verb_LaunchProjectile, or CE's Verb_LaunchProjectileCE under Verb_ShootCE, Verb_ThrowGrenade and the rest
+        private static bool IsProjectileVerb(VerbProperties v)
+        {
+            for (var t = v.verbClass; t != null && t != typeof(Verb); t = t.BaseType)
+                if (t == typeof(Verb_LaunchProjectile) || t.Name.Contains("LaunchProjectile")) return true;
+            return false;
+        }
 
         public static bool IsRangedOnlyStat(StatDef stat) =>
             stat.category == StatCategoryDefOf.Weapon_Ranged || stat.defName.StartsWith("RangedWeapon_") || stat.defName.StartsWith("Accuracy");

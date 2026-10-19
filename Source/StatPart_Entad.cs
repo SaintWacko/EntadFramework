@@ -78,7 +78,8 @@ namespace EntadFramework
         // about 79 tiles, and log an error past it. The verb's own range ring checks first, but other range users
         // don't, and a Legendary Far-Reaching sniper rifle would get there, so the trait's share of the multiplier
         // stops a tile short. A weapon that's already that long-ranged (a mortar) keeps what it had before the
-        // trait. A verb with a rangeStat takes its range from the wielder, which can't be known here, so it's skipped.
+        // trait. A verb with a rangeStat takes its range from the wielder, which can't be known here, so it's skipped
+        // (a weapon where every verb has one goes uncapped; no vanilla gun does).
         // (No explanation line for the cap: the stat is alwaysHide, so no stat breakdown ever shows it.)
         private static float CapRange(ThingDef def, float before, float val)
         {
