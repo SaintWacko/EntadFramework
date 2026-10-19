@@ -93,7 +93,8 @@ namespace EntadFramework
                     if (m.def.extraDamage == null) continue;
                     for (int i = 0; i < m.def.extraDamage.Count; i++)
                     {
-                        if (victim != null && victim.Dead) yield break;
+                        // Skip only our extras; vanilla's own later infos still come through as they would without us
+                        if (victim != null && victim.Dead) continue;
                         var extra = new DamageInfo(original);
                         extra.Def = m.def.extraDamage[i].damageType;
                         extra.SetAmount(m.ExtraDamageFor(i));
