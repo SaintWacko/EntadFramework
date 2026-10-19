@@ -38,17 +38,21 @@ namespace EntadFramework
 
         // Every extra damage the comp's traits deal, each scaled by factor, as a copy of template with only the
         // type and amount changed (so armor penetration, angle, instigator and weapon follow the main hit)
-        public static void DealExtra(CompEntad comp, Thing target, DamageInfo template, float factor)
+        public static void DealExtra(CompEntad comp, Thing target, DamageInfo template, float factor, bool explosion = false)
         {
             foreach (var m in comp.activeTraits)
             {
                 if (m.def.extraDamage == null) continue;
                 for (int i = 0; i < m.def.extraDamage.Count; i++)
                 {
-                    if (target.Destroyed) return;
+                    // A pawn killed by the main hit or an earlier extra is dead but not destroyed; hitting it again
+                    // would add wound tales, memories and records for damage to a corpse
+                    if (target.Destroyed || (target is Pawn p && p.Dead)) return;
                     var info = new DamageInfo(template);
                     info.Def = m.def.extraDamage[i].damageType;
                     info.SetAmount(m.ExtraDamageFor(i) * factor);
+                    // As DamageWorker.ExplosionDamageThing does for a blast of that type
+                    if (explosion && info.Def.explosionAffectOutsidePartsOnly) info.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
                     target.TakeDamage(info);
                 }
             }
@@ -174,7 +178,7 @@ namespace EntadFramework
                 float angle = t.Position == explosion.Position ? Rand.RangeInclusive(0, 359) : (t.Position - explosion.Position).AngleFlat;
                 var template = new DamageInfo(explosion.damType, 0f, ap, angle, explosion.instigator, null, explosion.weapon,
                     DamageInfo.SourceCategory.ThingOrUnknown, explosion.intendedTarget);
-                EntadWeaponDamage.DealExtra(comp, t, template, factor);
+                EntadWeaponDamage.DealExtra(comp, t, template, factor, true);
             }
         }
     }
