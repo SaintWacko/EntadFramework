@@ -94,6 +94,28 @@ namespace EntadFramework
 
         private static readonly Dictionary<ThingDef, bool> uniqueWeaponCache = new Dictionary<ThingDef, bool>();
 
+        // What a hediff does, for the info card: "Pain x70%, Melee damage factor x120%". The lines come from vanilla's
+        // own hediff readout (HediffStatsUtility, what the health tab's info card shows) for the first stage, plus the
+        // mood of any ThoughtWorker_Hediff thought tied to the hediff (Serene Presence's mood lives there). A hediff
+        // with nothing vanilla can describe (only comps, say) shows its label instead. Built when a card opens, which
+        // caches its entries, so the ThoughtDef scan isn't on a hot path.
+        public static string HediffEffects(HediffDef def)
+        {
+            if (def == null) return "";
+            var parts = new List<string>();
+            var stage = def.stages?.FirstOrDefault();
+            if (stage != null)
+                foreach (var e in HediffStatsUtility.SpecialDisplayStats(stage, null))
+                    parts.Add("EF_Card_StatOffset".Translate(e.LabelCap, e.ValueString));
+            foreach (var t in DefDatabase<ThoughtDef>.AllDefsListForReading)
+            {
+                if (t.hediff != def || t.workerClass == null || !typeof(ThoughtWorker_Hediff).IsAssignableFrom(t.workerClass)) continue;
+                float mood = t.stages?.FirstOrDefault(s => s != null)?.baseMoodEffect ?? 0f;
+                if (mood != 0f) parts.Add("EF_Card_StatOffset".Translate(NeedDefOf.Mood.LabelCap, mood.ToString("+0.#;-0.#")));
+            }
+            return parts.Count > 0 ? string.Join(", ", parts) : def.LabelCap.ToString();
+        }
+
         // Vanilla unique (Odyssey) and persona (Royalty) weapons carry their own weapon traits, so random entad
         // traits only roll on them by the "unique and persona weapons" setting's chance. Checked by comp class, so
         // modded subclasses count and nothing here needs the DLC loaded.

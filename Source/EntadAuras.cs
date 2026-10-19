@@ -103,6 +103,40 @@ namespace EntadFramework
 
         public bool AffectsSomeone => affectsSelf || affectsAllies || affectsNeutrals || affectsEnemies;
 
+        // The info card's aura lines: who, how far and when, then what it does to them. A trait description is
+        // flavour text, so this is where a player reads the rules.
+        public IEnumerable<string> CardLines(Thing source, float range)
+        {
+            bool building = source.def.building != null;
+            var groups = new List<string>();
+            if (affectsSelf && !building) groups.Add("EF_AuraWho_Self".Translate());
+            if (affectsAllies) groups.Add("EF_AuraWho_Allies".Translate());
+            if (affectsNeutrals) groups.Add("EF_AuraWho_Neutrals".Translate());
+            if (affectsEnemies) groups.Add("EF_AuraWho_Enemies".Translate());
+            var kinds = new List<string>();
+            if (affectsHumanlikes) kinds.Add("EF_AuraKind_People".Translate());
+            if (affectsAnimals) kinds.Add("EF_AuraKind_Animals".Translate());
+            if (affectsMechanoids) kinds.Add("EF_AuraKind_Mechanoids".Translate());
+            if (affectsEntities && ModsConfig.AnomalyActive) kinds.Add("EF_AuraKind_Entities".Translate());
+
+            var when = new List<string>();
+            if (blockedByWalls) when.Add("EF_AuraWhen_InSight".Translate());
+            if (!building && onlyInCombat) when.Add("EF_AuraWhen_Combat".Translate());
+            if (!building && !whileAsleep) when.Add("EF_AuraWhen_NotAsleep".Translate());
+            if (!building && whileDowned) when.Add("EF_AuraWhen_Downed".Translate());
+            if (building && source.TryGetComp<CompPowerTrader>() != null) when.Add("EF_AuraWhen_Powered".Translate());
+
+            string line = "EF_Card_Aura".Translate("EF_Card_AuraWho".Translate(groups.ToCommaList(true), kinds.ToCommaList(true)),
+                Mathf.RoundToInt(range));
+            if (when.Count > 0) line += ", " + string.Join(", ", when);
+            yield return line;
+            // A buildup hediff's stages change with severity, so its first stage isn't what a pawn ends up with
+            if (severityPerDay > 0f)
+                yield return "EF_Card_AuraBuildup".Translate(hediff.label);
+            else
+                yield return EntadUtility.HediffEffects(hediff);
+        }
+
         public IEnumerable<string> ConfigErrors(string defName)
         {
             if (hediff == null) yield return $"{defName}: aura has no hediff";

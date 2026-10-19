@@ -250,6 +250,19 @@ namespace EntadFramework
     public class EntadTraitDef : Def
     {
         public List<string> categories = new List<string>();
+
+        // Optional flavour text for a melee or a ranged weapon, where 'description' fits only one of them ("leaves
+        // burns wherever it strikes" on a rifle). Anything else, and a weapon of the other kind, shows 'description'.
+        // Translators inject them like the description (DefInjected: Entad_Searing.descriptionRanged).
+        [MustTranslate] public string descriptionMelee;
+        [MustTranslate] public string descriptionRanged;
+
+        public string DescriptionFor(ThingDef item)
+        {
+            if (item != null && item.IsMeleeWeapon && !descriptionMelee.NullOrEmpty()) return descriptionMelee;
+            if (item != null && item.IsRangedWeapon && !descriptionRanged.NullOrEmpty()) return descriptionRanged;
+            return description;
+        }
         public EntadRarity rarity = EntadRarity.Common;
 
         // When true, "rarity" is the lowest rarity this trait appears at. It can also appear at every higher

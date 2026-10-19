@@ -718,6 +718,19 @@ namespace EntadFramework
             return inspectString;
         }
 
+        // Charges and cooldown of a granted ability, read from the def EntadAbilityPrep made for the trait, which
+        // already holds the trait's abilityCharges and abilityCooldownTicks (or the ability's own cooldown)
+        private static string AbilityLimitLine(AbilityDef ability)
+        {
+            if (ability == null) return null;
+            int cooldown = UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average);
+            if (cooldown <= 0) return null;
+            string period = cooldown.ToStringTicksToPeriod();
+            if (ability.charges > 1)
+                return (ability.cooldownPerCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(ability.LabelCap, ability.charges, period);
+            return "EF_Card_AbilityCooldown".Translate(ability.LabelCap, period);
+        }
+
         // Single row in the Basics section; hover shows details like unique weapon traits
         public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
         {
@@ -735,7 +748,7 @@ namespace EntadFramework
                     continue;
                 }
                 infoString.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(trait.def.LabelCap.Resolve(), trait.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
-                if (!trait.AnyHidden) infoString.AppendLine(trait.def.description);
+                if (!trait.AnyHidden) infoString.AppendLine(trait.def.DescriptionFor(parent.def));
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Stat) && trait.def.statOffsets != null && i < trait.def.statOffsets.Count; i++)
                 {
                     var stat = trait.def.statOffsets[i].stat;
@@ -771,14 +784,24 @@ namespace EntadFramework
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Trigger) && trait.def.triggers != null && i < trait.def.triggers.Count; i++)
                 {
                     int triggerIndex = i;
-                    infoString.AppendLine(" - " + trait.def.triggers[i].Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    var trigger = trait.def.triggers[i];
+                    infoString.AppendLine(" - " + trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    if (trigger.hediff != null)
+                        infoString.AppendLine("   " + "EF_Card_HediffEffects".Translate(trigger.hediff.LabelCap, EntadUtility.HediffEffects(trigger.hediff)));
                 }
                 if (trait.def.HasPortableSpace && trait.IsRevealed(EntadEffectKind.Space)) infoString.AppendLine(" - " + EntadPortableSpace.CardLine(trait));
                 if (trait.def.aura?.hediff != null && trait.IsRevealed(EntadEffectKind.Aura))
-                    infoString.AppendLine(" - " + "EF_Card_Aura".Translate(trait.def.aura.hediff.LabelCap, UnityEngine.Mathf.RoundToInt(EntadAuras.Radius(trait))));
+                {
+                    bool firstLine = true;
+                    foreach (var line in trait.def.aura.CardLines(parent, EntadAuras.Radius(trait)))
+                    {
+                        infoString.AppendLine((firstLine ? " - " : "   ") + line);
+                        firstLine = false;
+                    }
+                }
                 if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
                 if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
-                    infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
+                    infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(EntadUtility.HediffEffects))));
                 if (!trait.def.AllFuelTypes.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Fuel))
                     infoString.AppendLine(" - " + (trait.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", trait.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Building) && trait.def.buildingFactors != null && i < trait.def.buildingFactors.Count; i++)
@@ -786,6 +809,12 @@ namespace EntadFramework
                 if (!trait.def.abilities.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Ability))
                 {
                     infoString.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", trait.def.abilities.Select(a => a.LabelCap.ToString()))));
+                    if (!trait.def.IsReloadable)
+                        foreach (var ability in trait.def.abilities)
+                        {
+                            string limit = AbilityLimitLine(ability);
+                            if (limit != null) infoString.AppendLine("   " + limit);
+                        }
                     if (trait.def.IsReloadable)
                         foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == trait))
                             infoString.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));

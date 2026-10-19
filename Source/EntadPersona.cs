@@ -202,7 +202,7 @@ namespace EntadFramework
             if (d.neverBond) yield return "EF_Card_NeverBond".Translate();
             if (d.secretive) yield return "EF_Card_Secretive".Translate();
             if (!d.bondedHediffs.NullOrEmpty())
-                yield return "EF_Card_BondedHediffs".Translate(string.Join(", ", d.bondedHediffs.Select(h => h.LabelCap.ToString())));
+                yield return "EF_Card_BondedHediffs".Translate(string.Join(", ", d.bondedHediffs.Select(EntadUtility.HediffEffects)));
             if (d.bondedThought != null)
                 yield return "EF_Card_BondedThought".Translate(EntadPersona.ThoughtLabel(d.bondedThought, parent), EntadTraitDef.MoodEffectOf(d.bondedThought).ToString("+0.#;-0.#"));
             if (d.otherWeaponThought != null)
