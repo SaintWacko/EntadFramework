@@ -46,7 +46,7 @@ namespace EntadFramework
             // A bound entad is worth little to anyone outside its bloodline, so in every context (wealth, trade, the
             // card) its traits are priced as a flat premium, the same share of base as the mystery premium (build 152)
             bool bound = isValue && comp.IsBound;
-            float baseValue = val, traitValue = 0f;
+            float baseValue = val, traitValue = 0f, before = val;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
@@ -71,6 +71,19 @@ namespace EntadFramework
             }
             // Durability: every entad, by its highest trait rarity. Visible from the start, so never hidden.
             if (parentStat == StatDefOf.MaxHitPoints) val *= comp.DurabilityFactor;
+            if (parentStat == StatDefOf.RangedWeapon_RangeMultiplier && val > before) val = CapRange(req.Thing.def, before, val);
+        }
+
+        // Range rings (GenDraw.DrawRadiusRing) and radial searches stop at GenRadial's precalculated pattern, about
+        // 79 tiles; past it vanilla logs an error and draws nothing. A Legendary Far-Reaching sniper rifle would get
+        // there, so the trait's share of the multiplier stops a tile short. A weapon that's already that long-ranged
+        // (a mortar) keeps what it had before the trait.
+        private static float CapRange(ThingDef def, float before, float val)
+        {
+            float range = 0f;
+            if (def.Verbs != null) foreach (var v in def.Verbs) if (v.range > range) range = v.range;
+            if (range <= 0f) return val;
+            return UnityEngine.Mathf.Max(before, UnityEngine.Mathf.Min(val, (GenRadial.MaxRadialPatternRadius - 1f) / range));
         }
 
         // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear

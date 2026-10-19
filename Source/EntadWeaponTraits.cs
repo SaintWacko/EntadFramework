@@ -299,6 +299,40 @@ namespace EntadFramework
         }
     }
 
+    [DefOf]
+    public static class EntadStatDefOf
+    {
+        // Melee counterpart of vanilla's RangedWeapon_ArmorPenetrationMultiplier, which only projectiles read
+        public static StatDef Entad_MeleeArmorPenetrationMultiplier;
+
+        static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
+    }
+
+    // Melee armor penetration. Vanilla multiplies a tool's own armor penetration by the weapon's melee damage
+    // multiplier and has no penetration stat for melee, so Entad_MeleeArmorPenetrationMultiplier is read here. This
+    // overload is the one every melee hit (through the Verb overload), the pawn's melee penetration stat and the
+    // weapon's average penetration row on the info card go through; the ThingDef overload is for an abstract def
+    // with no item, so no traits. Per call: a def-table lookup, then for an entad a short loop over its traits, and
+    // GetStatValue only when one of them has the stat.
+    [HarmonyPatch(typeof(VerbProperties), nameof(VerbProperties.AdjustedArmorPenetration),
+        new[] { typeof(Tool), typeof(Pawn), typeof(Thing), typeof(HediffComp_VerbGiver) })]
+    public static class Patch_VerbProperties_AdjustedArmorPenetration
+    {
+        public static void Postfix(Thing equipment, ref float __result)
+        {
+            if (equipment == null || __result <= 0f || !EntadCompInjector.MayHaveComp(equipment.def)) return;
+            var comp = equipment.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.Count == 0) return;
+            var stat = EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
+            bool has = false;
+            foreach (var m in comp.activeTraits)
+                if (m.def.statFactors != null && m.def.statFactors.Any(f => f.stat == stat)) { has = true; break; }
+            // The stat part applies binding (a bound item outside its bloodline does nothing) and leaves hidden
+            // traits out of the item's own info card, as for every other stat
+            if (has) __result *= equipment.GetStatValue(stat);
+        }
+    }
+
     // The four places vanilla checks IgnoreAccuracyMaluses: weather and smoke in the hit chance, the weather range
     // cap, blind smoke blocking target search, and the weather note on the attack gizmo
     [HarmonyPatch(typeof(ShotReport), nameof(ShotReport.HitReportFor))]

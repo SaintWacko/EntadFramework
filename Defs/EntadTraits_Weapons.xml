@@ -98,6 +98,35 @@
     <statOffsets><li><stat>AccuracyShort</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyMedium</stat><min>0.06</min><max>0.14</max></li><li><stat>AccuracyLong</stat><min>0.06</min><max>0.14</max></li></statOffsets><statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.2</min><max>1.5</max></li></statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
+    <defName>Entad_FarReaching</defName>
+    <label>Far-Reaching</label>
+    <description>Its shots carry further than they have any right to.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Projectile weapons only (StatAppliesTo). Odyssey's unique weapon traits give +15% to +30%. The total is
+         capped short of the game's 79-tile radius limit (StatPart_Entad.CapRange). -->
+    <statFactors><li><stat>RangedWeapon_RangeMultiplier</stat><min>1.1</min><max>1.2</max></li></statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Piercing</defName>
+    <label>Piercing</label>
+    <description>Finds the gaps in anything.</description>
+    <descriptionMelee>Its edge finds the gaps in any armor.</descriptionMelee>
+    <descriptionRanged>Its shots find the gaps in any armor.</descriptionRanged>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- One stat per weapon kind; partialStats keeps only the one that fits. Ranged needs a projectile that
+         armor can stop (StatAppliesTo). Odyssey's unique weapon traits give +15% to +30%. -->
+    <partialStats>true</partialStats>
+    <statFactors>
+      <li><stat>RangedWeapon_ArmorPenetrationMultiplier</stat><min>1.15</min><max>1.35</max></li>
+      <li><stat>Entad_MeleeArmorPenetrationMultiplier</stat><min>1.15</min><max>1.35</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavyHitter</defName>
     <label>Heavy Hitter</label>
     <description>It carries more weight than it should.</description>

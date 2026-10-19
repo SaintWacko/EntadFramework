@@ -842,6 +842,14 @@ namespace EntadFramework
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
+            // Range and armor penetration multipliers are read only by projectile verbs (Verb_LaunchProjectile's
+            // EffectiveRange, ProjectileProperties.GetArmorPenetration): beams, sprays and the like ignore them
+            if (stat == StatDefOf.RangedWeapon_RangeMultiplier)
+                return td.IsRangedWeapon && td.Verbs.Any(v => v.verbClass != null && typeof(Verb_LaunchProjectile).IsAssignableFrom(v.verbClass));
+            if (stat == StatDefOf.RangedWeapon_ArmorPenetrationMultiplier)
+                return td.IsRangedWeapon && td.Verbs.Any(v => v.verbClass != null && typeof(Verb_LaunchProjectile).IsAssignableFrom(v.verbClass)
+                    && v.defaultProjectile?.projectile?.damageDef?.armorCategory != null);
+            if (stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) return td.IsMeleeWeapon;
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);

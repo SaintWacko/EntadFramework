@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Melee counterpart of vanilla's RangedWeapon_ArmorPenetrationMultiplier. Vanilla has no melee penetration
+       multiplier, so Patch_VerbProperties_AdjustedArmorPenetration (EntadWeaponTraits.cs) reads this one from the
+       weapon. Hidden like vanilla's: the weapon's melee penetration rows show the result. -->
+  <StatDef>
+    <defName>Entad_MeleeArmorPenetrationMultiplier</defName>
+    <label>melee armor penetration multiplier</label>
+    <description>A multiplier applied to the armor penetration of this weapon's melee attacks.</description>
+    <category>Weapon_Melee</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <alwaysHide>true</alwaysHide>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+</Defs>
