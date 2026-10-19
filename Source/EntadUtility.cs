@@ -111,7 +111,7 @@ namespace EntadFramework
             {
                 if (t.hediff != def || t.workerClass == null || !typeof(ThoughtWorker_Hediff).IsAssignableFrom(t.workerClass)) continue;
                 float mood = t.stages?.FirstOrDefault(s => s != null)?.baseMoodEffect ?? 0f;
-                if (mood != 0f) parts.Add("EF_Card_StatOffset".Translate(NeedDefOf.Mood.LabelCap, mood.ToString("+0.#;-0.#")));
+                if (mood != 0f) parts.Add("EF_Card_HediffMood".Translate(mood.ToString("+0.#;-0.#")));
             }
             return parts.Count > 0 ? string.Join(", ", parts) : def.LabelCap.ToString();
         }

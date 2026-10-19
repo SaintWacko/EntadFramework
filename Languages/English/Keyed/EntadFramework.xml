@@ -116,6 +116,7 @@
   <EF_AuraWhen_Downed>even while the carrier is downed</EF_AuraWhen_Downed>
   <EF_AuraWhen_Powered>while powered</EF_AuraWhen_Powered>
   <EF_Card_HediffEffects>{0}: {1}</EF_Card_HediffEffects>
+  <EF_Card_HediffMood>Mood {0}</EF_Card_HediffMood>
   <EF_Card_AbilityCooldown>{0}: usable again after {1}</EF_Card_AbilityCooldown>
   <EF_Card_AbilityChargesEach>{0}: {1} charges, each back after {2}</EF_Card_AbilityChargesEach>
   <EF_Card_AbilityChargesAll>{0}: {1} uses, all back after {2}</EF_Card_AbilityChargesAll>
