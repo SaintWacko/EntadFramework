@@ -3,22 +3,6 @@
   <!-- Furniture traits: fuel, and Use triggers. A Use trigger only rolls on furniture that can be used that way
        (beds for Sleep, tables and chairs for Eat, workbenches for Work). -->
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Capacious</defName>
-    <label>Capacious</label>
-    <description>Holds far more fuel than it should.</description>
-    <categories><li>Furniture</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <buildingFactors>
-      <li>
-        <property>FuelCapacity</property>
-        <min>1.5</min>
-        <max>2</max>
-      </li>
-    </buildingFactors>
-  </EntadFramework.EntadTraitDef>
-
-  <EntadFramework.EntadTraitDef>
     <defName>Entad_Bottomless</defName>
     <label>Bottomless</label>
     <description>Holds far more than it has any right to. Each cell fits extra stacks of items.</description>
@@ -113,4 +97,48 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Restful</defName>
+    <label>Restful</label>
+    <description>Some days, getting up from it feels like setting down a heavy load.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Eat, Work</use>
+        <chance>0.25</chance>
+        <hediff>Entad_RestfulCalm</hediff>
+        <hediffHours>4</hediffHours>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Captivating</defName>
+    <label>Captivating</label>
+    <description>Hard to walk away from, and you never regret the time.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Recreation</use>
+        <thought>Entad_Thought_Captivated</thought>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_Captivated</defName>
+    <durationDays>0.25</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>captivating fun</label>
+        <description>I lost track of time there, and it was wonderful.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
 </Defs>

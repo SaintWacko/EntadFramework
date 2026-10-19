@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
+  <!-- Given by the Restful furniture trait's Use trigger (EntadTraits_Furniture.xml), and by the example ability below -->
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_RestfulCalm</defName>
     <label>restful calm</label>
@@ -50,14 +51,18 @@
     </comps>
   </AbilityDef>
 
+  <!-- Example of a furniture ability: a pawn walks to the furniture and uses it from the right-click menu.
+       Never rolled at random (furniture traits use Use triggers instead); add it by name from the API or the dev
+       tools to try the furniture ability code. -->
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_RestfulChair</defName>
-    <label>Restful</label>
-    <description>Once a day, a pawn can pause by it for a few seconds and come away with their pain halved for 4 hours.</description>
+    <defName>Entad_RestfulPause</defName>
+    <label>Restful Pause</label>
+    <description>A pawn can pause by it for a few seconds and come away with their pain halved for a while.</description>
     <categories>
       <li>Furniture</li>
     </categories>
     <rarity>Rare</rarity>
+    <neverRandom>true</neverRandom>
     <abilityCastTicks>250</abilityCastTicks>
     <abilities>
       <li>Entad_RestfulSigh</li>

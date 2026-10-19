@@ -145,6 +145,34 @@
     </stages>
   </HediffDef>
 
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_WardingAura</defName>
+    <label>Warding</label>
+    <description>In a fight, the carrier shields their allies. Friendly people and animals within 6 tiles that the carrier can see take 15% less damage.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <aura>
+      <radius>5.9</radius>
+      <hediff>Entad_Hediff_AuraWarded</hediff>
+      <affectsAllies>true</affectsAllies>
+      <onlyInCombat>true</onlyInCombat>
+      <ringColor>(0.75, 0.8, 0.9, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
+    <defName>Entad_Hediff_AuraWarded</defName>
+    <label>warded</label>
+    <description>Shielded by an ally's entad. It fades soon after the ally is out of range or the fight ends.</description>
+    <defaultLabelColor>(0.75, 0.8, 0.9)</defaultLabelColor>
+    <stages>
+      <li>
+        <statFactors>
+          <IncomingDamageFactor>0.85</IncomingDamageFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
   <!-- Furniture -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SereneAura</defName>
@@ -209,6 +237,97 @@
         <statFactors>
           <InjuryHealingFactor>1.3</InjuryHealingFactor>
         </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_DiligentAura</defName>
+    <label>Diligent</label>
+    <description>People within 5 tiles of this furniture who can see it work 8% faster. The range grows with rarity.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraDiligent</hediff>
+      <affectsAllies>true</affectsAllies>
+      <affectsAnimals>false</affectsAnimals>
+      <ringColor>(0.95, 0.75, 0.45, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
+    <defName>Entad_Hediff_AuraDiligent</defName>
+    <label>diligent</label>
+    <description>A nearby entad keeps this person focused on their work. It fades soon after leaving its range.</description>
+    <defaultLabelColor>(0.95, 0.75, 0.45)</defaultLabelColor>
+    <stages>
+      <li>
+        <statOffsets>
+          <WorkSpeedGlobal>0.08</WorkSpeedGlobal>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SanctuaryAura</defName>
+    <label>Sanctuary</label>
+    <description>People within 5 tiles of this furniture who can see it have a mental break threshold 5% lower. The range grows with rarity.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraSanctuary</hediff>
+      <affectsAllies>true</affectsAllies>
+      <affectsNeutrals>true</affectsNeutrals>
+      <affectsAnimals>false</affectsAnimals>
+      <ringColor>(0.6, 0.7, 1.0, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
+    <defName>Entad_Hediff_AuraSanctuary</defName>
+    <label>sanctuary</label>
+    <description>A nearby entad makes this person feel safe. It fades soon after leaving its range.</description>
+    <defaultLabelColor>(0.6, 0.7, 1.0)</defaultLabelColor>
+    <stages>
+      <li>
+        <statOffsets>
+          <MentalBreakThreshold>-0.05</MentalBreakThreshold>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_GraspingAura</defName>
+    <label>Grasping</label>
+    <description>Enemies within 5 tiles of this furniture that it can see move 25% slower. The range grows with rarity.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraGrasping</hediff>
+      <affectsEnemies>true</affectsEnemies>
+      <ringColor>(0.5, 0.75, 0.4, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <HediffDef ParentName="EntadAuraHediffBase">
+    <defName>Entad_Hediff_AuraGrasping</defName>
+    <label>grasped</label>
+    <description>Something from a nearby entad clings to this creature's limbs. It fades soon after leaving its range.</description>
+    <defaultLabelColor>(0.5, 0.75, 0.4)</defaultLabelColor>
+    <isBad>true</isBad>
+    <stages>
+      <li>
+        <capMods>
+          <li>
+            <capacity>Moving</capacity>
+            <postFactor>0.75</postFactor>
+          </li>
+        </capMods>
       </li>
     </stages>
   </HediffDef>

@@ -158,6 +158,14 @@ namespace EntadFramework
         }
     }
 
+    // Which kind of weapon a trait can roll on (EntadTraitDef.weaponType)
+    public enum EntadWeaponType
+    {
+        Any,
+        Melee,
+        Ranged
+    }
+
     // Ranged weapon properties that aren't stats (they live on the verb or the projectile)
     public enum EntadWeaponProperty
     {
@@ -401,6 +409,12 @@ namespace EntadFramework
         public bool ignoreAccuracyMaluses;
 
         public bool HasWeaponEffect => !weaponProperties.NullOrEmpty() || ignoreAccuracyMaluses;
+
+        // Weapons only: the kind of weapon the trait can roll on. Weapon stats already sort themselves out
+        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
+        // through any held item, so a gun trait made of one would also roll on swords where it does nothing.
+        // Apparel ignores it.
+        public EntadWeaponType weaponType = EntadWeaponType.Any;
 
         // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
         // equippedHediffs and removed on unequip unless other active gear also gives them
@@ -697,6 +711,8 @@ namespace EntadFramework
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
+            if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
+                yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -726,6 +742,8 @@ namespace EntadFramework
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || HasNoDamageHook(td))) return false;
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
+            if (td.IsWeapon && weaponType != EntadWeaponType.Any
+                && !(weaponType == EntadWeaponType.Ranged ? td.IsRangedWeapon : td.IsMeleeWeapon)) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             if (killThought != null && !td.IsWeapon) return false;
             if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
@@ -805,6 +823,9 @@ namespace EntadFramework
                 if (IsMeleeOnlyStat(stat) && !td.IsMeleeWeapon) return false;
             }
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
+            // bed lists the stat
+            if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;

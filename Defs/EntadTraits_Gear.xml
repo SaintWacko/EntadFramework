@@ -234,4 +234,21 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_TidySpirit</defName>
+    <label>Tidy Spirit</label>
+    <description>It hums happily whenever there's sweeping to be done.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- One Clean job sweeps a batch of nearby filth -->
+    <triggers>
+      <li>
+        <on>JobDone</on>
+        <jobs><li>Clean</li></jobs>
+        <joy>0.04~0.08</joy>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
 </Defs>

@@ -20,13 +20,24 @@
     <weaponProperties><li><property>BurstShotCount</property><min>1.25</min><max>1.5</max></li></weaponProperties>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Quickfire</defName>
-    <label>Quickfire</label>
-    <description>Shots in a burst follow one another faster.</description>
+    <defName>Entad_Quickdraw</defName>
+    <label>Quickdraw</label>
+    <description>It comes to bear on a target almost before you've chosen one.</description>
     <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
-    <weaponProperties><li><property>BurstShotSpeed</property><min>1.2</min><max>1.5</max></li></weaponProperties>
+    <statOffsets><li><stat>AimingDelayFactor</stat><min>-0.3</min><max>-0.1</max></li></statOffsets>
+  </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_HuntersHush</defName>
+    <label>Hunter's Hush</label>
+    <description>Prey never quite hears it coming.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets><li><stat>HuntingStealth</stat><min>0.1</min><max>0.3</max></li></statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_ImpactRounds</defName>
@@ -105,14 +116,40 @@
     <statFactors><li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.3</min><max>1.7</max></li><li><stat>MeleeWeapon_CooldownMultiplier</stat><min>1.1</min><max>1.3</max></li></statFactors>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Bruising</defName>
-    <label>Bruising</label>
-    <description>Blows leave deep bruises.</description>
+    <defName>Entad_Bloodthirst</defName>
+    <label>Bloodthirst</label>
+    <description>Every kill only makes it hungrier.</description>
     <categories><li>Weapon</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <extraDamage><li><damageType>Blunt</damageType><min>1</min><max>4</max></li></extraDamage>
+    <weaponType>Melee</weaponType>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <victims>Hostile</victims>
+        <hediff>Entad_Hediff_Bloodthirst</hediff>
+        <hediffHours>1</hediffHours>
+      </li>
+    </triggers>
   </EntadFramework.EntadTraitDef>
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_Bloodthirst</defName>
+    <label>bloodthirst</label>
+    <description>Fresh from a kill, this person strikes faster.</description>
+    <defaultLabelColor>(0.9, 0.4, 0.4)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statFactors>
+          <MeleeCooldownFactor>0.87</MeleeCooldownFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Razoredge</defName>
     <label>Razor-Edged</label>
@@ -123,13 +160,13 @@
     <extraDamage><li><damageType>Cut</damageType><min>1</min><max>4</max></li></extraDamage>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Piercing</defName>
-    <label>Piercing</label>
-    <description>Finds the gaps in anything.</description>
+    <defName>Entad_Emberforged</defName>
+    <label>Emberforged</label>
+    <description>Whatever it was made to do, now it burns.</description>
     <categories><li>Weapon</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <extraDamage><li><damageType>Stab</damageType><min>1</min><max>4</max></li></extraDamage>
+    <rarity>Rare</rarity>
+    <!-- Burn is checked against heat armor instead of sharp or blunt, which most armor is weaker against -->
+    <changeDamageType>Burn</changeDamageType>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Searing</defName>
