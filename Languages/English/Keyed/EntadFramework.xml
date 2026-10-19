@@ -115,6 +115,7 @@
   <EF_AuraWhen_NotAsleep>not while the carrier sleeps</EF_AuraWhen_NotAsleep>
   <EF_AuraWhen_Downed>even while the carrier is downed</EF_AuraWhen_Downed>
   <EF_AuraWhen_Powered>while powered</EF_AuraWhen_Powered>
+  <EF_AuraWhen_BoundNear>while someone it's bound to is in range</EF_AuraWhen_BoundNear>
   <EF_Card_HediffEffects>{0}: {1}</EF_Card_HediffEffects>
   <EF_Card_HediffMood>Mood {0}</EF_Card_HediffMood>
   <EF_Card_AbilityCooldown>{0}: usable again after {1}</EF_Card_AbilityCooldown>
@@ -233,6 +234,15 @@
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
   <EF_Summary_Aura>{0} aura</EF_Summary_Aura>
   <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
+  <EF_Summary_Mood>Mood</EF_Summary_Mood>
+  <EF_Summary_Meal>Meals</EF_Summary_Meal>
+  <EF_Summary_Space>Portable Space</EF_Summary_Space>
+  <EF_Summary_Persona>Bonds to one wielder</EF_Summary_Persona>
+  <EF_Summary_NeverBond>Never bonds</EF_Summary_NeverBond>
+  <EF_Summary_Secretive>Hides its other traits</EF_Summary_Secretive>
+  <EF_Summary_BondedMood>Mood while bonded</EF_Summary_BondedMood>
+  <EF_Summary_OtherWeapon>Mood when using another weapon</EF_Summary_OtherWeapon>
+  <EF_Summary_KillThirst>Needs kills</EF_Summary_KillThirst>
 
 
   <!-- Portable space -->

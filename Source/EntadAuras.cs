@@ -125,16 +125,18 @@ namespace EntadFramework
             if (!building && !whileAsleep) when.Add("EF_AuraWhen_NotAsleep".Translate());
             if (!building && whileDowned) when.Add("EF_AuraWhen_Downed".Translate());
             if (building && source.TryGetComp<CompPowerTrader>() != null) when.Add("EF_AuraWhen_Powered".Translate());
+            if (building && (source.TryGetComp<CompEntad>()?.IsBound ?? false)) when.Add("EF_AuraWhen_BoundNear".Translate());
 
-            string line = "EF_Card_Aura".Translate("EF_Card_AuraWho".Translate(groups.ToCommaList(true), kinds.ToCommaList(true)),
-                Mathf.RoundToInt(range));
+            string who = groups.ToCommaList(true);
+            if (kinds.Count > 0) who = "EF_Card_AuraWho".Translate(who, kinds.ToCommaList(true));
+            string line = "EF_Card_Aura".Translate(who, Mathf.RoundToInt(range));
             if (when.Count > 0) line += ", " + string.Join(", ", when);
             yield return line;
             // A buildup hediff's stages change with severity, so its first stage isn't what a pawn ends up with
             if (severityPerDay > 0f)
                 yield return "EF_Card_AuraBuildup".Translate(hediff.label);
             else
-                yield return EntadUtility.HediffEffects(hediff);
+                yield return EntadUtility.HediffLine(hediff);
         }
 
         public IEnumerable<string> ConfigErrors(string defName)
@@ -149,6 +151,8 @@ namespace EntadFramework
             if (linkMote != null && !typeof(MoteDualAttached).IsAssignableFrom(linkMote.thingClass))
                 yield return $"{defName}: aura linkMote {linkMote.defName} must have a MoteDualAttached thingClass";
             if (!AffectsSomeone) yield return $"{defName}: aura affects nobody: set affectsAllies, affectsEnemies, affectsNeutrals or affectsSelf";
+            if (!affectsHumanlikes && !affectsAnimals && !affectsMechanoids && !affectsEntities)
+                yield return $"{defName}: aura affects no kind of pawn: leave affectsHumanlikes or affectsAnimals on, or set affectsMechanoids or affectsEntities";
             if (hediff != null)
             {
                 HediffCompProperties_Disappears d = null;
