@@ -351,8 +351,10 @@ namespace EntadFramework
                 Widgets.Checkbox(row.x + 4f, row.y + 2f, ref on, 24f);
                 if (on != was) { if (on) EntadSettings.DisabledTraits.Remove(d.defName); else EntadSettings.DisabledTraits.Add(d.defName); }
                 Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), "EF_Settings_TraitRow".Translate(d.LabelCap, d.RarityLabel));
-                Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), Summary(d));
-                TooltipHandler.TipRegion(row, d.description);
+                string summary = Summary(d);
+                Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), summary);
+                // The summary can run past the row, so the tooltip repeats it under the flavour text
+                TooltipHandler.TipRegion(row, summary.NullOrEmpty() ? d.description : d.description + "\n\n" + summary);
             }
             Widgets.EndScrollView();
         }
