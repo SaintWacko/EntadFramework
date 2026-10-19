@@ -74,14 +74,16 @@ namespace EntadFramework
             if (parentStat == StatDefOf.RangedWeapon_RangeMultiplier && val > before) val = CapRange(req.Thing.def, before, val);
         }
 
-        // Range rings (GenDraw.DrawRadiusRing) and radial searches stop at GenRadial's precalculated pattern, about
-        // 79 tiles; past it vanilla logs an error and draws nothing. A Legendary Far-Reaching sniper rifle would get
-        // there, so the trait's share of the multiplier stops a tile short. A weapon that's already that long-ranged
-        // (a mortar) keeps what it had before the trait.
+        // Radial searches (GenRadial.NumCellsInRadius, GenDraw.DrawRadiusRing) stop at the precalculated pattern,
+        // about 79 tiles, and log an error past it. The verb's own range ring checks first, but other range users
+        // don't, and a Legendary Far-Reaching sniper rifle would get there, so the trait's share of the multiplier
+        // stops a tile short. A weapon that's already that long-ranged (a mortar) keeps what it had before the
+        // trait. A verb with a rangeStat takes its range from the wielder, which can't be known here, so it's skipped.
+        // (No explanation line for the cap: the stat is alwaysHide, so no stat breakdown ever shows it.)
         private static float CapRange(ThingDef def, float before, float val)
         {
             float range = 0f;
-            if (def.Verbs != null) foreach (var v in def.Verbs) if (v.range > range) range = v.range;
+            if (def.Verbs != null) foreach (var v in def.Verbs) if (v.rangeStat == null && v.range > range) range = v.range;
             if (range <= 0f) return val;
             return UnityEngine.Mathf.Max(before, UnityEngine.Mathf.Min(val, (GenRadial.MaxRadialPatternRadius - 1f) / range));
         }

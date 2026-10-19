@@ -325,8 +325,12 @@ namespace EntadFramework
             if (comp == null || comp.activeTraits.Count == 0) return;
             var stat = EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
             bool has = false;
-            foreach (var m in comp.activeTraits)
-                if (m.def.statFactors != null && m.def.statFactors.Any(f => f.stat == stat)) { has = true; break; }
+            for (int t = 0; t < comp.activeTraits.Count && !has; t++)
+            {
+                var factors = comp.activeTraits[t].def.statFactors;
+                for (int i = 0; factors != null && i < factors.Count; i++)
+                    if (factors[i].stat == stat) { has = true; break; }
+            }
             // The stat part applies binding (a bound item outside its bloodline does nothing) and leaves hidden
             // traits out of the item's own info card, as for every other stat
             if (has) __result *= equipment.GetStatValue(stat);
