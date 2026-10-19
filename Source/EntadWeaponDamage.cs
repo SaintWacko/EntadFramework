@@ -67,14 +67,15 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "DamageInfosToApply")]
     public static class Patch_MeleeDamageInfos
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, ref IEnumerable<DamageInfo> __result)
+        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, ref IEnumerable<DamageInfo> __result)
         {
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
-            __result = Modify(__result, comp);
+            __result = Modify(__result, comp, target.Thing as Pawn);
         }
 
-        private static IEnumerable<DamageInfo> Modify(IEnumerable<DamageInfo> infos, CompEntad comp)
+        // Lazy: ApplyMeleeDamageToTarget deals each info before asking for the next, so the dead check sees the main blow
+        private static IEnumerable<DamageInfo> Modify(IEnumerable<DamageInfo> infos, CompEntad comp, Pawn victim)
         {
             DamageDef over = EntadWeaponDamage.TypeOverride(comp);
             bool first = true;
@@ -92,6 +93,7 @@ namespace EntadFramework
                     if (m.def.extraDamage == null) continue;
                     for (int i = 0; i < m.def.extraDamage.Count; i++)
                     {
+                        if (victim != null && victim.Dead) yield break;
                         var extra = new DamageInfo(original);
                         extra.Def = m.def.extraDamage[i].damageType;
                         extra.SetAmount(m.ExtraDamageFor(i));
