@@ -847,8 +847,9 @@ namespace EntadFramework
             // Combat Extended's Verb_LaunchProjectileCE derives from Verb, not Verb_LaunchProjectile, but reads both
             // stats too, hence the name check. Range needs no default projectile (a changeable-projectile verb has
             // none and vanilla still applies the multiplier); penetration needs one that armor can stop.
+            // (and a gun already at the radius cap, a mortar, couldn't use more range: StatPart_Entad.CapRange)
             if (stat == StatDefOf.RangedWeapon_RangeMultiplier)
-                return td.IsRangedWeapon && td.Verbs.Any(IsProjectileVerb);
+                return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && (v.rangeStat != null || v.range < GenRadial.MaxRadialPatternRadius - 1f));
             if (stat == StatDefOf.RangedWeapon_ArmorPenetrationMultiplier)
                 return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && v.defaultProjectile?.projectile?.damageDef?.armorCategory != null);
             if (stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) return td.IsMeleeWeapon;
