@@ -231,7 +231,8 @@ namespace EntadFramework
     {
         public static void Prefix(Projectile __instance, Thing hitThing)
         {
-            // Area weapons (incinerators, grenade launchers...) explode on the ground without hitting a thing
+            // A projectile with a blast radius can land on the ground without hitting a thing. Projectile_Explosive
+            // (grenades, rockets) never calls Projectile.Impact; Patch_ExplosiveExplode reveals for those.
             if (hitThing != null || __instance.def.projectile.explosionRadius > 0f) EntadWeaponReveal.Hit(__instance.Launcher as Pawn, false);
         }
     }

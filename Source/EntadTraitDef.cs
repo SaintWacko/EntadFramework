@@ -365,18 +365,21 @@ namespace EntadFramework
         public DamageDef changeDamageType;
         public List<ExtraDamageRange> extraDamage;
 
-        // Ranged weapons that don't fire a plain direct-hit projectile (explosive projectiles, beams, flame streams...)
-        // deal their damage some other way, so damage added to a hit would never apply. Melee weapons are never area weapons.
-        public static bool IsAreaWeapon(ThingDef td)
+        // Ranged weapons whose damage none of the hooks in EntadWeaponDamage.cs reach. Those hooks cover direct-hit
+        // projectiles, explosive projectiles (Projectile_Explosive) and beams (Verb_ShootBeam); until build 194 the
+        // last two were excluded here as well. Left out: a projectile with a blast radius that isn't a
+        // Projectile_Explosive, and a verb with no projectile that isn't a beam. Melee weapons always have a hook.
+        public static bool HasNoDamageHook(ThingDef td)
         {
             if (!td.IsRangedWeapon) return false;
             if (td.Verbs != null)
                 foreach (var v in td.Verbs)
                 {
+                    if (v.verbClass != null && typeof(Verb_ShootBeam).IsAssignableFrom(v.verbClass)) return false;
                     var proj = v.defaultProjectile;
                     if (proj?.projectile == null) continue;
-                    if (typeof(Verb_ShootBeam).IsAssignableFrom(v.verbClass)) continue;
-                    if (proj.projectile.explosionRadius > 0f || typeof(Projectile_Explosive).IsAssignableFrom(proj.thingClass)) continue;
+                    if (typeof(Projectile_Explosive).IsAssignableFrom(proj.thingClass)) return false;
+                    if (proj.projectile.explosionRadius > 0f) continue;
                     return false;
                 }
             return true;
@@ -714,7 +717,7 @@ namespace EntadFramework
             if (HasMoodRange && MoodCandidates().Count == 0) return false;
             // Furniture moods need a pawn to use the building (abilities work from the right-click menu on any furniture)
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
-            if (HasDamageEffect && (!td.IsWeapon || IsAreaWeapon(td))) return false;
+            if (HasDamageEffect && (!td.IsWeapon || HasNoDamageHook(td))) return false;
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             if (killThought != null && !td.IsWeapon) return false;
