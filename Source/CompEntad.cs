@@ -304,6 +304,9 @@ namespace EntadFramework
         // Player-chosen name; the surrounding entad markers are kept
         public string customName;
 
+        // Read freely, but change it only through AddTrait/RemoveTrait (or EntadApi): they reset the comp's lazy
+        // caches and clear the item's stat caches, several of which are permanent (EntadStatPartInjector.
+        // KeepsImmutableCache). A direct Add or Remove leaves those values stale until the next save and load.
         public List<AppliedEntadTrait> activeTraits = new List<AppliedEntadTrait>();
 
         // Dismantling work done so far, kept on the item like an unfinished thing's work so any researcher can resume it
@@ -679,6 +682,7 @@ namespace EntadFramework
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;
+                meleePenetration = 0;
                 foreach (var trait in activeTraits)
                 {
                     trait.owner = this;

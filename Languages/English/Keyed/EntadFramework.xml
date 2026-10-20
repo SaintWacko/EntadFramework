@@ -164,6 +164,7 @@
   <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
   <EF_Explain_Bound>Bound entad, traits priced as a flat premium: {0}</EF_Explain_Bound>
   <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
+  <EF_Explain_RangeCap>Range limit of {0} tiles: x{1}</EF_Explain_RangeCap>
 
   <!-- Abilities. {0} = ability, {1} = building. -->
   <EF_AbilityUnknown>The effect of this ability is not yet known.</EF_AbilityUnknown>
