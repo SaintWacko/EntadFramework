@@ -245,7 +245,8 @@
     </comps>
     <modExtensions>
       <!-- Past the first split (8 tiles), so at least 3 projectiles. The final spread reaches about 4 tiles, and
-           explosive shots hurt everyone, so no centre with one of the caster's side inside it. -->
+           explosive shots hurt everyone, so no centre with one of the caster's side standing inside it (downed
+           ones aren't counted). -->
       <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
         <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
         <priority>10</priority>

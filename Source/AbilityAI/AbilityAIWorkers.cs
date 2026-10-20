@@ -259,7 +259,7 @@ namespace EntadFramework.AbilityAI
                 float reach = ext.maxRange >= 0f ? ext.maxRange : 40f;
                 if (d < ext.minGapDistance || d > reach) return false;
                 if (self) { target = ctx.pawn; return true; }
-                // Out of the ability's reach even from the far side of the enemy: skip the eight validations
+                // Even the cell next to the enemy nearest the caster is out of reach: skip the eight validations
                 if (d > AbilityAIUtility.Range(ability, ext) + 1.5f) return false;
                 if (TryCellNear(ctx, ability, enemy, out IntVec3 cell)) { target = cell; return true; }
             }
