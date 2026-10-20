@@ -379,6 +379,9 @@ namespace EntadFramework
     // cell move in ten. With Entad_FilthPickupFactor below 1 the pickup only happens at that chance. The stat comes
     // from worn gear through the wearer-stat path (EntadWearerStats); read with a 250-tick cache, so a walking pawn
     // works it out a few times a minute at most.
+    // A bool prefix on purpose: skipping the pickup means skipping the whole method. That includes thinning the
+    // floor filth the pawn would have picked up, which is right: the dirt stays where it is instead of travelling.
+    // No other mod in the corpus patches this private method, so nothing else is silenced.
     [HarmonyPatch(typeof(Pawn_FilthTracker), "TryPickupFilth")]
     public static class Patch_FilthTracker_TryPickupFilth
     {

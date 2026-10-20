@@ -81,11 +81,11 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Hearthward</defName>
     <label>Hearthward</label>
-    <description>Those who sleep near it wake a little more whole.</description>
+    <description>When its sleeper wakes, everyone sharing the room feels a little more whole.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
-    <!-- Mending Rest heals the sleeper; this heals the whole room, less and not every night -->
+    <!-- Mending Rest heals the sleeper; this heals everyone of the sleeper's faction in the room (awake ones, animals and prisoners too), less and not every night -->
     <triggers>
       <li>
         <on>Use</on>

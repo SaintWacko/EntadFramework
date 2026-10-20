@@ -36,11 +36,15 @@ namespace EntadFramework
             {
                 if (product == null) { yield return product; continue; }
                 // One step up from what the crafter's skill rolled (an inspiration included), at most legendary.
-                // Art was already made for the first roll, and stays.
-                if (qualityChance > 0f && product.TryGetQuality(out var q) && q < QualityCategory.Legendary && Rand.Chance(qualityChance))
+                // Art was already made for the first roll, and stays. A sculpture or other minifiable product comes
+                // out of PostProcessProduct already packed in a MinifiedThing, so the quality comp is on the inner thing.
+                // (Vanilla's masterwork and legendary notifications ran at the first roll, so a raise to those
+                // levels gets only our message.)
+                var qualityComp = product.GetInnerIfMinified().TryGetComp<CompQuality>();
+                if (qualityChance > 0f && qualityComp != null && qualityComp.Quality < QualityCategory.Legendary && Rand.Chance(qualityChance))
                 {
-                    var raised = q + 1;
-                    product.TryGetComp<CompQuality>().SetQuality(raised, null);
+                    var raised = qualityComp.Quality + 1;
+                    qualityComp.SetQuality(raised, null);
                     Reveal(comp, EntadStatDefOf.Entad_ProductQualityChance);
                     Messages.Message("EF_ProductQualityRaised".Translate(worker.LabelShort, bench.LabelShort, product.LabelNoCount, raised.GetLabel()),
                         new LookTargets(bench), MessageTypeDefOf.PositiveEvent);
