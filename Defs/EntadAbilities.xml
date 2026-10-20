@@ -120,11 +120,13 @@
       </li>
     </comps>
     <modExtensions>
-      <!-- The caster and at least two allies who aren't emboldened yet -->
+      <!-- The caster and at least two allies who aren't emboldened yet. A ranged caster walks up to 12 tiles to
+           an ally group to reach them. -->
       <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
         <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEFriendly</workerClass>
         <priority>5</priority>
         <minTargets>3</minTargets>
+        <approachDistance>12</approachDistance>
       </li>
     </modExtensions>
   </AbilityDef>
@@ -213,10 +215,17 @@
       </li>
     </comps>
     <modExtensions>
+      <!-- Two enemies not already stunned; a ranged caster walks up to 10 tiles closer to reach them -->
       <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
         <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
         <priority>6</priority>
         <minTargets>2</minTargets>
+        <approachDistance>10</approachDistance>
+      </li>
+      <!-- Any enemy aiming a grenade, launcher or ability, before the group rule -->
+      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
+        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Interrupt</workerClass>
+        <priority>8</priority>
       </li>
     </modExtensions>
   </AbilityDef>
