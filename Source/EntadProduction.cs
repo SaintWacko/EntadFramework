@@ -47,12 +47,14 @@ namespace EntadFramework
                     // With a source, SetQuality initializes art. That's a no-op where the first roll already made art
                     // (CompArt keeps an existing title), and makes it for a weapon whose art starts at the raised
                     // level (minQualityForArtistic). JustCreatedBy only names the author once the art can show, so
-                    // vanilla's call at the first roll did nothing for such a weapon; it's repeated here (for art that
-                    // already had an author it writes the same name again).
-                    qualityComp.SetQuality(raised, ArtGenerationContext.Colony);
+                    // vanilla's call at the first roll did nothing for such a weapon, and it's made here. Only then:
+                    // vanilla calls it once per thing, and an override can have side effects (Odyssey's CompStatue
+                    // picks a new subject and gives them a memory).
                     var inner = product.GetInnerIfMinified();
                     var art = inner.TryGetComp<CompArt>();
-                    art?.JustCreatedBy(worker);
+                    bool couldShow = art != null && art.CanShowArt;
+                    qualityComp.SetQuality(raised, ArtGenerationContext.Colony);
+                    if (art != null && !couldShow && art.CanShowArt) art.JustCreatedBy(worker);
                     // Vanilla records the art tale from excellent up; a raise into that band records it here instead.
                     // Only with art in place: the tale reads the thing's art title.
                     if (raised == QualityCategory.Excellent && art != null && art.Active)
