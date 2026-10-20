@@ -451,7 +451,8 @@ namespace EntadFramework.AbilityAI
         public const int EvalIntervalTicks = 30;
 
         // A walk into casting range ends after this long whether or not it got there, and the same ability isn't
-        // walked toward again for ApproachRetryTicks after one starts
+        // walked toward again for ApproachRetryTicks after one starts, or for ApproachFailRetryTicks after no
+        // approach cell is found
         public const int ApproachExpiryTicks = 300;
         public const int ApproachRetryTicks = 600;
         public const int ApproachFailRetryTicks = 120;
@@ -666,7 +667,8 @@ namespace EntadFramework.AbilityAI
         // pawns close in anyway, and a pawn that is hurt, fleeing, held in melee or carrying someone has better
         // things to do. Cost: one worker scan like the one above, then one CastPositionFinder search, which checks
         // line of sight from every cell within approachDistance + 3 of the caster and range of the target (about
-        // 27x27 cells for Flashbang), at most once per ApproachRetryTicks (10 s) per ability per pawn.
+        // 27x27 cells for Flashbang), per ability per pawn once per 10 s after a walk starts and once per 2 s while
+        // no cell is found.
         private static Job TryApproach(PawnState state)
         {
             if (!AbilityAISettings.Approach) return null;
