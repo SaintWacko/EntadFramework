@@ -229,7 +229,8 @@ namespace EntadFramework.AbilityAI
     /// maxRange (default 40; a targeted ability also needs it in reach); a targeted ability lands next to it.
     /// Escape: health under healthThreshold, fleeing, or a ranged pawn caught in melee, with an enemy within 12 tiles;
     /// a targeted ability tries 16 directions at full and 60% range for the cell furthest from every enemy, and only
-    /// goes if that gains at least 4 tiles. Cost: escape is 32 × k distance checks, then up to 6 validations.
+    /// goes if that gains at least 4 tiles. Cost: escape is 32 × k distance checks, then up to 6 validations;
+    /// gap-close with a targeted ability up to 8 validations, only while the enemy is within its reach.
     /// </summary>
     public class AbilityAIWorker_Movement : AbilityAIWorker
     {
@@ -258,6 +259,8 @@ namespace EntadFramework.AbilityAI
                 float reach = ext.maxRange >= 0f ? ext.maxRange : 40f;
                 if (d < ext.minGapDistance || d > reach) return false;
                 if (self) { target = ctx.pawn; return true; }
+                // Out of the ability's reach even from the far side of the enemy: skip the eight validations
+                if (d > AbilityAIUtility.Range(ability, ext) + 1.5f) return false;
                 if (TryCellNear(ctx, ability, enemy, out IntVec3 cell)) { target = cell; return true; }
             }
             return false;
@@ -378,11 +381,10 @@ namespace EntadFramework.AbilityAI
             return false;
         }
 
-        // A ranged enemy whose fight target or current attack job is the caster
+        // A ranged enemy (mechs and animals by their own verbs) whose fight target or current attack job is the caster
         private static bool AimsAt(Pawn e, Pawn pawn)
         {
-            var primary = e.equipment?.Primary;
-            if (primary == null || !primary.def.IsRangedWeapon) return false;
+            if (!AbilityAIContext.FightsAtRange(e)) return false;
             if (e.mindState?.enemyTarget == pawn) return true;
             var job = e.CurJob;
             return job != null && job.targetA.Thing == pawn;

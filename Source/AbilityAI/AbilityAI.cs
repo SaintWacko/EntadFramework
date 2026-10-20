@@ -6,6 +6,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 // The ability AI: lets NPC pawns (raiders, visitors, tamed animals, mechs) cast abilities with some judgement.
 //
@@ -38,8 +39,10 @@ namespace EntadFramework.AbilityAI
         /// ability is the host's to cast for this pawn; Veto = never now (an unbound item, say).</summary>
         AbilityAIVote Vote(Pawn pawn, Ability ability);
 
-        /// <summary>The AI has just given the pawn a job to cast this ability. The cast itself resolves later
-        /// (Ability.Activate), or not at all if the job is interrupted.</summary>
+        /// <summary>The AI has just handed vanilla a job to cast this ability. Vanilla may still discard it without
+        /// starting it (a job override check with a minimum priority, say), and a started cast resolves later
+        /// (Ability.Activate) or not at all if interrupted: hook anything that must only happen on a real cast to
+        /// Ability.Activate instead.</summary>
         void Notify_AICast(Pawn pawn, Ability ability, LocalTargetInfo target, LocalTargetInfo dest);
     }
 
@@ -288,8 +291,9 @@ namespace EntadFramework.AbilityAI
                     else
                     {
                         var list = map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
+                        // A captured raider keeps its faction: not someone its friends can buff from across the map
                         for (int i = 0; i < list.Count; i++)
-                            if (!list[i].Dead && !list[i].Downed) allies.Add(list[i]);
+                            if (!list[i].Dead && !list[i].Downed && !list[i].IsPrisoner) allies.Add(list[i]);
                     }
                 }
                 return allies;
@@ -298,16 +302,15 @@ namespace EntadFramework.AbilityAI
 
         /// <summary>Whether the pawn fights at range: its primary weapon, or for a pawn without one (animals, some
         /// mechs) its first ranged verb.</summary>
-        public bool UsesRanged
+        public bool UsesRanged => FightsAtRange(pawn);
+
+        public static bool FightsAtRange(Pawn p)
         {
-            get
-            {
-                var primary = pawn.equipment?.Primary;
-                if (primary != null) return primary.def.IsRangedWeapon;
-                var verbs = pawn.verbTracker?.AllVerbs;
-                if (verbs != null) for (int i = 0; i < verbs.Count; i++) if (!verbs[i].IsMeleeAttack) return true;
-                return false;
-            }
+            var primary = p.equipment?.Primary;
+            if (primary != null) return primary.def.IsRangedWeapon;
+            var verbs = p.verbTracker?.AllVerbs;
+            if (verbs != null) for (int i = 0; i < verbs.Count; i++) if (!verbs[i].IsMeleeAttack) return true;
+            return false;
         }
 
         public float HealthFraction => pawn.health?.summaryHealth?.SummaryHealthPercent ?? 1f;
@@ -360,6 +363,9 @@ namespace EntadFramework.AbilityAI
         {
             if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.RaceProps.Humanlike) return false;
             if (pawn.IsPrisoner) return false;
+            // The player's animals and mechs in a lord are forming a caravan, roped or the like: a constant-tree job
+            // interrupts whatever they are doing, so leave them to it
+            if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.GetLord() != null) return false;
             if (pawn.RaceProps.IsMechanoid) return AbilityAISettings.Mechs;
             if (pawn.RaceProps.Animal) return AbilityAISettings.Animals;
             return pawn.HostileTo(Faction.OfPlayer) ? AbilityAISettings.Hostiles : AbilityAISettings.NonHostiles;
