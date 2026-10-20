@@ -385,11 +385,18 @@ namespace EntadFramework.AbilityAI
             spots.Sort((a, b) => b.score.CompareTo(a.score));
             for (int i = 0; i < spots.Count && i < TargetingUtil.MaxTries; i++)
             {
-                if (spots[i].score < 3f && InvisibleAllyNear(allies, spots[i].cell, r2)) continue;
+                if (InvisibleAllyNear(allies, spots[i].cell, r2) && !BurningAllyNear(allies, ctx.pawn, spots[i].cell, r2)) continue;
                 if (AbilityAIDriver.Valid(ability, spots[i].cell)) { target = spots[i].cell; break; }
             }
             spots.Clear();
             return target.IsValid;
+        }
+
+        private static bool BurningAllyNear(List<Pawn> allies, Pawn caster, IntVec3 c, float r2)
+        {
+            for (int i = 0; i < allies.Count; i++)
+                if (allies[i] != caster && (allies[i].Position - c).LengthHorizontalSquared <= r2 && allies[i].IsBurning()) return true;
+            return false;
         }
 
         private static bool InvisibleAllyNear(List<Pawn> allies, IntVec3 c, float r2)

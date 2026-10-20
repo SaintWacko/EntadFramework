@@ -351,8 +351,10 @@ namespace EntadFramework.AbilityAI
 
         /// <summary>Standing pawns the caster mustn't catch in a hostile area or provoke a berserker next to: its
         /// allies (the caster included) plus every other pawn with a faction that isn't hostile to it, so a friendly
-        /// visitor's pulse spares the colonists it fights beside. Wild animals are left out. Built only when a
-        /// worker asks (avoidAllies, meleeOnly): one pass over the map's spawned pawns.</summary>
+        /// visitor's pulse spares the colonists it fights beside. Wild animals are left out. The caster's faction's
+        /// prisoners are in it (spared by area casts), unlike Allies. A caster with no faction (a wild animal) gets
+        /// every non-hostile pawn with a faction. Built only when a worker asks (avoidAllies, meleeOnly): one pass
+        /// over the map's spawned pawns.</summary>
         public List<Pawn> Friendlies
         {
             get
