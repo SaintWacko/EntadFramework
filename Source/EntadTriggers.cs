@@ -366,7 +366,7 @@ namespace EntadFramework
 
         private static readonly List<Pawn> areaTargets = new List<Pawn>();
 
-        private static bool IsTarget(Pawn pawn, Pawn other, EntadTriggerTargets targets)
+        internal static bool IsTarget(Pawn pawn, Pawn other, EntadTriggerTargets targets)
         {
             if (other == pawn) return (targets & EntadTriggerTargets.Self) != 0;
             if ((targets & EntadTriggerTargets.Enemies) != 0 && other.HostileTo(pawn)) return true;
@@ -405,7 +405,7 @@ namespace EntadFramework
             }
         }
 
-        private static void Restore(Need need, float fraction)
+        internal static void Restore(Need need, float fraction)
         {
             if (need != null && fraction > 0f) need.CurLevelPercentage += fraction;
         }
@@ -428,7 +428,7 @@ namespace EntadFramework
         }
 
         // A hediff already there has its time topped up to the new length rather than a second copy added
-        private static void AddOrExtend(Pawn pawn, HediffDef def, float hours)
+        internal static void AddOrExtend(Pawn pawn, HediffDef def, float hours)
         {
             int ticks = hours > 0f ? Mathf.RoundToInt(hours * GenDate.TicksPerHour) : -1;
             var existing = pawn.health.hediffSet.GetFirstHediffOfDef(def);
