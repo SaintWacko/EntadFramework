@@ -45,6 +45,10 @@ namespace EntadFramework
                 {
                     var raised = qualityComp.Quality + 1;
                     qualityComp.SetQuality(raised, null);
+                    // Vanilla records the art tale from excellent up; a raise into that band records it here instead
+                    var inner = product.GetInnerIfMinified();
+                    if (qualityComp.Quality == QualityCategory.Excellent && inner.TryGetComp<CompArt>() != null)
+                        TaleRecorder.RecordTale(TaleDefOf.CraftedArt, worker, inner);
                     Reveal(comp, EntadStatDefOf.Entad_ProductQualityChance);
                     Messages.Message("EF_ProductQualityRaised".Translate(worker.LabelShort, bench.LabelShort, product.LabelNoCount, raised.GetLabel()),
                         new LookTargets(bench), MessageTypeDefOf.PositiveEvent);
