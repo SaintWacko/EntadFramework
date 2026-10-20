@@ -373,7 +373,8 @@ namespace EntadFramework.AbilityAI
                 if (!(fires[i] is Fire f) || f.parent is Pawn || !f.Spawned) continue;
                 if ((f.Position - from).LengthHorizontalSquared > reachSq) continue;
                 looked++;
-                if (TargetingUtil.AnyWithin(allies, f.Position, near2)) spots.Add(new Spot { cell = f.Position, weight = 1f });
+                if (TargetingUtil.AnyWithin(allies, f.Position, near2) || TargetingUtil.AnyWithin(downed, f.Position, near2))
+                    spots.Add(new Spot { cell = f.Position, weight = 1f });
             }
             if (spots.Count == 0) return false;
 
