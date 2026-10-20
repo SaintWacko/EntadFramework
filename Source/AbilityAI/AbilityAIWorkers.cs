@@ -111,11 +111,13 @@ namespace EntadFramework.AbilityAI
                         if (e.hediff == null) e.hediff = info.AIHediff;
                     }
                     if (c.compClass != null && typeof(CompAbilityEffect_Stun).IsAssignableFrom(c.compClass)) e.stuns = true;
-                    if (c is CompProperties_AbilityGiveHediff give && !give.onlyApplyToSelf && !give.applyToSelf && e.hediff == null) e.hediff = give.hediffDef;
+                    // As CompAbilityEffect_GiveHediff.Apply decides who gets it
+                    if (c is CompProperties_AbilityGiveHediff give && give.applyToTarget && !give.onlyApplyToSelf && e.hediff == null) e.hediff = give.hediffDef;
                     if (c is CompProperties_AbilityGiveMentalState) e.mentalState = true;
-                    if (c is CompProperties_AbilityEffect ae && ae.psychic)
+                    if (c is CompProperties_AbilityEffect ae)
                     {
-                        e.psychic = true;
+                        if (ae.psychic) e.psychic = true;
+                        // Psycast.CanApplyPsycastTo: once any comp is psychic, any comp not for mechs rules them out
                         if (!ae.applicableToMechs) e.notOnMechs = true;
                     }
                 }
@@ -147,20 +149,26 @@ namespace EntadFramework.AbilityAI
 
         /// <summary>A ranged enemy (mechs and animals by their own verbs) whose fight target or current attack job
         /// is this pawn.</summary>
-        public static bool AimsAt(Pawn e, Pawn pawn)
+        public static bool AimsAt(Pawn e, Pawn pawn) => AbilityAIContext.FightsAtRange(e) && AimTarget(e) == pawn;
+
+        /// <summary>Who a pawn is attacking: its fight target, else the target of an attack job. Other jobs
+        /// (kidnapping, stripping) don't count.</summary>
+        public static Thing AimTarget(Pawn e)
         {
-            if (!AbilityAIContext.FightsAtRange(e)) return false;
-            if (e.mindState?.enemyTarget == pawn) return true;
+            Thing t = e.mindState?.enemyTarget;
+            if (t != null) return t;
             var job = e.CurJob;
-            return job != null && job.targetA.Thing == pawn;
+            if (job != null && (job.def == JobDefOf.AttackStatic || job.def == JobDefOf.AttackMelee)) return job.targetA.Thing;
+            return null;
         }
 
-        /// <summary>Standing next to the caster or one of its allies, so presumably fighting them in melee.</summary>
+        /// <summary>Standing next to the caster or anyone on its side (Friendlies), so presumably fighting them in
+        /// melee.</summary>
         public static bool InMeleeWithSide(AbilityAIContext ctx, Pawn e)
         {
-            var allies = ctx.Allies;
-            for (int i = 0; i < allies.Count; i++)
-                if (allies[i].Position.AdjacentTo8WayOrInside(e.Position)) return true;
+            var side = ctx.Friendlies;
+            for (int i = 0; i < side.Count; i++)
+                if (side[i].Position.AdjacentTo8WayOrInside(e.Position)) return true;
             return false;
         }
 
@@ -187,12 +195,15 @@ namespace EntadFramework.AbilityAI
         }
 
         /// <summary>The nearest enemy within 1.5 tiles that is fighting the pawn in melee.</summary>
-        public static bool InMelee(AbilityAIContext ctx)
+        public static bool InMelee(AbilityAIContext ctx) => InMelee(ctx, ctx.pawn);
+
+        /// <summary>Hurt in melee in the last 10 seconds by someone still standing next to it.</summary>
+        public static bool InMelee(AbilityAIContext ctx, Pawn p)
         {
-            Pawn threat = ctx.pawn.mindState?.meleeThreat;
-            if (threat == null || !threat.Spawned || threat.Downed || threat.Map != ctx.map) return false;
-            return ctx.tick - ctx.pawn.mindState.lastMeleeThreatHarmTick < AbilityAIContext.RecentTicks
-                && threat.Position.InHorDistOf(ctx.pawn.Position, 1.5f);
+            Pawn threat = p.mindState?.meleeThreat;
+            if (threat == null || !threat.Spawned || threat.Dead || threat.Downed || threat.Map != ctx.map) return false;
+            return ctx.tick - p.mindState.lastMeleeThreatHarmTick < AbilityAIContext.RecentTicks
+                && threat.Position.InHorDistOf(p.Position, 1.5f);
         }
     }
 
@@ -275,11 +286,12 @@ namespace EntadFramework.AbilityAI
             return centres.Count > 0;
         }
 
+        // Anyone on the caster's side, colonists included when the caster is a friendly visitor
         private static bool AnyAllyNear(AbilityAIContext ctx, IntVec3 c, float r2)
         {
-            var allies = ctx.Allies;
-            for (int i = 0; i < allies.Count; i++)
-                if ((allies[i].Position - c).LengthHorizontalSquared <= r2) return true;
+            var side = ctx.Friendlies;
+            for (int i = 0; i < side.Count; i++)
+                if ((side[i].Position - c).LengthHorizontalSquared <= r2) return true;
             return false;
         }
     }

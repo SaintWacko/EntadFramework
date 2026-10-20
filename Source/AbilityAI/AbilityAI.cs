@@ -178,6 +178,8 @@ namespace EntadFramework.AbilityAI
         public bool painShockOnly;
         /// <summary>Calm: any mental state, not only aggressive ones.</summary>
         public bool anyMentalState;
+        /// <summary>Calm: skip a break that will end by itself within this many seconds.</summary>
+        public float minBreakSeconds;
         /// <summary>Interrupt: also any aim with at least this many seconds left (0 = only abilities and explosives).</summary>
         public float minAimSeconds;
 
@@ -219,7 +221,8 @@ namespace EntadFramework.AbilityAI
         public int tick;
 
         private bool combatKnown, inCombat;
-        private bool enemiesBuilt, alliesBuilt, aimsBuilt;
+        private bool enemiesBuilt, alliesBuilt, aimsBuilt, friendliesBuilt;
+        private readonly List<Pawn> friendlies = new List<Pawn>();
         private readonly List<Pawn> enemies = new List<Pawn>();
         private readonly List<Pawn> allies = new List<Pawn>();
         private readonly List<Pawn> downedAllies = new List<Pawn>();
@@ -232,7 +235,7 @@ namespace EntadFramework.AbilityAI
             pawn = p;
             map = p.Map;
             tick = t;
-            combatKnown = enemiesBuilt = alliesBuilt = aimsBuilt = enemyTargetKnown = false;
+            combatKnown = enemiesBuilt = alliesBuilt = aimsBuilt = friendliesBuilt = enemyTargetKnown = false;
         }
 
         internal void End()
@@ -241,6 +244,7 @@ namespace EntadFramework.AbilityAI
             allies.Clear();
             downedAllies.Clear();
             aimedAt.Clear();
+            friendlies.Clear();
             enemyTarget = null;
             pawn = null;
             map = null;
@@ -345,6 +349,30 @@ namespace EntadFramework.AbilityAI
             }
         }
 
+        /// <summary>Standing pawns the caster mustn't catch in a hostile area or provoke a berserker next to: its
+        /// allies (the caster included) plus every other pawn with a faction that isn't hostile to it, so a friendly
+        /// visitor's pulse spares the colonists it fights beside. Wild animals are left out. Built only when a
+        /// worker asks (avoidAllies, meleeOnly): one pass over the map's spawned pawns.</summary>
+        public List<Pawn> Friendlies
+        {
+            get
+            {
+                if (!friendliesBuilt)
+                {
+                    friendliesBuilt = true;
+                    friendlies.AddRange(Allies);
+                    var all = map.mapPawns.AllPawnsSpawned;
+                    for (int i = 0; i < all.Count; i++)
+                    {
+                        Pawn p = all[i];
+                        if (p.Faction == null || p.Faction == pawn.Faction || p.Dead || p.Downed) continue;
+                        if (!p.HostileTo(pawn)) friendlies.Add(p);
+                    }
+                }
+                return friendlies;
+            }
+        }
+
         /// <summary>How many ranged enemies are aiming at this pawn now: their fight target or current attack job.
         /// Built once per evaluation from Enemies (k checks), then a lookup.</summary>
         public int AimedAtCount(Pawn p)
@@ -357,8 +385,7 @@ namespace EntadFramework.AbilityAI
                 {
                     Pawn e = list[i];
                     if (!FightsAtRange(e)) continue;
-                    Thing t = e.mindState?.enemyTarget;
-                    if (t == null) t = e.CurJob?.targetA.Thing;
+                    Thing t = AbilityAIUtility.AimTarget(e);
                     if (t is Pawn victim)
                     {
                         aimedAt.TryGetValue(victim, out int n);
@@ -620,8 +647,9 @@ namespace EntadFramework.AbilityAI
         // Nothing could be cast from here: walk toward the first candidate (by priority) that has something just out
         // of reach. Not while already walking to cast, and only for a fighting ranged pawn in decent shape: melee
         // pawns close in anyway, and a pawn that is hurt, fleeing, held in melee or carrying someone has better
-        // things to do. Cost: one worker scan like the one above, then one CastPositionFinder search (a few regions
-        // around the target), at most once per ApproachRetryTicks per ability.
+        // things to do. Cost: one worker scan like the one above, then one CastPositionFinder search, which checks
+        // line of sight from every cell within approachDistance + 3 of the caster and range of the target (about
+        // 27x27 cells for Flashbang), at most once per ApproachRetryTicks (10 s) per ability per pawn.
         private static Job TryApproach(PawnState state)
         {
             if (!AbilityAISettings.Approach) return null;

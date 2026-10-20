@@ -175,12 +175,16 @@
           </value>
         </li>
 
+        <!-- The target sleeps about 4 minutes afterwards, so not for a break with under a minute left (a berserk
+             psycast lasts 15 s), and only for someone close: the caster has to walk up and touch them -->
         <li Class="PatchOperationAddModExtension">
           <xpath>Defs/AbilityDef[defName="WordOfSerenity"]</xpath>
           <value>
             <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
               <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Calm</workerClass>
               <priority>5</priority>
+              <maxRange>8</maxRange>
+              <minBreakSeconds>60</minBreakSeconds>
             </li>
           </value>
         </li>
