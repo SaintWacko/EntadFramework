@@ -229,12 +229,20 @@ namespace EntadFramework.AbilityAI
         private readonly Dictionary<Pawn, int> aimedAt = new Dictionary<Pawn, int>();
         private Thing enemyTarget;
         private bool enemyTargetKnown;
+        private AbilityDef approachAbility;
+        private int approachExpected;
 
-        internal void Begin(Pawn p, int t)
+        /// <summary>While the pawn walks to a cell a worker chose with TryFindApproachCell for this ability: how
+        /// many targets the worker expected to reach from there. 0 otherwise.</summary>
+        public int ApproachExpected(Ability ability) => ability.def == approachAbility ? approachExpected : 0;
+
+        internal void Begin(Pawn p, int t, AbilityDef walkingFor, int expected)
         {
             pawn = p;
             map = p.Map;
             tick = t;
+            approachAbility = walkingFor;
+            approachExpected = expected;
             combatKnown = enemiesBuilt = alliesBuilt = aimsBuilt = friendliesBuilt = enemyTargetKnown = false;
         }
 
@@ -454,6 +462,9 @@ namespace EntadFramework.AbilityAI
             public Dictionary<AbilityDef, int> abilityNext;
             public Dictionary<AbilityDef, int> approachNext;
             public int approachJobId = -1;
+            // Set by a TryFindApproachCell walk, cleared with approachJobId
+            public AbilityDef approachAbility;
+            public int approachExpected;
         }
 
         private struct Candidate
@@ -568,6 +579,8 @@ namespace EntadFramework.AbilityAI
             if (state.approachJobId >= 0 && pawn.CurJob?.loadID != state.approachJobId)
             {
                 state.approachJobId = -1;
+                state.approachAbility = null;
+                state.approachExpected = 0;
                 state.nextEvalTick = tick;
             }
             if (tick < state.nextEvalTick || tick < state.nextCastTick) return null;
@@ -603,7 +616,7 @@ namespace EntadFramework.AbilityAI
             if (candidates.Count == 0) return null;
 
             evaluating = true;
-            ctx.Begin(pawn, tick);
+            ctx.Begin(pawn, tick, state.approachJobId >= 0 ? state.approachAbility : null, state.approachExpected);
             try
             {
                 for (int i = 0; i < candidates.Count; i++)
@@ -665,9 +678,22 @@ namespace EntadFramework.AbilityAI
                 var ext = candidates[i].ext;
                 if (ext.approachDistance <= 0f || ctx.HealthFraction < ext.healthThreshold || !CombatAllows(ext.Worker)) continue;
                 if (state.approachNext != null && state.approachNext.TryGetValue(a.def, out int next) && ctx.tick < next) continue;
-                float reach = AbilityAIUtility.Range(a, ext) + ext.approachDistance;
-                if (!ext.Worker.TryFindApproachTarget(ctx, a, reach, out Thing goal) || goal == null) continue;
-                if (!TryFindApproachCell(a, ext, goal, out IntVec3 cell)) continue;
+                IntVec3 cell;
+                int expected = 0;
+                string at;
+                if (ext.Worker.TryFindApproachCell(ctx, a, out cell, out expected))
+                {
+                    if (!pawn.CanReach(cell, PathEndMode.OnCell, Danger.Some)) continue;
+                    at = $"{cell} (expects {expected})";
+                }
+                else
+                {
+                    float reach = AbilityAIUtility.Range(a, ext) + ext.approachDistance;
+                    if (!ext.Worker.TryFindApproachTarget(ctx, a, reach, out Thing goal) || goal == null) continue;
+                    if (!TryFindApproachCell(a, ext, goal, out cell)) continue;
+                    expected = 0;
+                    at = goal.LabelShort;
+                }
 
                 if (state.approachNext == null) state.approachNext = new Dictionary<AbilityDef, int>();
                 state.approachNext[a.def] = ctx.tick + ApproachRetryTicks;
@@ -676,8 +702,10 @@ namespace EntadFramework.AbilityAI
                 job.checkOverrideOnExpire = false;
                 job.locomotionUrgency = LocomotionUrgency.Jog;
                 state.approachJobId = job.loadID;
+                state.approachAbility = expected > 0 ? a.def : null;
+                state.approachExpected = expected;
                 if (AbilityAISettings.DebugLog && Prefs.DevMode)
-                    Log.Message($"[Ability AI] {pawn.LabelShort} moves to {cell} to cast {a.def.label} ({ext.Worker.GetType().Name}) at {goal.LabelShort}");
+                    Log.Message($"[Ability AI] {pawn.LabelShort} moves to {cell} to cast {a.def.label} ({ext.Worker.GetType().Name}) at {at}");
                 return job;
             }
             return null;

@@ -35,6 +35,17 @@ namespace EntadFramework.AbilityAI
             goal = null;
             return false;
         }
+
+        /// <summary>Self-cast abilities, asked before TryFindApproachTarget: a cell to walk to and stand on, and how
+        /// many targets the cast would reach from there. While the walk lasts, ctx.ApproachExpected(ability) returns
+        /// that number, so the worker can wait for the spot it chose instead of casting at the first cell that
+        /// meets minTargets. The driver checks reachability.</summary>
+        public virtual bool TryFindApproachCell(AbilityAIContext ctx, Ability ability, out IntVec3 cell, out int expected)
+        {
+            cell = IntVec3.Invalid;
+            expected = 0;
+            return false;
+        }
     }
 
     public static class AbilityAIUtility
@@ -299,34 +310,83 @@ namespace EntadFramework.AbilityAI
     /// <summary>
     /// AoE friendly: an area buff over allies (Battle Cry). Self-cast abilities centre on the caster; targeted ones
     /// on whichever ally gathers the most. Counts allies (the caster included) within the radius that don't yet have
-    /// the ability's hediff; casts when at least minTargets would gain it. Approach (self-cast only): the ally within
-    /// approachDistance with the most such allies around it, counting the caster as one more, so the pawn walks
-    /// over and shouts there. Cost: allies² distance checks at most.
+    /// the ability's hediff; casts when at least minTargets would gain it. Approach (self-cast only): candidate cells
+    /// are the allies within approachDistance + radius that lack the hediff, and the midpoint of every pair of them
+    /// within two radii of each other; the standable cell within approachDistance that would cover the most (the
+    /// caster counted once, at the new cell), nearest on a tie, and more than the caster covers where it stands.
+    /// During the walk the pawn only shouts early once its current cell covers as many as the chosen one. Cost:
+    /// with m nearby allies, m²/2 candidate cells × m distance checks (about 500 for 10), at most once per 10 s.
     /// </summary>
     public class AbilityAIWorker_AoEFriendly : AbilityAIWorker
     {
-        public override bool TryFindApproachTarget(AbilityAIContext ctx, Ability ability, float reach, out Thing goal)
+        private struct Spot { public IntVec3 cell; public int count; public float dist; }
+        private static readonly List<Pawn> near = new List<Pawn>();
+        private static readonly List<Spot> spots = new List<Spot>();
+
+        public override bool TryFindApproachCell(AbilityAIContext ctx, Ability ability, out IntVec3 cell, out int expected)
         {
-            goal = null;
+            cell = IntVec3.Invalid;
+            expected = 0;
             if (!AbilityAIUtility.IsSelfCast(ability)) return false;
             float radius = AbilityAIUtility.Radius(ability, ext);
             float r2 = radius * radius;
             HediffDef hediff = AbilityAIUtility.Hediff(ability, ext);
-            var allies = ctx.Allies;
+            Pawn pawn = ctx.pawn;
+            Map map = ctx.map;
+            IntVec3 from = pawn.Position;
             float maxSq = ext.approachDistance * ext.approachDistance;
-            bool selfCounts = !AbilityAIUtility.Has(ctx.pawn, hediff);
-            int best = ext.minTargets - 1;
+            float lookSq = (ext.approachDistance + radius) * (ext.approachDistance + radius);
+            bool selfCounts = !AbilityAIUtility.Has(pawn, hediff);
+
+            // Allies (not the caster) that would gain the buff and could be covered from a reachable cell
+            near.Clear();
+            var allies = ctx.Allies;
             for (int i = 0; i < allies.Count; i++)
             {
                 Pawn a = allies[i];
-                if (a == ctx.pawn || (a.Position - ctx.pawn.Position).LengthHorizontalSquared > maxSq) continue;
-                // Everyone around that ally, minus the caster where it stands now, plus the caster once it arrives
-                int n = Count(allies, a.Position, r2, hediff);
-                if (selfCounts && (ctx.pawn.Position - a.Position).LengthHorizontalSquared <= r2) n--;
-                if (selfCounts) n++;
-                if (n > best) { best = n; goal = a; }
+                if (a == pawn || AbilityAIUtility.Has(a, hediff)) continue;
+                if ((a.Position - from).LengthHorizontalSquared <= lookSq) near.Add(a);
             }
-            return goal != null;
+            int here = CountNear(from, r2) + (selfCounts ? 1 : 0);
+            int floor = Mathf.Max(ext.minTargets, here + 1);
+            if (near.Count + (selfCounts ? 1 : 0) < floor) { near.Clear(); return false; }
+
+            spots.Clear();
+            float pair2 = 4f * r2;
+            for (int i = 0; i < near.Count; i++)
+            {
+                IntVec3 a = near[i].Position;
+                AddSpot(ctx, a, from, maxSq, r2, selfCounts, floor);
+                for (int j = i + 1; j < near.Count; j++)
+                {
+                    IntVec3 b = near[j].Position;
+                    if ((a - b).LengthHorizontalSquared > pair2) continue;
+                    AddSpot(ctx, new IntVec3((a.x + b.x) / 2, 0, (a.z + b.z) / 2), from, maxSq, r2, selfCounts, floor);
+                }
+            }
+            near.Clear();
+            if (spots.Count == 0) return false;
+            spots.Sort((x, y) => x.count != y.count ? y.count.CompareTo(x.count) : x.dist.CompareTo(y.dist));
+            cell = spots[0].cell;
+            expected = spots[0].count;
+            spots.Clear();
+            return true;
+        }
+
+        private void AddSpot(AbilityAIContext ctx, IntVec3 c, IntVec3 from, float maxSq, float r2, bool selfCounts, int floor)
+        {
+            float d = (c - from).LengthHorizontalSquared;
+            if (d > maxSq || c == from || !c.InBounds(ctx.map) || !c.Standable(ctx.map)) return;
+            int n = CountNear(c, r2) + (selfCounts ? 1 : 0);
+            if (n >= floor) spots.Add(new Spot { cell = c, count = n, dist = d });
+        }
+
+        private static int CountNear(IntVec3 c, float r2)
+        {
+            int n = 0;
+            for (int i = 0; i < near.Count; i++)
+                if ((near[i].Position - c).LengthHorizontalSquared <= r2) n++;
+            return n;
         }
 
         public override bool TryFindTarget(AbilityAIContext ctx, Ability ability, out LocalTargetInfo target, out LocalTargetInfo dest)
@@ -339,7 +399,10 @@ namespace EntadFramework.AbilityAI
 
             if (AbilityAIUtility.IsSelfCast(ability))
             {
-                if (Count(allies, ctx.pawn.Position, r2, hediff) < ext.minTargets) return false;
+                int n = Count(allies, ctx.pawn.Position, r2, hediff);
+                if (n < ext.minTargets) return false;
+                // Walking to a better spot: don't shout on the way unless this cell is already as good
+                if (ctx.ApproachExpected(ability) > n) return false;
                 target = ctx.pawn;
                 return true;
             }
