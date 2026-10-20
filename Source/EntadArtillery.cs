@@ -40,8 +40,9 @@ namespace EntadFramework
         // cell when it lands, which a moving pawn has usually left by then. So each final shot rolls lockChance, and
         // on a success it is aimed at a pawn near its landing point instead, the way a normal shot is aimed at a
         // pawn (Projectile.ImpactSomething hits usedTarget wherever it has moved to). Pawns count within the last
-        // split's spread plus lockRadiusBonus of the aim. Hostiles weigh 1 and other pawns with a faction
-        // allyLockWeight; downed pawns and wild animals are never picked. No pawn takes more than maxLocksPerPawn
+        // split's spread plus lockRadiusBonus of the aim. Hostiles weigh 1 and every other pawn (allies, visitors,
+        // wild animals) allyLockWeight; downed pawns count at the weight they'd have standing (the user's rule).
+        // No pawn takes more than maxLocksPerPawn
         // locked shots from one volley, so a volley can't all go into one target (the user's rule).
         public float lockChance = 0.7f;
         public int maxLocksPerPawn = 3;
@@ -314,9 +315,11 @@ namespace EntadFramework
         private static float LockRadius(List<float> spread, int split) =>
             spread != null && split >= 0 && split < spread.Count ? spread[split] : 1f;
 
-        // A pawn near 'aim' for a final shot to lock onto, weighted hostile 1 / other faction pawns allyLockWeight,
-        // skipping downed pawns, wild animals, pawns at the cap and (for a flat shot) pawns behind a wall from the
-        // split point. Runs once per final shot that passed the lock roll, at most 27 per volley, over the cells of a
+        // A pawn near 'aim' for a final shot to lock onto, weighted hostile 1 / anyone else allyLockWeight, downed or
+        // not, skipping pawns at the cap and (for a flat shot) pawns behind a wall from the split point. A downed
+        // pawn is still missed half the time from 4.5 tiles or more, as vanilla treats any shot at a lying pawn
+        // (Projectile.ImpactSomething, 'miss-laying').
+        // Runs once per final shot that passed the lock roll, at most 27 per volley, over the cells of a
         // radius about 2.5 (around 20 cells): no per-tick cost.
         private static readonly List<Pawn> candidates = new List<Pawn>();
         private static Pawn PickLockTarget(Map map, Thing launcher, Vector3 origin, Vector3 aim, float radius, bool overhead, ArtilleryVolley volley)
@@ -329,7 +332,7 @@ namespace EntadFramework
                 List<Thing> things = c.GetThingList(map);
                 for (int i = 0; i < things.Count; i++)
                 {
-                    if (!(things[i] is Pawn p) || p.Dead || p.Downed || p == launcher) continue;
+                    if (!(things[i] is Pawn p) || p.Dead || p == launcher) continue;
                     if (volley.locks.TryGetValue(p, out int n) && n >= volley.maxLocksPerPawn) continue;
                     if (LockWeight(p, launcher, volley) <= 0f) continue;
                     if (!overhead)
@@ -345,7 +348,14 @@ namespace EntadFramework
                     candidates.Add(p);
                 }
             }
-            if (candidates.Count == 0) return null;
+            // Allies are only at risk beside an enemy: with no hostile candidate left (none near, or all at the cap),
+            // the shot stays a plain cell-aimed shot, since a locked shot hits its pawn for certain and would skip
+            // vanilla's friendly-fire reduction
+            if (!candidates.Any(p => launcher != null && p.HostileTo(launcher)))
+            {
+                candidates.Clear();
+                return null;
+            }
             Pawn pick = candidates.RandomElementByWeight(p => LockWeight(p, launcher, volley));
             volley.locks.TryGetValue(pick, out int had);
             volley.locks[pick] = had + 1;
@@ -355,8 +365,9 @@ namespace EntadFramework
 
         private static float LockWeight(Pawn p, Thing launcher, ArtilleryVolley volley)
         {
+            // A manhunting or otherwise hostile wild animal is caught by HostileTo; a calm one weighs like an ally
             if (launcher != null && p.HostileTo(launcher)) return 1f;
-            return p.Faction != null ? volley.allyLockWeight : 0f;
+            return volley.allyLockWeight;
         }
     }
 
