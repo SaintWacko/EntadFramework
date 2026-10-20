@@ -24,11 +24,23 @@ namespace EntadFramework.AbilityAI
         /// <summary>A target worth casting at now, or false. The driver runs AbilityAIDriver.Valid on the result
         /// once more, so a worker only needs to call it where it is choosing between candidates.</summary>
         public abstract bool TryFindTarget(AbilityAIContext ctx, Ability ability, out LocalTargetInfo target, out LocalTargetInfo dest);
+
+        /// <summary>Only asked when TryFindTarget found nothing for any ability and the extension sets
+        /// approachDistance: the thing the pawn should walk toward so that it could cast, looking as far as reach
+        /// (range + approachDistance). Targets are checked with AbilityAIDriver.ValidIgnoringRange, since range and
+        /// line of sight are what the walk is for. A targeted ability casts at the goal from a cast position the
+        /// driver finds; a self-cast one walks to the goal.</summary>
+        public virtual bool TryFindApproachTarget(AbilityAIContext ctx, Ability ability, float reach, out Thing goal)
+        {
+            goal = null;
+            return false;
+        }
     }
 
     public static class AbilityAIUtility
     {
-        /// <summary>The extension's radius, else the first effect comp that states one.</summary>
+        /// <summary>The extension's radius, else the first effect comp that states one, else the ability's own
+        /// Ability_EffectRadius stat (the area psycasts: blinding pulse, berserk pulse).</summary>
         public static float Radius(Ability ability, AbilityAIExtension ext)
         {
             if (ext.radius >= 0f) return ext.radius;
@@ -39,7 +51,7 @@ namespace EntadFramework.AbilityAI
                     if (comps[i] is IAbilityAIInfo info) return info.AIRadius;
                     if (comps[i] is CompProperties_AbilitySmokepop smoke) return smoke.smokeRadius;
                 }
-            return 0f;
+            return ability.def.HasAreaOfEffect ? ability.def.EffectRadius : 0f;
         }
 
         /// <summary>The extension's hediff, else the first effect comp that gives one.</summary>
@@ -63,12 +75,93 @@ namespace EntadFramework.AbilityAI
             return ext.maxRange >= 0f ? Mathf.Min(r, ext.maxRange) : r;
         }
 
-        /// <summary>Cast on the caster only: no range, or an untargetable verb that may target itself.</summary>
+        /// <summary>Cast on the caster only: no target needed, or an untargetable verb that may target itself.
+        /// (Range 0 alone isn't: the Word of psycasts have no range because the caster walks up and touches.)</summary>
         public static bool IsSelfCast(Ability ability)
         {
             var vp = ability.def.verbProperties;
             if (vp == null || !ability.def.targetRequired) return true;
-            return ability.verb.EffectiveRange <= 0f || (!vp.targetable && vp.targetParams?.canTargetSelf == true);
+            return !vp.targetable && vp.targetParams?.canTargetSelf == true;
+        }
+
+        /// <summary>Whether the verb accepts the caster as its target (Painblock, Invisibility, Focus).</summary>
+        public static bool CanTargetSelf(Ability ability) =>
+            IsSelfCast(ability) || ability.def.verbProperties?.targetParams?.canTargetSelf == true;
+
+        // What an ability does to the pawns it hits, read once per AbilityDef from its comps
+        private class Effects
+        {
+            public bool stuns, mentalState, psychic, notOnMechs;
+            public HediffDef hediff;
+        }
+        private static readonly Dictionary<AbilityDef, Effects> effects = new Dictionary<AbilityDef, Effects>();
+
+        private static Effects EffectsOf(AbilityDef def)
+        {
+            if (effects.TryGetValue(def, out var e)) return e;
+            e = new Effects();
+            var comps = def.comps;
+            if (comps != null)
+                for (int i = 0; i < comps.Count; i++)
+                {
+                    var c = comps[i];
+                    if (c is IAbilityAIInfo info)
+                    {
+                        e.stuns |= info.AIStuns;
+                        if (e.hediff == null) e.hediff = info.AIHediff;
+                    }
+                    if (c.compClass != null && typeof(CompAbilityEffect_Stun).IsAssignableFrom(c.compClass)) e.stuns = true;
+                    if (c is CompProperties_AbilityGiveHediff give && !give.onlyApplyToSelf && !give.applyToSelf && e.hediff == null) e.hediff = give.hediffDef;
+                    if (c is CompProperties_AbilityGiveMentalState) e.mentalState = true;
+                    if (c is CompProperties_AbilityEffect ae && ae.psychic)
+                    {
+                        e.psychic = true;
+                        if (!ae.applicableToMechs) e.notOnMechs = true;
+                    }
+                }
+            effects[def] = e;
+            return e;
+        }
+
+        /// <summary>Whether casting this at a hostile pawn would do anything: a psycast can't touch a pawn without
+        /// psychic sensitivity (or a mech, for some), and with skipAffected a pawn already stunned by a stunning
+        /// ability, already carrying its hediff, or already in a mental state from a mental-state one is skipped.
+        /// Cost: a few field reads, plus a cached stat read for psycasts.</summary>
+        public static bool WouldAffect(Ability ability, AbilityAIExtension ext, Pawn p)
+        {
+            var e = EffectsOf(ability.def);
+            // Psycast.CanApplyPsycastTo, without the uncached stat read; plain Ability copies of psycasts skip it
+            // in vanilla too
+            if (e.psychic && ability is Psycast)
+            {
+                if (p.GetStatValue(StatDefOf.PsychicSensitivity, true, 250) < float.Epsilon) return false;
+                if (e.notOnMechs && p.Faction != null && p.Faction == Faction.OfMechanoids) return false;
+            }
+            if (!ext.skipAffected) return true;
+            if (e.stuns && p.stances?.stunner != null && p.stances.stunner.Stunned) return false;
+            HediffDef h = ext.hediff ?? e.hediff;
+            if (h != null && Has(p, h)) return false;
+            if (e.mentalState && p.InMentalState) return false;
+            return true;
+        }
+
+        /// <summary>A ranged enemy (mechs and animals by their own verbs) whose fight target or current attack job
+        /// is this pawn.</summary>
+        public static bool AimsAt(Pawn e, Pawn pawn)
+        {
+            if (!AbilityAIContext.FightsAtRange(e)) return false;
+            if (e.mindState?.enemyTarget == pawn) return true;
+            var job = e.CurJob;
+            return job != null && job.targetA.Thing == pawn;
+        }
+
+        /// <summary>Standing next to the caster or one of its allies, so presumably fighting them in melee.</summary>
+        public static bool InMeleeWithSide(AbilityAIContext ctx, Pawn e)
+        {
+            var allies = ctx.Allies;
+            for (int i = 0; i < allies.Count; i++)
+                if (allies[i].Position.AdjacentTo8WayOrInside(e.Position)) return true;
+            return false;
         }
 
         public static bool Has(Pawn pawn, HediffDef hediff) => hediff != null && pawn.health?.hediffSet?.HasHediff(hediff) == true;
@@ -104,43 +197,24 @@ namespace EntadFramework.AbilityAI
     }
 
     /// <summary>
-    /// AoE hostile: an area ability at the spot that catches the most enemies (Flashbang, Artillery).
-    /// Each enemy in range is a candidate centre, scored by enemies within the radius of it; at least minTargets,
-    /// between minRange and the ability's range, no ally inside with avoidAllies. The best five are checked against
-    /// the verb (line of sight). Cost: k² distance checks, then up to 10 target validations.
+    /// AoE hostile: an area ability at the spot that catches the most enemies (Flashbang, Artillery, blinding and
+    /// berserk pulses). Each enemy in range is a candidate centre, scored by the enemies within the radius of it that
+    /// the ability would affect (WouldAffect: a second flashbang skips the group the first one stunned); at least
+    /// minTargets, between minRange and the ability's range, no ally inside with avoidAllies. The best five are checked
+    /// against the verb (line of sight). Approach: the same scoring out to range + approachDistance, without the verb.
+    /// Cost: k WouldAffect checks and k² distance checks, then up to 10 target validations.
     /// </summary>
     public class AbilityAIWorker_AoEHostile : AbilityAIWorker
     {
         private struct Centre { public Pawn pawn; public int count; public float distSq; }
         private static readonly List<Centre> centres = new List<Centre>();
+        private static readonly List<bool> affected = new List<bool>();
         private const int MaxTries = 5;
 
         public override bool TryFindTarget(AbilityAIContext ctx, Ability ability, out LocalTargetInfo target, out LocalTargetInfo dest)
         {
             target = dest = LocalTargetInfo.Invalid;
-            var enemies = ctx.Enemies;
-            if (enemies.Count < ext.minTargets) return false;
-            float radius = AbilityAIUtility.Radius(ability, ext);
-            float r2 = radius * radius;
-            float range = AbilityAIUtility.Range(ability, ext);
-            float maxSq = range * range, minSq = ext.minRange * ext.minRange;
-            IntVec3 from = ctx.pawn.Position;
-
-            centres.Clear();
-            for (int i = 0; i < enemies.Count; i++)
-            {
-                Pawn e = enemies[i];
-                float d = (e.Position - from).LengthHorizontalSquared;
-                if (d > maxSq || d < minSq) continue;
-                int count = 0;
-                for (int j = 0; j < enemies.Count; j++)
-                    if (j == i || (enemies[j].Position - e.Position).LengthHorizontalSquared <= r2) count++;
-                if (count < ext.minTargets) continue;
-                if (ext.avoidAllies && radius > 0f && AnyAllyNear(ctx, e.Position, r2)) continue;
-                centres.Add(new Centre { pawn = e, count = count, distSq = d });
-            }
-            // Most enemies caught first, then the nearest (more likely to be in sight)
-            centres.Sort((a, b) => a.count != b.count ? b.count.CompareTo(a.count) : a.distSq.CompareTo(b.distSq));
+            if (!Score(ctx, ability, AbilityAIUtility.Range(ability, ext))) return false;
             for (int i = 0; i < centres.Count && i < MaxTries; i++)
             {
                 target = AbilityAIUtility.PawnOrCell(ability, centres[i].pawn);
@@ -148,6 +222,57 @@ namespace EntadFramework.AbilityAI
             }
             centres.Clear();
             return target.IsValid;
+        }
+
+        public override bool TryFindApproachTarget(AbilityAIContext ctx, Ability ability, float reach, out Thing goal)
+        {
+            goal = null;
+            if (!Score(ctx, ability, reach)) return false;
+            for (int i = 0; i < centres.Count && i < MaxTries; i++)
+            {
+                Pawn p = centres[i].pawn;
+                if (AbilityAIDriver.ValidIgnoringRange(ability, p) || AbilityAIDriver.ValidIgnoringRange(ability, p.Position)) { goal = p; break; }
+            }
+            centres.Clear();
+            return goal != null;
+        }
+
+        // Fills centres, best first; false when there are none
+        private bool Score(AbilityAIContext ctx, Ability ability, float range)
+        {
+            centres.Clear();
+            var enemies = ctx.Enemies;
+            if (enemies.Count < ext.minTargets) return false;
+            float radius = AbilityAIUtility.Radius(ability, ext);
+            float r2 = radius * radius;
+            float maxSq = range * range, minSq = ext.minRange * ext.minRange;
+            IntVec3 from = ctx.pawn.Position;
+
+            affected.Clear();
+            int affectable = 0;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                bool a = AbilityAIUtility.WouldAffect(ability, ext, enemies[i]);
+                affected.Add(a);
+                if (a) affectable++;
+            }
+            if (affectable < ext.minTargets) return false;
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                Pawn e = enemies[i];
+                float d = (e.Position - from).LengthHorizontalSquared;
+                if (d > maxSq || d < minSq) continue;
+                int count = 0;
+                for (int j = 0; j < enemies.Count; j++)
+                    if (affected[j] && (j == i || (enemies[j].Position - e.Position).LengthHorizontalSquared <= r2)) count++;
+                if (count < ext.minTargets) continue;
+                if (ext.avoidAllies && radius > 0f && AnyAllyNear(ctx, e.Position, r2)) continue;
+                centres.Add(new Centre { pawn = e, count = count, distSq = d });
+            }
+            // Most enemies caught first, then the nearest (more likely to be in sight)
+            centres.Sort((a, b) => a.count != b.count ? b.count.CompareTo(a.count) : a.distSq.CompareTo(b.distSq));
+            return centres.Count > 0;
         }
 
         private static bool AnyAllyNear(AbilityAIContext ctx, IntVec3 c, float r2)
@@ -162,10 +287,36 @@ namespace EntadFramework.AbilityAI
     /// <summary>
     /// AoE friendly: an area buff over allies (Battle Cry). Self-cast abilities centre on the caster; targeted ones
     /// on whichever ally gathers the most. Counts allies (the caster included) within the radius that don't yet have
-    /// the ability's hediff; casts when at least minTargets would gain it. Cost: allies² distance checks at most.
+    /// the ability's hediff; casts when at least minTargets would gain it. Approach (self-cast only): the ally within
+    /// approachDistance with the most such allies around it, counting the caster as one more, so the pawn walks
+    /// over and shouts there. Cost: allies² distance checks at most.
     /// </summary>
     public class AbilityAIWorker_AoEFriendly : AbilityAIWorker
     {
+        public override bool TryFindApproachTarget(AbilityAIContext ctx, Ability ability, float reach, out Thing goal)
+        {
+            goal = null;
+            if (!AbilityAIUtility.IsSelfCast(ability)) return false;
+            float radius = AbilityAIUtility.Radius(ability, ext);
+            float r2 = radius * radius;
+            HediffDef hediff = AbilityAIUtility.Hediff(ability, ext);
+            var allies = ctx.Allies;
+            float maxSq = ext.approachDistance * ext.approachDistance;
+            bool selfCounts = !AbilityAIUtility.Has(ctx.pawn, hediff);
+            int best = ext.minTargets - 1;
+            for (int i = 0; i < allies.Count; i++)
+            {
+                Pawn a = allies[i];
+                if (a == ctx.pawn || (a.Position - ctx.pawn.Position).LengthHorizontalSquared > maxSq) continue;
+                // Everyone around that ally, minus the caster where it stands now, plus the caster once it arrives
+                int n = Count(allies, a.Position, r2, hediff);
+                if (selfCounts && (ctx.pawn.Position - a.Position).LengthHorizontalSquared <= r2) n--;
+                if (selfCounts) n++;
+                if (n > best) { best = n; goal = a; }
+            }
+            return goal != null;
+        }
+
         public override bool TryFindTarget(AbilityAIContext ctx, Ability ability, out LocalTargetInfo target, out LocalTargetInfo dest)
         {
             target = dest = LocalTargetInfo.Invalid;
@@ -335,10 +486,13 @@ namespace EntadFramework.AbilityAI
     }
 
     /// <summary>
-    /// Cover: when the caster is under fire, put something between it and the shooters (Smokescreen; Wallraise
-    /// later). Under fire = at least minThreats ranged enemies aiming at the caster, counting being shot in the last
-    /// 10 seconds as one. Placed on the caster (offsetTowardThreat 0) or that many tiles toward the nearest threat.
-    /// Smoke isn't cast while the caster already stands in smoke. Cost: k checks of each enemy's target.
+    /// Cover: when the caster is under fire, put something between it and the shooters (Smokescreen, Smokepop,
+    /// Wallraise, Skipshield). Under fire = at least minThreats ranged enemies aiming at the caster, counting being
+    /// shot in the last 10 seconds as one. Placed on the caster (offsetTowardThreat 0) or that many tiles toward the
+    /// nearest threat. Not cast when it would add nothing: smoke while the caster stands in smoke, a spawned thing
+    /// (the skipshield) while one already stands within the ability's radius of the caster, anything else (a wall)
+    /// while the caster already has half cover from the nearest threat. A wall is never raised onto a pawn.
+    /// Cost: k checks of each enemy's target, then up to 3 validations.
     /// </summary>
     public class AbilityAIWorker_Cover : AbilityAIWorker
     {
@@ -346,26 +500,38 @@ namespace EntadFramework.AbilityAI
         {
             target = dest = LocalTargetInfo.Invalid;
             Pawn pawn = ctx.pawn;
-            if (IsSmoke(ability) && pawn.Position.AnyGas(ctx.map, GasType.BlindSmoke)) return false;
+            bool smoke = false;
+            ThingDef spawns = null;
+            CompProperties_AbilityWallraise wall = null;
+            var comps = ability.def.comps;
+            if (comps != null)
+                for (int i = 0; i < comps.Count; i++)
+                {
+                    if (comps[i] is CompProperties_AbilitySmokepop) smoke = true;
+                    else if (comps[i] is CompProperties_AbilitySpawn sp && sp.thingDef != null) spawns = sp.thingDef;
+                    else if (comps[i] is CompProperties_AbilityWallraise w) wall = w;
+                }
+            if (smoke && pawn.Position.AnyGas(ctx.map, GasType.BlindSmoke)) return false;
+            if (spawns != null && SpawnedNear(ctx, spawns, Mathf.Max(AbilityAIUtility.Radius(ability, ext), 1.5f))) return false;
 
-            int threats = 0;
+            int threats = ctx.RecentlyShot(pawn) ? 1 : 0;
             Pawn nearest = null;
             float nearestD = float.MaxValue;
-            var mind = pawn.mindState;
-            if (mind != null && mind.lastRangedHarmTick > 0 && ctx.tick - mind.lastRangedHarmTick < AbilityAIContext.RecentTicks) threats++;
             var enemies = ctx.Enemies;
             for (int i = 0; i < enemies.Count; i++)
             {
                 Pawn e = enemies[i];
-                if (!AimsAt(e, pawn)) continue;
+                if (!AbilityAIUtility.AimsAt(e, pawn)) continue;
                 threats++;
                 float d = (e.Position - pawn.Position).LengthHorizontalSquared;
                 if (d < nearestD) { nearestD = d; nearest = e; }
             }
             if (threats < ext.minThreats) return false;
+            if (!smoke && spawns == null && nearest != null && CoverUtility.CalculateOverallBlockChance(pawn, nearest.Position, ctx.map) >= 0.5f) return false;
 
             if (ext.offsetTowardThreat <= 0f || nearest == null)
             {
+                if (wall != null) return false;   // a wall on the caster's own cell would bury it
                 target = pawn.Position;
                 return true;
             }
@@ -376,24 +542,28 @@ namespace EntadFramework.AbilityAI
             {
                 Vector3 off = dir * ext.offsetTowardThreat + side * (s == 0 ? 0f : s == 1 ? 1f : -1f);
                 IntVec3 c = pawn.Position + new IntVec3(Mathf.RoundToInt(off.x), 0, Mathf.RoundToInt(off.z));
-                if (c.InBounds(ctx.map) && AbilityAIDriver.Valid(ability, c)) { target = c; return true; }
+                if (!c.InBounds(ctx.map) || (wall != null && PawnInPattern(ctx.map, c, wall))) continue;
+                if (AbilityAIDriver.Valid(ability, c)) { target = c; return true; }
             }
             return false;
         }
 
-        // A ranged enemy (mechs and animals by their own verbs) whose fight target or current attack job is the caster
-        private static bool AimsAt(Pawn e, Pawn pawn)
+        private static bool SpawnedNear(AbilityAIContext ctx, ThingDef def, float radius)
         {
-            if (!AbilityAIContext.FightsAtRange(e)) return false;
-            if (e.mindState?.enemyTarget == pawn) return true;
-            var job = e.CurJob;
-            return job != null && job.targetA.Thing == pawn;
+            var list = ctx.map.listerThings.ThingsOfDef(def);
+            for (int i = 0; i < list.Count; i++)
+                if (list[i].Position.InHorDistOf(ctx.pawn.Position, radius)) return true;
+            return false;
         }
 
-        private static bool IsSmoke(Ability ability)
+        private static bool PawnInPattern(Map map, IntVec3 c, CompProperties_AbilityWallraise wall)
         {
-            var comps = ability.def.comps;
-            if (comps != null) for (int i = 0; i < comps.Count; i++) if (comps[i] is CompProperties_AbilitySmokepop) return true;
+            if (wall.pattern == null) return c.GetFirstPawn(map) != null;
+            for (int i = 0; i < wall.pattern.Count; i++)
+            {
+                IntVec3 cell = c + new IntVec3(wall.pattern[i].x, 0, wall.pattern[i].z);
+                if (cell.InBounds(map) && cell.GetFirstPawn(map) != null) return true;
+            }
             return false;
         }
     }

@@ -92,6 +92,8 @@ namespace EntadFramework.AbilityAI
         float AIRadius { get; }
         /// <summary>The hediff the ability gives, so the AI doesn't recast it on pawns that still have it. Null for none.</summary>
         HediffDef AIHediff { get; }
+        /// <summary>Whether the ability stuns, so hostile workers skip pawns that are already stunned.</summary>
+        bool AIStuns { get; }
     }
 
     public enum AbilityAICombat
@@ -118,7 +120,9 @@ namespace EntadFramework.AbilityAI
     }
 
     /// <summary>Put on an AbilityDef to let the AI cast it. Only workerClass is required; the rest are tuning a
-    /// worker reads if it cares (see each worker's notes in AbilityAIWorkers.cs).</summary>
+    /// worker reads if it cares (see each worker's notes in AbilityAIWorkers.cs). An ability may carry several, each
+    /// with its own worker and priority (Stun: interrupt first, any enemy otherwise); they are tried in priority order
+    /// with every other ready ability's.</summary>
     public class AbilityAIExtension : DefModExtension
     {
         public Type workerClass;
@@ -154,6 +158,28 @@ namespace EntadFramework.AbilityAI
         public int minThreats = 1;
         /// <summary>Hostile area workers: don't pick a centre with an ally of the caster inside the radius.</summary>
         public bool avoidAllies;
+        /// <summary>Hostile workers: leave out pawns the ability would be wasted on: already stunned (a stunning
+        /// ability), already have its hediff, already in a mental state (one that gives one). A psycast also skips
+        /// pawns it can't affect (no psychic sensitivity). Turn off for an ability whose damage makes a stunned pawn
+        /// still worth hitting.</summary>
+        public bool skipAffected = true;
+        /// <summary>How far past the ability's range the pawn will walk to cast it, in combat, when nothing is in range
+        /// now (0 = never). Ranged pawns only (melee pawns close in anyway); vanilla's own positioning takes over
+        /// after the cast. Workers that support it: AoE hostile, Target hostile, AoE friendly (self-cast only: walks
+        /// toward allies).</summary>
+        public float approachDistance;
+        /// <summary>Target hostile: only enemies fighting the caster or an ally in melee.</summary>
+        public bool meleeOnly;
+        /// <summary>Target hostile: prefer an enemy with more of its own side around it (within radius, default 5).</summary>
+        public bool preferGrouped;
+        /// <summary>Target friendly: only allies in at least this much pain (0-1).</summary>
+        public float minPain;
+        /// <summary>Rescue: only allies downed by pain alone.</summary>
+        public bool painShockOnly;
+        /// <summary>Calm: any mental state, not only aggressive ones.</summary>
+        public bool anyMentalState;
+        /// <summary>Interrupt: also any aim with at least this many seconds left (0 = only abilities and explosives).</summary>
+        public float minAimSeconds;
 
         [Unsaved] private AbilityAIWorker worker;
 
@@ -180,6 +206,7 @@ namespace EntadFramework.AbilityAI
             else if (workerClass.IsAbstract) yield return $"workerClass {workerClass} is abstract";
             if (reserveCharges < 0) yield return "reserveCharges can't be negative";
             if (minTargets < 1) yield return "minTargets must be at least 1";
+            if (approachDistance < 0f) yield return "approachDistance can't be negative";
         }
     }
 
@@ -192,9 +219,11 @@ namespace EntadFramework.AbilityAI
         public int tick;
 
         private bool combatKnown, inCombat;
-        private bool enemiesBuilt, alliesBuilt;
+        private bool enemiesBuilt, alliesBuilt, aimsBuilt;
         private readonly List<Pawn> enemies = new List<Pawn>();
         private readonly List<Pawn> allies = new List<Pawn>();
+        private readonly List<Pawn> downedAllies = new List<Pawn>();
+        private readonly Dictionary<Pawn, int> aimedAt = new Dictionary<Pawn, int>();
         private Thing enemyTarget;
         private bool enemyTargetKnown;
 
@@ -203,13 +232,15 @@ namespace EntadFramework.AbilityAI
             pawn = p;
             map = p.Map;
             tick = t;
-            combatKnown = enemiesBuilt = alliesBuilt = enemyTargetKnown = false;
+            combatKnown = enemiesBuilt = alliesBuilt = aimsBuilt = enemyTargetKnown = false;
         }
 
         internal void End()
         {
             enemies.Clear();
             allies.Clear();
+            downedAllies.Clear();
+            aimedAt.Clear();
             enemyTarget = null;
             pawn = null;
             map = null;
@@ -284,20 +315,65 @@ namespace EntadFramework.AbilityAI
         {
             get
             {
-                if (!alliesBuilt)
-                {
-                    alliesBuilt = true;
-                    if (pawn.Faction == null) allies.Add(pawn);
-                    else
-                    {
-                        var list = map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
-                        // A captured raider keeps its faction: not someone its friends can buff from across the map
-                        for (int i = 0; i < list.Count; i++)
-                            if (!list[i].Dead && !list[i].Downed && !list[i].IsPrisoner) allies.Add(list[i]);
-                    }
-                }
+                BuildAllies();
                 return allies;
             }
+        }
+
+        /// <summary>Downed, living pawns of the caster's faction on the map, prisoners left out.</summary>
+        public List<Pawn> DownedAllies
+        {
+            get
+            {
+                BuildAllies();
+                return downedAllies;
+            }
+        }
+
+        private void BuildAllies()
+        {
+            if (alliesBuilt) return;
+            alliesBuilt = true;
+            if (pawn.Faction == null) { allies.Add(pawn); return; }
+            var list = map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
+            // A captured raider keeps its faction: not someone its friends can buff from across the map
+            for (int i = 0; i < list.Count; i++)
+            {
+                Pawn p = list[i];
+                if (p.Dead || p.IsPrisoner) continue;
+                (p.Downed ? downedAllies : allies).Add(p);
+            }
+        }
+
+        /// <summary>How many ranged enemies are aiming at this pawn now: their fight target or current attack job.
+        /// Built once per evaluation from Enemies (k checks), then a lookup.</summary>
+        public int AimedAtCount(Pawn p)
+        {
+            if (!aimsBuilt)
+            {
+                aimsBuilt = true;
+                var list = Enemies;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    Pawn e = list[i];
+                    if (!FightsAtRange(e)) continue;
+                    Thing t = e.mindState?.enemyTarget;
+                    if (t == null) t = e.CurJob?.targetA.Thing;
+                    if (t is Pawn victim)
+                    {
+                        aimedAt.TryGetValue(victim, out int n);
+                        aimedAt[victim] = n + 1;
+                    }
+                }
+            }
+            return aimedAt.TryGetValue(p, out int c) ? c : 0;
+        }
+
+        /// <summary>Shot at in the last 10 seconds.</summary>
+        public bool RecentlyShot(Pawn p)
+        {
+            var mind = p.mindState;
+            return mind != null && mind.lastRangedHarmTick > 0 && tick - mind.lastRangedHarmTick < RecentTicks;
         }
 
         /// <summary>Whether the pawn fights at range: its primary weapon, or for a pawn without one (animals, some
@@ -336,17 +412,30 @@ namespace EntadFramework.AbilityAI
         // the pawn picks a job, so without this a pawn changing jobs often would be evaluated more than that.
         public const int EvalIntervalTicks = 30;
 
+        // A walk into casting range ends after this long whether or not it got there, and the same ability isn't
+        // walked toward again for ApproachRetryTicks after one starts
+        public const int ApproachExpiryTicks = 300;
+        public const int ApproachRetryTicks = 600;
+
         private class PawnState
         {
             public int nextEvalTick;
             public int nextCastTick;
             public Dictionary<AbilityDef, int> abilityNext;
+            public Dictionary<AbilityDef, int> approachNext;
+            public int approachJobId = -1;
+        }
+
+        private struct Candidate
+        {
+            public Ability ability;
+            public AbilityAIExtension ext;
         }
 
         // Not saved: after a load every pawn may cast again at once, limited by the ability's own cooldown and charges
         private static readonly ConditionalWeakTable<Pawn, PawnState> states = new ConditionalWeakTable<Pawn, PawnState>();
         private static readonly AbilityAIContext ctx = new AbilityAIContext();
-        private static readonly List<Ability> candidates = new List<Ability>();
+        private static readonly List<Candidate> candidates = new List<Candidate>();
         private static bool evaluating;
 
         /// <summary>Whether any of these abilities has an AI extension. The first check that touches defs.</summary>
@@ -355,6 +444,17 @@ namespace EntadFramework.AbilityAI
             for (int i = 0; i < abilities.Count; i++)
                 if (abilities[i].def.GetModExtension<AbilityAIExtension>() != null) return true;
             return false;
+        }
+
+        /// <summary>A psycast the pawn could pay for. Checked up front because Verb_CastPsycast.ValidateTarget posts
+        /// its "not enough psyfocus" and similar messages whatever showMessages says, and Psycast.CanCast only checks
+        /// psyfocus for psycasts without neural heat.</summary>
+        private static bool PsycastAffordable(Ability a)
+        {
+            if (!(a is Psycast)) return true;
+            var pe = a.pawn.psychicEntropy;
+            if (pe == null || pe.PsychicSensitivity < float.Epsilon) return false;
+            return a.def.PsyfocusCost <= pe.CurrentPsyfocus + Pawn_PsychicEntropyTracker.PsyfocusCostTolerance;
         }
 
         /// <summary>Whether the AI acts for this kind of pawn at all, by the settings. Never the player's own
@@ -388,10 +488,44 @@ namespace EntadFramework.AbilityAI
         /// target they return.</summary>
         public static bool Valid(Ability ability, LocalTargetInfo target)
         {
-            if (!target.IsValid || !ability.CanApplyOn(target)) return false;
-            var comps = ability.EffectComps;
-            if (comps != null) for (int i = 0; i < comps.Count; i++) if (!comps[i].AICanTargetNow(target)) return false;
+            if (!ValidIgnoringRange(ability, target)) return false;
             return ability.verb.ValidateTarget(target, false);
+        }
+
+        /// <summary>Valid, short of the verb's own check (range, line of sight, reachability; it repeats the comps'
+        /// Valid). For targets the pawn means to walk into range of.</summary>
+        public static bool ValidIgnoringRange(Ability ability, LocalTargetInfo target)
+        {
+            if (!target.IsValid) return false;
+            // The comps' own Valid first and quietly: some comps' CanApplyOn calls Valid with messages on
+            // (CompAbilityEffect_Wallraise), which would post "occupied cells" for every spot the AI tries
+            var comps = ability.EffectComps;
+            if (comps != null)
+                for (int i = 0; i < comps.Count; i++)
+                    if (!comps[i].Valid(target, false)) return false;
+            if (!ability.CanApplyOn(target)) return false;
+            if (comps != null)
+                for (int i = 0; i < comps.Count; i++)
+                    if (!comps[i].AICanTargetNow(target)) return false;
+            if (ability is Psycast ps && !PsycastValidOn(ps, target)) return false;
+            return true;
+        }
+
+        // The rest of Verb_CastPsycast.ValidateTarget, which would post messages, plus immunity: a psycast on a pawn
+        // with no psychic sensitivity only shows "immune" and spends the heat
+        private static bool PsycastValidOn(Psycast ps, LocalTargetInfo target)
+        {
+            var pe = ps.pawn.psychicEntropy;
+            float cost = ps.FinalPsyfocusCost(target);
+            if (cost > float.Epsilon && cost > pe.CurrentPsyfocus + Pawn_PsychicEntropyTracker.PsyfocusCostTolerance) return false;
+            Pawn p = target.Pawn;
+            if (p == null) return true;
+            if (p.kindDef.isBoss)
+            {
+                var comps = ps.EffectComps;
+                for (int i = 0; i < comps.Count; i++) if (!comps[i].Props.canTargetBosses) return false;
+            }
+            return ps.CanApplyPsycastTo(target);
         }
 
         internal static Job TryGiveJob(Pawn pawn, List<Ability> abilities)
@@ -399,23 +533,42 @@ namespace EntadFramework.AbilityAI
             if (evaluating) return null;
             int tick = Find.TickManager.TicksGame;
             var state = states.GetValue(pawn, _ => new PawnState());
+            // A walk into range just ended (arrived or timed out): look again now rather than up to 30 ticks later,
+            // before vanilla's own positioning walks the pawn back out
+            if (state.approachJobId >= 0 && pawn.CurJob?.loadID != state.approachJobId)
+            {
+                state.approachJobId = -1;
+                state.nextEvalTick = tick;
+            }
             if (tick < state.nextEvalTick || tick < state.nextCastTick) return null;
             state.nextEvalTick = tick + EvalIntervalTicks;
             if (!CanActNow(pawn)) return null;
 
-            // Ready abilities with a worker, highest priority first (insertion sort: a pawn holds a handful)
+            // Ready abilities with a worker, highest priority first (insertion sort: a pawn holds a handful). An
+            // ability with several extensions is a candidate once per extension.
             candidates.Clear();
             for (int i = 0; i < abilities.Count; i++)
             {
                 Ability a = abilities[i];
-                var ext = a.def.GetModExtension<AbilityAIExtension>();
-                if (ext?.Worker == null || a.verb == null || !a.CanCast) continue;
-                if (ext.reserveCharges > 0 && a.UsesCharges && a.RemainingCharges <= ext.reserveCharges) continue;
-                if (state.abilityNext != null && state.abilityNext.TryGetValue(a.def, out int next) && tick < next) continue;
-                if (!AbilityAIHooks.Allowed(pawn, a)) continue;
-                int at = candidates.Count;
-                while (at > 0 && candidates[at - 1].def.GetModExtension<AbilityAIExtension>().priority < ext.priority) at--;
-                candidates.Insert(at, a);
+                var exts = a.def.modExtensions;
+                if (exts == null || a.verb == null) continue;
+                bool checkedReady = false, ready = false;
+                for (int j = 0; j < exts.Count; j++)
+                {
+                    if (!(exts[j] is AbilityAIExtension ext) || ext.Worker == null) continue;
+                    if (!checkedReady)
+                    {
+                        checkedReady = true;
+                        ready = a.CanCast && PsycastAffordable(a)
+                            && (state.abilityNext == null || !state.abilityNext.TryGetValue(a.def, out int next) || tick >= next)
+                            && AbilityAIHooks.Allowed(pawn, a);
+                    }
+                    if (!ready) break;
+                    if (ext.reserveCharges > 0 && a.UsesCharges && a.RemainingCharges <= ext.reserveCharges) continue;
+                    int at = candidates.Count;
+                    while (at > 0 && candidates[at - 1].ext.priority < ext.priority) at--;
+                    candidates.Insert(at, new Candidate { ability = a, ext = ext });
+                }
             }
             if (candidates.Count == 0) return null;
 
@@ -425,14 +578,10 @@ namespace EntadFramework.AbilityAI
             {
                 for (int i = 0; i < candidates.Count; i++)
                 {
-                    Ability a = candidates[i];
-                    var ext = a.def.GetModExtension<AbilityAIExtension>();
+                    Ability a = candidates[i].ability;
+                    var ext = candidates[i].ext;
                     var worker = ext.Worker;
-                    switch (worker.Combat)
-                    {
-                        case AbilityAICombat.InCombat: if (!ctx.InCombat) continue; break;
-                        case AbilityAICombat.OutOfCombat: if (ctx.InCombat) continue; break;
-                    }
+                    if (!CombatAllows(worker)) continue;
                     if (!worker.TryFindTarget(ctx, a, out LocalTargetInfo target, out LocalTargetInfo dest)) continue;
                     if (!dest.IsValid) dest = target;
                     if (!Valid(a, target)) continue;
@@ -448,7 +597,7 @@ namespace EntadFramework.AbilityAI
                     AbilityAIHooks.NotifyCast(pawn, a, target, dest);
                     return a.GetJob(target, dest);
                 }
-                return null;
+                return TryApproach(state);
             }
             finally
             {
@@ -456,6 +605,74 @@ namespace EntadFramework.AbilityAI
                 candidates.Clear();
                 evaluating = false;
             }
+        }
+
+        private static bool CombatAllows(AbilityAIWorker worker)
+        {
+            switch (worker.Combat)
+            {
+                case AbilityAICombat.InCombat: return ctx.InCombat;
+                case AbilityAICombat.OutOfCombat: return !ctx.InCombat;
+                default: return true;
+            }
+        }
+
+        // Nothing could be cast from here: walk toward the first candidate (by priority) that has something just out
+        // of reach. Not while already walking to cast, and only for a fighting ranged pawn in decent shape: melee
+        // pawns close in anyway, and a pawn that is hurt, fleeing, held in melee or carrying someone has better
+        // things to do. Cost: one worker scan like the one above, then one CastPositionFinder search (a few regions
+        // around the target), at most once per ApproachRetryTicks per ability.
+        private static Job TryApproach(PawnState state)
+        {
+            if (!AbilityAISettings.Approach) return null;
+            Pawn pawn = ctx.pawn;
+            if (!ctx.InCombat || !ctx.UsesRanged || pawn.InMentalState || pawn.carryTracker?.CarriedThing != null) return null;
+            if (AbilityAIUtility.IsFleeing(ctx) || AbilityAIUtility.InMelee(ctx)) return null;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                Ability a = candidates[i].ability;
+                var ext = candidates[i].ext;
+                if (ext.approachDistance <= 0f || ctx.HealthFraction < ext.healthThreshold || !CombatAllows(ext.Worker)) continue;
+                if (state.approachNext != null && state.approachNext.TryGetValue(a.def, out int next) && ctx.tick < next) continue;
+                float reach = AbilityAIUtility.Range(a, ext) + ext.approachDistance;
+                if (!ext.Worker.TryFindApproachTarget(ctx, a, reach, out Thing goal) || goal == null) continue;
+                if (!TryFindApproachCell(a, ext, goal, out IntVec3 cell)) continue;
+
+                if (state.approachNext == null) state.approachNext = new Dictionary<AbilityDef, int>();
+                state.approachNext[a.def] = ctx.tick + ApproachRetryTicks;
+                Job job = JobMaker.MakeJob(JobDefOf.Goto, cell);
+                job.expiryInterval = ApproachExpiryTicks;
+                job.checkOverrideOnExpire = false;
+                job.locomotionUrgency = LocomotionUrgency.Jog;
+                state.approachJobId = job.loadID;
+                if (AbilityAISettings.DebugLog && Prefs.DevMode)
+                    Log.Message($"[Ability AI] {pawn.LabelShort} moves to {cell} to cast {a.def.label} ({ext.Worker.GetType().Name}) at {goal.LabelShort}");
+                return job;
+            }
+            return null;
+        }
+
+        // A self-cast ability walks toward the goal itself (Battle Cry: toward the allies); a targeted one to a
+        // vanilla cast position for its verb, preferring cover from the target as the fight AI does
+        private static bool TryFindApproachCell(Ability a, AbilityAIExtension ext, Thing goal, out IntVec3 cell)
+        {
+            Pawn pawn = ctx.pawn;
+            cell = IntVec3.Invalid;
+            if (AbilityAIUtility.IsSelfCast(a))
+            {
+                cell = goal.Position;
+                return cell != pawn.Position && pawn.CanReach(cell, PathEndMode.OnCell, Danger.Some);
+            }
+            var req = new CastPositionRequest
+            {
+                caster = pawn,
+                target = goal,
+                verb = a.verb,
+                maxRangeFromTarget = Mathf.Max(1.5f, AbilityAIUtility.Range(a, ext) - 1f),
+                maxRangeFromCaster = ext.approachDistance + 3f,
+                wantCoverFromTarget = true,
+            };
+            return CastPositionFinder.TryFindCastPosition(req, out cell) && cell != pawn.Position;
         }
     }
 
@@ -469,13 +686,14 @@ namespace EntadFramework.AbilityAI
         public static bool Animals = true;
         public static bool Mechs = true;
         public static bool Unclaimed;
+        public static bool Approach = true;
         public const float DefaultMinGapSeconds = 2.5f;
         public static float MinGapSeconds = DefaultMinGapSeconds;
         public static bool DebugLog;
 
         public static void Reset()
         {
-            Enabled = Hostiles = NonHostiles = Animals = Mechs = true;
+            Enabled = Hostiles = NonHostiles = Animals = Mechs = Approach = true;
             Unclaimed = false;
             MinGapSeconds = DefaultMinGapSeconds;
             DebugLog = false;
@@ -489,6 +707,7 @@ namespace EntadFramework.AbilityAI
             Scribe_Values.Look(ref Animals, "abilityAI_animals", true);
             Scribe_Values.Look(ref Mechs, "abilityAI_mechs", true);
             Scribe_Values.Look(ref Unclaimed, "abilityAI_unclaimed", false);
+            Scribe_Values.Look(ref Approach, "abilityAI_approach", true);
             Scribe_Values.Look(ref MinGapSeconds, "abilityAI_minGapSeconds", DefaultMinGapSeconds);
             MinGapSeconds = Mathf.Clamp(MinGapSeconds, 0f, 30f);
             Scribe_Values.Look(ref DebugLog, "abilityAI_debugLog", false);
@@ -506,6 +725,7 @@ namespace EntadFramework.AbilityAI
             list.Label("EF_AI_Who_Desc".Translate());
             list.Gap();
             list.CheckboxLabeled("EF_AI_Unclaimed".Translate(), ref Unclaimed, "EF_AI_Unclaimed_Tip".Translate());
+            list.CheckboxLabeled("EF_AI_Approach".Translate(), ref Approach, "EF_AI_Approach_Tip".Translate());
             list.Gap();
             list.Label("EF_AI_MinGap".Translate(MinGapSeconds.ToString("0.#")));
             MinGapSeconds = Mathf.Round(list.Slider(MinGapSeconds, 0f, 30f) * 2f) / 2f;

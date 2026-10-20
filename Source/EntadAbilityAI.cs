@@ -27,5 +27,6 @@ namespace EntadFramework
     {
         public float AIRadius => radius;
         public HediffDef AIHediff => hediff;
+        public bool AIStuns => stunSeconds > 0f;
     }
 }
