@@ -114,9 +114,8 @@ namespace EntadFramework
             parent.AddEffecterToMaintain(EffecterDefOf.Skip_Exit.Spawn(cell, map), cell, 60);
             SoundDefOf.Psycast_Skip_Entry?.PlayOneShot(new TargetInfo(pawn.Position, map));
             SoundDefOf.Psycast_Skip_Exit?.PlayOneShot(new TargetInfo(cell, map));
+            // No unfogging needed: ValidJumpTarget refuses fogged cells
             pawn.Position = cell;
-            if ((pawn.Faction == Faction.OfPlayer || pawn.IsPlayerControlled) && cell.Fogged(map))
-                FloodFillerFog.FloodUnfog(cell, map);
             pawn.Notify_Teleported();
         }
 
