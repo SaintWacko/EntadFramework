@@ -161,6 +161,22 @@ namespace EntadFramework
                 && !typeof(Verb_ShootOneUse).IsAssignableFrom(v.verbClass) && v.defaultProjectile?.projectile != null;
         }
 
+        // What Verb_LaunchProjectile.TryCastShot gives each projectile from a vanilla unique weapon's traits: a damage
+        // type override and extra damages (an EMP trait, say)
+        public static void ApplyUniqueWeaponTraits(Projectile p, Thing equipment)
+        {
+            if (equipment == null || !equipment.TryGetComp(out CompUniqueWeapon comp)) return;
+            foreach (WeaponTraitDef trait in comp.TraitsListForReading)
+            {
+                if (trait.damageDefOverride != null) p.damageDefOverride = trait.damageDefOverride;
+                if (!trait.extraDamages.NullOrEmpty())
+                {
+                    if (p.extraDamages == null) p.extraDamages = new List<ExtraDamage>();
+                    p.extraDamages.AddRange(trait.extraDamages);
+                }
+            }
+        }
+
         // How far along 'dir' from 'origin', up to 'max', the cells can be seen over: walls, rock and closed doors stop
         // it, and 'blocked' is the cell that did (invalid when nothing did). 0.2-tile steps, as vanilla's
         // Projectile.CheckForFreeInterceptBetween walks, so a line that clips a wall's corner still finds it.
@@ -205,8 +221,9 @@ namespace EntadFramework
                 // origin (VerbUtility.InterceptChanceFactorFromDistance), walls included, and this leg starts at the
                 // last split point, so a shot scattered past a wall's edge would fly through it. Aimed at the first
                 // wall on its line instead, it lands there and ImpactSomething hits the wall (fillPercent 1 gives a
-                // 150% chance). Not for an unsplit shot from the shooter: the ability already checked its line.
-                if (index > 0)
+                // 150% chance). Not for a shot from the shooter (the ability already checked its line, perhaps by
+                // leaning past a corner), and not for a projectile that flies overhead: those arc over walls.
+                if ((origin - shooterPos).MagnitudeHorizontalSquared() > 0.01f && projectile.projectile?.flyOverhead != true)
                 {
                     Vector3 leg = (aim - origin).Yto0();
                     float length = leg.MagnitudeHorizontal();
@@ -217,6 +234,7 @@ namespace EntadFramework
                     }
                 }
                 var real = (Projectile)GenSpawn.Spawn(projectile, originCell, map);
+                ApplyUniqueWeaponTraits(real, equipment);
                 real.Launch(launcher, origin, new LocalTargetInfo(aim.ToIntVec3()), intended, ProjectileHitFlags.All, false, equipment);
                 return;
             }
@@ -239,8 +257,9 @@ namespace EntadFramework
             }
             IntVec3 splitCell = (origin + dir * along).ToIntVec3();
             var carrier = (Projectile_EntadArtillery)GenSpawn.Spawn(EntadArtilleryDefOf.Entad_ArtilleryCarrier, originCell, map);
-            carrier.Setup(projectile, shooterPos, aim, index, splits, distances, spread, splitCount);
+            // Launch first: it sets the carrier's equipment, which Setup reads for the unique weapon traits
             carrier.Launch(launcher, origin, new LocalTargetInfo(splitCell), intended, ProjectileHitFlags.None, false, equipment);
+            carrier.Setup(projectile, shooterPos, aim, index, splits, distances, spread, splitCount);
         }
     }
 
@@ -282,6 +301,7 @@ namespace EntadFramework
             damageDefOverride = realProjectile.projectile.damageDef;
             extraDamages = realProjectile.projectile.extraDamages != null
                 ? new List<ExtraDamage>(realProjectile.projectile.extraDamages) : new List<ExtraDamage>();
+            EntadArtillery.ApplyUniqueWeaponTraits(this, equipment);
         }
 
         // ExtraDamages already adds the carrier def's own (none) to the copied list, so only the amount needs this
