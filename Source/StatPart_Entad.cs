@@ -212,6 +212,22 @@ namespace EntadFramework
             }
         }
 
+        // Stats that keep vanilla's permanent per-thing cache after our part joins them (only where vanilla made
+        // them immutable: with Odyssey loaded the range and penetration multipliers already aren't). Each is a
+        // stat of the item alone, never added to a wearer, and the game reads it often: MaxHitPoints for every
+        // thing, the range multiplier on every EffectiveRange of every gun, the penetration multipliers per shot
+        // or hit. A cached value goes stale only if nothing clears it, and CompEntad clears the item's caches with
+        // ClearCacheForThing (which empties the immutable cache too) on every change that can move these values:
+        // a trait added, removed or revealed, a durability rescale, a binding change, the holder changing on a bound
+        // item (equip and unequip), and after every frame of the item's own info card, the only place hidden traits
+        // are left out. Rolled trait values are stored on the item, so settings changes don't move them.
+        // A wearer stat must never be listed here: the gear display flags change its value per read.
+        private static bool KeepsImmutableCache(StatDef stat) =>
+            stat == StatDefOf.MaxHitPoints
+            || stat == StatDefOf.RangedWeapon_RangeMultiplier
+            || stat == StatDefOf.RangedWeapon_ArmorPenetrationMultiplier
+            || stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
+
         private static void InjectStatParts()
         {
             // MaxHitPoints always: every entad gets the durability multiplier, whatever its traits touch
@@ -229,11 +245,8 @@ namespace EntadFramework
                 // StatDef.SetImmutability already ran during def loading, before static constructors. A stat that had
                 // no parts may have been marked immutable, which caches each thing's first value forever: entad
                 // items would keep their pre-trait value and a wearer stat would ignore entad gear changes.
-                // MaxHitPoints is the exception: every Thing reads it constantly, so it keeps vanilla's permanent cache.
-                // That's safe because its value never changes for display only (the info card leaves it real), and
-                // every real change (trait add/remove/reveal, durability sync) clears it with ClearCacheForThing,
-                // which empties the immutable cache too.
-                if (stat.immutable && stat != StatDefOf.MaxHitPoints)
+                // KeepsImmutableCache lists the exceptions.
+                if (stat.immutable && !KeepsImmutableCache(stat))
                 {
                     stat.immutable = false;
                     stat.Worker.SetCacheability(false);

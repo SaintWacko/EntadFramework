@@ -502,8 +502,33 @@ namespace EntadFramework
             return propertyFactors[(int)property];
         }
 
+        // Whether any trait has the melee armor penetration factor, worked out on first use after the trait list
+        // changes: Patch_VerbProperties_AdjustedArmorPenetration asks on every melee hit. 0 unknown, 1 yes, 2 no.
+        // Not saved; a loaded item starts at 0.
+        private byte meleePenetration;
+
+        internal bool HasMeleePenetration
+        {
+            get
+            {
+                if (meleePenetration == 0)
+                {
+                    var stat = EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
+                    meleePenetration = 2;
+                    for (int t = 0; t < activeTraits.Count && meleePenetration == 2; t++)
+                    {
+                        var factors = activeTraits[t].def.statFactors;
+                        for (int i = 0; factors != null && i < factors.Count; i++)
+                            if (factors[i].stat == stat) { meleePenetration = 1; break; }
+                    }
+                }
+                return meleePenetration == 1;
+            }
+        }
+
         private void TraitsChanged()
         {
+            meleePenetration = 0;
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;

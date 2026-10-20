@@ -312,8 +312,8 @@ namespace EntadFramework
     // multiplier and has no penetration stat for melee, so Entad_MeleeArmorPenetrationMultiplier is read here. This
     // overload is the one every melee hit (through the Verb overload), the pawn's melee penetration stat and the
     // weapon's average penetration row on the info card go through; the ThingDef overload is for an abstract def
-    // with no item, so no traits. Per call: a def-table lookup, then for an entad a short loop over its traits, and
-    // GetStatValue only when one of them has the stat.
+    // with no item, so no traits. Per call: a def-table lookup, then for an entad a cached flag, and GetStatValue
+    // only when one of its traits has the stat.
     [HarmonyPatch(typeof(VerbProperties), nameof(VerbProperties.AdjustedArmorPenetration),
         new[] { typeof(Tool), typeof(Pawn), typeof(Thing), typeof(HediffComp_VerbGiver) })]
     public static class Patch_VerbProperties_AdjustedArmorPenetration
@@ -322,18 +322,11 @@ namespace EntadFramework
         {
             if (equipment == null || __result <= 0f || !EntadCompInjector.MayHaveComp(equipment.def)) return;
             var comp = equipment.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.Count == 0) return;
-            var stat = EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
-            bool has = false;
-            for (int t = 0; t < comp.activeTraits.Count && !has; t++)
-            {
-                var factors = comp.activeTraits[t].def.statFactors;
-                for (int i = 0; factors != null && i < factors.Count; i++)
-                    if (factors[i].stat == stat) { has = true; break; }
-            }
+            if (comp == null || !comp.HasMeleePenetration) return;
             // The stat part applies binding (a bound item outside its bloodline does nothing) and leaves hidden
-            // traits out of the item's own info card, as for every other stat
-            if (has) __result *= equipment.GetStatValue(stat);
+            // traits out of the item's own info card, as for every other stat. The stat keeps vanilla's permanent
+            // cache (EntadStatPartInjector.KeepsImmutableCache), so after the first hit this is a dictionary lookup.
+            __result *= equipment.GetStatValue(EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier);
         }
     }
 
