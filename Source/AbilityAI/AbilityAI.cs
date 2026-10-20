@@ -454,6 +454,7 @@ namespace EntadFramework.AbilityAI
         // walked toward again for ApproachRetryTicks after one starts
         public const int ApproachExpiryTicks = 300;
         public const int ApproachRetryTicks = 600;
+        public const int ApproachFailRetryTicks = 120;
 
         private class PawnState
         {
@@ -670,6 +671,8 @@ namespace EntadFramework.AbilityAI
         {
             if (!AbilityAISettings.Approach) return null;
             Pawn pawn = ctx.pawn;
+            // Already walking to cast: let that walk finish (another ability's walk would replace it)
+            if (state.approachJobId >= 0 && pawn.CurJob?.loadID == state.approachJobId) return null;
             if (!ctx.InCombat || !ctx.UsesRanged || pawn.InMentalState || pawn.carryTracker?.CarriedThing != null) return null;
             if (AbilityAIUtility.IsFleeing(ctx) || AbilityAIUtility.InMelee(ctx)) return null;
             for (int i = 0; i < candidates.Count; i++)
@@ -681,10 +684,15 @@ namespace EntadFramework.AbilityAI
                 IntVec3 cell;
                 int expected = 0;
                 string at;
-                if (ext.Worker.TryFindApproachCell(ctx, a, out cell, out expected))
-                {
-                    if (!pawn.CanReach(cell, PathEndMode.OnCell, Danger.Some)) continue;
+                bool byCell = ext.Worker.UsesApproachCell && AbilityAIUtility.IsSelfCast(a);
+                if (byCell && ext.Worker.TryFindApproachCell(ctx, a, out cell, out expected))
                     at = $"{cell} (expects {expected})";
+                else if (byCell)
+                {
+                    // Nothing worth walking to: that scan is m³, so don't repeat it every 30 ticks
+                    if (state.approachNext == null) state.approachNext = new Dictionary<AbilityDef, int>();
+                    state.approachNext[a.def] = ctx.tick + ApproachFailRetryTicks;
+                    continue;
                 }
                 else
                 {

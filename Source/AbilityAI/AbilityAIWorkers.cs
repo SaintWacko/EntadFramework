@@ -40,6 +40,8 @@ namespace EntadFramework.AbilityAI
         /// many targets the cast would reach from there. While the walk lasts, ctx.ApproachExpected(ability) returns
         /// that number, so the worker can wait for the spot it chose instead of casting at the first cell that
         /// meets minTargets. The driver checks reachability.</summary>
+        public virtual bool UsesApproachCell => false;
+
         public virtual bool TryFindApproachCell(AbilityAIContext ctx, Ability ability, out IntVec3 cell, out int expected)
         {
             cell = IntVec3.Invalid;
@@ -314,14 +316,18 @@ namespace EntadFramework.AbilityAI
     /// are the allies within approachDistance + radius that lack the hediff, and the midpoint of every pair of them
     /// within two radii of each other; the standable cell within approachDistance that would cover the most (the
     /// caster counted once, at the new cell), nearest on a tie, and more than the caster covers where it stands.
-    /// During the walk the pawn only shouts early once its current cell covers as many as the chosen one. Cost:
-    /// with m nearby allies, m²/2 candidate cells × m distance checks (about 500 for 10), at most once per 10 s.
+    /// During the walk the pawn only shouts early once its current cell covers as many as the chosen one. Only ally
+    /// cells and pair midpoints are tried, so three allies only their centroid covers count as two. Cost: with m
+    /// nearby allies, m²/2 candidate cells × m distance checks (about 500 for 10) plus up to 4 reachability checks;
+    /// once per 10 s after a walk starts, once per 2 s while no spot is found.
     /// </summary>
     public class AbilityAIWorker_AoEFriendly : AbilityAIWorker
     {
         private struct Spot { public IntVec3 cell; public int count; public float dist; }
         private static readonly List<Pawn> near = new List<Pawn>();
         private static readonly List<Spot> spots = new List<Spot>();
+
+        public override bool UsesApproachCell => true;
 
         public override bool TryFindApproachCell(AbilityAIContext ctx, Ability ability, out IntVec3 cell, out int expected)
         {
@@ -366,12 +372,22 @@ namespace EntadFramework.AbilityAI
             }
             near.Clear();
             if (spots.Count == 0) return false;
-            spots.Sort((x, y) => x.count != y.count ? y.count.CompareTo(x.count) : x.dist.CompareTo(y.dist));
-            cell = spots[0].cell;
-            expected = spots[0].count;
+            spots.Sort(BetterFirst);
+            // A midpoint across a wall or river can be the best spot all fight: take the best one the pawn can reach
+            for (int i = 0; i < spots.Count && i < MaxReachTries; i++)
+            {
+                if (!pawn.CanReach(spots[i].cell, PathEndMode.OnCell, Danger.Some)) continue;
+                cell = spots[i].cell;
+                expected = spots[i].count;
+                break;
+            }
             spots.Clear();
-            return true;
+            return cell.IsValid;
         }
+
+        private const int MaxReachTries = 4;
+        private static readonly Comparison<Spot> BetterFirst =
+            (x, y) => x.count != y.count ? y.count.CompareTo(x.count) : x.dist.CompareTo(y.dist);
 
         private void AddSpot(AbilityAIContext ctx, IntVec3 c, IntVec3 from, float maxSq, float r2, bool selfCounts, int floor)
         {
