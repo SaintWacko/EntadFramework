@@ -36,6 +36,17 @@ namespace EntadFramework
         // A split needs at least this much flight left before the target, so a target just past a split distance
         // doesn't split right on top of it
         public float minFlightAfterSplit = 2f;
+        // Lock-on, for the last generation only. A final shot aimed at a cell only hits what stands on that exact
+        // cell when it lands, which a moving pawn has usually left by then. So each final shot rolls lockChance, and
+        // on a success it is aimed at a pawn near its landing point instead, the way a normal shot is aimed at a
+        // pawn (Projectile.ImpactSomething hits usedTarget wherever it has moved to). Pawns count within the last
+        // split's spread plus lockRadiusBonus of the aim. Hostiles weigh 1 and other pawns with a faction
+        // allyLockWeight; downed pawns and wild animals are never picked. No pawn takes more than maxLocksPerPawn
+        // locked shots from one volley, so a volley can't all go into one target (the user's rule).
+        public float lockChance = 0.7f;
+        public int maxLocksPerPawn = 3;
+        public float lockRadiusBonus = 0.5f;
+        public float allyLockWeight = 0.3f;
 
         public CompProperties_AbilityEntadArtillery() => compClass = typeof(CompAbilityEffect_EntadArtillery);
 
@@ -43,6 +54,7 @@ namespace EntadFramework
         {
             foreach (var e in base.ConfigErrors(parentDef)) yield return e;
             if (splitCount < 1) yield return "splitCount must be at least 1";
+            if (maxLocksPerPawn < 0) yield return "maxLocksPerPawn can't be negative";
             if (splitDistances.NullOrEmpty()) yield return "splitDistances is empty";
             else
             {
@@ -90,8 +102,10 @@ namespace EntadFramework
             Vector3 from = pawn.DrawPos;
             Vector3 aim = target.Cell.ToVector3Shifted();
             int splits = Props.SplitsFor((aim - from).MagnitudeHorizontal(), projectile);
+            var volley = new ArtilleryVolley { lockChance = Props.lockChance, maxLocksPerPawn = Props.maxLocksPerPawn,
+                lockRadiusBonus = Props.lockRadiusBonus, allyLockWeight = Props.allyLockWeight };
             EntadArtillery.Fire(map, pawn, verb.EquipmentSource, projectile, from, from, aim, target, 0, splits,
-                Props.splitDistances, Props.spread, Props.splitCount);
+                Props.splitDistances, Props.spread, Props.splitCount, volley);
         }
 
         public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
@@ -141,6 +155,27 @@ namespace EntadFramework
     public class Verb_EntadArtillery : Verb_CastAbility
     {
         public override float EffectiveRange => EntadArtillery.WeaponVerb(CasterPawn)?.EffectiveRange ?? base.EffectiveRange;
+    }
+
+    // What one volley shares across its carriers: the lock-on numbers and how many locked shots each pawn has
+    // taken. The counts aren't saved: after a load each carrier in flight starts its own empty table, so a volley
+    // saved mid-flight can lock a few more shots onto one pawn than the cap. The numbers are saved with each carrier.
+    public class ArtilleryVolley : IExposable
+    {
+        public float lockChance = 0.7f;
+        public int maxLocksPerPawn = 3;
+        public float lockRadiusBonus = 0.5f;
+        public float allyLockWeight = 0.3f;
+        public Dictionary<Pawn, int> locks = new Dictionary<Pawn, int>();
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref lockChance, "lockChance", 0.7f);
+            Scribe_Values.Look(ref maxLocksPerPawn, "maxLocksPerPawn", 3);
+            Scribe_Values.Look(ref lockRadiusBonus, "lockRadiusBonus", 0.5f);
+            Scribe_Values.Look(ref allyLockWeight, "allyLockWeight", 0.3f);
+            if (Scribe.mode == LoadSaveMode.LoadingVars && locks == null) locks = new Dictionary<Pawn, int>();
+        }
     }
 
     public static class EntadArtillery
@@ -211,7 +246,7 @@ namespace EntadFramework
         // Launches generation 'index' of the shot from 'origin' toward 'aim': a carrier while splits remain, the real
         // projectile after the last one
         public static void Fire(Map map, Thing launcher, Thing equipment, ThingDef projectile, Vector3 shooterPos, Vector3 origin, Vector3 aim,
-            LocalTargetInfo intended, int index, int splits, List<float> distances, List<float> spread, int splitCount)
+            LocalTargetInfo intended, int index, int splits, List<float> distances, List<float> spread, int splitCount, ArtilleryVolley volley)
         {
             IntVec3 originCell = origin.ToIntVec3();
             if (!originCell.InBounds(map)) return;
@@ -223,7 +258,21 @@ namespace EntadFramework
                 // wall on its line instead, it lands there and ImpactSomething hits the wall (fillPercent 1 gives a
                 // 150% chance). Not for a shot from the shooter (the ability already checked its line, perhaps by
                 // leaning past a corner), and not for a projectile that flies overhead: those arc over walls.
-                if ((origin - shooterPos).MagnitudeHorizontalSquared() > 0.01f && projectile.projectile?.flyOverhead != true)
+                bool fromSplit = (origin - shooterPos).MagnitudeHorizontalSquared() > 0.01f;
+                bool overhead = projectile.projectile?.flyOverhead == true;
+                // Lock-on (see CompProperties_AbilityEntadArtillery.lockChance): only for shots that split, so a short
+                // single shot stays a plain cell-aimed shot
+                Pawn locked = fromSplit && volley != null && Rand.Chance(volley.lockChance)
+                    ? PickLockTarget(map, launcher, origin, aim, LockRadius(spread, index - 1) + volley.lockRadiusBonus, overhead, volley)
+                    : null;
+                if (locked != null)
+                {
+                    var lockedShot = (Projectile)GenSpawn.Spawn(projectile, originCell, map);
+                    ApplyUniqueWeaponTraits(lockedShot, equipment);
+                    lockedShot.Launch(launcher, origin, locked, locked, ProjectileHitFlags.All, false, equipment);
+                    return;
+                }
+                if (fromSplit && !overhead)
                 {
                     Vector3 leg = (aim - origin).Yto0();
                     float length = leg.MagnitudeHorizontal();
@@ -252,14 +301,62 @@ namespace EntadFramework
                 // shot ignores everything on its path (InterceptChanceFactorFromDistance is 0 within 5 tiles of its
                 // origin), so aimed past the wall it would land behind it.
                 Vector3 to = blocked.IsValid ? blocked.ToVector3Shifted() : aim;
-                Fire(map, launcher, equipment, projectile, shooterPos, origin, to, intended, splits, splits, distances, spread, splitCount);
+                Fire(map, launcher, equipment, projectile, shooterPos, origin, to, intended, splits, splits, distances, spread, splitCount, volley);
                 return;
             }
             IntVec3 splitCell = (origin + dir * along).ToIntVec3();
             var carrier = (Projectile_EntadArtillery)GenSpawn.Spawn(EntadArtilleryDefOf.Entad_ArtilleryCarrier, originCell, map);
             // Launch first: it sets the carrier's equipment, which Setup reads for the unique weapon traits
             carrier.Launch(launcher, origin, new LocalTargetInfo(splitCell), intended, ProjectileHitFlags.None, false, equipment);
-            carrier.Setup(projectile, shooterPos, aim, index, splits, distances, spread, splitCount);
+            carrier.Setup(projectile, shooterPos, aim, index, splits, distances, spread, splitCount, volley);
+        }
+
+        private static float LockRadius(List<float> spread, int split) =>
+            spread != null && split >= 0 && split < spread.Count ? spread[split] : 1f;
+
+        // A pawn near 'aim' for a final shot to lock onto, weighted hostile 1 / other faction pawns allyLockWeight,
+        // skipping downed pawns, wild animals, pawns at the cap and (for a flat shot) pawns behind a wall from the
+        // split point. Runs once per final shot that passed the lock roll, at most 27 per volley, over the cells of a
+        // radius about 2.5 (around 20 cells): no per-tick cost.
+        private static readonly List<Pawn> candidates = new List<Pawn>();
+        private static Pawn PickLockTarget(Map map, Thing launcher, Vector3 origin, Vector3 aim, float radius, bool overhead, ArtilleryVolley volley)
+        {
+            candidates.Clear();
+            IntVec3 center = aim.ToIntVec3();
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(center, radius, true))
+            {
+                if (!c.InBounds(map)) continue;
+                List<Thing> things = c.GetThingList(map);
+                for (int i = 0; i < things.Count; i++)
+                {
+                    if (!(things[i] is Pawn p) || p.Dead || p.Downed || p == launcher) continue;
+                    if (volley.locks.TryGetValue(p, out int n) && n >= volley.maxLocksPerPawn) continue;
+                    if (LockWeight(p, launcher, volley) <= 0f) continue;
+                    if (!overhead)
+                    {
+                        Vector3 leg = (p.DrawPos - origin).Yto0();
+                        float length = leg.MagnitudeHorizontal();
+                        if (length > 0.2f)
+                        {
+                            ClearDistance(map, origin, leg / length, length, false, out IntVec3 wall);
+                            if (wall.IsValid) continue;
+                        }
+                    }
+                    candidates.Add(p);
+                }
+            }
+            if (candidates.Count == 0) return null;
+            Pawn pick = candidates.RandomElementByWeight(p => LockWeight(p, launcher, volley));
+            volley.locks.TryGetValue(pick, out int had);
+            volley.locks[pick] = had + 1;
+            candidates.Clear();
+            return pick;
+        }
+
+        private static float LockWeight(Pawn p, Thing launcher, ArtilleryVolley volley)
+        {
+            if (launcher != null && p.HostileTo(launcher)) return 1f;
+            return p.Faction != null ? volley.allyLockWeight : 0f;
         }
     }
 
@@ -273,13 +370,15 @@ namespace EntadFramework
         private List<float> distances;
         private List<float> spread;
         private int splitCount = 3;
+        private ArtilleryVolley volley;
 
         // Nine carriers split on the same tick at the second split; one shot sound is enough
         private static int lastSplitSoundTick = -1;
 
         public void Setup(ThingDef realProjectile, Vector3 shooterPos, Vector3 aim, int index, int splits,
-            List<float> distances, List<float> spread, int splitCount)
+            List<float> distances, List<float> spread, int splitCount, ArtilleryVolley volley)
         {
+            this.volley = volley;
             this.realProjectile = realProjectile;
             this.shooterPos = shooterPos;
             this.aim = aim;
@@ -335,7 +434,7 @@ namespace EntadFramework
                 Vector3 childAim = aim + Quaternion.AngleAxis(angle, Vector3.up) * Vector3.forward * (r * Rand.Range(0.5f, 1f));
                 if (!childAim.ToIntVec3().InBounds(map)) childAim = aim;
                 EntadArtillery.Fire(map, launcher, equipment, realProjectile, shooterPos, at, childAim, intendedTarget, index + 1, splits,
-                    distances, spread, splitCount);
+                    distances, spread, splitCount, volley);
             }
             Destroy();
         }
@@ -366,6 +465,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref splitCount, "splitCount", 3);
             Scribe_Collections.Look(ref distances, "distances", LookMode.Value);
             Scribe_Collections.Look(ref spread, "spread", LookMode.Value);
+            Scribe_Deep.Look(ref volley, "volley");
             if (Scribe.mode == LoadSaveMode.PostLoadInit) CopyRealDamage();
         }
     }

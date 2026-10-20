@@ -183,17 +183,18 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Artillery</defName>
     <label>artillery shot</label>
-    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Each final projectile is a normal shot from the weapon, and explosive ones hurt anyone in the blast. The range is the weapon's.</description>
+    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Most final projectiles home in on someone near where they land, usually an enemy, but never more than three on one person; explosive ones hurt anyone in the blast. Targeting a person follows them while the user aims. The range is the weapon's.</description>
     <iconPath>UI/Abilities/Entad/Artillery</iconPath>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
     <verbProperties>
       <verbClass>EntadFramework.Verb_EntadArtillery</verbClass>
-      <warmupTime>1.5</warmupTime>
+      <warmupTime>1</warmupTime>
       <range>25</range>
       <requireLineOfSight>true</requireLineOfSight>
       <targetParams>
         <canTargetLocations>true</canTargetLocations>
+        <canTargetPawns>true</canTargetPawns>
       </targetParams>
     </verbProperties>
     <comps>
@@ -215,7 +216,7 @@
       <!-- Never dealt: the carrier copies the weapon's projectile's damage in code (Projectile_EntadArtillery.
            DamageAmount), which is what a shield reads. Vanilla's ConfigErrors still wants a value here. -->
       <damageAmountBase>1</damageAmountBase>
-      <speed>45</speed>
+      <speed>80</speed>
     </projectile>
   </ThingDef>
 </Defs>
