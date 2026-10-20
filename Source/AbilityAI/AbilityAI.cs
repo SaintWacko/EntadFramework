@@ -698,7 +698,13 @@ namespace EntadFramework.AbilityAI
                 {
                     float reach = AbilityAIUtility.Range(a, ext) + ext.approachDistance;
                     if (!ext.Worker.TryFindApproachTarget(ctx, a, reach, out Thing goal) || goal == null) continue;
-                    if (!TryFindApproachCell(a, ext, goal, out cell)) continue;
+                    if (!TryFindApproachCell(a, ext, goal, out cell))
+                    {
+                        // The cast-position search is the costliest step here: not again for 2 s
+                        if (state.approachNext == null) state.approachNext = new Dictionary<AbilityDef, int>();
+                        state.approachNext[a.def] = ctx.tick + ApproachFailRetryTicks;
+                        continue;
+                    }
                     expected = 0;
                     at = goal.LabelShort;
                 }

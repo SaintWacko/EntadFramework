@@ -36,12 +36,14 @@ namespace EntadFramework.AbilityAI
             return false;
         }
 
-        /// <summary>Self-cast abilities, asked before TryFindApproachTarget: a cell to walk to and stand on, and how
-        /// many targets the cast would reach from there. While the walk lasts, ctx.ApproachExpected(ability) returns
-        /// that number, so the worker can wait for the spot it chose instead of casting at the first cell that
-        /// meets minTargets. The driver checks reachability.</summary>
+        /// <summary>True for a worker that picks its own approach cell (TryFindApproachCell) for self-cast
+        /// abilities; the driver then never asks TryFindApproachTarget for them.</summary>
         public virtual bool UsesApproachCell => false;
 
+        /// <summary>Self-cast abilities, only when UsesApproachCell: a cell to walk to and stand on, which the worker
+        /// must have checked the pawn can reach, and how many targets the cast would reach from there. While the walk
+        /// lasts, ctx.ApproachExpected(ability) returns that number, so the worker can wait for the spot it chose
+        /// instead of casting at the first cell that meets minTargets. False = retried in 2 s.</summary>
         public virtual bool TryFindApproachCell(AbilityAIContext ctx, Ability ability, out IntVec3 cell, out int expected)
         {
             cell = IntVec3.Invalid;
