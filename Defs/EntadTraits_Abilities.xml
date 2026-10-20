@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- More vanilla psycasts as limited-use abilities (see EntadTraits_Psycasts.xml). Requires Royalty: without it these
+  <!-- More vanilla psycasts as limited-use abilities (see EntadTraits_Psycasts.xml), then abilities that need no DLC.
+       The psycast ones require Royalty: without it those
        traits don't load. -->
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_RageEcho</defName>
@@ -64,5 +65,72 @@
     <abilityAmmo>Steel</abilityAmmo>
     <abilityAmmoPerCharge>25</abilityAmmoPerCharge>
     <abilityReloadTicks>120</abilityReloadTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Abilities that need no DLC (Defs/EntadAbilities.xml) -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SecondWind</defName>
+    <label>Second Wind</label>
+    <description>When the body says stop, it quietly disagrees.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <abilities><li>Entad_SecondWind</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>120000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sprint</defName>
+    <label>Sprint</label>
+    <description>It makes the ground feel shorter than it is.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Sprint</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Blink</defName>
+    <label>Blink</label>
+    <description>It doesn't care much for the space in between.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <abilities><li>Entad_Blink</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BattleCry</defName>
+    <label>Battle Cry</label>
+    <description>Raised high, it makes everyone nearby stand a little taller.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <abilities><li>Entad_BattleCry</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>120000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Smokescreen</defName>
+    <label>Smokescreen</label>
+    <description>It's always faintly smoking, and it can do a great deal more than faintly.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Smokescreen</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Flashbang</defName>
+    <label>Flashbang</label>
+    <description>It holds a little sunlight, and lets it out all at once.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Flashbang</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
   </EntadFramework.EntadTraitDef>
 </Defs>
