@@ -133,6 +133,38 @@ namespace EntadFramework
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
 
+        // For testing the ability AI and anything else that needs an NPC carrying entad gear: picks one of the pawn's
+        // worn or wielded items (an entad already or not), adds the trait and grants its abilities at once, which an
+        // item already in hand doesn't otherwise get until it is equipped again.
+        [DebugAction(category = "Entad Framework", name = "Add Entad trait to pawn's gear", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void AddTraitToPawnGear(Pawn pawn)
+        {
+            var items = new List<ThingWithComps>();
+            if (pawn.equipment != null) items.AddRange(pawn.equipment.AllEquipmentListForReading);
+            if (pawn.apparel != null) items.AddRange(pawn.apparel.WornApparel);
+            items.RemoveAll(t => t.GetComp<CompEntad>() == null);
+            if (items.Count == 0)
+            {
+                Messages.Message($"{pawn.LabelShort} has no gear that can hold entad traits.", MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+            var options = items.Select(item => new DebugMenuOption(item.LabelCap, DebugMenuOptionMode.Action, () =>
+            {
+                var comp = item.GetComp<CompEntad>();
+                var traits = DefDatabase<EntadTraitDef>.AllDefsListForReading
+                    .Where(d => d.CanApplyTo(item))
+                    .OrderByDescending(d => !d.abilities.NullOrEmpty())
+                    .ThenBy(d => d.defName, StringComparer.OrdinalIgnoreCase)
+                    .Select(d => new DebugMenuOption(d.defName + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
+                    {
+                        AddAt(comp, item, d, null);
+                        EntadAbilities.Grant(pawn, comp);
+                    })).ToList();
+                Find.WindowStack.Add(new Dialog_DebugOptionListLister(traits));
+            })).ToList();
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
         private static void AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
         {
             if (!comp.AddTrait(d, rarity, true))
