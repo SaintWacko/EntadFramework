@@ -332,7 +332,7 @@ namespace EntadFramework.AbilityAI
     }
 
     /// <summary>
-    /// Firefighting: put out fire on or next to the caster's side (Waterskip). Burning allies (weight 3) and fires
+    /// Firefighting: put out fire on or next to the caster's side (Waterskip). Burning allies (weight 3, downed 4) and fires
     /// within 2.5 tiles of an ally (weight 1, at most 60 fires looked at, fires on other pawns left out), within reach
     /// of the caster; the spot whose effect radius covers the most weight wins, best five validated. Water breaks
     /// invisibility, so a spot that would reach an invisible ally is skipped unless someone there is burning. Any time.
@@ -361,6 +361,11 @@ namespace EntadFramework.AbilityAI
             for (int i = 0; i < allies.Count; i++)
                 if (allies[i] != ctx.pawn && allies[i].IsBurning() && (allies[i].Position - from).LengthHorizontalSquared <= reachSq)
                     spots.Add(new Spot { cell = allies[i].Position, weight = 3f });
+            // A downed ally on fire can't put itself out: the case that needs the water most
+            var downed = ctx.DownedAllies;
+            for (int i = 0; i < downed.Count; i++)
+                if (downed[i].IsBurning() && (downed[i].Position - from).LengthHorizontalSquared <= reachSq)
+                    spots.Add(new Spot { cell = downed[i].Position, weight = 4f });
             int looked = 0;
             float near2 = NearAlly * NearAlly;
             for (int i = 0; i < fires.Count && looked < MaxFires; i++)
@@ -385,7 +390,8 @@ namespace EntadFramework.AbilityAI
             spots.Sort((a, b) => b.score.CompareTo(a.score));
             for (int i = 0; i < spots.Count && i < TargetingUtil.MaxTries; i++)
             {
-                if (InvisibleAllyNear(allies, spots[i].cell, r2) && !BurningAllyNear(allies, ctx.pawn, spots[i].cell, r2)) continue;
+                if (InvisibleAllyNear(allies, spots[i].cell, r2) && !BurningAllyNear(allies, ctx.pawn, spots[i].cell, r2)
+                    && !BurningAllyNear(downed, ctx.pawn, spots[i].cell, r2)) continue;
                 if (AbilityAIDriver.Valid(ability, spots[i].cell)) { target = spots[i].cell; break; }
             }
             spots.Clear();
