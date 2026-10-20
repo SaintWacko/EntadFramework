@@ -183,7 +183,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Artillery</defName>
     <label>artillery shot</label>
-    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Each final projectile is a normal shot from the weapon and can hit anyone near where it lands. The range is the weapon's.</description>
+    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Each final projectile is a normal shot from the weapon, and explosive ones hurt anyone in the blast. The range is the weapon's.</description>
     <iconPath>UI/Abilities/Entad/Artillery</iconPath>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>

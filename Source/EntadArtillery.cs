@@ -15,10 +15,14 @@ namespace EntadFramework
     // The shot is a chain of carriers (Projectile_EntadArtillery). Each one flies, drawing the weapon's projectile
     // graphic, to the next split point and there launches its children toward targets scattered around its own aim
     // point. The last generation is the weapon's real projectile, launched with the weapon as its equipment, so
-    // quality, damage traits (EntadWeaponDamage hooks Projectile.Impact and Explode) and friendly fire all work as for
-    // an ordinary shot. Carriers hit nothing on the way (hit flags None), so a carrier passing a pawn or a sandbag
-    // never stops the volley; the ability needs line of sight to the target cell instead. A shield still blocks a
-    // carrier, and with it everything it would have split into.
+    // quality and damage traits (EntadWeaponDamage hooks Projectile.Impact and Explode) work as for an ordinary shot.
+    // Friendly fire mostly doesn't: vanilla scales the chance of a stray shot hitting a non-hostile pawn by
+    // VerbUtility.InterceptChanceFactorFromDistance from the projectile's origin, which is 0 within 5 tiles, and the
+    // final projectiles start at the last split point, usually 2 to 8 tiles from where they land. Explosions still
+    // hurt everyone in the blast. Carriers hit nothing on the way (hit flags None), so a carrier passing a pawn or a
+    // sandbag never stops the volley; instead each carrier only flies as far as the cells are clear (Fire checks the
+    // line), so a scattered branch splits in front of a wall rather than inside it. A shield still blocks a carrier,
+    // and with it everything it would have split into.
     public class CompProperties_AbilityEntadArtillery : CompProperties_AbilityEffect
     {
         // Distances from the shooter, in tiles, ascending
@@ -157,6 +161,22 @@ namespace EntadFramework
                 && !typeof(Verb_ShootOneUse).IsAssignableFrom(v.verbClass) && v.defaultProjectile?.projectile != null;
         }
 
+        // How far along 'dir' from 'origin', up to 'max', the cells can be seen over: walls, rock and closed doors stop
+        // it. Half-tile steps, so a diagonal can't slip between two cells.
+        private static float ClearDistance(Map map, Vector3 origin, Vector3 dir, float max)
+        {
+            IntVec3 start = origin.ToIntVec3();
+            float clear = 0f;
+            for (float d = 0.5f; d <= max; d += 0.5f)
+            {
+                IntVec3 c = (origin + dir * d).ToIntVec3();
+                if (!c.InBounds(map)) break;
+                if (c != start && !c.CanBeSeenOver(map)) break;
+                clear = d;
+            }
+            return Mathf.Min(clear, max);
+        }
+
         public static bool IsArtillery(AbilityDef ability) =>
             ability?.comps != null && ability.comps.Any(c => c is CompProperties_AbilityEntadArtillery);
 
@@ -177,11 +197,20 @@ namespace EntadFramework
                 return;
             }
             // The next split point lies on the way to the aim, where the shot is distances[index] from the shooter.
-            // Measured along the flight from here, which is close enough: the scatter angles are small.
+            // Measured along the flight from here, which is close enough: the scatter angles are small. It stays at
+            // least a tile short of the aim, since a child's aim can be scattered back toward the shooter.
             Vector3 dir = (aim - origin).Yto0().normalized;
-            float along = Mathf.Max(0.5f, distances[index] - (origin - shooterPos).MagnitudeHorizontal());
+            float toAim = (aim - origin).MagnitudeHorizontal();
+            float along = Mathf.Min(distances[index] - (origin - shooterPos).MagnitudeHorizontal(), toAim - 1f);
+            along = ClearDistance(map, origin, dir, along);
+            if (along < 0.5f)
+            {
+                // No room to fly on (a wall right ahead, or the aim too close): the remaining splits are lost and the
+                // real projectile goes now, where the wall can stop it as it would any shot
+                Fire(map, launcher, equipment, projectile, shooterPos, origin, aim, intended, splits, splits, distances, spread, splitCount);
+                return;
+            }
             IntVec3 splitCell = (origin + dir * along).ToIntVec3();
-            if (!splitCell.InBounds(map)) splitCell = aim.ToIntVec3();
             var carrier = (Projectile_EntadArtillery)GenSpawn.Spawn(EntadArtilleryDefOf.Entad_ArtilleryCarrier, originCell, map);
             carrier.Setup(projectile, shooterPos, aim, index, splits, distances, spread, splitCount);
             carrier.Launch(launcher, origin, new LocalTargetInfo(splitCell), intended, ProjectileHitFlags.None, false, equipment);
@@ -255,7 +284,9 @@ namespace EntadFramework
                 base.DrawAt(drawLoc, flip);
                 return;
             }
-            Graphics.DrawMesh(MeshPool.GridPlane(graphic.drawSize), drawLoc, ExactRotation, graphic.MatSingle, 0);
+            // Animated projectiles draw through their graphic class, as vanilla does (spinning is left out)
+            if (realProjectile.projectile?.useGraphicClass == true) graphic.Draw(drawLoc, Rotation, this, ExactRotation.eulerAngles.y);
+            else Graphics.DrawMesh(MeshPool.GridPlane(graphic.drawSize), drawLoc, ExactRotation, graphic.MatSingle, 0);
             Comps_PostDraw();
         }
 
