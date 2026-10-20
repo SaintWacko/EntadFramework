@@ -201,6 +201,21 @@ namespace EntadFramework
             if (!originCell.InBounds(map)) return;
             if (index >= splits)
             {
+                // The last leg needs the wall check too. A real projectile ignores everything within 5 tiles of its
+                // origin (VerbUtility.InterceptChanceFactorFromDistance), walls included, and this leg starts at the
+                // last split point, so a shot scattered past a wall's edge would fly through it. Aimed at the first
+                // wall on its line instead, it lands there and ImpactSomething hits the wall (fillPercent 1 gives a
+                // 150% chance). Not for an unsplit shot from the shooter: the ability already checked its line.
+                if (index > 0)
+                {
+                    Vector3 leg = (aim - origin).Yto0();
+                    float length = leg.MagnitudeHorizontal();
+                    if (length > 0.2f)
+                    {
+                        ClearDistance(map, origin, leg / length, length, false, out IntVec3 wall);
+                        if (wall.IsValid) aim = wall.ToVector3Shifted();
+                    }
+                }
                 var real = (Projectile)GenSpawn.Spawn(projectile, originCell, map);
                 real.Launch(launcher, origin, new LocalTargetInfo(aim.ToIntVec3()), intended, ProjectileHitFlags.All, false, equipment);
                 return;
@@ -254,7 +269,25 @@ namespace EntadFramework
             this.distances = distances;
             this.spread = spread;
             this.splitCount = splitCount;
+            CopyRealDamage();
         }
+
+        // A shield reads the carrier's damage: DamageAmount for the energy it loses, DamageDef and ExtraDamages for
+        // whether it is EMP (CompProjectileInterceptor.CheckIntercept). The carrier passes on the weapon's own: a
+        // shield that stops one pays what one round of the weapon would cost it, and an EMP shot still breaks it.
+        // Vanilla doesn't save damageDefOverride or extraDamages, so this runs again after a load.
+        private void CopyRealDamage()
+        {
+            if (realProjectile?.projectile == null) return;
+            damageDefOverride = realProjectile.projectile.damageDef;
+            extraDamages = realProjectile.projectile.extraDamages != null
+                ? new List<ExtraDamage>(realProjectile.projectile.extraDamages) : new List<ExtraDamage>();
+        }
+
+        // ExtraDamages already adds the carrier def's own (none) to the copied list, so only the amount needs this
+        public override int DamageAmount => realProjectile?.projectile != null ? realProjectile.projectile.GetDamageAmount(equipment) : base.DamageAmount;
+
+        public override float ArmorPenetration => realProjectile?.projectile != null ? realProjectile.projectile.GetArmorPenetration(equipment) : base.ArmorPenetration;
 
         // Reached the split point (ImpactSomething finds nothing to hit, since CanHit is false for every thing with
         // hit flags None), or a shield caught it
@@ -313,6 +346,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref splitCount, "splitCount", 3);
             Scribe_Collections.Look(ref distances, "distances", LookMode.Value);
             Scribe_Collections.Look(ref spread, "spread", LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) CopyRealDamage();
         }
     }
 

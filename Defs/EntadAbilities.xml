@@ -212,6 +212,9 @@
     </graphicData>
     <projectile>
       <damageDef>Bullet</damageDef>
+      <!-- Never dealt: the carrier copies the weapon's projectile's damage in code (Projectile_EntadArtillery.
+           DamageAmount), which is what a shield reads. Vanilla's ConfigErrors still wants a value here. -->
+      <damageAmountBase>1</damageAmountBase>
       <speed>45</speed>
     </projectile>
   </ThingDef>
