@@ -351,8 +351,10 @@ namespace EntadFramework
                 Widgets.Checkbox(row.x + 4f, row.y + 2f, ref on, 24f);
                 if (on != was) { if (on) EntadSettings.DisabledTraits.Remove(d.defName); else EntadSettings.DisabledTraits.Add(d.defName); }
                 Widgets.Label(new Rect(row.x + 36f, row.y + 2f, 260f, rowH), "EF_Settings_TraitRow".Translate(d.LabelCap, d.RarityLabel));
-                Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), Summary(d));
-                TooltipHandler.TipRegion(row, d.description);
+                string summary = Summary(d);
+                Widgets.Label(new Rect(row.x + 300f, row.y + 2f, row.width - 300f, rowH), summary);
+                // The summary can run past the row, so the tooltip repeats it under the flavour text
+                TooltipHandler.TipRegion(row, summary.NullOrEmpty() ? d.description : d.description + "\n\n" + summary);
             }
             Widgets.EndScrollView();
         }
@@ -370,6 +372,17 @@ namespace EntadFramework
             if (d.aura?.hediff != null) parts.Add("EF_Summary_Aura".Translate(d.aura.hediff.label));
             if (d.triggers != null) foreach (var t in d.triggers) parts.Add(t.EventLabel);
             if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("EF_Summary_Fuel".Translate());
+            // Descriptions are flavour text, so the row's summary is where the rules show in the settings list
+            if (d.HasMood) parts.Add("EF_Summary_Mood".Translate());
+            if (d.HasMealEffect) parts.Add("EF_Summary_Meal".Translate());
+            if (d.HasPortableSpace) parts.Add("EF_Summary_Space".Translate());
+            if (d.persona) parts.Add("EF_Summary_Persona".Translate());
+            if (d.neverBond) parts.Add("EF_Summary_NeverBond".Translate());
+            if (d.secretive) parts.Add("EF_Summary_Secretive".Translate());
+            if (d.bondedHediffs != null) foreach (var h in d.bondedHediffs) if (h != null) parts.Add(h.LabelCap);
+            if (d.bondedThought != null) parts.Add("EF_Summary_BondedMood".Translate());
+            if (d.otherWeaponThought != null) parts.Add("EF_Summary_OtherWeapon".Translate());
+            if (d.killThirstThought != null) parts.Add("EF_Summary_KillThirst".Translate());
             return string.Join(", ", parts.Distinct());
         }
 

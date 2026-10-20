@@ -46,7 +46,7 @@ namespace EntadFramework
             // A bound entad is worth little to anyone outside its bloodline, so in every context (wealth, trade, the
             // card) its traits are priced as a flat premium, the same share of base as the mystery premium (build 152)
             bool bound = isValue && comp.IsBound;
-            float baseValue = val, traitValue = 0f;
+            float baseValue = val, traitValue = 0f, before = val;
             bool unidentified = false;
             foreach (var m in comp.activeTraits)
             {
@@ -71,6 +71,22 @@ namespace EntadFramework
             }
             // Durability: every entad, by its highest trait rarity. Visible from the start, so never hidden.
             if (parentStat == StatDefOf.MaxHitPoints) val *= comp.DurabilityFactor;
+            if (parentStat == StatDefOf.RangedWeapon_RangeMultiplier && val > before) val = CapRange(req.Thing.def, before, val);
+        }
+
+        // Radial searches (GenRadial.NumCellsInRadius, GenDraw.DrawRadiusRing) stop at the precalculated pattern,
+        // about 79 tiles, and log an error past it. The verb's own range ring checks first, but other range users
+        // don't, and a Legendary Far-Reaching sniper rifle would get there, so the trait's share of the multiplier
+        // stops a tile short. A weapon that's already that long-ranged (a mortar) keeps what it had before the
+        // trait. A verb with a rangeStat takes its range from the wielder, which can't be known here, so it's skipped
+        // (a weapon where every verb has one goes uncapped; no vanilla gun does).
+        // ExplanationPart adds a line when it applies.
+        internal static float CapRange(ThingDef def, float before, float val)
+        {
+            float range = 0f;
+            if (def.Verbs != null) foreach (var v in def.Verbs) if (v.rangeStat == null && v.range > range) range = v.range;
+            if (range <= 0f) return val;
+            return UnityEngine.Mathf.Max(before, UnityEngine.Mathf.Min(val, (GenRadial.MaxRadialPatternRadius - 1f) / range));
         }
 
         // Wearer-stat offsets (move speed, shooting accuracy...) reach the pawn through the StatOffsetFromGear
@@ -100,6 +116,11 @@ namespace EntadFramework
             float baseValue = parentStat == StatDefOf.MarketValue ? comp.BaseMarketValue() : 0f;
             float traitValue = 0f;
             bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            // For the range cap line: the value at our part (stat comps such as Odyssey's unique weapon traits
+            // included, as in TransformValue; the stat has no vanilla parts), then the traits applied in the same
+            // order TransformValue applies them
+            bool range = parentStat == StatDefOf.RangedWeapon_RangeMultiplier;
+            float before = range ? parentStat.Worker.GetValueUnfinalized(req) : 0f, full = before;
             // Same flat premium as TransformValue, in place of the trait lines
             bool bound = parentStat == StatDefOf.MarketValue && comp.IsBound;
             if (bound) explanation += "\n" + "EF_Explain_Bound".Translate((baseValue * EntadSettings.MysteryBonus).ToStringMoneyOffset());
@@ -121,10 +142,24 @@ namespace EntadFramework
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
+                    {
+                        full += m.OffsetFor(i);
                         explanation += $"\n{def.LabelCap}: {parentStat.Worker.ValueToString(m.OffsetFor(i), false, ToStringNumberSense.Offset)}";
+                    }
                 for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat)
+                    {
+                        full *= m.FactorFor(i);
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
+                    }
+            }
+            // Same cap as TransformValue. The weapon card's Range row lists these lines under the range multiplier,
+            // and it's only drawn on the item's card, where TransformValue also leaves hidden traits out.
+            if (range && full > before)
+            {
+                float capped = CapRange(req.Thing.def, before, full);
+                if (capped < full - 0.0001f)
+                    explanation += "\n" + "EF_Explain_RangeCap".Translate((GenRadial.MaxRadialPatternRadius - 1f).ToString("F0"), (capped / full).ToStringPercent());
             }
             // Same clamp as TransformValue, so the lines add up to the value shown
             float lowest = -(1f - EntadSettings.ValueFloor) * baseValue;
@@ -196,6 +231,24 @@ namespace EntadFramework
             }
         }
 
+        // Stats that keep vanilla's permanent per-thing cache after our part joins them (only where vanilla made
+        // them immutable, which it does for both of ours with or without Odyssey: its unique weapon traits don't
+        // put them in StatDef.mutableStats). Each is a stat of the item alone, never added to a wearer, and the
+        // game reads it often: MaxHitPoints for every thing, the range multiplier on every EffectiveRange of every
+        // gun, the melee penetration multiplier per hit on a Piercing weapon, the Merciless factor per hit on a
+        // downed or fleeing enemy. RangedWeapon_ArmorPenetrationMultiplier
+        // isn't listed: its StatPart_Quality means vanilla never caches it either. A cached value goes stale only if nothing clears it, and CompEntad clears the item's caches with
+        // ClearCacheForThing (which empties the immutable cache too) on every change that can move these values:
+        // a trait added, removed or revealed, a durability rescale, a binding change, the holder changing on a bound
+        // item (equip and unequip), and after every frame of the item's own info card, the only place hidden traits
+        // are left out. Rolled trait values are stored on the item, so settings changes don't move them.
+        // A wearer stat must never be listed here: the gear display flags change its value per read.
+        private static bool KeepsImmutableCache(StatDef stat) =>
+            stat == StatDefOf.MaxHitPoints
+            || stat == StatDefOf.RangedWeapon_RangeMultiplier
+            || stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier
+            || stat == EntadStatDefOf.Entad_MercilessDamageFactor;
+
         private static void InjectStatParts()
         {
             // MaxHitPoints always: every entad gets the durability multiplier, whatever its traits touch
@@ -213,11 +266,8 @@ namespace EntadFramework
                 // StatDef.SetImmutability already ran during def loading, before static constructors. A stat that had
                 // no parts may have been marked immutable, which caches each thing's first value forever: entad
                 // items would keep their pre-trait value and a wearer stat would ignore entad gear changes.
-                // MaxHitPoints is the exception: every Thing reads it constantly, so it keeps vanilla's permanent cache.
-                // That's safe because its value never changes for display only (the info card leaves it real), and
-                // every real change (trait add/remove/reveal, durability sync) clears it with ClearCacheForThing,
-                // which empties the immutable cache too.
-                if (stat.immutable && stat != StatDefOf.MaxHitPoints)
+                // KeepsImmutableCache lists the exceptions.
+                if (stat.immutable && !KeepsImmutableCache(stat))
                 {
                     stat.immutable = false;
                     stat.Worker.SetCacheability(false);

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- More vanilla psycasts as limited-use abilities (see EntadTraits_Psycasts.xml). Requires Royalty: without it these
+  <!-- More vanilla psycasts as limited-use abilities (see EntadTraits_Psycasts.xml), then abilities that need no DLC.
+       The psycast ones require Royalty: without it those
        traits don't load. -->
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_RageEcho</defName>
     <label>Rage Echo</label>
-    <description>Grants the ability to drive a target berserk. It recharges over three days.</description>
+    <description>Something in it remembers every fury it has ever seen, and can pass one on.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <points>4</points>
@@ -18,7 +19,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Veil</defName>
     <label>Veil</label>
-    <description>Grants the ability to turn a person invisible for a short time. It recharges over two days.</description>
+    <description>Light bends politely around whoever it chooses.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <points>6</points>
@@ -31,7 +32,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_NumbingTouch</defName>
     <label>Numbing Touch</label>
-    <description>Grants the ability to block a person's pain for a while. It holds two charges, which recharge over a day.</description>
+    <description>One touch from it, and the hurt simply goes quiet.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <abilities><li>Painblock</li></abilities>
@@ -43,7 +44,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Quenching</defName>
     <label>Quenching</label>
-    <description>Grants the ability to skip water onto an area, putting out fires. It recharges over a day.</description>
+    <description>It always feels faintly damp, and it's willing to share.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <abilities><li>Waterskip</li></abilities>
@@ -56,7 +57,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Bulwark</defName>
     <label>Bulwark</label>
-    <description>Grants the ability to raise a short-lived wall of rock. It holds one charge, and is reloaded with 25 steel.</description>
+    <description>Feed it steel and it raises stone in your defense.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <abilities><li>Wallraise</li></abilities>
@@ -64,5 +65,84 @@
     <abilityAmmo>Steel</abilityAmmo>
     <abilityAmmoPerCharge>25</abilityAmmoPerCharge>
     <abilityReloadTicks>120</abilityReloadTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Abilities that need no DLC (Defs/EntadAbilities.xml) -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_SecondWind</defName>
+    <label>Second Wind</label>
+    <description>When the body says stop, it quietly disagrees.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <abilities><li>Entad_SecondWind</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>120000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sprint</defName>
+    <label>Sprint</label>
+    <description>It makes the ground feel shorter than it is.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Sprint</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Blink</defName>
+    <label>Blink</label>
+    <description>It doesn't care much for the space in between.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <abilities><li>Entad_Blink</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_BattleCry</defName>
+    <label>Battle Cry</label>
+    <description>Raised high, it makes everyone nearby stand a little taller.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <abilities><li>Entad_BattleCry</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>120000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Smokescreen</defName>
+    <label>Smokescreen</label>
+    <description>It's always faintly smoking, and it can do a great deal more than faintly.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Smokescreen</li></abilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Flashbang</defName>
+    <label>Flashbang</label>
+    <description>It holds a little sunlight, and lets it out all at once.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <abilities><li>Entad_Flashbang</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Artillery</defName>
+    <label>Artillery</label>
+    <description>Its shots don't so much land as arrive, in numbers.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Epic</rarity>
+    <abilities><li>Entad_Artillery</li></abilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>30000</abilityCooldownTicks>
   </EntadFramework.EntadTraitDef>
 </Defs>

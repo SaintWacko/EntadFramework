@@ -96,15 +96,51 @@
   <EF_TriggerEffect_Hediff>gives {0}</EF_TriggerEffect_Hediff>
   <EF_TriggerEffect_HediffFor>gives {0} for {1} hours</EF_TriggerEffect_HediffFor>
   <EF_TriggerEffect_Thought>mood: {0}</EF_TriggerEffect_Thought>
+  <EF_TriggerEffect_Stun>stuns for {0} seconds</EF_TriggerEffect_Stun>
+  <EF_TriggerEffect_Inspiration>inspires: {0}</EF_TriggerEffect_Inspiration>
+  <EF_TriggerEffect_RandomInspiration>gives a random inspiration</EF_TriggerEffect_RandomInspiration>
+  <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
+  <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
+  <EF_TriggerArea_Victim>{0}, to {1} within {2} tiles of the victim</EF_TriggerArea_Victim>
+  <EF_TriggerTargets_Self>the user</EF_TriggerTargets_Self>
+  <EF_TriggerTargets_Allies>allies</EF_TriggerTargets_Allies>
+  <EF_TriggerTargets_Enemies>enemies</EF_TriggerTargets_Enemies>
+  <EF_InspirationReason>Inspired by {0}.</EF_InspirationReason>
+  <EF_ProductQualityRaised>{0} made {2} at {1}, and it came out better than expected: {3}.</EF_ProductQualityRaised>
+  <EF_ProductDoubled>{0}'s work at {1} yielded twice the usual {2}.</EF_ProductDoubled>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
-  <EF_Card_Aura>Aura: {0}, within {1} tiles</EF_Card_Aura>
+  <EF_Card_Aura>Aura on {0} within {1} tiles</EF_Card_Aura>
+  <EF_Card_AuraWho>{0} ({1})</EF_Card_AuraWho>
+  <EF_Card_AuraBuildup>{0} builds up while in range</EF_Card_AuraBuildup>
+  <EF_AuraWho_Self>the carrier</EF_AuraWho_Self>
+  <EF_AuraWho_Allies>allies</EF_AuraWho_Allies>
+  <EF_AuraWho_Neutrals>neutrals</EF_AuraWho_Neutrals>
+  <EF_AuraWho_Enemies>enemies</EF_AuraWho_Enemies>
+  <EF_AuraKind_People>people</EF_AuraKind_People>
+  <EF_AuraKind_Animals>animals</EF_AuraKind_Animals>
+  <EF_AuraKind_Mechanoids>mechanoids</EF_AuraKind_Mechanoids>
+  <EF_AuraKind_Entities>entities</EF_AuraKind_Entities>
+  <EF_AuraWhen_InSight>in sight</EF_AuraWhen_InSight>
+  <EF_AuraWhen_Combat>only in a fight</EF_AuraWhen_Combat>
+  <EF_AuraWhen_NotAsleep>not while the carrier sleeps</EF_AuraWhen_NotAsleep>
+  <EF_AuraWhen_Downed>even while the carrier is downed</EF_AuraWhen_Downed>
+  <EF_AuraWhen_Powered>while powered</EF_AuraWhen_Powered>
+  <EF_AuraWhen_BoundNear>while someone it's bound to is in range</EF_AuraWhen_BoundNear>
+  <EF_Card_HediffEffects>{0}: {1}</EF_Card_HediffEffects>
+  <EF_Card_HediffMood>Mood {0}</EF_Card_HediffMood>
+  <EF_Card_AbilityCooldown>{0}: usable again after {1}</EF_Card_AbilityCooldown>
+  <EF_Card_AbilityChargesEach>{0}: {1} charges, each back after {2}</EF_Card_AbilityChargesEach>
+  <EF_Card_AbilityChargesAll>{0}: {1} uses, all back after {2}</EF_Card_AbilityChargesAll>
   <EF_Card_Reloadable>Charges {0} / {1}, reloaded with {2} ({3} per charge)</EF_Card_Reloadable>
   <EF_Card_BurnsOnly>Burns only: {0}</EF_Card_BurnsOnly>
   <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
   <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>
   <EF_Card_GrantsAbility>Grants ability: {0}</EF_Card_GrantsAbility>
+  <!-- Artillery (EntadArtillery.cs): the cursor label is the number of projectiles the shot splits into by the cell -->
+  <EF_ArtilleryCount>x{0}</EF_ArtilleryCount>
+  <EF_ArtilleryNoWeapon>Needs a wielded weapon that fires projectiles.</EF_ArtilleryNoWeapon>
   <EF_Card_MealNutrition>Meal nutrition x{0}</EF_Card_MealNutrition>
   <EF_Card_MealQuality>Meal quality {0}</EF_Card_MealQuality>
   <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
@@ -143,6 +179,7 @@
   <EF_Explain_Unidentified>Mystery premium for unidentified entad properties: +{0}</EF_Explain_Unidentified>
   <EF_Explain_Bound>Bound entad, traits priced as a flat premium: {0}</EF_Explain_Bound>
   <EF_Explain_Durability>Entad durability ({0}): x{1}</EF_Explain_Durability>
+  <EF_Explain_RangeCap>Range limit of {0} tiles: x{1}</EF_Explain_RangeCap>
 
   <!-- Abilities. {0} = ability, {1} = building. -->
   <EF_AbilityUnknown>The effect of this ability is not yet known.</EF_AbilityUnknown>
@@ -213,6 +250,15 @@
   <EF_Summary_Fuel>Fuel</EF_Summary_Fuel>
   <EF_Summary_Aura>{0} aura</EF_Summary_Aura>
   <EF_Summary_Weapon>Weapon handling</EF_Summary_Weapon>
+  <EF_Summary_Mood>Mood</EF_Summary_Mood>
+  <EF_Summary_Meal>Meals</EF_Summary_Meal>
+  <EF_Summary_Space>Portable Space</EF_Summary_Space>
+  <EF_Summary_Persona>Bonds to one wielder</EF_Summary_Persona>
+  <EF_Summary_NeverBond>Never bonds</EF_Summary_NeverBond>
+  <EF_Summary_Secretive>Hides its other traits</EF_Summary_Secretive>
+  <EF_Summary_BondedMood>Mood while bonded</EF_Summary_BondedMood>
+  <EF_Summary_OtherWeapon>Mood when using another weapon</EF_Summary_OtherWeapon>
+  <EF_Summary_KillThirst>Needs kills</EF_Summary_KillThirst>
 
 
   <!-- Portable space -->

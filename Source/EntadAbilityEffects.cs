@@ -1,0 +1,139 @@
+using System.Collections.Generic;
+using RimWorld;
+using UnityEngine;
+using Verse;
+using Verse.Sound;
+
+namespace EntadFramework
+{
+    // Ability effects for entad abilities that need no DLC. Vanilla's own comps cover some (Smokescreen uses
+    // CompAbilityEffect_Smokepop as it is), but the ones that are Core code still often reach for Royalty defs:
+    // CompAbilityEffect_Teleport plays Psycast_Skip_Exit, which is null without Royalty and logs an error on every
+    // cast. These two comps only touch Core defs, and optional ones only when present.
+
+    // One pulse of effects: on the pawn the ability targets (the caster, for an untargeted ability), or with a radius,
+    // on every pawn 'targets' picks around the target. Values are fixed per ability, unlike triggers, whose values
+    // are rolled per item. Uses the trigger code's target rules and effects, so 'Allies' means the same thing in both.
+    public class CompProperties_AbilityEntadPulse : CompProperties_AbilityEffect
+    {
+        public float radius;
+        public EntadTriggerTargets targets = EntadTriggerTargets.Self;
+        public float heal;
+        public float rest;
+        public float food;
+        public float joy;
+        public HediffDef hediff;
+        // In-game hours; 0 keeps the hediff's own disappearsAfterTicks
+        public float hediffHours;
+        public float stunSeconds;
+        public FleckDef fleck;
+
+        public CompProperties_AbilityEntadPulse() => compClass = typeof(CompAbilityEffect_EntadPulse);
+
+        public override IEnumerable<string> ConfigErrors(AbilityDef parentDef)
+        {
+            foreach (var e in base.ConfigErrors(parentDef)) yield return e;
+            if (radius < 0f) yield return "radius can't be negative";
+            if (targets == 0) yield return "targets needs at least one of Self, Allies, Enemies";
+            if (hediffHours > 0f && hediff == null) yield return "hediffHours without a hediff";
+        }
+    }
+
+    public class CompAbilityEffect_EntadPulse : CompAbilityEffect
+    {
+        public new CompProperties_AbilityEntadPulse Props => (CompProperties_AbilityEntadPulse)props;
+
+        private static readonly List<Pawn> hit = new List<Pawn>();
+
+        public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+        {
+            base.Apply(target, dest);
+            Pawn caster = parent.pawn;
+            Map map = caster.MapHeld;
+            if (Props.radius <= 0f)
+            {
+                if (target.Pawn != null) ApplyTo(target.Pawn, caster);
+                else ApplyTo(caster, caster);
+                return;
+            }
+            if (map == null) return;
+            IntVec3 center = target.Cell;
+            float r2 = Props.radius * Props.radius;
+            // Once per cast, over the spawned pawns; casts are player or AI decisions, never per tick
+            hit.Clear();
+            var all = map.mapPawns.AllPawnsSpawned;
+            for (int i = 0; i < all.Count; i++)
+            {
+                Pawn other = all[i];
+                if (other.Dead || (other.Position - center).LengthHorizontalSquared > r2) continue;
+                if (EntadTriggers.IsTarget(caster, other, Props.targets)) hit.Add(other);
+            }
+            if (Props.fleck != null && center.InBounds(map)) FleckMaker.Static(center, map, Props.fleck, Props.radius);
+            var copy = hit.ToArray();
+            hit.Clear();
+            for (int i = 0; i < copy.Length; i++) ApplyTo(copy[i], caster);
+        }
+
+        private void ApplyTo(Pawn pawn, Pawn caster)
+        {
+            if (pawn.Dead || pawn.Destroyed) return;
+            if (Props.heal > 0f) EntadTriggers.HealWorstFirst(pawn, Props.heal);
+            EntadTriggers.Restore(pawn.needs?.rest, Props.rest);
+            EntadTriggers.Restore(pawn.needs?.food, Props.food);
+            EntadTriggers.Restore(pawn.needs?.joy, Props.joy);
+            if (Props.hediff != null) EntadTriggers.AddOrExtend(pawn, Props.hediff, Props.hediffHours);
+            if (Props.stunSeconds > 0f && pawn.Spawned && pawn.stances?.stunner != null)
+                pawn.stances.stunner.StunFor(Mathf.RoundToInt(Props.stunSeconds * GenTicks.TicksPerRealSecond), caster);
+        }
+
+        public override void DrawEffectPreview(LocalTargetInfo target)
+        {
+            // Not while the trait is hidden: the ring would give the ability away, as the cursor label would
+            if (Props.radius > 0f && !Patch_Ability_GetGizmos_Hide.IsHidden(parent)) GenDraw.DrawRadiusRing(target.Cell, Props.radius);
+        }
+    }
+
+    // A short-range self teleport to a cell the caster can see. Vanilla's skip needs a pawn target and plays a
+    // Royalty sound; this moves the caster only, with the same Core skip effecters, and the exit sound only when
+    // Royalty is loaded.
+    public class CompProperties_AbilityEntadBlink : CompProperties_AbilityEffect
+    {
+        public CompProperties_AbilityEntadBlink() => compClass = typeof(CompAbilityEffect_EntadBlink);
+    }
+
+    public class CompAbilityEffect_EntadBlink : CompAbilityEffect
+    {
+        public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
+        {
+            base.Apply(target, dest);
+            Pawn pawn = parent.pawn;
+            Map map = pawn.Map;
+            IntVec3 cell = target.Cell;
+            // Checked again: something may have moved there during the warmup
+            if (map == null || !CanLandAt(cell, map)) return;
+            parent.AddEffecterToMaintain(EffecterDefOf.Skip_Entry.Spawn(pawn, map), pawn.Position, 60);
+            parent.AddEffecterToMaintain(EffecterDefOf.Skip_Exit.Spawn(cell, map), cell, 60);
+            SoundDefOf.Psycast_Skip_Entry?.PlayOneShot(new TargetInfo(pawn.Position, map));
+            SoundDefOf.Psycast_Skip_Exit?.PlayOneShot(new TargetInfo(cell, map));
+            // No unfogging needed: ValidJumpTarget refuses fogged cells
+            pawn.Position = cell;
+            pawn.Notify_Teleported();
+        }
+
+        private bool CanLandAt(IntVec3 cell, Map map)
+        {
+            Pawn pawn = parent.pawn;
+            if (cell == pawn.Position || !JumpUtility.ValidJumpTarget(pawn, map, cell)) return false;
+            // Another pawn standing there would end up sharing the cell
+            var first = cell.GetFirstPawn(map);
+            return first == null || first == pawn;
+        }
+
+        public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
+        {
+            Map map = parent.pawn.Map;
+            if (map == null || !CanLandAt(target.Cell, map)) return false;
+            return base.Valid(target, throwMessages);
+        }
+    }
+}

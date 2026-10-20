@@ -35,19 +35,16 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Clarity</defName>
     <label>entad clarity</label>
-    <description>An entad this person carries keeps their thoughts unusually clear. They think a little faster and pick up new skills more easily.</description>
+    <description>An entad this person carries keeps their thoughts unusually clear.</description>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <stages>
       <li>
         <capMods>
           <li>
             <capacity>Consciousness</capacity>
-            <offset>0.05</offset>
+            <offset>0.1</offset>
           </li>
         </capMods>
-        <statOffsets>
-          <GlobalLearningFactor>0.1</GlobalLearningFactor>
-        </statOffsets>
       </li>
     </stages>
   </HediffDef>
@@ -55,7 +52,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Clarity</defName>
     <label>Clarity</label>
-    <description>Whoever wears or wields this item thinks more clearly while they have it.</description>
+    <description>The fog lifts whenever it's close.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>

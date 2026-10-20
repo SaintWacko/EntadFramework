@@ -5,6 +5,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.Sound;
 
 namespace EntadFramework
 {
@@ -49,8 +50,17 @@ namespace EntadFramework
         Any = Sleep | Eat | Work | Recreation | Other
     }
 
+    // Who an area trigger (radius > 0) reaches, as seen from the pawn the trigger fired for
+    [System.Flags]
+    public enum EntadTriggerTargets
+    {
+        Self = 1,      // the pawn the event happened to (the wearer, or whoever used the furniture)
+        Allies = 2,    // other pawns of that pawn's faction, and its faction's prisoners and guests
+        Enemies = 4    // pawns hostile to it
+    }
+
     // One "when X happens, do Y" on a trait. Amounts are rolled per item and scale with rarity like stat values;
-    // chance and cooldown don't.
+    // chance, cooldown and radius don't.
     public class EntadTrigger
     {
         public EntadTriggerEvent on;
@@ -68,10 +78,26 @@ namespace EntadFramework
         public FloatRange rest = FloatRange.Zero;     // fraction of the need restored (0.3 = 30%)
         public FloatRange food = FloatRange.Zero;
         public FloatRange joy = FloatRange.Zero;
+        public FloatRange stunSeconds = FloatRange.Zero; // StunHandler.StunFor, as an EMP or a stun grenade does
+        public InspirationDef inspiration;            // starts this inspiration if the pawn can have it
+        public bool randomInspiration;                // or a random one the pawn can have
+
+        // Area: with a radius, every effect goes to each pawn 'targets' picks within that many tiles, instead of only
+        // to the pawn the event happened to. The centre is that pawn, the furniture for a Use trigger, or with
+        // atVictim (Kill only) the cell the victim died on. sameRoom also requires the target to share the centre's
+        // room, when that is an indoor room. fleck and sound play at the centre when it fires.
+        public float radius;
+        public EntadTriggerTargets targets = EntadTriggerTargets.Self;
+        public bool sameRoom;
+        public bool atVictim;
+        public FleckDef fleck;
+        public SoundDef sound;
+
+        public bool IsArea => radius > 0f;
 
         // Rolled values per trigger, in this order, in AppliedEntadTrait.triggerValues
-        public const int ValueCount = 5;
-        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4;
+        public const int ValueCount = 6;
+        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4, StunSeconds = 5;
 
         public FloatRange RangeAt(int k)
         {
@@ -81,11 +107,15 @@ namespace EntadFramework
                 case Rest: return rest;
                 case Food: return food;
                 case Joy: return joy;
+                case StunSeconds: return stunSeconds;
                 default: return hediffHours;
             }
         }
 
-        public bool HasEffect => thought != null || hediff != null || heal.max > 0f || rest.max > 0f || food.max > 0f || joy.max > 0f;
+        public bool HasInspiration => inspiration != null || randomInspiration;
+
+        public bool HasEffect => thought != null || hediff != null || heal.max > 0f || rest.max > 0f || food.max > 0f || joy.max > 0f
+            || stunSeconds.max > 0f || HasInspiration;
 
         public string EventLabel
         {
@@ -128,7 +158,17 @@ namespace EntadFramework
                     ? "EF_TriggerEffect_HediffFor".Translate(hediff.label, Amount(HediffHours, v => v.ToString("0.#"))).ToString()
                     : "EF_TriggerEffect_Hediff".Translate(hediff.label).ToString());
             if (thought != null) parts.Add("EF_TriggerEffect_Thought".Translate(thought.stages?.FirstOrDefault()?.label ?? thought.defName));
-            return string.Join(", ", parts);
+            if (stunSeconds.max > 0f) parts.Add("EF_TriggerEffect_Stun".Translate(Amount(StunSeconds, v => v.ToString("0.#"))));
+            if (inspiration != null) parts.Add("EF_TriggerEffect_Inspiration".Translate(inspiration.label));
+            if (randomInspiration) parts.Add("EF_TriggerEffect_RandomInspiration".Translate());
+            string effects = string.Join(", ", parts);
+            if (!IsArea) return effects;
+            var who = new List<string>();
+            if ((targets & EntadTriggerTargets.Self) != 0) who.Add("EF_TriggerTargets_Self".Translate());
+            if ((targets & EntadTriggerTargets.Allies) != 0) who.Add("EF_TriggerTargets_Allies".Translate());
+            if ((targets & EntadTriggerTargets.Enemies) != 0) who.Add("EF_TriggerTargets_Enemies".Translate());
+            string key = atVictim ? "EF_TriggerArea_Victim" : sameRoom ? "EF_TriggerArea_Room" : "EF_TriggerArea";
+            return key.Translate(effects, who.ToCommaList(useAnd: true), radius.ToString("0.#"));
         }
 
         public string LimitsLabel()
@@ -161,6 +201,12 @@ namespace EntadFramework
                 if (r.min > r.max || r.min < 0f) yield return $"{owner}: invalid trigger range ({r})";
             }
             if (rest.max > 1f || food.max > 1f || joy.max > 1f) yield return $"{owner}: rest, food and joy are fractions of the need (at most 1)";
+            if (radius < 0f) yield return $"{owner}: trigger radius can't be negative";
+            if (targets == 0) yield return $"{owner}: trigger targets is empty";
+            if (!IsArea && targets != EntadTriggerTargets.Self) yield return $"{owner}: trigger targets other than Self need a radius";
+            if (!IsArea && (sameRoom || atVictim || fleck != null || sound != null)) yield return $"{owner}: sameRoom, atVictim, fleck and sound only apply to a trigger with a radius";
+            if (atVictim && on != EntadTriggerEvent.Kill) yield return $"{owner}: atVictim only applies to Kill triggers";
+            if (inspiration != null && randomInspiration) yield return $"{owner}: set inspiration or randomInspiration, not both";
             // (any comp derived from it too: DisappearsPausable, DisappearsAndKills...)
             if (hediffHours.max > 0f && (hediff == null || hediff.comps == null
                 || !hediff.comps.Any(c => c.compClass != null && typeof(HediffComp_Disappears).IsAssignableFrom(c.compClass))))
@@ -238,7 +284,8 @@ namespace EntadFramework
                     if (ts[i].on != ev) continue;
                     if (ev == EntadTriggerEvent.JobDone && (ts[i].jobs == null || !ts[i].jobs.Contains(job))) continue;
                     if (ev == EntadTriggerEvent.Kill && !VictimMatches(ts[i].victims, victim, pawn)) continue;
-                    TryQueue(pawn, m, i, null);
+                    // The victim's cell now: by the next tick the corpse may have been moved or destroyed
+                    TryQueue(pawn, m, i, null, ts[i].atVictim && victim != null ? victim.PositionHeld : IntVec3.Invalid);
                 }
             }
         }
@@ -257,14 +304,14 @@ namespace EntadFramework
         }
 
         // Chance and cooldown are settled here, so two events in the same tick can't both get past a cooldown
-        private static void TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source)
+        private static void TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, IntVec3? at = null)
         {
             var t = m.def.triggers[i];
             int now = Find.TickManager.TicksGame;
             if (m.TriggerReadyTick(i) > now) return;
             if (t.chance < 1f && !Rand.Chance(t.chance)) return;
             if (t.cooldownHours > 0f) m.SetTriggerReadyTick(i, now + Mathf.RoundToInt(t.cooldownHours * GenDate.TicksPerHour));
-            EntadTriggerQueue.pending.Add(new EntadTriggerQueue.Pending { pawn = pawn, trait = m, index = i, source = source });
+            EntadTriggerQueue.pending.Add(new EntadTriggerQueue.Pending { pawn = pawn, trait = m, index = i, source = source, at = at ?? IntVec3.Invalid });
         }
 
         // Effects run on the next tick, outside whatever raised the event: healing inside MakeDowned or damage
@@ -276,22 +323,89 @@ namespace EntadFramework
             var t = p.trait.def.triggers[p.index];
             var m = p.trait;
 
-            float heal = m.TriggerValue(p.index, EntadTrigger.Heal);
-            if (heal > 0f) HealWorstFirst(pawn, heal);
-            Restore(pawn.needs?.rest, m.TriggerValue(p.index, EntadTrigger.Rest));
-            Restore(pawn.needs?.food, m.TriggerValue(p.index, EntadTrigger.Food));
-            Restore(pawn.needs?.joy, m.TriggerValue(p.index, EntadTrigger.Joy));
-            if (t.hediff != null) AddOrExtend(pawn, t.hediff, m.TriggerValue(p.index, EntadTrigger.HediffHours));
-            if (t.thought != null && pawn.needs?.mood != null)
+            if (!t.IsArea) ApplyTo(pawn, pawn, t, p);
+            else
             {
-                // From furniture: tagged with the building, so using it again renews the memory instead of stacking
-                if (p.source != null) EntadMoods.Give(pawn, t.thought, t.thought.DurationTicks, p.source);
-                else pawn.needs.mood.thoughts.memories.TryGainMemory(t.thought);
+                Map map = p.source?.MapHeld ?? pawn.MapHeld;
+                if (map == null)
+                {
+                    // In a caravan or a transporter: nobody around, so only the pawn itself, if it is a target
+                    if ((t.targets & EntadTriggerTargets.Self) != 0) ApplyTo(pawn, pawn, t, p);
+                }
+                else
+                {
+                    IntVec3 center = p.at.IsValid ? p.at : p.source != null ? p.source.PositionHeld : pawn.PositionHeld;
+                    // Only an enclosed room limits: outdoors (or a room open to the sky) the radius alone does
+                    Room room = t.sameRoom ? center.GetRoom(map) : null;
+                    if (room != null && room.PsychologicallyOutdoors) room = null;
+                    float r2 = t.radius * t.radius;
+                    // Once per firing, over the spawned pawns: triggers fire on events (a kill, waking up), never per tick
+                    areaTargets.Clear();
+                    var all = map.mapPawns.AllPawnsSpawned;
+                    for (int i = 0; i < all.Count; i++)
+                    {
+                        Pawn other = all[i];
+                        if (other.Dead || (other.Position - center).LengthHorizontalSquared > r2) continue;
+                        if (room != null && other.GetRoom() != room) continue;
+                        if (IsTarget(pawn, other, t.targets)) areaTargets.Add(other);
+                    }
+                    // A carried or caravan-bound pawn isn't in the spawned list; it still counts as being where it is
+                    if ((t.targets & EntadTriggerTargets.Self) != 0 && !pawn.Spawned && pawn.MapHeld == map && !areaTargets.Contains(pawn)
+                        && (pawn.PositionHeld - center).LengthHorizontalSquared <= r2)
+                        areaTargets.Add(pawn);
+                    if (t.fleck != null && center.InBounds(map)) FleckMaker.Static(center, map, t.fleck, t.radius);
+                    if (t.sound != null && center.InBounds(map)) t.sound.PlayOneShot(new TargetInfo(center, map));
+                    // Copied first: a stun or heal can't change the list, but an effect from another mod might
+                    var hit = areaTargets.ToArray();
+                    areaTargets.Clear();
+                    for (int i = 0; i < hit.Length; i++) ApplyTo(hit[i], pawn, t, p);
+                }
             }
             m.Reveal(EntadEffectKind.Trigger);
         }
 
-        private static void Restore(Need need, float fraction)
+        private static readonly List<Pawn> areaTargets = new List<Pawn>();
+
+        internal static bool IsTarget(Pawn pawn, Pawn other, EntadTriggerTargets targets)
+        {
+            if (other == pawn) return (targets & EntadTriggerTargets.Self) != 0;
+            if ((targets & EntadTriggerTargets.Enemies) != 0 && other.HostileTo(pawn)) return true;
+            if ((targets & EntadTriggerTargets.Allies) != 0 && pawn.Faction != null && !other.HostileTo(pawn)
+                && (other.Faction == pawn.Faction || other.HostFaction == pawn.Faction)) return true;
+            return false;
+        }
+
+        // Every effect of the trigger on one pawn. 'user' is the pawn the event happened to: it stuns as the
+        // instigator, and the inspiration letter names its item.
+        private static void ApplyTo(Pawn target, Pawn user, EntadTrigger t, EntadTriggerQueue.Pending p)
+        {
+            if (target.Dead || target.Destroyed) return;
+            var m = p.trait;
+            float heal = m.TriggerValue(p.index, EntadTrigger.Heal);
+            if (heal > 0f) HealWorstFirst(target, heal);
+            Restore(target.needs?.rest, m.TriggerValue(p.index, EntadTrigger.Rest));
+            Restore(target.needs?.food, m.TriggerValue(p.index, EntadTrigger.Food));
+            Restore(target.needs?.joy, m.TriggerValue(p.index, EntadTrigger.Joy));
+            if (t.hediff != null) AddOrExtend(target, t.hediff, m.TriggerValue(p.index, EntadTrigger.HediffHours));
+            if (t.thought != null && target.needs?.mood != null)
+            {
+                // From furniture: tagged with the building, so using it again renews the memory instead of stacking
+                if (p.source != null) EntadMoods.Give(target, t.thought, t.thought.DurationTicks, p.source);
+                else target.needs.mood.thoughts.memories.TryGainMemory(t.thought);
+            }
+            float stun = m.TriggerValue(p.index, EntadTrigger.StunSeconds);
+            if (stun > 0f && target.Spawned && target.stances?.stunner != null)
+                target.stances.stunner.StunFor(UnityEngine.Mathf.RoundToInt(stun * GenTicks.TicksPerRealSecond), user);
+            if (t.HasInspiration && target.mindState?.inspirationHandler != null && !target.Inspired)
+            {
+                var handler = target.mindState.inspirationHandler;
+                var def = t.inspiration ?? handler.GetRandomAvailableInspirationDef();
+                Thing item = p.source ?? m.owner?.parent;
+                if (def != null) handler.TryStartInspiration(def, item != null ? "EF_InspirationReason".Translate(item.LabelShort).ToString() : null);
+            }
+        }
+
+        internal static void Restore(Need need, float fraction)
         {
             if (need != null && fraction > 0f) need.CurLevelPercentage += fraction;
         }
@@ -314,7 +428,7 @@ namespace EntadFramework
         }
 
         // A hediff already there has its time topped up to the new length rather than a second copy added
-        private static void AddOrExtend(Pawn pawn, HediffDef def, float hours)
+        internal static void AddOrExtend(Pawn pawn, HediffDef def, float hours)
         {
             int ticks = hours > 0f ? Mathf.RoundToInt(hours * GenDate.TicksPerHour) : -1;
             var existing = pawn.health.hediffSet.GetFirstHediffOfDef(def);
@@ -368,6 +482,7 @@ namespace EntadFramework
             public AppliedEntadTrait trait;
             public int index;
             public Thing source;
+            public IntVec3 at;   // an atVictim Kill trigger's centre; Invalid otherwise
         }
 
         internal static readonly List<Pending> pending = new List<Pending>();

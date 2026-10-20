@@ -9,7 +9,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Persona</defName>
     <label>Persona</label>
-    <description>An intelligent persona lives in this weapon. It usually bonds with its first wielder and refuses anyone else, and the two fight with a speed and precision neither could manage alone.</description>
+    <description>An intelligent persona lives in this weapon, and it is particular about who carries it.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -27,7 +27,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Freewielder</defName>
     <label>Freewielder</label>
-    <description>This weapon's persona doesn't form bonds. Anyone can pick it up and use it.</description>
+    <description>Its persona is happy to go with anyone.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <points>1</points>
@@ -37,7 +37,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Secretive</defName>
     <label>Secretive</label>
-    <description>This weapon's persona won't say what it can do. Its other traits stay hidden until they show themselves in use.</description>
+    <description>Its persona keeps its own counsel.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <points>-1</points>
@@ -47,7 +47,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_KindWhispers</defName>
     <label>Kind Whispers</label>
-    <description>The persona is kind and supportive, and whispers encouragement to whoever it's bonded with.</description>
+    <description>The persona is kind and supportive, and says so often.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <points>2</points>
@@ -70,7 +70,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MadMuttering</defName>
     <label>Mad Muttering</label>
-    <description>The persona is neurotic and never stops muttering to whoever it's bonded with.</description>
+    <description>The persona is neurotic and never stops muttering.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
     <points>-2</points>
@@ -93,7 +93,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Gluttonous</defName>
     <label>Gluttonous</label>
-    <description>The persona loves food and passes its appetite on: whoever it's bonded with gets hungry 50% faster.</description>
+    <description>The persona loves food, and its partner pays for it.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>
@@ -114,7 +114,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Jealous</defName>
     <label>Jealous</label>
-    <description>The persona flies into a rage when the person bonded to it uses another weapon.</description>
+    <description>The persona won't share its partner with other weapons.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>
@@ -136,7 +136,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_KillThirst</defName>
     <label>Kill Thirst</label>
-    <description>The persona finds purpose in bloodshed. After 20 days without a kill it grows angry and complains to whoever is bonded with it.</description>
+    <description>The persona finds purpose in bloodshed, and grows restless without it.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>

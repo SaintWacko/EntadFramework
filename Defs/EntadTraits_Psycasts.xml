@@ -4,11 +4,10 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_ChaosSkip</defName>
     <label>Chaos Skip</label>
-    <description>Grants the ability to skip a target, and anyone near it, to a random nearby location.</description>
+    <description>Things near it have a way of ending up somewhere else.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>
-      <li>Furniture</li>
     </categories>
     <rarity>Rare</rarity>
     <abilities>
@@ -21,7 +20,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Farskip</defName>
     <label>Far Skip</label>
-    <description>Grants the ability to skip the caster, and anyone near them, to an ally across the world.</description>
+    <description>Distance means less to it than it should.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>
@@ -38,7 +37,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_StunCharge</defName>
     <label>Stun Charge</label>
-    <description>Grants the ability to stun a target. It holds three charges, and is refuelled with chemfuel.</description>
+    <description>A splash of chemfuel, and it can stop a person in their tracks.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>

@@ -103,6 +103,42 @@ namespace EntadFramework
 
         public bool AffectsSomeone => affectsSelf || affectsAllies || affectsNeutrals || affectsEnemies;
 
+        // The info card's aura lines: who, how far and when, then what it does to them. A trait description is
+        // flavour text, so this is where a player reads the rules.
+        public IEnumerable<string> CardLines(Thing source, float range)
+        {
+            bool building = source.def.building != null;
+            var groups = new List<string>();
+            if (affectsSelf && !building) groups.Add("EF_AuraWho_Self".Translate());
+            if (affectsAllies) groups.Add("EF_AuraWho_Allies".Translate());
+            if (affectsNeutrals) groups.Add("EF_AuraWho_Neutrals".Translate());
+            if (affectsEnemies) groups.Add("EF_AuraWho_Enemies".Translate());
+            var kinds = new List<string>();
+            if (affectsHumanlikes) kinds.Add("EF_AuraKind_People".Translate());
+            if (affectsAnimals) kinds.Add("EF_AuraKind_Animals".Translate());
+            if (affectsMechanoids) kinds.Add("EF_AuraKind_Mechanoids".Translate());
+            if (affectsEntities && ModsConfig.AnomalyActive) kinds.Add("EF_AuraKind_Entities".Translate());
+
+            var when = new List<string>();
+            if (blockedByWalls) when.Add("EF_AuraWhen_InSight".Translate());
+            if (!building && onlyInCombat) when.Add("EF_AuraWhen_Combat".Translate());
+            if (!building && !whileAsleep) when.Add("EF_AuraWhen_NotAsleep".Translate());
+            if (!building && whileDowned) when.Add("EF_AuraWhen_Downed".Translate());
+            if (building && source.TryGetComp<CompPowerTrader>() != null) when.Add("EF_AuraWhen_Powered".Translate());
+            if (building && (source.TryGetComp<CompEntad>()?.IsBound ?? false)) when.Add("EF_AuraWhen_BoundNear".Translate());
+
+            string who = groups.ToCommaList(true);
+            if (kinds.Count > 0) who = "EF_Card_AuraWho".Translate(who, kinds.ToCommaList(true));
+            string line = "EF_Card_Aura".Translate(who, Mathf.RoundToInt(range));
+            if (when.Count > 0) line += ", " + string.Join(", ", when);
+            yield return line;
+            // A buildup hediff's stages change with severity, so its first stage isn't what a pawn ends up with
+            if (severityPerDay > 0f)
+                yield return "EF_Card_AuraBuildup".Translate(hediff.label);
+            else
+                yield return EntadUtility.HediffLine(hediff);
+        }
+
         public IEnumerable<string> ConfigErrors(string defName)
         {
             if (hediff == null) yield return $"{defName}: aura has no hediff";
@@ -115,6 +151,8 @@ namespace EntadFramework
             if (linkMote != null && !typeof(MoteDualAttached).IsAssignableFrom(linkMote.thingClass))
                 yield return $"{defName}: aura linkMote {linkMote.defName} must have a MoteDualAttached thingClass";
             if (!AffectsSomeone) yield return $"{defName}: aura affects nobody: set affectsAllies, affectsEnemies, affectsNeutrals or affectsSelf";
+            if (!affectsHumanlikes && !affectsAnimals && !affectsMechanoids && !affectsEntities)
+                yield return $"{defName}: aura affects no kind of pawn: leave affectsHumanlikes or affectsAnimals on, or set affectsMechanoids or affectsEntities";
             if (hediff != null)
             {
                 HediffCompProperties_Disappears d = null;

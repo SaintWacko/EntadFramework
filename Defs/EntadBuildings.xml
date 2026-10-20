@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_FrugalBurner</defName>
     <label>Frugal</label>
-    <description>Needs less fuel to run and holds more of it.</description>
+    <description>A little fuel goes a long way in it.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -39,6 +39,24 @@
         <property>FuelCapacity</property>
         <min>1.25</min>
         <max>2</max>
+      </li>
+    </buildingFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Everburning</defName>
+    <label>Everburning</label>
+    <description>Once lit, it barely seems to notice the fuel at all.</description>
+    <categories>
+      <li>Furniture</li>
+    </categories>
+    <rarity>Epic</rarity>
+    <!-- Not zero: CompRefuelable divides by the rate for its "runs out in" readout -->
+    <buildingFactors>
+      <li>
+        <property>FuelConsumptionRate</property>
+        <min>0.03</min>
+        <max>0.08</max>
       </li>
     </buildingFactors>
   </EntadFramework.EntadTraitDef>
@@ -61,9 +79,9 @@
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_SerenityFocus</defName>
-    <label>Serene</label>
-    <description>A stronger meditation focus.</description>
+    <defName>Entad_Meditative</defName>
+    <label>Meditative</label>
+    <description>Thoughts settle into it like water into a bowl.</description>
     <categories>
       <li>Furniture</li>
     </categories>

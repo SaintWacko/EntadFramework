@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Abilities that need no DLC, granted by the traits in EntadTraits_Abilities.xml. Each trait sets its own
+       charges and cooldown (EntadAbilityPrep copies the ability per trait), so the cooldowns here are only what an
+       ability gets when another mod grants it directly. The descriptions carry the rules: the info card names the
+       ability, and its gizmo tooltip shows this text. -->
+
+  <AbilityDef Name="EntadAbilityBase" Abstract="True">
+    <cooldownTicksRange>60000</cooldownTicksRange>
+    <hostile>false</hostile>
+    <casterMustBeCapableOfViolence>false</casterMustBeCapableOfViolence>
+  </AbilityDef>
+
+  <!-- On the caster, no target to pick -->
+  <AbilityDef Name="EntadSelfAbilityBase" ParentName="EntadAbilityBase" Abstract="True">
+    <targetRequired>false</targetRequired>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <warmupTime>0.5</warmupTime>
+      <range>0</range>
+      <drawAimPie>false</drawAimPie>
+      <targetable>false</targetable>
+      <targetParams>
+        <canTargetSelf>true</canTargetSelf>
+      </targetParams>
+    </verbProperties>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadSelfAbilityBase">
+    <defName>Entad_SecondWind</defName>
+    <label>second wind</label>
+    <description>Restores 50% of the user's rest at once.</description>
+    <iconPath>UI/Abilities/Entad/SecondWind</iconPath>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
+        <rest>0.5</rest>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_Sprinting</defName>
+    <label>sprinting</label>
+    <description>Running flat out, faster than this person should be able to.</description>
+    <defaultLabelColor>(1, 0.85, 0.4)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statFactors>
+          <MoveSpeed>1.5</MoveSpeed>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <AbilityDef ParentName="EntadSelfAbilityBase">
+    <defName>Entad_Sprint</defName>
+    <label>sprint</label>
+    <description>The user moves 50% faster for 1 hour.</description>
+    <iconPath>UI/Abilities/Entad/Sprint</iconPath>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
+        <hediff>Entad_Hediff_Sprinting</hediff>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_Emboldened</defName>
+    <label>emboldened</label>
+    <description>Stirred by a battle cry. Aims and strikes more surely.</description>
+    <defaultLabelColor>(1, 0.6, 0.4)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <!-- The same bonus as Ideology's combat command -->
+        <statOffsets>
+          <ShootingAccuracyPawn>3</ShootingAccuracyPawn>
+          <MeleeHitChance>3</MeleeHitChance>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <AbilityDef ParentName="EntadSelfAbilityBase">
+    <defName>Entad_BattleCry</defName>
+    <label>battle cry</label>
+    <description>The user and allies within 9 tiles become emboldened for 2 hours, gaining shooting accuracy and melee hit chance.</description>
+    <iconPath>UI/Abilities/Entad/BattleCry</iconPath>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
+        <radius>9</radius>
+        <targets>Self, Allies</targets>
+        <hediff>Entad_Hediff_Emboldened</hediff>
+        <fleck>PsycastAreaEffect</fleck>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <!-- On a cell the caster can see -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Blink</defName>
+    <label>blink</label>
+    <description>The user vanishes and reappears at a spot within 12 tiles that they can see.</description>
+    <iconPath>UI/Abilities/Entad/Blink</iconPath>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <warmupTime>0.25</warmupTime>
+      <range>12</range>
+      <requireLineOfSight>true</requireLineOfSight>
+      <drawAimPie>false</drawAimPie>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+        <canTargetPawns>false</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadBlink" />
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Smokescreen</defName>
+    <label>smokescreen</label>
+    <description>Fills a 4-tile radius with smoke, up to 15 tiles away. Smoke makes shots through it less accurate and stops turrets from locking on.</description>
+    <iconPath>UI/Abilities/Entad/Smokescreen</iconPath>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <warmupTime>0.5</warmupTime>
+      <range>15</range>
+      <requireLineOfSight>true</requireLineOfSight>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="CompProperties_AbilitySmokepop">
+        <smokeRadius>4</smokeRadius>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Flashbang</defName>
+    <label>flashbang</label>
+    <description>A blinding burst up to 15 tiles away stuns every enemy within 3 tiles of it for 4 seconds.</description>
+    <iconPath>UI/Abilities/Entad/Flashbang</iconPath>
+    <hostile>true</hostile>
+    <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <warmupTime>0.5</warmupTime>
+      <range>15</range>
+      <requireLineOfSight>true</requireLineOfSight>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
+        <radius>3</radius>
+        <targets>Enemies</targets>
+        <stunSeconds>4</stunSeconds>
+        <fleck>ExplosionFlash</fleck>
+        <sound>Explosion_Stun</sound>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <!-- Artillery (Source/EntadArtillery.cs): one shot from the wielded weapon that splits at fixed distances from the
+       user. Range is the weapon's (Verb_EntadArtillery). -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Artillery</defName>
+    <label>artillery shot</label>
+    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Most final projectiles near an enemy home in on someone close to where they land, usually the enemy, and at most three home in on one person; explosive ones hurt anyone in the blast. Targeting a person follows them while the user aims. The range is the weapon's.</description>
+    <iconPath>UI/Abilities/Entad/Artillery</iconPath>
+    <hostile>true</hostile>
+    <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
+    <verbProperties>
+      <verbClass>EntadFramework.Verb_EntadArtillery</verbClass>
+      <warmupTime>1</warmupTime>
+      <range>25</range>
+      <requireLineOfSight>true</requireLineOfSight>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+        <canTargetPawns>true</canTargetPawns>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadArtillery" />
+    </comps>
+  </AbilityDef>
+
+  <!-- The in-flight part of an artillery shot. It draws the weapon's own projectile and never hits anything. -->
+  <ThingDef ParentName="BaseBullet">
+    <defName>Entad_ArtilleryCarrier</defName>
+    <label>splitting shot</label>
+    <thingClass>EntadFramework.Projectile_EntadArtillery</thingClass>
+    <graphicData>
+      <texPath>Things/Projectile/Bullet_Small</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <projectile>
+      <damageDef>Bullet</damageDef>
+      <!-- Never dealt: the carrier copies the weapon's projectile's damage in code (Projectile_EntadArtillery.
+           DamageAmount), which is what a shield reads. Vanilla's ConfigErrors still wants a value here. -->
+      <damageAmountBase>1</damageAmountBase>
+      <speed>80</speed>
+    </projectile>
+  </ThingDef>
+</Defs>

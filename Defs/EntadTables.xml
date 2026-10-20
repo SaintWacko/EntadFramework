@@ -2,7 +2,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BountifulTable</defName>
     <label>Bountiful Table</label>
-    <description>Meals eaten at this table are somehow more filling and feel finer than they have any right to be.</description>
+    <description>Every plate set on it somehow goes further.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -11,7 +11,6 @@
       <min>1.1</min>
       <max>1.5</max>
     </mealNutritionFactor>
-    <mealThought>AteFineMeal</mealThought>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_GildedTable</defName>

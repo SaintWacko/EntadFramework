@@ -94,6 +94,40 @@ namespace EntadFramework
 
         private static readonly Dictionary<ThingDef, bool> uniqueWeaponCache = new Dictionary<ThingDef, bool>();
 
+        // What a hediff does, for the info card: "Pain x70%, Melee damage factor x120%", or null when there's nothing
+        // to say. The lines come from vanilla's own hediff readout (HediffStatsUtility, what the health tab's info card
+        // shows) for the stage the hediff starts at, plus the mood of any ThoughtWorker_Hediff thought tied to it
+        // (Serene Presence's mood lives there). The trait gives its hediffs at their initialSeverity (AddHediff), so
+        // that's the stage a pawn gets. Built when a card opens, which caches its entries, so the ThoughtDef scan
+        // isn't on a hot path.
+        public static string HediffEffects(HediffDef def)
+        {
+            if (def == null || def.stages.NullOrEmpty()) return null;
+            int stageIndex = def.StageAtSeverity(def.initialSeverity);
+            var parts = new List<string>();
+            foreach (var e in HediffStatsUtility.SpecialDisplayStats(def.stages[stageIndex], null))
+                parts.Add("EF_Card_StatOffset".Translate(e.LabelCap, e.ValueString));
+            foreach (var t in DefDatabase<ThoughtDef>.AllDefsListForReading)
+            {
+                if (t.hediff != def || t.workerClass == null || !typeof(ThoughtWorker_Hediff).IsAssignableFrom(t.workerClass)) continue;
+                // ThoughtWorker_Hediff picks the thought stage by the hediff's stage index, capped at the last one
+                if (t.stages.NullOrEmpty()) continue;
+                var thoughtStage = t.stages[System.Math.Min(stageIndex, t.stages.Count - 1)];
+                if (thoughtStage != null && thoughtStage.baseMoodEffect != 0f)
+                    parts.Add("EF_Card_HediffMood".Translate(thoughtStage.baseMoodEffect.ToString("+0.#;-0.#")));
+            }
+            return parts.Count > 0 ? string.Join(", ", parts) : null;
+        }
+
+        // "Rallied: Pain x70%, Melee damage factor x120%", or just the hediff's name when vanilla can't describe it
+        // (a hediff that works only through comps)
+        public static string HediffLine(HediffDef def)
+        {
+            if (def == null) return "";
+            string effects = HediffEffects(def);
+            return effects == null ? def.LabelCap.ToString() : "EF_Card_HediffEffects".Translate(def.LabelCap, effects).ToString();
+        }
+
         // Vanilla unique (Odyssey) and persona (Royalty) weapons carry their own weapon traits, so random entad
         // traits only roll on them by the "unique and persona weapons" setting's chance. Checked by comp class, so
         // modded subclasses count and nothing here needs the DLC loaded.

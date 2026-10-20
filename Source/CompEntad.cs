@@ -304,6 +304,9 @@ namespace EntadFramework
         // Player-chosen name; the surrounding entad markers are kept
         public string customName;
 
+        // Read freely, but change it only through AddTrait/RemoveTrait (or EntadApi): they reset the comp's lazy
+        // caches and clear the item's stat caches, several of which are permanent (EntadStatPartInjector.
+        // KeepsImmutableCache). A direct Add or Remove leaves those values stale until the next save and load.
         public List<AppliedEntadTrait> activeTraits = new List<AppliedEntadTrait>();
 
         // Dismantling work done so far, kept on the item like an unfinished thing's work so any researcher can resume it
@@ -502,8 +505,40 @@ namespace EntadFramework
             return propertyFactors[(int)property];
         }
 
+        // Which per-hit stats any trait has, worked out on first use after the trait list changes: the melee
+        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn.
+        // -1 unknown. Not saved; a loaded item starts unknown.
+        private int hitStatFlags = -1;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2;
+
+        private int HitStatFlags
+        {
+            get
+            {
+                if (hitStatFlags < 0)
+                {
+                    int flags = 0;
+                    for (int t = 0; t < activeTraits.Count; t++)
+                    {
+                        var factors = activeTraits[t].def.statFactors;
+                        for (int i = 0; factors != null && i < factors.Count; i++)
+                        {
+                            if (factors[i].stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) flags |= FlagMeleePenetration;
+                            else if (factors[i].stat == EntadStatDefOf.Entad_MercilessDamageFactor) flags |= FlagMerciless;
+                        }
+                    }
+                    hitStatFlags = flags;
+                }
+                return hitStatFlags;
+            }
+        }
+
+        internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
+        internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
+
         private void TraitsChanged()
         {
+            hitStatFlags = -1;
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;
@@ -654,6 +689,7 @@ namespace EntadFramework
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;
+                hitStatFlags = -1;
                 foreach (var trait in activeTraits)
                 {
                     trait.owner = this;
@@ -718,6 +754,19 @@ namespace EntadFramework
             return inspectString;
         }
 
+        // Charges and cooldown of a granted ability, read from the def EntadAbilityPrep made for the trait, which
+        // already holds the trait's abilityCharges and abilityCooldownTicks (or the ability's own cooldown)
+        private static string AbilityLimitLine(AbilityDef ability, bool chargesApply)
+        {
+            if (ability == null) return null;
+            int cooldown = UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average);
+            if (cooldown <= 0) return null;
+            string period = cooldown.ToStringTicksToPeriod();
+            if (chargesApply && ability.charges > 1)
+                return (ability.cooldownPerCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(ability.LabelCap, ability.charges, period);
+            return "EF_Card_AbilityCooldown".Translate(ability.LabelCap, period);
+        }
+
         // Single row in the Basics section; hover shows details like unique weapon traits
         public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
         {
@@ -735,7 +784,7 @@ namespace EntadFramework
                     continue;
                 }
                 infoString.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(trait.def.LabelCap.Resolve(), trait.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
-                if (!trait.AnyHidden) infoString.AppendLine(trait.def.description);
+                if (!trait.AnyHidden) infoString.AppendLine(trait.def.DescriptionFor(parent.def));
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Stat) && trait.def.statOffsets != null && i < trait.def.statOffsets.Count; i++)
                 {
                     var stat = trait.def.statOffsets[i].stat;
@@ -771,14 +820,26 @@ namespace EntadFramework
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Trigger) && trait.def.triggers != null && i < trait.def.triggers.Count; i++)
                 {
                     int triggerIndex = i;
-                    infoString.AppendLine(" - " + trait.def.triggers[i].Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    var trigger = trait.def.triggers[i];
+                    infoString.AppendLine(" - " + trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    // (the trigger line already names the hediff, so only a hediff vanilla can describe gets a line)
+                    string hediffEffects = EntadUtility.HediffEffects(trigger.hediff);
+                    if (hediffEffects != null)
+                        infoString.AppendLine("   " + "EF_Card_HediffEffects".Translate(trigger.hediff.LabelCap, hediffEffects));
                 }
                 if (trait.def.HasPortableSpace && trait.IsRevealed(EntadEffectKind.Space)) infoString.AppendLine(" - " + EntadPortableSpace.CardLine(trait));
                 if (trait.def.aura?.hediff != null && trait.IsRevealed(EntadEffectKind.Aura))
-                    infoString.AppendLine(" - " + "EF_Card_Aura".Translate(trait.def.aura.hediff.LabelCap, UnityEngine.Mathf.RoundToInt(EntadAuras.Radius(trait))));
+                {
+                    bool firstLine = true;
+                    foreach (var line in trait.def.aura.CardLines(parent, EntadAuras.Radius(trait)))
+                    {
+                        infoString.AppendLine((firstLine ? " - " : "   ") + line);
+                        firstLine = false;
+                    }
+                }
                 if (trait.IsRevealed(EntadEffectKind.Bond)) foreach (var line in PersonaCardLines(trait)) infoString.AppendLine(" - " + line);
                 if (!trait.def.equippedHediffs.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Hediff))
-                    infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(h => h.LabelCap.ToString()))));
+                    infoString.AppendLine(" - " + "EF_Card_EquippedHediffs".Translate(string.Join(", ", trait.def.equippedHediffs.Select(EntadUtility.HediffLine))));
                 if (!trait.def.AllFuelTypes.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Fuel))
                     infoString.AppendLine(" - " + (trait.def.replaceFuel ? "EF_Card_BurnsOnly" : "EF_Card_AlsoBurns").Translate(string.Join(", ", trait.def.AllFuelTypes.Select(f => f.LabelCap.ToString()))));
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Building) && trait.def.buildingFactors != null && i < trait.def.buildingFactors.Count; i++)
@@ -786,6 +847,13 @@ namespace EntadFramework
                 if (!trait.def.abilities.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Ability))
                 {
                     infoString.AppendLine(" - " + (parent.def.building != null ? "EF_Card_ActivatableAbility" : "EF_Card_GrantsAbility").Translate(string.Join(", ", trait.def.abilities.Select(a => a.LabelCap.ToString()))));
+                    if (!trait.def.IsReloadable)
+                        foreach (var ability in trait.def.abilities)
+                        {
+                            // Furniture abilities run their own charge count, used only when the trait asks for one
+                            string limit = AbilityLimitLine(ability, parent.def.building == null || trait.def.UsesAbilityCharges);
+                            if (limit != null) infoString.AppendLine("   " + limit);
+                        }
                     if (trait.def.IsReloadable)
                         foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == trait))
                             infoString.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
@@ -818,7 +886,13 @@ namespace EntadFramework
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
-            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, infoString.ToString().TrimEnd(), 4000);
+            // The card names a granted ability; its hyperlink opens the ability's own description
+            var abilityLinks = activeTraits
+                .Where(m => !m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
+                .SelectMany(m => m.def.abilities).Where(a => a != null).Distinct()
+                .Select(a => new Dialog_InfoCard.Hyperlink(a)).ToList();
+            yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, infoString.ToString().TrimEnd(), 4000,
+                hyperlinks: abilityLinks.Count > 0 ? abilityLinks : null);
         }
     }
 

@@ -158,6 +158,14 @@ namespace EntadFramework
         }
     }
 
+    // Which kind of weapon a trait can roll on (EntadTraitDef.weaponType)
+    public enum EntadWeaponType
+    {
+        Any,
+        Melee,
+        Ranged
+    }
+
     // Ranged weapon properties that aren't stats (they live on the verb or the projectile)
     public enum EntadWeaponProperty
     {
@@ -242,6 +250,19 @@ namespace EntadFramework
     public class EntadTraitDef : Def
     {
         public List<string> categories = new List<string>();
+
+        // Optional flavour text for a melee or a ranged weapon, where 'description' fits only one of them ("leaves
+        // burns wherever it strikes" on a rifle). Anything else, and a weapon of the other kind, shows 'description'.
+        // Translators inject them like the description (DefInjected: Entad_Searing.descriptionRanged).
+        [MustTranslate] public string descriptionMelee;
+        [MustTranslate] public string descriptionRanged;
+
+        public string DescriptionFor(ThingDef item)
+        {
+            if (item != null && item.IsMeleeWeapon && !descriptionMelee.NullOrEmpty()) return descriptionMelee;
+            if (item != null && item.IsRangedWeapon && !descriptionRanged.NullOrEmpty()) return descriptionRanged;
+            return description;
+        }
         public EntadRarity rarity = EntadRarity.Common;
 
         // When true, "rarity" is the lowest rarity this trait appears at. It can also appear at every higher
@@ -401,6 +422,12 @@ namespace EntadFramework
         public bool ignoreAccuracyMaluses;
 
         public bool HasWeaponEffect => !weaponProperties.NullOrEmpty() || ignoreAccuracyMaluses;
+
+        // Weapons only: the kind of weapon the trait can roll on. Weapon stats already sort themselves out
+        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
+        // through any held item, so a gun trait made of one would also roll on swords where it does nothing.
+        // Apparel ignores it.
+        public EntadWeaponType weaponType = EntadWeaponType.Any;
 
         // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
         // equippedHediffs and removed on unequip unless other active gear also gives them
@@ -697,6 +724,8 @@ namespace EntadFramework
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
+            if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
+                yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -726,7 +755,11 @@ namespace EntadFramework
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || HasNoDamageHook(td))) return false;
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
+            if (td.IsWeapon && weaponType != EntadWeaponType.Any
+                && !(weaponType == EntadWeaponType.Ranged ? td.IsRangedWeapon : td.IsMeleeWeapon)) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
+            // Artillery fires the weapon's own projectile: no melee weapons, beams, sprays or one-use launchers
+            if (!abilities.NullOrEmpty() && abilities.Any(EntadArtillery.IsArtillery) && !EntadArtillery.Fits(td)) return false;
             if (killThought != null && !td.IsWeapon) return false;
             if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
             if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td)
@@ -805,12 +838,56 @@ namespace EntadFramework
                 if (IsMeleeOnlyStat(stat) && !td.IsMeleeWeapon) return false;
             }
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
+            // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
+            if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
+            // Our own stats, each read by one hook: Merciless by the damage prefix, which needs an attack that does
+            // damage (a smoke launcher would show a number that never matters); the bench stats by the bill product
+            // hook, which can only raise quality where something made there has it, or double what stacks.
+            if (stat == EntadStatDefOf.Entad_MercilessDamageFactor) return td.IsWeapon && !HasNoDamageHook(td);
+            if (stat == EntadStatDefOf.Entad_ProductQualityChance) return td.building != null && MakesAny(td, p => p.HasComp(typeof(CompQuality)), false);
+            if (stat == EntadStatDefOf.Entad_ProductDoubleChance) return td.building != null && MakesAny(td, p => p.stackLimit > 1, true);
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
+            // Range and armor penetration multipliers are read only by projectile verbs (Verb_LaunchProjectile's
+            // EffectiveRange, ProjectileProperties.GetArmorPenetration): beams, sprays and the like ignore them.
+            // Combat Extended's Verb_LaunchProjectileCE derives from Verb, not Verb_LaunchProjectile, but reads both
+            // stats too, hence the name check. Range needs no default projectile (a changeable-projectile verb has
+            // none and vanilla still applies the multiplier); penetration needs one that armor can stop.
+            // (and a gun already at the radius cap, a mortar, couldn't use more range: StatPart_Entad.CapRange)
+            if (stat == StatDefOf.RangedWeapon_RangeMultiplier)
+                return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && (v.rangeStat != null || v.range < GenRadial.MaxRadialPatternRadius - 1f));
+            if (stat == StatDefOf.RangedWeapon_ArmorPenetrationMultiplier)
+                return td.IsRangedWeapon && td.Verbs.Any(v => IsProjectileVerb(v) && v.defaultProjectile?.projectile?.damageDef?.armorCategory != null);
+            if (stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) return td.IsMeleeWeapon;
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Whether any bill done at this building makes a product that passes the check. Butchering, smelting and
+        // stonecutting (specialProducts) make meat, leather, metal and blocks, which all stack and have no quality.
+        private static bool MakesAny(ThingDef td, System.Func<ThingDef, bool> check, bool specialProductsPass)
+        {
+            var recipes = td.AllRecipes;
+            for (int i = 0; recipes != null && i < recipes.Count; i++)
+            {
+                var r = recipes[i];
+                if (specialProductsPass && !r.specialProducts.NullOrEmpty()) return true;
+                for (int k = 0; r.products != null && k < r.products.Count; k++)
+                    if (r.products[k].thingDef != null && check(r.products[k].thingDef)) return true;
+            }
+            return false;
+        }
+
+        // A verb class that is, or derives from, a class with LaunchProjectile in its name: vanilla's
+        // Verb_LaunchProjectile, or CE's Verb_LaunchProjectileCE under Verb_ShootCE, Verb_ThrowGrenade and the rest
+        private static bool IsProjectileVerb(VerbProperties v)
+        {
+            for (var t = v.verbClass; t != null && t != typeof(Verb); t = t.BaseType)
+                if (t == typeof(Verb_LaunchProjectile) || t.Name.Contains("LaunchProjectile")) return true;
+            return false;
         }
 
         public static bool IsRangedOnlyStat(StatDef stat) =>

@@ -3,25 +3,9 @@
   <!-- Furniture traits: fuel, and Use triggers. A Use trigger only rolls on furniture that can be used that way
        (beds for Sleep, tables and chairs for Eat, workbenches for Work). -->
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Capacious</defName>
-    <label>Capacious</label>
-    <description>Holds far more fuel than it should.</description>
-    <categories><li>Furniture</li></categories>
-    <rarity>Common</rarity>
-    <scalesWithRarity>true</scalesWithRarity>
-    <buildingFactors>
-      <li>
-        <property>FuelCapacity</property>
-        <min>1.5</min>
-        <max>2</max>
-      </li>
-    </buildingFactors>
-  </EntadFramework.EntadTraitDef>
-
-  <EntadFramework.EntadTraitDef>
     <defName>Entad_Bottomless</defName>
     <label>Bottomless</label>
-    <description>Holds far more than it has any right to. Each cell fits extra stacks of items.</description>
+    <description>Holds far more than it has any right to.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -37,7 +21,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Hayburner</defName>
     <label>Hayburner</label>
-    <description>Also burns hay, on top of its usual fuel.</description>
+    <description>It isn't fussy about what goes into the fire.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <fuelTypes><li>Hay</li></fuelTypes>
@@ -112,5 +96,75 @@
         <rest>0.05~0.1</rest>
       </li>
     </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Restful</defName>
+    <label>Restful</label>
+    <description>Some days, getting up from it feels like setting down a heavy load.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Eat, Work</use>
+        <chance>0.25</chance>
+        <hediff>Entad_RestfulCalm</hediff>
+        <hediffHours>4</hediffHours>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Captivating</defName>
+    <label>Captivating</label>
+    <description>Hard to walk away from, and you never regret the time.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Recreation</use>
+        <thought>Entad_Thought_Captivated</thought>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+  <ThoughtDef>
+    <defName>Entad_Thought_Captivated</defName>
+    <durationDays>0.25</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>captivating fun</label>
+        <description>I lost track of time there, and it was wonderful.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Masterwork</defName>
+    <label>Masterwork</label>
+    <description>Work done here turns out better than the hands that did it.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on benches where something made has quality (StatAppliesTo) -->
+    <statOffsets>
+      <li><stat>Entad_ProductQualityChance</stat><min>0.1</min><max>0.2</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Abundant</defName>
+    <label>Abundant</label>
+    <description>Now and then it gives back more than was put in.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on benches where something made stacks (StatAppliesTo); only stacking products double -->
+    <statOffsets>
+      <li><stat>Entad_ProductDoubleChance</stat><min>0.08</min><max>0.12</max></li>
+    </statOffsets>
   </EntadFramework.EntadTraitDef>
 </Defs>
