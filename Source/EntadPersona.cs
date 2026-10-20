@@ -173,9 +173,14 @@ namespace EntadFramework
         private void ExposePersona()
         {
             if (Scribe.mode == LoadSaveMode.Saving && bondedPawn != null && bondedPawn.Discarded) bondedPawn = null;
-            Scribe_References.Look(ref bondedPawn, "bondedPawn", saveDestroyedThings: true);
-            Scribe_Values.Look(ref bondedPawnLabel, "bondedPawnLabel");
-            Scribe_Values.Look(ref lastKillTick, "lastKillTick", -1);
+            // Keys are prefixed because CompBladelinkWeapon reads "bondedPawn", "bondedPawnLabel" and "lastKillTick"
+            // from the same weapon node (its pre-1.3 upgrade path runs on every load). On a vanilla persona weapon
+            // that also has entad traits, the shared names registered one reference twice ("Tried to register the
+            // same load ID twice ... pathRelToParent=/bondedPawn"), let vanilla biocode the weapon to our bonded pawn
+            // and mixed up the two kill timers.
+            Scribe_References.Look(ref bondedPawn, "entadBondedPawn", saveDestroyedThings: true);
+            Scribe_Values.Look(ref bondedPawnLabel, "entadBondedPawnLabel");
+            Scribe_Values.Look(ref lastKillTick, "entadLastKillTick", -1);
             if (Scribe.mode == LoadSaveMode.PostLoadInit && bondedPawn != null)
             {
                 // The pawn's side is saved by vanilla; if the two disagree, the pawn's side wins (as vanilla does)
