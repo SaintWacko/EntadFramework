@@ -162,16 +162,25 @@ namespace EntadFramework
         }
 
         // How far along 'dir' from 'origin', up to 'max', the cells can be seen over: walls, rock and closed doors stop
-        // it. Half-tile steps, so a diagonal can't slip between two cells.
-        private static float ClearDistance(Map map, Vector3 origin, Vector3 dir, float max)
+        // it, and 'blocked' is the cell that did (invalid when nothing did). 0.2-tile steps, as vanilla's
+        // Projectile.CheckForFreeInterceptBetween walks, so a line that clips a wall's corner still finds it.
+        // 'fromShooter' ignores the cells around the shooter: the ability's line of sight may come from leaning out
+        // past a corner, and that corner wall would otherwise cut the whole volley down to one shot.
+        private static float ClearDistance(Map map, Vector3 origin, Vector3 dir, float max, bool fromShooter, out IntVec3 blocked)
         {
+            blocked = IntVec3.Invalid;
             IntVec3 start = origin.ToIntVec3();
             float clear = 0f;
-            for (float d = 0.5f; d <= max; d += 0.5f)
+            for (float d = 0.2f; d <= max; d += 0.2f)
             {
                 IntVec3 c = (origin + dir * d).ToIntVec3();
                 if (!c.InBounds(map)) break;
-                if (c != start && !c.CanBeSeenOver(map)) break;
+                bool skip = fromShooter ? c.AdjacentTo8WayOrInside(start) : c == start;
+                if (!skip && !c.CanBeSeenOver(map))
+                {
+                    blocked = c;
+                    break;
+                }
                 clear = d;
             }
             return Mathf.Min(clear, max);
@@ -202,12 +211,15 @@ namespace EntadFramework
             Vector3 dir = (aim - origin).Yto0().normalized;
             float toAim = (aim - origin).MagnitudeHorizontal();
             float along = Mathf.Min(distances[index] - (origin - shooterPos).MagnitudeHorizontal(), toAim - 1f);
-            along = ClearDistance(map, origin, dir, along);
+            along = ClearDistance(map, origin, dir, along, index == 0, out IntVec3 blocked);
             if (along < 0.5f)
             {
                 // No room to fly on (a wall right ahead, or the aim too close): the remaining splits are lost and the
-                // real projectile goes now, where the wall can stop it as it would any shot
-                Fire(map, launcher, equipment, projectile, shooterPos, origin, aim, intended, splits, splits, distances, spread, splitCount);
+                // real projectile goes now. Aimed at the wall itself when one is in the way: launched this close, a
+                // shot ignores everything on its path (InterceptChanceFactorFromDistance is 0 within 5 tiles of its
+                // origin), so aimed past the wall it would land behind it.
+                Vector3 to = blocked.IsValid ? blocked.ToVector3Shifted() : aim;
+                Fire(map, launcher, equipment, projectile, shooterPos, origin, to, intended, splits, splits, distances, spread, splitCount);
                 return;
             }
             IntVec3 splitCell = (origin + dir * along).ToIntVec3();
