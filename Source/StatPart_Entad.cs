@@ -114,8 +114,13 @@ namespace EntadFramework
             // stat's parts instead; the two match while ours is the last part, which it is unless another mod injects a
             // MarketValue part from code after our static constructor (XML-declared parts always come first).
             float baseValue = parentStat == StatDefOf.MarketValue ? comp.BaseMarketValue() : 0f;
-            float traitValue = 0f, knownFactor = 1f;
+            float traitValue = 0f;
             bool userActive = parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            // For the range cap line: the value at our part (stat comps such as Odyssey's unique weapon traits
+            // included, as in TransformValue; the stat has no vanilla parts), then the traits applied in the same
+            // order TransformValue applies them
+            bool range = parentStat == StatDefOf.RangedWeapon_RangeMultiplier;
+            float before = range ? parentStat.Worker.GetValueUnfinalized(req) : 0f, full = before;
             // Same flat premium as TransformValue, in place of the trait lines
             bool bound = parentStat == StatDefOf.MarketValue && comp.IsBound;
             if (bound) explanation += "\n" + "EF_Explain_Bound".Translate((baseValue * EntadSettings.MysteryBonus).ToStringMoneyOffset());
@@ -137,20 +142,21 @@ namespace EntadFramework
                 }
                 for (int i = 0; known && def.statOffsets != null && i < def.statOffsets.Count; i++)
                     if (def.statOffsets[i].stat == parentStat)
+                    {
+                        full += m.OffsetFor(i);
                         explanation += $"\n{def.LabelCap}: {parentStat.Worker.ValueToString(m.OffsetFor(i), false, ToStringNumberSense.Offset)}";
+                    }
                 for (int i = 0; known && def.statFactors != null && i < def.statFactors.Count; i++)
                     if (def.statFactors[i].stat == parentStat)
                     {
-                        knownFactor *= m.FactorFor(i);
+                        full *= m.FactorFor(i);
                         explanation += $"\n{def.LabelCap}: x{m.FactorFor(i).ToStringPercent()}";
                     }
             }
             // Same cap as TransformValue. The weapon card's Range row lists these lines under the range multiplier,
-            // and it's only drawn on the item's card, where TransformValue also leaves hidden traits out. The base is
-            // the stat's own value: vanilla gives this stat no other parts.
-            if (parentStat == StatDefOf.RangedWeapon_RangeMultiplier && knownFactor > 1f)
+            // and it's only drawn on the item's card, where TransformValue also leaves hidden traits out.
+            if (range && full > before)
             {
-                float before = parentStat.Worker.GetBaseValueFor(req), full = before * knownFactor;
                 float capped = CapRange(req.Thing.def, before, full);
                 if (capped < full - 0.0001f)
                     explanation += "\n" + "EF_Explain_RangeCap".Translate((GenRadial.MaxRadialPatternRadius - 1f).ToString("F0"), (capped / full).ToStringPercent());
