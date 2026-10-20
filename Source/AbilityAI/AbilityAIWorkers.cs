@@ -386,7 +386,7 @@ namespace EntadFramework.AbilityAI
         }
 
         private const int MaxReachTries = 4;
-        private static readonly Comparison<Spot> BetterFirst =
+        private static readonly System.Comparison<Spot> BetterFirst =
             (x, y) => x.count != y.count ? y.count.CompareTo(x.count) : x.dist.CompareTo(y.dist);
 
         private void AddSpot(AbilityAIContext ctx, IntVec3 c, IntVec3 from, float maxSq, float r2, bool selfCounts, int floor)
