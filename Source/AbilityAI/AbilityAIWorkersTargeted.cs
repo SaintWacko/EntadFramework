@@ -22,11 +22,10 @@ namespace EntadFramework.AbilityAI
             return ext.maxRange >= 0f ? ext.maxRange : 20f;
         }
 
-        public static bool AnyAllyWithin(AbilityAIContext ctx, IntVec3 c, float r2)
+        public static bool AnyWithin(List<Pawn> pawns, IntVec3 c, float r2)
         {
-            var allies = ctx.Allies;
-            for (int i = 0; i < allies.Count; i++)
-                if ((allies[i].Position - c).LengthHorizontalSquared <= r2) return true;
+            for (int i = 0; i < pawns.Count; i++)
+                if ((pawns[i].Position - c).LengthHorizontalSquared <= r2) return true;
             return false;
         }
 
@@ -64,8 +63,8 @@ namespace EntadFramework.AbilityAI
     /// would affect (WouldAffect), scored by: the caster's current target +1, aiming at the caster +1, times its
     /// kind's combat power (0.5-3 x of 100), divided by distance over range. meleeOnly keeps only enemies next to
     /// the caster or an ally. With minTargets above 1 the enemy needs that many of its side (itself included) within
-    /// radius (default 5); preferGrouped multiplies the score by them, and avoidAllies skips enemies with one of the
-    /// caster's side within that radius (a berserk enemy attacks whoever is nearest). The best five are validated.
+    /// radius (default 5); preferGrouped multiplies the score by them, and avoidAllies skips enemies with anyone on
+    /// the caster's side (Friendlies) within that radius (a berserk enemy attacks whoever is nearest). The best five are validated.
     /// Approach: the same out to range + approachDistance.
     /// Cost: k WouldAffect checks, k² distance checks only with grouping, k×a with meleeOnly or avoidAllies.
     /// </summary>
@@ -119,7 +118,7 @@ namespace EntadFramework.AbilityAI
                     if (group < ext.minTargets) continue;
                     if (ext.preferGrouped) score *= group;
                 }
-                if (ext.avoidAllies && TargetingUtil.AnyAllyWithin(ctx, e.Position, near2)) continue;
+                if (ext.avoidAllies && TargetingUtil.AnyWithin(ctx.Friendlies, e.Position, near2)) continue;
                 score /= 1f + Mathf.Sqrt(d) / Mathf.Max(range, 1f);
                 cands.Add(new TargetingUtil.Cand { pawn = e, score = score });
             }
@@ -198,8 +197,7 @@ namespace EntadFramework.AbilityAI
 
         private bool InTrouble(AbilityAIContext ctx, Pawn p, float health)
         {
-            var mind = p.mindState;
-            if (mind != null && mind.meleeThreat != null && ctx.tick - mind.lastMeleeThreatHarmTick < AbilityAIContext.RecentTicks) return true;
+            if (AbilityAIUtility.InMelee(ctx, p)) return true;
             if (ctx.AimedAtCount(p) + (ctx.RecentlyShot(p) ? 1 : 0) >= ext.minThreats) return true;
             if (health >= ext.healthThreshold) return false;
             var enemies = ctx.Enemies;
@@ -242,8 +240,9 @@ namespace EntadFramework.AbilityAI
 
     /// <summary>
     /// Calm: end an ally's mental break (Word of Serenity). Allies in an aggressive mental state (berserk, often
-    /// from an enemy psycast), or any mental state with anyMentalState; nearest first. Touch abilities look within
-    /// maxRange (default 20) and the cast job walks there. Any time. Cost: a checks.
+    /// from an enemy psycast), or any mental state with anyMentalState, that won't end by itself within
+    /// minBreakSeconds (a 15-second psycast berserk isn't worth a 4-minute coma); nearest first. Touch abilities look
+    /// within maxRange (default 20) and the cast job walks there. Any time. Cost: a checks.
     /// </summary>
     public class AbilityAIWorker_Calm : AbilityAIWorker
     {
@@ -263,14 +262,27 @@ namespace EntadFramework.AbilityAI
                 if (p == ctx.pawn || !(ext.anyMentalState ? p.InMentalState : p.InAggroMentalState)) continue;
                 float d = (p.Position - ctx.pawn.Position).LengthHorizontalSquared;
                 if (d > maxSq) continue;
+                if (ext.minBreakSeconds > 0f && TicksLeft(p.MentalState) < ext.minBreakSeconds * GenTicks.TicksPerRealSecond) continue;
                 cands.Add(new TargetingUtil.Cand { pawn = p, score = -d });
             }
             return TargetingUtil.FirstValid(cands, ability, out target);
         }
+
+        // The most the break can still last: a forced end (psycasts set one) or the def's own longest duration.
+        // Breaks with neither are taken as long.
+        private static float TicksLeft(MentalState s)
+        {
+            if (s == null) return 0f;
+            float left = float.MaxValue;
+            if (s.forceRecoverAfterTicks > 0) left = s.forceRecoverAfterTicks - s.Age;
+            if (s.def != null && s.def.maxTicksBeforeRecovery > 0 && s.def.maxTicksBeforeRecovery < 99999999)
+                left = Mathf.Min(left, s.def.maxTicksBeforeRecovery - s.Age);
+            return left;
+        }
     }
 
     /// <summary>
-    /// Interrupt: hit an enemy who is aiming something dangerous: an ability or psycast, or a weapon with an
+    /// Interrupt: hit an enemy who is aiming something dangerous: a hostile ability or psycast, or a weapon with an
     /// explosive projectile (grenades, launchers), or with minAimSeconds any aim with that long left. Only when more
     /// of the enemy's aim is left than this ability's own warmup. A stun pauses the enemy's aim for its length (it
     /// doesn't cancel it); a mental state or a teleport breaks it. Area abilities centre on the enemy. Nearest first.
@@ -294,7 +306,9 @@ namespace EntadFramework.AbilityAI
             {
                 Pawn e = enemies[i];
                 if (!(e.stances?.curStance is Stance_Warmup w) || w.verb == null || w.ticksLeft <= ourWarmup) continue;
-                bool danger = w.verb is Verb_CastAbility || Explosive(w.verb) || (minAim > 0 && w.ticksLeft >= minAim);
+                // A non-hostile ability (painblock, focus on its own side) isn't worth a stun
+                bool danger = (w.verb is Verb_CastAbility cast && cast.ability?.def != null && cast.ability.def.hostile)
+                    || Explosive(w.verb) || (minAim > 0 && w.ticksLeft >= minAim);
                 if (!danger) continue;
                 float d = (e.Position - ctx.pawn.Position).LengthHorizontalSquared;
                 if (d > maxSq || !AbilityAIUtility.WouldAffect(ability, ext, e)) continue;
@@ -320,7 +334,8 @@ namespace EntadFramework.AbilityAI
     /// <summary>
     /// Firefighting: put out fire on or next to the caster's side (Waterskip). Burning allies (weight 3) and fires
     /// within 2.5 tiles of an ally (weight 1, at most 60 fires looked at, fires on other pawns left out), within reach
-    /// of the caster; the spot whose effect radius covers the most weight wins, best five validated. Any time.
+    /// of the caster; the spot whose effect radius covers the most weight wins, best five validated. Water breaks
+    /// invisibility, so a spot that would reach an invisible ally is skipped unless someone there is burning. Any time.
     /// Cost: nothing while the map has no fire; otherwise at most 60 × a distance checks, then a few validations.
     /// </summary>
     public class AbilityAIWorker_Firefighting : AbilityAIWorker
@@ -353,7 +368,7 @@ namespace EntadFramework.AbilityAI
                 if (!(fires[i] is Fire f) || f.parent is Pawn || !f.Spawned) continue;
                 if ((f.Position - from).LengthHorizontalSquared > reachSq) continue;
                 looked++;
-                if (TargetingUtil.AnyAllyWithin(ctx, f.Position, near2)) spots.Add(new Spot { cell = f.Position, weight = 1f });
+                if (TargetingUtil.AnyWithin(allies, f.Position, near2)) spots.Add(new Spot { cell = f.Position, weight = 1f });
             }
             if (spots.Count == 0) return false;
 
@@ -369,9 +384,19 @@ namespace EntadFramework.AbilityAI
             }
             spots.Sort((a, b) => b.score.CompareTo(a.score));
             for (int i = 0; i < spots.Count && i < TargetingUtil.MaxTries; i++)
+            {
+                if (spots[i].score < 3f && InvisibleAllyNear(allies, spots[i].cell, r2)) continue;
                 if (AbilityAIDriver.Valid(ability, spots[i].cell)) { target = spots[i].cell; break; }
+            }
             spots.Clear();
             return target.IsValid;
+        }
+
+        private static bool InvisibleAllyNear(List<Pawn> allies, IntVec3 c, float r2)
+        {
+            for (int i = 0; i < allies.Count; i++)
+                if ((allies[i].Position - c).LengthHorizontalSquared <= r2 && allies[i].IsPsychologicallyInvisible()) return true;
+            return false;
         }
     }
 }
