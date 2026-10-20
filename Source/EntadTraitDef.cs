@@ -758,6 +758,8 @@ namespace EntadFramework
             if (td.IsWeapon && weaponType != EntadWeaponType.Any
                 && !(weaponType == EntadWeaponType.Ranged ? td.IsRangedWeapon : td.IsMeleeWeapon)) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
+            // Artillery fires the weapon's own projectile: no melee weapons, beams, sprays or one-use launchers
+            if (!abilities.NullOrEmpty() && abilities.Any(EntadArtillery.IsArtillery) && !EntadArtillery.Fits(td)) return false;
             if (killThought != null && !td.IsWeapon) return false;
             if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
             if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td)

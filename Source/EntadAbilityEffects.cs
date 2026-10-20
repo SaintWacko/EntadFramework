@@ -88,7 +88,8 @@ namespace EntadFramework
 
         public override void DrawEffectPreview(LocalTargetInfo target)
         {
-            if (Props.radius > 0f) GenDraw.DrawRadiusRing(target.Cell, Props.radius);
+            // Not while the trait is hidden: the ring would give the ability away, as the cursor label would
+            if (Props.radius > 0f && !Patch_Ability_GetGizmos_Hide.IsHidden(parent)) GenDraw.DrawRadiusRing(target.Cell, Props.radius);
         }
     }
 

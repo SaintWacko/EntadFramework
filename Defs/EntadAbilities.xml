@@ -177,4 +177,42 @@
       </li>
     </comps>
   </AbilityDef>
+
+  <!-- Artillery (Source/EntadArtillery.cs): one shot from the wielded weapon that splits at fixed distances from the
+       user. Range is the weapon's (Verb_EntadArtillery). -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Artillery</defName>
+    <label>artillery shot</label>
+    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Each final projectile is a normal shot from the weapon and can hit anyone near where it lands. The range is the weapon's.</description>
+    <iconPath>UI/Abilities/Entad/Artillery</iconPath>
+    <hostile>true</hostile>
+    <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
+    <verbProperties>
+      <verbClass>EntadFramework.Verb_EntadArtillery</verbClass>
+      <warmupTime>1.5</warmupTime>
+      <range>25</range>
+      <requireLineOfSight>true</requireLineOfSight>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadArtillery" />
+    </comps>
+  </AbilityDef>
+
+  <!-- The in-flight part of an artillery shot. It draws the weapon's own projectile and never hits anything. -->
+  <ThingDef ParentName="BaseBullet">
+    <defName>Entad_ArtilleryCarrier</defName>
+    <label>splitting shot</label>
+    <thingClass>EntadFramework.Projectile_EntadArtillery</thingClass>
+    <graphicData>
+      <texPath>Things/Projectile/Bullet_Small</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <projectile>
+      <damageDef>Bullet</damageDef>
+      <speed>45</speed>
+    </projectile>
+  </ThingDef>
 </Defs>

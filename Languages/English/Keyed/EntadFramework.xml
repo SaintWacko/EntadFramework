@@ -138,6 +138,9 @@
   <EF_Card_AlsoBurns>Also burns: {0}</EF_Card_AlsoBurns>
   <EF_Card_ActivatableAbility>Activatable ability: {0}</EF_Card_ActivatableAbility>
   <EF_Card_GrantsAbility>Grants ability: {0}</EF_Card_GrantsAbility>
+  <!-- Artillery (EntadArtillery.cs): the cursor label is the number of projectiles the shot splits into by the cell -->
+  <EF_ArtilleryCount>x{0}</EF_ArtilleryCount>
+  <EF_ArtilleryNoWeapon>Needs a wielded weapon that fires projectiles.</EF_ArtilleryNoWeapon>
   <EF_Card_MealNutrition>Meal nutrition x{0}</EF_Card_MealNutrition>
   <EF_Card_MealQuality>Meal quality {0}</EF_Card_MealQuality>
   <EF_Card_MealThought>Meals give: {0}</EF_Card_MealThought>
