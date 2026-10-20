@@ -44,6 +44,9 @@
     <ItemGroup>
         <!-- Top level only: obj/ under Source holds generated files. -->
         <Compile Include="..\..\Source\*.cs" />
+        <!-- The ability AI, kept in its own folder with no reference to any Entad type so it can be copied into
+             another mod (Bastle Framework) as it is. -->
+        <Compile Include="..\..\Source\AbilityAI\*.cs" />
     </ItemGroup>
 
     <ItemGroup>
