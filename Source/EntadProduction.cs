@@ -44,10 +44,15 @@ namespace EntadFramework
                 if (qualityChance > 0f && qualityComp != null && qualityComp.Quality < QualityCategory.Legendary && Rand.Chance(qualityChance))
                 {
                     var raised = qualityComp.Quality + 1;
-                    qualityComp.SetQuality(raised, null);
-                    // Vanilla records the art tale from excellent up; a raise into that band records it here instead
+                    // With a source, SetQuality initializes art. That's a no-op where the first roll already made art
+                    // (CompArt keeps an existing title), and makes it for a weapon whose art starts at the raised
+                    // level (minQualityForArtistic). The author was set at the first roll (JustCreatedBy).
+                    qualityComp.SetQuality(raised, ArtGenerationContext.Colony);
+                    // Vanilla records the art tale from excellent up; a raise into that band records it here instead.
+                    // Only with art in place: the tale reads the thing's art title.
                     var inner = product.GetInnerIfMinified();
-                    if (qualityComp.Quality == QualityCategory.Excellent && inner.TryGetComp<CompArt>() != null)
+                    var art = inner.TryGetComp<CompArt>();
+                    if (raised == QualityCategory.Excellent && art != null && art.Active)
                         TaleRecorder.RecordTale(TaleDefOf.CraftedArt, worker, inner);
                     Reveal(comp, EntadStatDefOf.Entad_ProductQualityChance);
                     Messages.Message("EF_ProductQualityRaised".Translate(worker.LabelShort, bench.LabelShort, product.LabelNoCount, raised.GetLabel()),
