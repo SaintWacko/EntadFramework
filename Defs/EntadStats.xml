@@ -13,4 +13,57 @@
     <alwaysHide>true</alwaysHide>
     <toStringStyle>PercentZero</toStringStyle>
   </StatDef>
+
+  <!-- Merciless (Patch_Pawn_PreApplyDamage_Merciless). Shown on the weapon's card only when a trait changes it. -->
+  <StatDef>
+    <defName>Entad_MercilessDamageFactor</defName>
+    <label>damage to downed or fleeing enemies</label>
+    <description>A multiplier on the damage this weapon deals to an enemy who is downed or running away.</description>
+    <category>Weapon</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+    <displayPriorityInCategory>4900</displayPriorityInCategory>
+  </StatDef>
+
+  <!-- Tidy (Patch_FilthTracker_TryPickupFilth). A pawn stat that gear lowers. -->
+  <StatDef>
+    <defName>Entad_FilthPickupFactor</defName>
+    <label>filth pickup</label>
+    <description>How likely this person is to pick up dirt and filth on their feet when walking over it, compared to normal.</description>
+    <category>BasicsPawn</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <showOnAnimals>false</showOnAnimals>
+    <showOnMechanoids>false</showOnMechanoids>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <!-- Masterwork and Abundant (EntadProduction.cs): workbench stats, read when a bill's products are made -->
+  <StatDef>
+    <defName>Entad_ProductQualityChance</defName>
+    <label>chance of better quality</label>
+    <description>The chance that something made here comes out one quality level higher than the crafter's skill gave it.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_ProductDoubleChance</defName>
+    <label>chance of double products</label>
+    <description>The chance that a bill finished here yields twice the usual amount. Only things that stack are doubled.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
 </Defs>

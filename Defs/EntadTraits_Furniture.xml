@@ -141,4 +141,30 @@
       </li>
     </stages>
   </ThoughtDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Masterwork</defName>
+    <label>Masterwork</label>
+    <description>Work done here turns out better than the hands that did it.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on benches where something made has quality (StatAppliesTo) -->
+    <statOffsets>
+      <li><stat>Entad_ProductQualityChance</stat><min>0.1</min><max>0.2</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Abundant</defName>
+    <label>Abundant</label>
+    <description>Now and then it gives back more than was put in.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on benches where something made stacks (StatAppliesTo); only stacking products double -->
+    <statOffsets>
+      <li><stat>Entad_ProductDoubleChance</stat><min>0.08</min><max>0.12</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
 </Defs>

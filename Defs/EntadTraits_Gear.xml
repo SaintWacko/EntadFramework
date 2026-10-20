@@ -251,4 +251,17 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Tidy</defName>
+    <label>Tidy</label>
+    <description>Dirt slides off it, and off whoever wears it.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Lowers the chance of picking up filth on the feet (Patch_FilthTracker_TryPickupFilth) -->
+    <statOffsets>
+      <li><stat>Entad_FilthPickupFactor</stat><min>-0.5</min><max>-0.3</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
 </Defs>

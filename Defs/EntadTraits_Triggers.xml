@@ -38,4 +38,64 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Thunderclap</defName>
+    <label>Thunderclap</label>
+    <description>Some deaths it greets with a crack of thunder.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <victims>Hostile</victims>
+        <chance>0.2</chance>
+        <stunSeconds>2~3</stunSeconds>
+        <radius>4</radius>
+        <atVictim>true</atVictim>
+        <targets>Enemies</targets>
+        <fleck>PsycastAreaEffect</fleck>
+        <sound>Thunder_OnMap</sound>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Muse</defName>
+    <label>Muse</label>
+    <description>It whispers ideas into its owner's dreams.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <!-- Nothing rolled, so nothing to scale. Vanilla inspirations come every few weeks at high mood. -->
+    <triggers>
+      <li>
+        <on>WakeUp</on>
+        <chance>0.1</chance>
+        <cooldownHours>48</cooldownHours>
+        <randomInspiration>true</randomInspiration>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Hearthward</defName>
+    <label>Hearthward</label>
+    <description>Those who sleep near it wake a little more whole.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Mending Rest heals the sleeper; this heals the whole room, less and not every night -->
+    <triggers>
+      <li>
+        <on>Use</on>
+        <use>Sleep</use>
+        <chance>0.35</chance>
+        <heal>3~6</heal>
+        <radius>7</radius>
+        <sameRoom>true</sameRoom>
+        <targets>Self, Allies</targets>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
 </Defs>

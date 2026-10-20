@@ -96,6 +96,18 @@
   <EF_TriggerEffect_Hediff>gives {0}</EF_TriggerEffect_Hediff>
   <EF_TriggerEffect_HediffFor>gives {0} for {1} hours</EF_TriggerEffect_HediffFor>
   <EF_TriggerEffect_Thought>mood: {0}</EF_TriggerEffect_Thought>
+  <EF_TriggerEffect_Stun>stuns for {0} seconds</EF_TriggerEffect_Stun>
+  <EF_TriggerEffect_Inspiration>inspires: {0}</EF_TriggerEffect_Inspiration>
+  <EF_TriggerEffect_RandomInspiration>gives a random inspiration</EF_TriggerEffect_RandomInspiration>
+  <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
+  <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
+  <EF_TriggerArea_Victim>{0}, to {1} within {2} tiles of the victim</EF_TriggerArea_Victim>
+  <EF_TriggerTargets_Self>the user</EF_TriggerTargets_Self>
+  <EF_TriggerTargets_Allies>allies</EF_TriggerTargets_Allies>
+  <EF_TriggerTargets_Enemies>enemies</EF_TriggerTargets_Enemies>
+  <EF_InspirationReason>Inspired by {0}.</EF_InspirationReason>
+  <EF_ProductQualityRaised>{0} made {2} at {1}, and it came out better than expected: {3}.</EF_ProductQualityRaised>
+  <EF_ProductDoubled>{0}'s work at {1} yielded twice the usual {2}.</EF_ProductDoubled>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>

@@ -235,7 +235,8 @@ namespace EntadFramework
         // them immutable, which it does for both of ours with or without Odyssey: its unique weapon traits don't
         // put them in StatDef.mutableStats). Each is a stat of the item alone, never added to a wearer, and the
         // game reads it often: MaxHitPoints for every thing, the range multiplier on every EffectiveRange of every
-        // gun, the melee penetration multiplier per hit on a Piercing weapon. RangedWeapon_ArmorPenetrationMultiplier
+        // gun, the melee penetration multiplier per hit on a Piercing weapon, the Merciless factor per hit on a
+        // downed or fleeing enemy. RangedWeapon_ArmorPenetrationMultiplier
         // isn't listed: its StatPart_Quality means vanilla never caches it either. A cached value goes stale only if nothing clears it, and CompEntad clears the item's caches with
         // ClearCacheForThing (which empties the immutable cache too) on every change that can move these values:
         // a trait added, removed or revealed, a durability rescale, a binding change, the holder changing on a bound
@@ -245,7 +246,8 @@ namespace EntadFramework
         private static bool KeepsImmutableCache(StatDef stat) =>
             stat == StatDefOf.MaxHitPoints
             || stat == StatDefOf.RangedWeapon_RangeMultiplier
-            || stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
+            || stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier
+            || stat == EntadStatDefOf.Entad_MercilessDamageFactor;
 
         private static void InjectStatParts()
         {

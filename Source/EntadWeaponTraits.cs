@@ -304,6 +304,13 @@ namespace EntadFramework
     {
         // Melee counterpart of vanilla's RangedWeapon_ArmorPenetrationMultiplier, which only projectiles read
         public static StatDef Entad_MeleeArmorPenetrationMultiplier;
+        // Merciless: damage against downed or fleeing enemies (Patch_Pawn_PreApplyDamage_Merciless)
+        public static StatDef Entad_MercilessDamageFactor;
+        // Tidy: a pawn stat, the chance to pick up filth when vanilla would (Patch_FilthTracker_TryPickupFilth)
+        public static StatDef Entad_FilthPickupFactor;
+        // Masterwork and Abundant: workbench stats read when a bill's products are made (EntadProduction.cs)
+        public static StatDef Entad_ProductQualityChance;
+        public static StatDef Entad_ProductDoubleChance;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
     }
@@ -327,6 +334,59 @@ namespace EntadFramework
             // traits out of the item's own info card, as for every other stat. The stat keeps vanilla's permanent
             // cache (EntadStatPartInjector.KeepsImmutableCache), so after the first hit this is a dictionary lookup.
             __result *= equipment.GetStatValue(EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier);
+        }
+    }
+
+    // Merciless: more damage to an enemy that is downed or fleeing, from the attacker's primary weapon. A prefix on
+    // Pawn.PreApplyDamage changes the amount before armor and the damage worker see it, the same place vanilla
+    // applies gene and hediff damage factors. Covers every attack that names the weapon in its DamageInfo: melee
+    // hits, bullets, blasts and beams.
+    // Cost: runs for every damage to every pawn. A pawn neither downed nor fleeing (nearly every hit) costs two
+    // field reads and a few comparisons. Past that, one def-table lookup, the comp's cached flag, and the stat
+    // read, which keeps vanilla's permanent cache (EntadStatPartInjector.KeepsImmutableCache).
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
+    public static class Patch_Pawn_PreApplyDamage_Merciless
+    {
+        public static void Prefix(Pawn __instance, ref DamageInfo dinfo)
+        {
+            if (dinfo.Weapon == null || dinfo.Amount <= 0f || !(dinfo.Instigator is Pawn attacker)) return;
+            if (!__instance.Downed && !IsFleeing(__instance)) return;
+            var weapon = attacker.equipment?.Primary;
+            if (weapon == null || weapon.def != dinfo.Weapon || !EntadCompInjector.MayHaveComp(weapon.def)) return;
+            var comp = weapon.TryGetComp<CompEntad>();
+            if (comp == null || !comp.HasMerciless || !__instance.HostileTo(attacker)) return;
+            // The stat part applies binding and the info card's hidden-trait rule, as for every other stat
+            float factor = weapon.GetStatValue(EntadStatDefOf.Entad_MercilessDamageFactor);
+            if (factor != 1f) dinfo.SetAmount(dinfo.Amount * factor);
+        }
+
+        // Running away in any of vanilla's ways: a panic flee (raiders whose morale broke get this from
+        // LordToil_PanicFlee), a flee job (from danger or a predator), or a lord duty that leaves the map, which
+        // includes carrying off loot or a kidnapped colonist. Hostility is checked separately, so a trader's
+        // caravan leaving the map doesn't count.
+        public static bool IsFleeing(Pawn p)
+        {
+            if (p.MentalStateDef == MentalStateDefOf.PanicFlee) return true;
+            var job = p.CurJobDef;
+            if (job != null && (job == JobDefOf.Flee || job == JobDefOf.FleeAndCower)) return true;
+            var duty = p.mindState?.duty?.def;
+            return duty != null && (duty == DutyDefOf.ExitMapRandom || duty == DutyDefOf.ExitMapBest
+                || duty == DutyDefOf.ExitMapBestAndDefendSelf || duty == DutyDefOf.Steal || duty == DutyDefOf.Kidnap);
+        }
+    }
+
+    // Tidy: vanilla's TryPickupFilth (dirt from the terrain, filth on the floor, rain of ash or acid) runs on one
+    // cell move in ten. With Entad_FilthPickupFactor below 1 the pickup only happens at that chance. The stat comes
+    // from worn gear through the wearer-stat path (EntadWearerStats); read with a 250-tick cache, so a walking pawn
+    // works it out a few times a minute at most.
+    [HarmonyPatch(typeof(Pawn_FilthTracker), "TryPickupFilth")]
+    public static class Patch_FilthTracker_TryPickupFilth
+    {
+        public static bool Prefix(Pawn ___pawn)
+        {
+            if (___pawn?.apparel == null || ___pawn.apparel.WornApparelCount == 0) return true;
+            float chance = ___pawn.GetStatValue(EntadStatDefOf.Entad_FilthPickupFactor, true, 250);
+            return chance >= 1f || Rand.Chance(chance);
         }
     }
 

@@ -250,4 +250,15 @@
       <li><damageType>Frostbite</damageType><min>2</min><max>6</max></li>
     </extraDamage>
   </EntadFramework.EntadTraitDef>
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Merciless</defName>
+    <label>Merciless</label>
+    <description>It has no patience for those who fall or flee.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors>
+      <li><stat>Entad_MercilessDamageFactor</stat><min>1.25</min><max>1.5</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
 </Defs>

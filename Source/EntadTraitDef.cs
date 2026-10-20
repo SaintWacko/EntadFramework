@@ -839,6 +839,12 @@ namespace EntadFramework
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
             // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
             if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
+            // Our own stats, each read by one hook: Merciless by the damage prefix, which needs an attack that does
+            // damage (a smoke launcher would show a number that never matters); the bench stats by the bill product
+            // hook, which can only raise quality where something made there has it, or double what stacks.
+            if (stat == EntadStatDefOf.Entad_MercilessDamageFactor) return td.IsWeapon && !HasNoDamageHook(td);
+            if (stat == EntadStatDefOf.Entad_ProductQualityChance) return td.building != null && MakesAny(td, p => p.HasComp(typeof(CompQuality)), false);
+            if (stat == EntadStatDefOf.Entad_ProductDoubleChance) return td.building != null && MakesAny(td, p => p.stackLimit > 1, true);
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
@@ -856,6 +862,21 @@ namespace EntadFramework
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Whether any bill done at this building makes a product that passes the check. Butchering, smelting and
+        // stonecutting (specialProducts) make meat, leather, metal and blocks, which all stack and have no quality.
+        private static bool MakesAny(ThingDef td, System.Func<ThingDef, bool> check, bool specialProductsPass)
+        {
+            var recipes = td.AllRecipes;
+            for (int i = 0; recipes != null && i < recipes.Count; i++)
+            {
+                var r = recipes[i];
+                if (specialProductsPass && !r.specialProducts.NullOrEmpty()) return true;
+                for (int k = 0; r.products != null && k < r.products.Count; k++)
+                    if (r.products[k].thingDef != null && check(r.products[k].thingDef)) return true;
+            }
+            return false;
         }
 
         // A verb class that is, or derives from, a class with LaunchProjectile in its name: vanilla's

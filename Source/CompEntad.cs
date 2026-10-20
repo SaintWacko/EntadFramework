@@ -505,33 +505,40 @@ namespace EntadFramework
             return propertyFactors[(int)property];
         }
 
-        // Whether any trait has the melee armor penetration factor, worked out on first use after the trait list
-        // changes: Patch_VerbProperties_AdjustedArmorPenetration asks on every melee hit. 0 unknown, 1 yes, 2 no.
-        // Not saved; a loaded item starts at 0.
-        private byte meleePenetration;
+        // Which per-hit stats any trait has, worked out on first use after the trait list changes: the melee
+        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn.
+        // -1 unknown. Not saved; a loaded item starts unknown.
+        private int hitStatFlags = -1;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2;
 
-        internal bool HasMeleePenetration
+        private int HitStatFlags
         {
             get
             {
-                if (meleePenetration == 0)
+                if (hitStatFlags < 0)
                 {
-                    var stat = EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier;
-                    meleePenetration = 2;
-                    for (int t = 0; t < activeTraits.Count && meleePenetration == 2; t++)
+                    int flags = 0;
+                    for (int t = 0; t < activeTraits.Count; t++)
                     {
                         var factors = activeTraits[t].def.statFactors;
                         for (int i = 0; factors != null && i < factors.Count; i++)
-                            if (factors[i].stat == stat) { meleePenetration = 1; break; }
+                        {
+                            if (factors[i].stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) flags |= FlagMeleePenetration;
+                            else if (factors[i].stat == EntadStatDefOf.Entad_MercilessDamageFactor) flags |= FlagMerciless;
+                        }
                     }
+                    hitStatFlags = flags;
                 }
-                return meleePenetration == 1;
+                return hitStatFlags;
             }
         }
 
+        internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
+        internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
+
         private void TraitsChanged()
         {
-            meleePenetration = 0;
+            hitStatFlags = -1;
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;
@@ -682,7 +689,7 @@ namespace EntadFramework
                 propertyFactors = null;
                 wearerOffsets = null;
                 hiddenState = 0;
-                meleePenetration = 0;
+                hitStatFlags = -1;
                 foreach (var trait in activeTraits)
                 {
                     trait.owner = this;
