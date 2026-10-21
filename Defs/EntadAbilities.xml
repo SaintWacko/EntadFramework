@@ -10,7 +10,8 @@
        fight AI (JobGiver_AIFightEnemy.GetAbilityJob, NPCs only, never colonists). That AI only knows one move: while
        fighting, cast the ability at the current enemy when the verb can reach it, otherwise on the caster when it can
        target itself, as soon as it is ready. ai_IsOffensive is true by default, which is what puts an ability in that
-       list. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
+       list. A range-0 ability counts as reaching any enemy, so the self abilities are handed the enemy as target;
+       the pulse comp casts untargeted abilities on the caster whatever it is given. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
        onto the enemy's own cell, which the blink comp refuses). -->
 
   <AbilityDef Name="EntadAbilityBase" Abstract="True">
@@ -147,7 +148,8 @@
     <label>smokescreen</label>
     <description>Fills a 4-tile radius with smoke, up to 15 tiles away. Smoke makes shots through it less accurate and stops turrets from locking on.</description>
     <iconPath>UI/Abilities/Entad/Smokescreen</iconPath>
-    <!-- Vanilla fallback: on the enemy being fought, within 15 tiles -->
+    <!-- Vanilla fallback: on the enemy being fought, within 15 tiles. Crude: the smoke thins the caster's own shots
+         at that enemy as much as the enemy's back. -->
     <aiCanUse>true</aiCanUse>
     <verbProperties>
       <verbClass>Verb_CastAbility</verbClass>
@@ -172,7 +174,6 @@
     <iconPath>UI/Abilities/Entad/Flashbang</iconPath>
     <!-- Vanilla fallback: on the enemy being fought, within 15 tiles (only enemies are stunned) -->
     <aiCanUse>true</aiCanUse>
-    <ai_IsOffensive>true</ai_IsOffensive>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
     <verbProperties>
@@ -205,7 +206,6 @@
     <!-- Vanilla fallback: at the enemy being fought, from any range the weapon reaches (explosive shots can hit
          the caster's side, as an NPC's grenades do) -->
     <aiCanUse>true</aiCanUse>
-    <ai_IsOffensive>true</ai_IsOffensive>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
     <verbProperties>

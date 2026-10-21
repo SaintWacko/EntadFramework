@@ -5,100 +5,95 @@
      vanilla down for every ability it handles, so the two never both cast one.
      The workers and their fields are described in Ability AI's AbilityAIWorkers.cs; radius, hediff and stuns are
      read from the pulse comp (registered in Source/EntadAbilityAICompat.cs). -->
+<!-- One top-level operation per ability, so a renamed ability loses only its own rules -->
 <Patch>
-  <Operation Class="PatchOperationSequence">
-    <operations>
-
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_SecondWind"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_Recovery</workerClass>
-            <needThreshold>0.25</needThreshold>
-          </li>
-        </value>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_SecondWind"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_Recovery</workerClass>
+        <needThreshold>0.25</needThreshold>
       </li>
+    </value>
+  </Operation>
 
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_Sprint"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_Movement</workerClass>
-            <minGapDistance>10</minGapDistance>
-          </li>
-        </value>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_Sprint"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_Movement</workerClass>
+        <minGapDistance>10</minGapDistance>
       </li>
+    </value>
+  </Operation>
 
-      <!-- The caster and at least two allies who aren't emboldened yet. A ranged caster walks up to 12 tiles to an
-           ally group to reach them. -->
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_BattleCry"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_AoEFriendly</workerClass>
-            <priority>5</priority>
-            <minTargets>3</minTargets>
-            <approachDistance>12</approachDistance>
-          </li>
-        </value>
+  <!-- The caster and at least two allies who aren't emboldened yet. A ranged caster walks up to 12 tiles to an
+       ally group to reach them. -->
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_BattleCry"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_AoEFriendly</workerClass>
+        <priority>5</priority>
+        <minTargets>3</minTargets>
+        <approachDistance>12</approachDistance>
       </li>
+    </value>
+  </Operation>
 
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_Blink"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_Movement</workerClass>
-            <priority>3</priority>
-          </li>
-        </value>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_Blink"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_Movement</workerClass>
+        <priority>3</priority>
       </li>
+    </value>
+  </Operation>
 
-      <!-- Two shooters on the caster (being shot counts as one) -->
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_Smokescreen"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_Cover</workerClass>
-            <priority>4</priority>
-            <minThreats>2</minThreats>
-          </li>
-        </value>
+  <!-- Two shooters on the caster (being shot counts as one) -->
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_Smokescreen"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_Cover</workerClass>
+        <priority>4</priority>
+        <minThreats>2</minThreats>
       </li>
+    </value>
+  </Operation>
 
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_Flashbang"]</xpath>
-        <value>
-          <!-- Two enemies not already stunned; a ranged caster walks up to 10 tiles closer to reach them -->
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
-            <priority>6</priority>
-            <minTargets>2</minTargets>
-            <approachDistance>10</approachDistance>
-          </li>
-          <!-- Any enemy aiming a grenade, launcher or ability, before the group rule -->
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_Interrupt</workerClass>
-            <priority>8</priority>
-          </li>
-        </value>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_Flashbang"]</xpath>
+    <value>
+      <!-- Two enemies not already stunned; a ranged caster walks up to 10 tiles closer to reach them -->
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
+        <priority>6</priority>
+        <minTargets>2</minTargets>
+        <approachDistance>10</approachDistance>
       </li>
-
-      <!-- Past the first split (8 tiles), so at least 3 projectiles. The final spread reaches about 4 tiles, and
-           explosive shots hurt everyone, so no centre with one of the caster's side standing inside it (downed ones
-           aren't counted). -->
-      <li Class="PatchOperationAddModExtension">
-        <xpath>Defs/AbilityDef[defName="Entad_Artillery"]</xpath>
-        <value>
-          <li Class="AbilityAI.AbilityAIExtension">
-            <workerClass>AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
-            <priority>10</priority>
-            <radius>4</radius>
-            <minRange>9</minRange>
-            <avoidAllies>true</avoidAllies>
-          </li>
-        </value>
+      <!-- Any enemy aiming a grenade, launcher or ability, before the group rule -->
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_Interrupt</workerClass>
+        <priority>8</priority>
       </li>
+    </value>
+  </Operation>
 
-    </operations>
+  <!-- Past the first split (8 tiles), so at least 3 projectiles. The final spread reaches about 4 tiles, and
+       explosive shots hurt everyone, so no centre with one of the caster's side standing inside it (downed ones
+       aren't counted). -->
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/AbilityDef[defName="Entad_Artillery"]</xpath>
+    <value>
+      <li Class="AbilityAI.AbilityAIExtension">
+        <workerClass>AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
+        <priority>10</priority>
+        <radius>4</radius>
+        <minRange>9</minRange>
+        <avoidAllies>true</avoidAllies>
+      </li>
+    </value>
   </Operation>
 </Patch>

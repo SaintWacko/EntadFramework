@@ -28,8 +28,9 @@
         <!-- Keep in step with the main 1.7 project -->
         <RW17RefVersion>1.7.4979-alpha</RW17RefVersion>
         <RW17Ref>$(NuGetPackageRoot)krafs.rimworld.ref/$(RW17RefVersion)/ref/net10.0/</RW17Ref>
-        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there -->
-        <AbilityAIDir>$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
+        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there. Override with
+             /p:AbilityAIDir=... on a checkout where it lives elsewhere. -->
+        <AbilityAIDir Condition="'$(AbilityAIDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">

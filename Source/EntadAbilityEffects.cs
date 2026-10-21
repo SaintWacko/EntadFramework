@@ -53,6 +53,10 @@ namespace EntadFramework
             base.Apply(target, dest);
             Pawn caster = parent.pawn;
             Map map = caster.MapHeld;
+            // An untargeted ability is always about the caster. Vanilla's fight AI hands a range-0 ability the enemy
+            // it is fighting (Verb_CastAbility.CanHitTarget is true for any target at range 0), which would give a
+            // raider's sprint to the colonist and centre its battle cry on the colonist's cell.
+            if (!parent.def.targetRequired) target = caster;
             if (Props.radius <= 0f)
             {
                 if (target.Pawn != null) ApplyTo(target.Pawn, caster);

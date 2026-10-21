@@ -24,8 +24,9 @@
         <FileVersion>1.0.0.0</FileVersion>
         <Product>Entad Framework</Product>
         <Authors>SaintWacko</Authors>
-        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there -->
-        <AbilityAIDir>$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
+        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there. Override with
+             /p:AbilityAIDir=... on a checkout where it lives elsewhere. -->
+        <AbilityAIDir Condition="'$(AbilityAIDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
