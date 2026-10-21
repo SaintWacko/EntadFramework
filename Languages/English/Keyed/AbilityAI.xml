@@ -2,8 +2,8 @@
 <!-- The ability AI's settings (Source/AbilityAI/). Kept apart from EntadFramework.xml so the AI and its strings can be
      copied into another mod together; a copy must rename the EF_AI_ prefix. -->
 <LanguageData>
-  <EF_AI_Enabled>Non-player pawns use abilities</EF_AI_Enabled>
-  <EF_AI_Enabled_Tip>Raiders, visitors, tamed animals and mechs decide for themselves when to use the abilities their gear gives them. Your colonists never do: they have the buttons.</EF_AI_Enabled_Tip>
+  <EF_AI_Enabled>Ability AI</EF_AI_Enabled>
+  <EF_AI_Enabled_Tip>Raiders, visitors, animals and mechs decide for themselves when to use the abilities their gear gives them, and your own pawns use the abilities you set to autocast. Off: nobody does.</EF_AI_Enabled_Tip>
   <EF_AI_Who>Who uses them:</EF_AI_Who>
   <EF_AI_Hostiles>Hostile pawns</EF_AI_Hostiles>
   <EF_AI_Hostiles_Tip>Raiders and anyone else hostile to your colony.</EF_AI_Hostiles_Tip>
@@ -13,11 +13,22 @@
   <EF_AI_Animals_Tip>Any animal, your tamed ones included.</EF_AI_Animals_Tip>
   <EF_AI_Mechs>Mechanoids</EF_AI_Mechs>
   <EF_AI_Mechs_Tip>Any mechanoid, your own included while they aren't drafted.</EF_AI_Mechs_Tip>
-  <EF_AI_Who_Desc>Your colonists, slaves and prisoners are never controlled, and drafted pawns are left to you.</EF_AI_Who_Desc>
+  <EF_AI_Who_Desc>Your colonists, slaves and drafted pawns only use abilities you set to autocast. Prisoners never use any.</EF_AI_Who_Desc>
   <EF_AI_Unclaimed>Also use abilities that don't come from entads</EF_AI_Unclaimed>
   <EF_AI_Unclaimed_Tip>Lets the same decision making cast a pawn's own abilities when they are set up for it, such as a raider psycaster's psycasts (most combat psycasts from Royalty are). Off: only abilities from entad gear.</EF_AI_Unclaimed_Tip>
   <EF_AI_Approach>Walk into range to use an ability</EF_AI_Approach>
   <EF_AI_Approach_Tip>A ranged pawn in a fight walks a few tiles closer when a target for one of its abilities is just out of range or out of sight, uses it, and then fights as usual. Only for abilities set up for it, such as flashbang and battle cry. Never while badly hurt, fleeing or held in melee.</EF_AI_Approach_Tip>
+  <EF_AI_PlayerAutocast>Autocast for your pawns</EF_AI_PlayerAutocast>
+  <EF_AI_PlayerAutocast_Tip>Right-click an ability button to choose whether your pawn uses it by itself: off, in place (never moves to cast), or full (may walk into range). Only for abilities the AI knows how to use. A drafted pawn only casts while it stands in position or shoots, never in the middle of a move you ordered.</EF_AI_PlayerAutocast_Tip>
+  <EF_AI_BreakCasting>Your pawns use abilities during mental breaks</EF_AI_BreakCasting>
+  <EF_AI_BreakCasting_Tip>A pawn in a mental break is out of your control, so your autocast choices don't apply. With this on, the AI uses every ability it knows how to use the way it would for a raider, and a berserk pawn treats your colonists as enemies. Off: pawns in a break use no abilities.</EF_AI_BreakCasting_Tip>
+  <EF_AI_Mode_Title>Autocast {0}</EF_AI_Mode_Title>
+  <EF_AI_Mode_Off>Don't autocast</EF_AI_Mode_Off>
+  <EF_AI_Mode_Stationary>Autocast in place</EF_AI_Mode_Stationary>
+  <EF_AI_Mode_Full>Autocast, may move</EF_AI_Mode_Full>
+  <EF_AI_Mode_Current>{0} (current)</EF_AI_Mode_Current>
+  <EF_AI_Badge_Stationary>auto</EF_AI_Badge_Stationary>
+  <EF_AI_Badge_Full>auto+</EF_AI_Badge_Full>
   <EF_AI_MinGap>Least time between one pawn's casts: {0} s</EF_AI_MinGap>
   <EF_AI_MinGap_Desc>Stops a pawn with several abilities from using them all in the same moment. Each ability's own cooldown and charges still apply.</EF_AI_MinGap_Desc>
   <EF_AI_DebugLog>Log ability AI decisions (dev mode)</EF_AI_DebugLog>

@@ -74,6 +74,23 @@ namespace EntadFramework.AbilityAI
             return claimed || AbilityAISettings.Unclaimed;
         }
 
+        // For the player's own pawns, whose autocast mode is the claim: only a veto matters
+        internal static bool NotVetoed(Pawn pawn, Ability ability)
+        {
+            for (int i = 0; i < hooks.Count; i++)
+            {
+                AbilityAIVote v;
+                try { v = hooks[i].Vote(pawn, ability); }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce($"[Ability AI] {hooks[i].GetType().Name}.Vote threw: {e}", hooks[i].GetType().GetHashCode() ^ 0x5A1);
+                    continue;
+                }
+                if (v == AbilityAIVote.Veto) return false;
+            }
+            return true;
+        }
+
         internal static void NotifyCast(Pawn pawn, Ability ability, LocalTargetInfo target, LocalTargetInfo dest)
         {
             for (int i = 0; i < hooks.Count; i++)
@@ -231,14 +248,16 @@ namespace EntadFramework.AbilityAI
         private bool enemyTargetKnown;
         private AbilityDef approachAbility;
         private int approachExpected;
+        private bool drafted;
 
         /// <summary>While the pawn walks to a cell a worker chose with TryFindApproachCell for this ability: how
         /// many targets the worker expected to reach from there. 0 otherwise.</summary>
         public int ApproachExpected(Ability ability) => ability.def == approachAbility ? approachExpected : 0;
 
-        internal void Begin(Pawn p, int t, AbilityDef walkingFor, int expected)
+        internal void Begin(Pawn p, int t, AbilityDef walkingFor, int expected, bool drafted)
         {
             pawn = p;
+            this.drafted = drafted;
             map = p.Map;
             tick = t;
             approachAbility = walkingFor;
@@ -268,7 +287,9 @@ namespace EntadFramework.AbilityAI
                 if (!combatKnown)
                 {
                     var mind = pawn.mindState;
-                    inCombat = EnemyTarget != null
+                    // A drafted pawn is in a fighting stance: any threat on the map counts, so it can act before
+                    // the first shot
+                    inCombat = (drafted && Enemies.Count > 0) || EnemyTarget != null
                         || (mind != null && (tick - mind.lastHarmTick < RecentTicks || tick - mind.lastAttackTargetTick < RecentTicks
                             || (mind.lastRangedHarmTick > 0 && tick - mind.lastRangedHarmTick < RecentTicks)));
                     combatKnown = true;
@@ -500,11 +521,40 @@ namespace EntadFramework.AbilityAI
             return a.def.PsyfocusCost <= pe.CurrentPsyfocus + Pawn_PsychicEntropyTracker.PsyfocusCostTolerance;
         }
 
-        /// <summary>Whether the AI acts for this kind of pawn at all, by the settings. Never the player's own
-        /// humanlikes (colonists, slaves, ghouls: the player has their gizmos) or prisoners.</summary>
+        /// <summary>Who decides what the AI may cast for a pawn.</summary>
+        public enum Control
+        {
+            /// <summary>The AI leaves this pawn alone.</summary>
+            None,
+            /// <summary>The AI's own judgement: raiders, visitors, animals, mechs, and with the setting on, the
+            /// player's humanlikes in a mental break. Abilities the hooks claim (or all, with Unclaimed).</summary>
+            NPC,
+            /// <summary>The player's own pawn: only abilities the player set to autocast, under the player rules.</summary>
+            Player,
+        }
+
+        /// <summary>Whether and how the AI acts for this pawn, by the settings. The player's humanlikes (colonists,
+        /// slaves, ghouls) and drafted pawns only for abilities the player set to autocast; prisoners never.</summary>
+        public static Control ControlOf(Pawn pawn)
+        {
+            if (pawn.IsPrisoner) return Control.None;
+            if (pawn.Faction != null && pawn.Faction.IsPlayer)
+            {
+                // A break takes the pawn out of the player's hands, and with it the player's choices: see BreakCasting
+                if (pawn.InMentalState) return pawn.RaceProps.Humanlike ? (AbilityAISettings.BreakCasting ? Control.NPC : Control.None) : NPCControl(pawn);
+                if (pawn.RaceProps.Humanlike || pawn.Drafted)
+                    return AbilityAISettings.PlayerAutocast && AbilityAIAutocast.HasAny(pawn) ? Control.Player : Control.None;
+            }
+            return NPCControl(pawn);
+        }
+
+        private static Control NPCControl(Pawn pawn) => Covered(pawn) ? Control.NPC : Control.None;
+
+        /// <summary>Whether the NPC rules act for this kind of pawn at all, by the settings. Never the player's own
+        /// humanlikes outside a break (see ControlOf) or prisoners.</summary>
         public static bool Covered(Pawn pawn)
         {
-            if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.RaceProps.Humanlike) return false;
+            if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.RaceProps.Humanlike && !pawn.InMentalState) return false;
             if (pawn.IsPrisoner) return false;
             // The player's animals and mechs in a lord are forming a caravan, roped or the like: a constant-tree job
             // interrupts whatever they are doing, so leave them to it
@@ -524,6 +574,27 @@ namespace EntadFramework.AbilityAI
             if (pawn.CurJob?.ability != null) return false;
             if (pawn.stances?.stunner?.Stunned == true) return false;
             return true;
+        }
+
+        /// <summary>The player rules: awake, standing, not on fire, not in a mental state, not casting or stunned.
+        /// Drafted: only while standing still in position or shooting, never during an ordered move. Undrafted
+        /// pawns don't autocast yet.</summary>
+        public static bool CanActNowPlayer(Pawn pawn)
+        {
+            if (!pawn.Spawned || pawn.Dead || pawn.Downed || !pawn.Awake() || pawn.IsBurning()) return false;
+            if (pawn.InMentalState || pawn.CurJob?.ability != null) return false;
+            if (pawn.stances?.stunner?.Stunned == true) return false;
+            if (!pawn.Drafted) return false;
+            if (pawn.pather != null && pawn.pather.Moving) return false;
+            JobDef job = pawn.CurJobDef;
+            return job == null || job == JobDefOf.Wait_Combat || job == JobDefOf.Wait || job == JobDefOf.Wait_MaintainPosture
+                || job == JobDefOf.AttackStatic;
+        }
+
+        // The player's own pawn: their mode counts as the claim, but a hook can still veto (an item bound to someone else)
+        private static bool PlayerAllowed(Pawn pawn, Ability a)
+        {
+            return AbilityAIAutocast.ModeFor(pawn, a.def) != AbilityAIAutocastMode.Off && AbilityAIHooks.NotVetoed(pawn, a);
         }
 
         /// <summary>Every vanilla check a player's cast would pass, minus aiCanUse (see the file header), plus each
@@ -571,7 +642,7 @@ namespace EntadFramework.AbilityAI
             return ps.CanApplyPsycastTo(target);
         }
 
-        internal static Job TryGiveJob(Pawn pawn, List<Ability> abilities)
+        internal static Job TryGiveJob(Pawn pawn, List<Ability> abilities, Control control)
         {
             if (evaluating) return null;
             int tick = Find.TickManager.TicksGame;
@@ -587,7 +658,8 @@ namespace EntadFramework.AbilityAI
             }
             if (tick < state.nextEvalTick || tick < state.nextCastTick) return null;
             state.nextEvalTick = tick + EvalIntervalTicks;
-            if (!CanActNow(pawn)) return null;
+            bool player = control == Control.Player;
+            if (player ? !CanActNowPlayer(pawn) : !CanActNow(pawn)) return null;
 
             // Ready abilities with a worker, highest priority first (insertion sort: a pawn holds a handful). An
             // ability with several extensions is a candidate once per extension.
@@ -606,7 +678,7 @@ namespace EntadFramework.AbilityAI
                         checkedReady = true;
                         ready = a.CanCast && PsycastAffordable(a)
                             && (state.abilityNext == null || !state.abilityNext.TryGetValue(a.def, out int next) || tick >= next)
-                            && AbilityAIHooks.Allowed(pawn, a);
+                            && (player ? PlayerAllowed(pawn, a) : AbilityAIHooks.Allowed(pawn, a));
                     }
                     if (!ready) break;
                     if (ext.reserveCharges > 0 && a.UsesCharges && a.RemainingCharges <= ext.reserveCharges) continue;
@@ -618,7 +690,7 @@ namespace EntadFramework.AbilityAI
             if (candidates.Count == 0) return null;
 
             evaluating = true;
-            ctx.Begin(pawn, tick, state.approachJobId >= 0 ? state.approachAbility : null, state.approachExpected);
+            ctx.Begin(pawn, tick, state.approachJobId >= 0 ? state.approachAbility : null, state.approachExpected, player && pawn.Drafted);
             try
             {
                 for (int i = 0; i < candidates.Count; i++)
@@ -640,9 +712,14 @@ namespace EntadFramework.AbilityAI
                     if (AbilityAISettings.DebugLog && Prefs.DevMode)
                         Log.Message($"[Ability AI] {pawn.LabelShort} casts {a.def.label} ({worker.GetType().Name}) on {target}");
                     AbilityAIHooks.NotifyCast(pawn, a, target, dest);
+                    // A player's attack order would be lost: vanilla starts constant-tree jobs without resuming the
+                    // current one. Queue a copy so the pawn goes back to it after the cast.
+                    if (player && pawn.CurJobDef == JobDefOf.AttackStatic && pawn.CurJob.def.suspendable)
+                        pawn.jobs.jobQueue.EnqueueFirst(pawn.CurJob.Clone());
                     return a.GetJob(target, dest);
                 }
-                return TryApproach(state);
+                // The player's pawns don't walk to cast yet (Full mode comes later)
+                return player ? null : TryApproach(state);
             }
             finally
             {
@@ -762,6 +839,8 @@ namespace EntadFramework.AbilityAI
         public static bool Mechs = true;
         public static bool Unclaimed;
         public static bool Approach = true;
+        public static bool PlayerAutocast = true;
+        public static bool BreakCasting;
         public const float DefaultMinGapSeconds = 2.5f;
         public static float MinGapSeconds = DefaultMinGapSeconds;
         public static bool DebugLog;
@@ -769,7 +848,8 @@ namespace EntadFramework.AbilityAI
         public static void Reset()
         {
             Enabled = Hostiles = NonHostiles = Animals = Mechs = Approach = true;
-            Unclaimed = false;
+            PlayerAutocast = true;
+            Unclaimed = BreakCasting = false;
             MinGapSeconds = DefaultMinGapSeconds;
             DebugLog = false;
         }
@@ -783,6 +863,8 @@ namespace EntadFramework.AbilityAI
             Scribe_Values.Look(ref Mechs, "abilityAI_mechs", true);
             Scribe_Values.Look(ref Unclaimed, "abilityAI_unclaimed", false);
             Scribe_Values.Look(ref Approach, "abilityAI_approach", true);
+            Scribe_Values.Look(ref PlayerAutocast, "abilityAI_playerAutocast", true);
+            Scribe_Values.Look(ref BreakCasting, "abilityAI_breakCasting", false);
             Scribe_Values.Look(ref MinGapSeconds, "abilityAI_minGapSeconds", DefaultMinGapSeconds);
             MinGapSeconds = Mathf.Clamp(MinGapSeconds, 0f, 30f);
             Scribe_Values.Look(ref DebugLog, "abilityAI_debugLog", false);
@@ -801,6 +883,9 @@ namespace EntadFramework.AbilityAI
             list.Gap();
             list.CheckboxLabeled("EF_AI_Unclaimed".Translate(), ref Unclaimed, "EF_AI_Unclaimed_Tip".Translate());
             list.CheckboxLabeled("EF_AI_Approach".Translate(), ref Approach, "EF_AI_Approach_Tip".Translate());
+            list.Gap();
+            list.CheckboxLabeled("EF_AI_PlayerAutocast".Translate(), ref PlayerAutocast, "EF_AI_PlayerAutocast_Tip".Translate());
+            list.CheckboxLabeled("EF_AI_BreakCasting".Translate(), ref BreakCasting, "EF_AI_BreakCasting_Tip".Translate());
             list.Gap();
             list.Label("EF_AI_MinGap".Translate(MinGapSeconds.ToString("0.#")));
             MinGapSeconds = Mathf.Round(list.Slider(MinGapSeconds, 0f, 30f) * 2f) / 2f;
@@ -825,14 +910,17 @@ namespace EntadFramework.AbilityAI
             var tracker = ___pawn?.abilities;
             if (tracker == null) return;
             var abilities = tracker.AllAbilitiesForReading;
-            if (abilities.Count == 0 || !AbilityAIDriver.AnyWithExtension(abilities) || !AbilityAIDriver.Covered(___pawn)) return;
+            if (abilities.Count == 0) return;
+            // The player's pawns with nothing set to autocast stop at one dictionary lookup here
+            var control = AbilityAIDriver.ControlOf(___pawn);
+            if (control == AbilityAIDriver.Control.None || !AbilityAIDriver.AnyWithExtension(abilities)) return;
             // Vanilla starts these jobs against the constant tree and saves the job giver's key in it; with no
             // constant tree a saved job would throw on load.
             var root = ___pawn.thinker?.ConstantThinkTree?.thinkRoot;
             if (root == null) return;
             try
             {
-                Job job = AbilityAIDriver.TryGiveJob(___pawn, abilities);
+                Job job = AbilityAIDriver.TryGiveJob(___pawn, abilities, control);
                 // The tree's root as the source: the AI has no think node of its own, so a pawn saved mid-cast would
                 // otherwise log a missing think node on load
                 if (job != null) __result = new ThinkResult(job, root);
