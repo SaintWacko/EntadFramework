@@ -142,7 +142,7 @@ namespace EntadFramework.AbilityAI
             AbilityDef def = clicked.def;
             var pawns = new List<Pawn>();
             foreach (object o in Find.Selector.SelectedObjectsListForReading)
-                if (o is Pawn p && p.abilities?.GetAbility(def) != null && p.Faction != null && p.Faction.IsPlayer) pawns.Add(p);
+                if (o is Pawn p && p.abilities?.GetAbility(def) != null && p.Faction != null && p.Faction.IsPlayer && p.drafter != null) pawns.Add(p);
             if (!pawns.Contains(clicked.pawn)) pawns.Add(clicked.pawn);
             AbilityAIAutocastMode current = ModeFor(clicked.pawn, def);
 

@@ -10,7 +10,7 @@
   <EF_AI_NonHostiles>Friendly and neutral pawns</EF_AI_NonHostiles>
   <EF_AI_NonHostiles_Tip>Visitors, traders, caravan guards and allied soldiers.</EF_AI_NonHostiles_Tip>
   <EF_AI_Animals>Animals</EF_AI_Animals>
-  <EF_AI_Animals_Tip>Wild animals and other factions' animals. Yours don't use abilities by themselves for now.</EF_AI_Animals_Tip>
+  <EF_AI_Animals_Tip>Wild animals and other factions' animals. Yours don't use abilities by themselves for now, unless another mod lets you draft them.</EF_AI_Animals_Tip>
   <EF_AI_Mechs>Mechanoids</EF_AI_Mechs>
   <EF_AI_Mechs_Tip>Other factions' mechanoids. Yours use the abilities you set to autocast.</EF_AI_Mechs_Tip>
   <EF_AI_Who_Desc>Your own colonists, slaves and mechs only use abilities you set to autocast. Prisoners never use any.</EF_AI_Who_Desc>

@@ -533,8 +533,9 @@ namespace EntadFramework.AbilityAI
             Player,
         }
 
-        /// <summary>Whether and how the AI acts for this pawn, by the settings. Every pawn of the player's (colonists,
-        /// slaves, ghouls, animals, mechs) only for abilities the player set to autocast; prisoners never.</summary>
+        /// <summary>Whether and how the AI acts for this pawn, by the settings. Every pawn of the player's only for
+        /// abilities the player set to autocast (for now only pawns that can be drafted get the menu: colonists, slaves,
+        /// ghouls, mechs, and animals a mod makes draftable); prisoners never.</summary>
         public static Control ControlOf(Pawn pawn)
         {
             if (pawn.IsPrisoner) return Control.None;
