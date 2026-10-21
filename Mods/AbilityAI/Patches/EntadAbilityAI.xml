@@ -4,7 +4,7 @@
      Without it the abilities fall back to vanilla's fight AI through aiCanUse in the base defs; Ability AI stands
      vanilla down for every ability it handles, so the two never both cast one.
      The workers and their fields are described in Ability AI's AbilityAIWorkers.cs; radius, hediff and stuns are
-     read from the pulse comp (registered in Source/EntadAbilityAICompat.cs). -->
+     read from the pulse comp (registered in Mods/AbilityAI/Source/EntadAbilityAICompat.cs). -->
 <!-- One top-level operation per ability, so a renamed ability loses only its own rules -->
 <Patch>
   <Operation Class="PatchOperationAddModExtension">
