@@ -19,6 +19,8 @@ namespace EntadFramework
         private Pawn bondedPawn;
         private string bondedPawnLabel;
         private int lastKillTick = -1;
+        // Builds before 231 saved the bond under vanilla's key names; read only while loading (see ExposePersona)
+        private Pawn legacyBondedPawn;
 
         public Pawn BondedPawn => bondedPawn;
 
@@ -173,9 +175,31 @@ namespace EntadFramework
         private void ExposePersona()
         {
             if (Scribe.mode == LoadSaveMode.Saving && bondedPawn != null && bondedPawn.Discarded) bondedPawn = null;
-            Scribe_References.Look(ref bondedPawn, "bondedPawn", saveDestroyedThings: true);
-            Scribe_Values.Look(ref bondedPawnLabel, "bondedPawnLabel");
-            Scribe_Values.Look(ref lastKillTick, "lastKillTick", -1);
+            // Keys are prefixed because CompBladelinkWeapon reads "bondedPawn", "bondedPawnLabel" and "lastKillTick"
+            // from the same weapon node (its pre-1.3 upgrade path runs on every load). On a vanilla persona weapon
+            // that also has entad traits, the shared names registered one reference twice ("Tried to register the
+            // same load ID twice ... pathRelToParent=/bondedPawn"), let vanilla biocode the weapon to our bonded pawn
+            // and mixed up the two kill timers.
+            Scribe_References.Look(ref bondedPawn, "entadBondedPawn", saveDestroyedThings: true);
+            Scribe_Values.Look(ref bondedPawnLabel, "entadBondedPawnLabel");
+            Scribe_Values.Look(ref lastKillTick, "entadLastKillTick", -1);
+            // Saves from before the rename. Vanilla saves the pawn's bondedWeapon itself, so dropping the old keys
+            // would leave that pawn pointing at a weapon that no longer knows them: never able to bond again, bond
+            // hediffs stuck. Skipped on weapons with a CompBladelinkWeapon, which reads these keys itself (that
+            // double read is the bug the rename fixes; such a weapon's old entad bond was already broken).
+            if (Scribe.mode != LoadSaveMode.Saving && parent.GetComp<CompBladelinkWeapon>() == null)
+            {
+                Scribe_References.Look(ref legacyBondedPawn, "bondedPawn", saveDestroyedThings: true);
+                if (Scribe.mode == LoadSaveMode.LoadingVars && bondedPawnLabel == null)
+                    Scribe_Values.Look(ref bondedPawnLabel, "bondedPawnLabel");
+                if (Scribe.mode == LoadSaveMode.LoadingVars && lastKillTick == -1)
+                    Scribe_Values.Look(ref lastKillTick, "lastKillTick", -1);
+                if (Scribe.mode == LoadSaveMode.PostLoadInit)
+                {
+                    if (bondedPawn == null) bondedPawn = legacyBondedPawn;
+                    legacyBondedPawn = null;
+                }
+            }
             if (Scribe.mode == LoadSaveMode.PostLoadInit && bondedPawn != null)
             {
                 // The pawn's side is saved by vanilla; if the two disagree, the pawn's side wins (as vanilla does)

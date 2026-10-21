@@ -191,6 +191,7 @@
   <EF_Tab_General>General</EF_Tab_General>
   <EF_Tab_Rarity>Rarity and durability</EF_Tab_Rarity>
   <EF_Tab_Traits>Traits</EF_Tab_Traits>
+  <EF_Tab_AI>Ability AI</EF_Tab_AI>
   <EF_Settings_Reset>Reset to defaults</EF_Settings_Reset>
   <EF_Settings_Reset_Tip>Resets the General and Rarity and durability tabs. Which traits are enabled is left as it is.</EF_Settings_Reset_Tip>
 

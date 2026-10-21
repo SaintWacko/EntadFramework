@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ability AI's settings (Source/AbilityAI/). Kept apart from EntadFramework.xml so the AI and its strings can be
+     copied into another mod together; a copy must rename the EF_AI_ prefix. -->
+<LanguageData>
+  <EF_AI_Enabled>Non-player pawns use abilities</EF_AI_Enabled>
+  <EF_AI_Enabled_Tip>Raiders, visitors, tamed animals and mechs decide for themselves when to use the abilities their gear gives them. Your colonists never do: they have the buttons.</EF_AI_Enabled_Tip>
+  <EF_AI_Who>Who uses them:</EF_AI_Who>
+  <EF_AI_Hostiles>Hostile pawns</EF_AI_Hostiles>
+  <EF_AI_Hostiles_Tip>Raiders and anyone else hostile to your colony.</EF_AI_Hostiles_Tip>
+  <EF_AI_NonHostiles>Friendly and neutral pawns</EF_AI_NonHostiles>
+  <EF_AI_NonHostiles_Tip>Visitors, traders, caravan guards and allied soldiers.</EF_AI_NonHostiles_Tip>
+  <EF_AI_Animals>Animals</EF_AI_Animals>
+  <EF_AI_Animals_Tip>Any animal, your tamed ones included.</EF_AI_Animals_Tip>
+  <EF_AI_Mechs>Mechanoids</EF_AI_Mechs>
+  <EF_AI_Mechs_Tip>Any mechanoid, your own included while they aren't drafted.</EF_AI_Mechs_Tip>
+  <EF_AI_Who_Desc>Your colonists, slaves and prisoners are never controlled, and drafted pawns are left to you.</EF_AI_Who_Desc>
+  <EF_AI_Unclaimed>Also use abilities that don't come from entads</EF_AI_Unclaimed>
+  <EF_AI_Unclaimed_Tip>Lets the same decision making cast a pawn's own abilities when they are set up for it, such as a raider psycaster's psycasts (most combat psycasts from Royalty are). Off: only abilities from entad gear.</EF_AI_Unclaimed_Tip>
+  <EF_AI_Approach>Walk into range to use an ability</EF_AI_Approach>
+  <EF_AI_Approach_Tip>A ranged pawn in a fight walks a few tiles closer when a target for one of its abilities is just out of range or out of sight, uses it, and then fights as usual. Only for abilities set up for it, such as flashbang and battle cry. Never while badly hurt, fleeing or held in melee.</EF_AI_Approach_Tip>
+  <EF_AI_MinGap>Least time between one pawn's casts: {0} s</EF_AI_MinGap>
+  <EF_AI_MinGap_Desc>Stops a pawn with several abilities from using them all in the same moment. Each ability's own cooldown and charges still apply.</EF_AI_MinGap_Desc>
+  <EF_AI_DebugLog>Log ability AI decisions (dev mode)</EF_AI_DebugLog>
+  <EF_AI_DebugLog_Tip>Writes a line to the log each time a pawn decides to cast something, naming the rule it used.</EF_AI_DebugLog_Tip>
+</LanguageData>

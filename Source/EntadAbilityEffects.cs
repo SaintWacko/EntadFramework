@@ -14,7 +14,8 @@ namespace EntadFramework
     // One pulse of effects: on the pawn the ability targets (the caster, for an untargeted ability), or with a radius,
     // on every pawn 'targets' picks around the target. Values are fixed per ability, unlike triggers, whose values
     // are rolled per item. Uses the trigger code's target rules and effects, so 'Allies' means the same thing in both.
-    public class CompProperties_AbilityEntadPulse : CompProperties_AbilityEffect
+    // Partial: the ability AI's IAbilityAIInfo half is in EntadAbilityAI.cs
+    public partial class CompProperties_AbilityEntadPulse : CompProperties_AbilityEffect
     {
         public float radius;
         public EntadTriggerTargets targets = EntadTriggerTargets.Self;
