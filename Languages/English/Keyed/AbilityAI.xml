@@ -10,18 +10,18 @@
   <EF_AI_NonHostiles>Friendly and neutral pawns</EF_AI_NonHostiles>
   <EF_AI_NonHostiles_Tip>Visitors, traders, caravan guards and allied soldiers.</EF_AI_NonHostiles_Tip>
   <EF_AI_Animals>Animals</EF_AI_Animals>
-  <EF_AI_Animals_Tip>Any animal, your tamed ones included.</EF_AI_Animals_Tip>
+  <EF_AI_Animals_Tip>Wild animals and other factions' animals. Yours use the abilities you set to autocast.</EF_AI_Animals_Tip>
   <EF_AI_Mechs>Mechanoids</EF_AI_Mechs>
-  <EF_AI_Mechs_Tip>Any mechanoid, your own included while they aren't drafted.</EF_AI_Mechs_Tip>
-  <EF_AI_Who_Desc>Your colonists, slaves and drafted pawns only use abilities you set to autocast. Prisoners never use any.</EF_AI_Who_Desc>
+  <EF_AI_Mechs_Tip>Other factions' mechanoids. Yours use the abilities you set to autocast.</EF_AI_Mechs_Tip>
+  <EF_AI_Who_Desc>Your own colonists, slaves, animals and mechs only use abilities you set to autocast. Prisoners never use any.</EF_AI_Who_Desc>
   <EF_AI_Unclaimed>Also use abilities that don't come from entads</EF_AI_Unclaimed>
   <EF_AI_Unclaimed_Tip>Lets the same decision making cast a pawn's own abilities when they are set up for it, such as a raider psycaster's psycasts (most combat psycasts from Royalty are). Off: only abilities from entad gear.</EF_AI_Unclaimed_Tip>
   <EF_AI_Approach>Walk into range to use an ability</EF_AI_Approach>
   <EF_AI_Approach_Tip>A ranged pawn in a fight walks a few tiles closer when a target for one of its abilities is just out of range or out of sight, uses it, and then fights as usual. Only for abilities set up for it, such as flashbang and battle cry. Never while badly hurt, fleeing or held in melee.</EF_AI_Approach_Tip>
   <EF_AI_PlayerAutocast>Autocast for your pawns</EF_AI_PlayerAutocast>
   <EF_AI_PlayerAutocast_Tip>Right-click an ability button to choose whether your pawn uses it by itself. Only for abilities the AI knows how to use, and for now only while the pawn is drafted: it casts while it stands in position or shoots, never in the middle of a move you ordered.</EF_AI_PlayerAutocast_Tip>
-  <EF_AI_BreakCasting>Your colonists use abilities during mental breaks</EF_AI_BreakCasting>
-  <EF_AI_BreakCasting_Tip>A colonist in a mental break is out of your control, so your autocast choices don't apply. With this on, a colonist in an aggressive break (berserk and the like) uses its abilities the way a raider would, treating your other colonists as enemies, and a panicking one may use movement abilities to flee. Off: colonists in a break use no abilities. Animals and mechs follow their own settings above.</EF_AI_BreakCasting_Tip>
+  <EF_AI_BreakCasting>Your pawns use abilities during mental breaks</EF_AI_BreakCasting>
+  <EF_AI_BreakCasting_Tip>A pawn of yours in a mental break (a colonist, or an animal gone manhunter) is out of your control, so your autocast choices don't apply. With this on, a pawn in an aggressive break uses its abilities the way a raider would, treating your other pawns as enemies, and a panicking one may use movement abilities to flee. Off: your pawns in a break use no abilities.</EF_AI_BreakCasting_Tip>
   <EF_AI_Mode_Title>Autocast {0}</EF_AI_Mode_Title>
   <EF_AI_Mode_Off>Don't autocast</EF_AI_Mode_Off>
   <EF_AI_Mode_Stationary>Autocast in place</EF_AI_Mode_Stationary>

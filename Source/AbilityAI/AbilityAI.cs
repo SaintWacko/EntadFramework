@@ -526,41 +526,38 @@ namespace EntadFramework.AbilityAI
         {
             /// <summary>The AI leaves this pawn alone.</summary>
             None,
-            /// <summary>The AI's own judgement: raiders, visitors, animals, mechs, and with the setting on, the
-            /// player's humanlikes in a mental break. Abilities the hooks claim (or all, with Unclaimed).</summary>
+            /// <summary>The AI's own judgement: other factions' pawns, wild animals, and with the setting on, the
+            /// player's pawns in a mental break. Abilities the hooks claim (or all, with Unclaimed).</summary>
             NPC,
             /// <summary>The player's own pawn: only abilities the player set to autocast, under the player rules.</summary>
             Player,
         }
 
-        /// <summary>Whether and how the AI acts for this pawn, by the settings. The player's humanlikes (colonists,
-        /// slaves, ghouls) and drafted pawns only for abilities the player set to autocast; prisoners never.</summary>
+        /// <summary>Whether and how the AI acts for this pawn, by the settings. Every pawn of the player's (colonists,
+        /// slaves, ghouls, animals, mechs) only for abilities the player set to autocast; prisoners never.</summary>
         public static Control ControlOf(Pawn pawn)
         {
             if (pawn.IsPrisoner) return Control.None;
             if (pawn.Faction != null && pawn.Faction.IsPlayer)
             {
                 // A break takes the pawn out of the player's hands, and with it the player's choices: see BreakCasting.
-                // That setting alone decides for the player's humanlikes; the Hostiles/NonHostiles boxes are about
-                // other factions' pawns.
-                if (pawn.InMentalState) return pawn.RaceProps.Humanlike ? (AbilityAISettings.BreakCasting ? Control.NPC : Control.None) : NPCControl(pawn);
-                if (pawn.RaceProps.Humanlike || pawn.Drafted)
-                    return AbilityAISettings.PlayerAutocast && AbilityAIAutocast.HasAny(pawn) ? Control.Player : Control.None;
+                // Among the per-pawn settings that one alone decides for the player's pawns; the Hostiles, NonHostiles,
+                // Animals and Mechs boxes are about everyone else's.
+                if (pawn.InMentalState) return AbilityAISettings.BreakCasting ? Control.NPC : Control.None;
+                // In a lord: forming a caravan, roped, in a ritual. A constant-tree job interrupts whatever they are
+                // doing, so leave them to it
+                if (pawn.GetLord() != null) return Control.None;
+                return AbilityAISettings.PlayerAutocast && AbilityAIAutocast.HasAny(pawn) ? Control.Player : Control.None;
             }
-            return NPCControl(pawn);
+            return Covered(pawn) ? Control.NPC : Control.None;
         }
 
-        private static Control NPCControl(Pawn pawn) => Covered(pawn) ? Control.NPC : Control.None;
-
-        /// <summary>Whether the NPC rules act for this kind of pawn at all, by the settings. Never the player's own
-        /// humanlikes outside a break (see ControlOf) or prisoners.</summary>
+        /// <summary>Whether the NPC rules act for this kind of pawn at all, by the settings. Only for pawns that aren't
+        /// the player's (ControlOf decides for those) and aren't prisoners.</summary>
         public static bool Covered(Pawn pawn)
         {
-            if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.RaceProps.Humanlike && !pawn.InMentalState) return false;
+            if (pawn.Faction != null && pawn.Faction.IsPlayer) return false;
             if (pawn.IsPrisoner) return false;
-            // The player's animals and mechs in a lord are forming a caravan, roped or the like: a constant-tree job
-            // interrupts whatever they are doing, so leave them to it
-            if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.GetLord() != null) return false;
             if (pawn.RaceProps.IsMechanoid) return AbilityAISettings.Mechs;
             if (pawn.RaceProps.Animal) return AbilityAISettings.Animals;
             return pawn.HostileTo(Faction.OfPlayer) ? AbilityAISettings.Hostiles : AbilityAISettings.NonHostiles;
