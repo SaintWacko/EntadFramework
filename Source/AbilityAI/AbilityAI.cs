@@ -540,7 +540,9 @@ namespace EntadFramework.AbilityAI
             if (pawn.IsPrisoner) return Control.None;
             if (pawn.Faction != null && pawn.Faction.IsPlayer)
             {
-                // A break takes the pawn out of the player's hands, and with it the player's choices: see BreakCasting
+                // A break takes the pawn out of the player's hands, and with it the player's choices: see BreakCasting.
+                // That setting alone decides for the player's humanlikes; the Hostiles/NonHostiles boxes are about
+                // other factions' pawns.
                 if (pawn.InMentalState) return pawn.RaceProps.Humanlike ? (AbilityAISettings.BreakCasting ? Control.NPC : Control.None) : NPCControl(pawn);
                 if (pawn.RaceProps.Humanlike || pawn.Drafted)
                     return AbilityAISettings.PlayerAutocast && AbilityAIAutocast.HasAny(pawn) ? Control.Player : Control.None;
