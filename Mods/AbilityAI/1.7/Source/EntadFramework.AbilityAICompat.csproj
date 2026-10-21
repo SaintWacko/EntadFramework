@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!--
+        RimWorld 1.7 build of Entad's Ability AI compat assembly. Same shared C# as 1.6 (Mods/AbilityAI/Source),
+        compiled with RW17 defined. Output goes to Mods/AbilityAI/1.7/Assemblies, which LoadFolders.xml loads only on
+        1.7 and only when Ability AI (saintwacko.AbilityAI) is active.
+
+        Game references as in the main 1.7 project: the Krafs.Rimworld.Ref 1.7 package targets net10.0 only, so it is
+        downloaded as-is and its DLLs referenced by path. Neither EntadFramework.dll nor AbilityAI.dll is copied to
+        the output. Nothing here patches, so there is no Harmony reference.
+    -->
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net472</TargetFramework>
+        <RootNamespace>EntadFramework.AbilityAICompat</RootNamespace>
+        <AssemblyName>EntadFramework.AbilityAICompat</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Deterministic>true</Deterministic>
+        <OutputPath>..\Assemblies\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <DefineConstants>$(DefineConstants);RW17</DefineConstants>
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Product>Entad Framework</Product>
+        <Authors>SaintWacko</Authors>
+        <!-- Keep in step with the main 1.7 project -->
+        <RW17RefVersion>1.7.4979-alpha</RW17RefVersion>
+        <RW17Ref>$(NuGetPackageRoot)krafs.rimworld.ref/$(RW17RefVersion)/ref/net10.0/</RW17Ref>
+        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there -->
+        <AbilityAIDir>$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <Optimize>true</Optimize>
+        <DebugType>none</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <Optimize>false</Optimize>
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\Source\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+        <PackageDownload Include="Krafs.Rimworld.Ref" Version="[$(RW17RefVersion)]" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp">
+            <HintPath>$(RW17Ref)Assembly-CSharp.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath>$(RW17Ref)UnityStubs.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="Waylith">
+            <HintPath>$(RW17Ref)Waylith.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <ProjectReference Include="..\..\..\..\1.7\Source\EntadFramework.csproj">
+            <Private>false</Private>
+        </ProjectReference>
+        <Reference Include="AbilityAI">
+            <HintPath>$(AbilityAIDir)1.7\Assemblies\AbilityAI.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+</Project>

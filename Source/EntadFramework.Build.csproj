@@ -2,7 +2,9 @@
   <!--
     Build entry point only: compiles nothing and ships nothing (its own output stays in Source/bin, which is never
     published). Circinus's build looks for a .csproj in Source/; the real projects are 1.6/Source and 1.7/Source,
-    and both compile the shared .cs files in this folder. Referencing them here builds both.
+    and both compile the shared .cs files in this folder. Referencing them here builds both, plus the Ability AI
+    compat assembly for each version (Mods/AbilityAI/1.6|1.7/Source, shared C# in Mods/AbilityAI/Source), which
+    needs Ability AI's own DLLs built in its workspace folder (4b7a8f666d21).
 
     Open this project in an IDE to get both. It has to be the only project file directly in Source/, or
     `dotnet build` there stops and asks which one to build.
@@ -20,6 +22,12 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\1.7\Source\EntadFramework.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\AbilityAI\1.6\Source\EntadFramework.AbilityAICompat.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\AbilityAI\1.7\Source\EntadFramework.AbilityAICompat.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

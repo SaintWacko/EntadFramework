@@ -141,7 +141,6 @@ namespace EntadFramework
             IdentifyWealthFraction = DefaultIdentifyWealthFraction;
             AppraiserMax = DefaultAppraiserMax;
             AppraiserDailyMin = DefaultAppraiserDailyMin;
-            AbilityAI.AbilityAISettings.Reset();
             ResetRarityWeights();
         }
 
@@ -193,7 +192,6 @@ namespace EntadFramework
             AppraiserMax = new IntRange(Mathf.Clamp(AppraiserMax.min, 1, 20), Mathf.Clamp(AppraiserMax.max, Mathf.Clamp(AppraiserMax.min, 1, 20), 20));
             Scribe_Values.Look(ref AppraiserDailyMin, "appraiserDailyMin", DefaultAppraiserDailyMin);
             AppraiserDailyMin = Mathf.Clamp(AppraiserDailyMin, 1, 20);
-            AbilityAI.AbilityAISettings.ExposeData();
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -217,8 +215,6 @@ namespace EntadFramework
         public EntadMod(ModContentPack content) : base(content)
         {
             GetSettings<EntadSettings>();
-            // A plain object, no defs touched: safe this early. The AI only asks it during play.
-            AbilityAI.AbilityAIHooks.Register(EntadAbilityAIHook.Instance);
         }
 
         public override string SettingsCategory() => "Entad Framework";
@@ -234,7 +230,7 @@ namespace EntadFramework
             appliedDurability = null;
         }
 
-        private enum Tab { General, Rarity, Traits, AI }
+        private enum Tab { General, Rarity, Traits }
         private Tab tab;
         private string search = "";
         private Vector2 scroll;
@@ -253,7 +249,6 @@ namespace EntadFramework
                 new TabRecord("EF_Tab_General".Translate(), () => SetTab(Tab.General), tab == Tab.General),
                 new TabRecord("EF_Tab_Rarity".Translate(), () => SetTab(Tab.Rarity), tab == Tab.Rarity),
                 new TabRecord("EF_Tab_Traits".Translate(), () => SetTab(Tab.Traits), tab == Tab.Traits),
-                new TabRecord("EF_Tab_AI".Translate(), () => SetTab(Tab.AI), tab == Tab.AI),
             };
             Widgets.DrawMenuSection(body);
             TabDrawer.DrawTabs(body, tabs);
@@ -270,7 +265,6 @@ namespace EntadFramework
                 var list = new Listing_Standard { maxOneColumn = true };
                 list.Begin(view);
                 if (tab == Tab.General) DoGeneral(list);
-                else if (tab == Tab.AI) AbilityAI.AbilityAISettings.DoSettings(list);
                 else DoRarity(list);
                 listingHeight = list.CurHeight + 20f;
                 list.End();

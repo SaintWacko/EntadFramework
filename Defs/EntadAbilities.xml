@@ -4,8 +4,14 @@
        charges and cooldown (EntadAbilityPrep copies the ability per trait), so the cooldowns here are only what an
        ability gets when another mod grants it directly. The descriptions carry the rules: the info card names the
        ability, and its gizmo tooltip shows this text.
-       Each ability's AbilityAIExtension lets raiders, visitors, animals and mechs cast it (Source/AbilityAI/). The
-       workers and their fields are described in AbilityAIWorkers.cs; radius and hediff are read from the pulse comp. -->
+
+       NPC casting. With the Ability AI mod active, Mods/AbilityAI/Patches/EntadAbilityAI.xml gives each ability its
+       rules, and Ability AI stands vanilla's own AI down for them. Without it, aiCanUse hands the ability to vanilla's
+       fight AI (JobGiver_AIFightEnemy.GetAbilityJob, NPCs only, never colonists). That AI only knows one move: while
+       fighting, cast the ability at the current enemy when the verb can reach it, otherwise on the caster when it can
+       target itself, as soon as it is ready. ai_IsOffensive is true by default, which is what puts an ability in that
+       list. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
+       onto the enemy's own cell, which the blink comp refuses). -->
 
   <AbilityDef Name="EntadAbilityBase" Abstract="True">
     <cooldownTicksRange>60000</cooldownTicksRange>
@@ -38,12 +44,6 @@
         <rest>0.5</rest>
       </li>
     </comps>
-    <modExtensions>
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Recovery</workerClass>
-        <needThreshold>0.25</needThreshold>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <HediffDef ParentName="EntadHediffBase">
@@ -71,17 +71,13 @@
     <label>sprint</label>
     <description>The user moves 50% faster for 1 hour.</description>
     <iconPath>UI/Abilities/Entad/Sprint</iconPath>
+    <!-- Vanilla fallback: on the caster when a fight starts -->
+    <aiCanUse>true</aiCanUse>
     <comps>
       <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
         <hediff>Entad_Hediff_Sprinting</hediff>
       </li>
     </comps>
-    <modExtensions>
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Movement</workerClass>
-        <minGapDistance>10</minGapDistance>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <HediffDef ParentName="EntadHediffBase">
@@ -111,6 +107,8 @@
     <label>battle cry</label>
     <description>The user and allies within 9 tiles become emboldened for 2 hours, gaining shooting accuracy and melee hit chance.</description>
     <iconPath>UI/Abilities/Entad/BattleCry</iconPath>
+    <!-- Vanilla fallback: on the caster when a fight starts, whoever is near -->
+    <aiCanUse>true</aiCanUse>
     <comps>
       <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
         <radius>9</radius>
@@ -119,16 +117,6 @@
         <fleck>PsycastAreaEffect</fleck>
       </li>
     </comps>
-    <modExtensions>
-      <!-- The caster and at least two allies who aren't emboldened yet. A ranged caster walks up to 12 tiles to
-           an ally group to reach them. -->
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEFriendly</workerClass>
-        <priority>5</priority>
-        <minTargets>3</minTargets>
-        <approachDistance>12</approachDistance>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <!-- On a cell the caster can see -->
@@ -152,12 +140,6 @@
     <comps>
       <li Class="EntadFramework.CompProperties_AbilityEntadBlink" />
     </comps>
-    <modExtensions>
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Movement</workerClass>
-        <priority>3</priority>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <AbilityDef ParentName="EntadAbilityBase">
@@ -165,6 +147,8 @@
     <label>smokescreen</label>
     <description>Fills a 4-tile radius with smoke, up to 15 tiles away. Smoke makes shots through it less accurate and stops turrets from locking on.</description>
     <iconPath>UI/Abilities/Entad/Smokescreen</iconPath>
+    <!-- Vanilla fallback: on the enemy being fought, within 15 tiles -->
+    <aiCanUse>true</aiCanUse>
     <verbProperties>
       <verbClass>Verb_CastAbility</verbClass>
       <warmupTime>0.5</warmupTime>
@@ -179,14 +163,6 @@
         <smokeRadius>4</smokeRadius>
       </li>
     </comps>
-    <modExtensions>
-      <!-- Two shooters on the caster (being shot counts as one) -->
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Cover</workerClass>
-        <priority>4</priority>
-        <minThreats>2</minThreats>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <AbilityDef ParentName="EntadAbilityBase">
@@ -194,6 +170,9 @@
     <label>flashbang</label>
     <description>A blinding burst up to 15 tiles away stuns every enemy within 3 tiles of it for 4 seconds.</description>
     <iconPath>UI/Abilities/Entad/Flashbang</iconPath>
+    <!-- Vanilla fallback: on the enemy being fought, within 15 tiles (only enemies are stunned) -->
+    <aiCanUse>true</aiCanUse>
+    <ai_IsOffensive>true</ai_IsOffensive>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
     <verbProperties>
@@ -214,20 +193,6 @@
         <sound>Explosion_Stun</sound>
       </li>
     </comps>
-    <modExtensions>
-      <!-- Two enemies not already stunned; a ranged caster walks up to 10 tiles closer to reach them -->
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
-        <priority>6</priority>
-        <minTargets>2</minTargets>
-        <approachDistance>10</approachDistance>
-      </li>
-      <!-- Any enemy aiming a grenade, launcher or ability, before the group rule -->
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_Interrupt</workerClass>
-        <priority>8</priority>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <!-- Artillery (Source/EntadArtillery.cs): one shot from the wielded weapon that splits at fixed distances from the
@@ -237,6 +202,10 @@
     <label>artillery shot</label>
     <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Most final projectiles near an enemy home in on someone close to where they land, usually the enemy, and at most three home in on one person; explosive ones hurt anyone in the blast. Targeting a person follows them while the user aims. The range is the weapon's.</description>
     <iconPath>UI/Abilities/Entad/Artillery</iconPath>
+    <!-- Vanilla fallback: at the enemy being fought, from any range the weapon reaches (explosive shots can hit
+         the caster's side, as an NPC's grenades do) -->
+    <aiCanUse>true</aiCanUse>
+    <ai_IsOffensive>true</ai_IsOffensive>
     <hostile>true</hostile>
     <casterMustBeCapableOfViolence>true</casterMustBeCapableOfViolence>
     <verbProperties>
@@ -252,18 +221,6 @@
     <comps>
       <li Class="EntadFramework.CompProperties_AbilityEntadArtillery" />
     </comps>
-    <modExtensions>
-      <!-- Past the first split (8 tiles), so at least 3 projectiles. The final spread reaches about 4 tiles, and
-           explosive shots hurt everyone, so no centre with one of the caster's side standing inside it (downed
-           ones aren't counted). -->
-      <li Class="EntadFramework.AbilityAI.AbilityAIExtension">
-        <workerClass>EntadFramework.AbilityAI.AbilityAIWorker_AoEHostile</workerClass>
-        <priority>10</priority>
-        <radius>4</radius>
-        <minRange>9</minRange>
-        <avoidAllies>true</avoidAllies>
-      </li>
-    </modExtensions>
   </AbilityDef>
 
   <!-- The in-flight part of an artillery shot. It draws the weapon's own projectile and never hits anything. -->
