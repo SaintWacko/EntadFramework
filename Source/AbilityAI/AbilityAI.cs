@@ -715,7 +715,12 @@ namespace EntadFramework.AbilityAI
                     // A player's attack order would be lost: vanilla starts constant-tree jobs without resuming the
                     // current one. Queue a copy so the pawn goes back to it after the cast.
                     if (player && pawn.CurJobDef == JobDefOf.AttackStatic && pawn.CurJob.def.suspendable)
-                        pawn.jobs.jobQueue.EnqueueFirst(pawn.CurJob.Clone());
+                    {
+                        // Clone copies loadID; two live jobs with one id break loading a save made while both exist
+                        Job resume = pawn.CurJob.Clone();
+                        resume.loadID = Find.UniqueIDsManager.GetNextJobID();
+                        pawn.jobs.jobQueue.EnqueueFirst(resume);
+                    }
                     return a.GetJob(target, dest);
                 }
                 // The player's pawns don't walk to cast yet (Full mode comes later)

@@ -144,7 +144,8 @@ namespace EntadFramework.AbilityAI
             AbilityAIAutocastMode current = ModeFor(clicked.pawn, def);
 
             var options = new List<FloatMenuOption>();
-            foreach (AbilityAIAutocastMode mode in new[] { AbilityAIAutocastMode.Off, AbilityAIAutocastMode.Stationary, AbilityAIAutocastMode.Full })
+            // Full joins this list once the player pawns' walk into range exists (until then it would act as Stationary)
+            foreach (AbilityAIAutocastMode mode in new[] { AbilityAIAutocastMode.Off, AbilityAIAutocastMode.Stationary })
             {
                 string label = Label(mode);
                 if (mode == current) label = "EF_AI_Mode_Current".Translate(label);

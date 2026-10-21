@@ -19,9 +19,9 @@
   <EF_AI_Approach>Walk into range to use an ability</EF_AI_Approach>
   <EF_AI_Approach_Tip>A ranged pawn in a fight walks a few tiles closer when a target for one of its abilities is just out of range or out of sight, uses it, and then fights as usual. Only for abilities set up for it, such as flashbang and battle cry. Never while badly hurt, fleeing or held in melee.</EF_AI_Approach_Tip>
   <EF_AI_PlayerAutocast>Autocast for your pawns</EF_AI_PlayerAutocast>
-  <EF_AI_PlayerAutocast_Tip>Right-click an ability button to choose whether your pawn uses it by itself: off, in place (never moves to cast), or full (may walk into range). Only for abilities the AI knows how to use. A drafted pawn only casts while it stands in position or shoots, never in the middle of a move you ordered.</EF_AI_PlayerAutocast_Tip>
-  <EF_AI_BreakCasting>Your pawns use abilities during mental breaks</EF_AI_BreakCasting>
-  <EF_AI_BreakCasting_Tip>A pawn in a mental break is out of your control, so your autocast choices don't apply. With this on, the AI uses every ability it knows how to use the way it would for a raider, and a berserk pawn treats your colonists as enemies. Off: pawns in a break use no abilities.</EF_AI_BreakCasting_Tip>
+  <EF_AI_PlayerAutocast_Tip>Right-click an ability button to choose whether your pawn uses it by itself. Only for abilities the AI knows how to use, and for now only while the pawn is drafted: it casts while it stands in position or shoots, never in the middle of a move you ordered.</EF_AI_PlayerAutocast_Tip>
+  <EF_AI_BreakCasting>Your colonists use abilities during mental breaks</EF_AI_BreakCasting>
+  <EF_AI_BreakCasting_Tip>A colonist in a mental break is out of your control, so your autocast choices don't apply. With this on, a colonist in an aggressive break (berserk and the like) uses its abilities the way a raider would, treating your other colonists as enemies, and a panicking one may use movement abilities to flee. Off: colonists in a break use no abilities. Animals and mechs follow their own settings above.</EF_AI_BreakCasting_Tip>
   <EF_AI_Mode_Title>Autocast {0}</EF_AI_Mode_Title>
   <EF_AI_Mode_Off>Don't autocast</EF_AI_Mode_Off>
   <EF_AI_Mode_Stationary>Autocast in place</EF_AI_Mode_Stationary>
