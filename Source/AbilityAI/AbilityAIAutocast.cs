@@ -129,6 +129,9 @@ namespace EntadFramework.AbilityAI
             if (!AbilityAISettings.Enabled || !AbilityAISettings.PlayerAutocast) return false;
             Pawn p = ability?.pawn;
             if (p == null || p.Faction == null || !p.Faction.IsPlayer || p.IsPrisoner) return false;
+            // Player pawns only autocast while drafted until the undrafted rules exist, and animals have no drafter:
+            // don't offer them a mode that would never fire
+            if (p.drafter == null) return false;
             return ability.def.GetModExtension<AbilityAIExtension>() != null;
         }
 
