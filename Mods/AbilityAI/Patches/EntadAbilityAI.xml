@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Ability AI rules for the abilities in Defs/EntadAbilities.xml. This folder loads only when Ability AI
      (saintwacko.AbilityAI) is active (LoadFolders.xml), so the AbilityAI.* class names here always resolve.
-     Without it the abilities fall back to vanilla's fight AI through aiCanUse in the base defs; Ability AI stands
+     Without it, Sprint, Battle Cry, Flashbang and Artillery fall back to vanilla's fight AI through aiCanUse in the
+     base defs (Second Wind, Blink and Smokescreen have no fallback: see the header there); Ability AI stands
      vanilla down for every ability it handles, so the two never both cast one.
      The workers and their fields are described in Ability AI's AbilityAIWorkers.cs; radius, hediff and stuns are
      read from the pulse comp (registered in Mods/AbilityAI/Source/EntadAbilityAICompat.cs). -->
