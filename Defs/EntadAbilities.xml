@@ -10,8 +10,9 @@
        fight AI (JobGiver_AIFightEnemy.GetAbilityJob, NPCs only, never colonists). That AI only knows one move: while
        fighting, cast the ability at the current enemy when the verb can reach it, otherwise on the caster when it can
        target itself, as soon as it is ready. ai_IsOffensive is true by default, which is what puts an ability in that
-       list. A range-0 ability counts as reaching any enemy, so the self abilities are handed the enemy as target;
-       the pulse comp casts untargeted abilities on the caster whatever it is given. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
+       list. Vanilla's Verb_CastAbility counts a range-0 ability as reaching any enemy, and the cast then fails
+       (the pawn twitches in place without shooting), so the self abilities use Verb_EntadSelfCast, which accepts
+       only the caster: vanilla then casts them on the caster. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
        onto the enemy's own cell, which the blink comp refuses). -->
 
   <AbilityDef Name="EntadAbilityBase" Abstract="True">
@@ -24,7 +25,8 @@
   <AbilityDef Name="EntadSelfAbilityBase" ParentName="EntadAbilityBase" Abstract="True">
     <targetRequired>false</targetRequired>
     <verbProperties>
-      <verbClass>Verb_CastAbility</verbClass>
+      <!-- Accepts only the caster at range 0: see the header -->
+      <verbClass>EntadFramework.Verb_EntadSelfCast</verbClass>
       <warmupTime>0.5</warmupTime>
       <range>0</range>
       <drawAimPie>false</drawAimPie>

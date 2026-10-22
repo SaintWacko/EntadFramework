@@ -42,6 +42,23 @@ namespace EntadFramework
         }
     }
 
+    /// <summary>The verb for abilities cast on the user (Sprint, Battle Cry, Second Wind). Vanilla's
+    /// Verb_CastAbility.CanHitTarget is true for ANY target at range 0, so vanilla's fight AI
+    /// (JobGiver_AIFightEnemy.GetAbilityJob, first loop) hands the ability the enemy it is fighting. The cast then
+    /// dies in Verb.TryStartCastOn: with a warmup, TryFindShootLineFromTo treats a range under 1.42 as melee and
+    /// wants the target adjacent, so the job ends at once, the pawn thinks again, gets the same job, and spends the
+    /// fight twitching in place without shooting. Seen in game without Ability AI (build 255). Accepting only the
+    /// caster at range 0 makes that loop skip the ability and vanilla's third loop cast it on the caster
+    /// (canTargetSelf). The player's gizmo and Ability AI both target the caster already.</summary>
+    public class Verb_EntadSelfCast : Verb_CastAbility
+    {
+        public override bool CanHitTarget(LocalTargetInfo targ)
+        {
+            if (EffectiveRange <= 0f) return targ.Thing != null && targ.Thing == caster;
+            return base.CanHitTarget(targ);
+        }
+    }
+
     public class CompAbilityEffect_EntadPulse : CompAbilityEffect
     {
         public new CompProperties_AbilityEntadPulse Props => (CompProperties_AbilityEntadPulse)props;
@@ -53,9 +70,9 @@ namespace EntadFramework
             base.Apply(target, dest);
             Pawn caster = parent.pawn;
             Map map = caster.MapHeld;
-            // An untargeted ability is always about the caster. Vanilla's fight AI hands a range-0 ability the enemy
-            // it is fighting (Verb_CastAbility.CanHitTarget is true for any target at range 0), which would give a
-            // raider's sprint to the colonist and centre its battle cry on the colonist's cell.
+            // An untargeted ability is always about the caster. Verb_EntadSelfCast already keeps vanilla's fight AI
+            // from handing it the enemy; this covers another mod's def that uses the pulse with plain
+            // Verb_CastAbility at range 0.
             if (!parent.def.targetRequired) target = caster;
             if (Props.radius <= 0f)
             {
