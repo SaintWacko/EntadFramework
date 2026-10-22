@@ -12,8 +12,9 @@
        target itself, as soon as it is ready. ai_IsOffensive is true by default, which is what puts an ability in that
        list. Vanilla's Verb_CastAbility counts a range-0 ability as reaching any enemy, and the cast then fails
        (the pawn twitches in place without shooting), so the self abilities use Verb_EntadSelfCast, which accepts
-       only the caster: vanilla then casts them on the caster. Second Wind and Blink are left out: casting them that way only wastes them (Second Wind at full rest, Blink
-       onto the enemy's own cell, which the blink comp refuses). -->
+       only the caster: vanilla then casts them on the caster. Second Wind, Blink and Smokescreen are left out: casting them that way only wastes them (Second Wind at full rest, Blink onto the
+       enemy's own cell, which the blink comp refuses, Smokescreen on the enemy, which helps them as much as the
+       caster). -->
 
   <AbilityDef Name="EntadAbilityBase" Abstract="True">
     <cooldownTicksRange>60000</cooldownTicksRange>
@@ -150,9 +151,9 @@
     <label>smokescreen</label>
     <description>Fills a 4-tile radius with smoke, up to 15 tiles away. Smoke makes shots through it less accurate and stops turrets from locking on.</description>
     <iconPath>UI/Abilities/Entad/Smokescreen</iconPath>
-    <!-- Vanilla fallback: on the enemy being fought, within 15 tiles. Crude: the smoke thins the caster's own shots
-         at that enemy as much as the enemy's back. -->
-    <aiCanUse>true</aiCanUse>
+    <!-- No vanilla fallback: vanilla's fight AI could only drop the smoke on the enemy being fought, where it thins
+         the caster's shots as much as the enemy's and keeps turrets off the enemy. Smoke is worth casting on the
+         caster while it is being shot, which only Ability AI's Cover rule does. -->
     <verbProperties>
       <verbClass>Verb_CastAbility</verbClass>
       <warmupTime>0.5</warmupTime>
