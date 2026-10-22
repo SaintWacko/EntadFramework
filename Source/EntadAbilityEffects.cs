@@ -67,13 +67,13 @@ namespace EntadFramework
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
-            base.Apply(target, dest);
             Pawn caster = parent.pawn;
-            Map map = caster.MapHeld;
             // An untargeted ability is always about the caster. Verb_EntadSelfCast already keeps vanilla's fight AI
             // from handing it the enemy; this covers another mod's def that uses the pulse with plain
-            // Verb_CastAbility at range 0.
+            // Verb_CastAbility at range 0. Before base.Apply, which uses the target for goodwill, clamor and sound.
             if (!parent.def.targetRequired) target = caster;
+            base.Apply(target, dest);
+            Map map = caster.MapHeld;
             if (Props.radius <= 0f)
             {
                 if (target.Pawn != null) ApplyTo(target.Pawn, caster);
