@@ -160,8 +160,10 @@ namespace EntadFramework
                     if (converted >= max) break;
                     if (!Rand.Chance(chance) || !TryConvert(comp, basePoints)) continue;
                     converted++;
-                    if (EntadSettings.HideTraits)
-                        foreach (var trait in comp.activeTraits) trait.Hide();
+                    if (!EntadSettings.HideTraits) continue;
+                    // The quest giver knows part of what it hands over, as a trader does; loot is found unknown
+                    if (reward) RevealShare(comp);
+                    else foreach (var trait in comp.activeTraits) trait.Hide();
                 }
             }
         }
@@ -179,8 +181,8 @@ namespace EntadFramework
             return EntadApi.ApplyRandomTraits(comp.parent, Mathf.Max(0f, points)).Count > 0;
         }
 
-        // A trader knows part of what it sells: one share per item, uniform from none to all, and that many of its
-        // traits shown, picked at random
+        // A trader or quest giver knows part of what it offers: one share per item, uniform from none to all, and
+        // that many of its traits shown, picked at random
         private static void RevealShare(CompEntad comp)
         {
             var traits = comp.activeTraits;

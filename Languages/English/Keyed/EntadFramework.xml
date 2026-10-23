@@ -249,7 +249,7 @@
   <EF_Settings_RewardMax>Most entads per reward: {0}</EF_Settings_RewardMax>
   <EF_Settings_LootChance>Chance each loot item is an entad: {0}</EF_Settings_LootChance>
   <EF_Settings_LootMax>Most entads per loot pile: {0}</EF_Settings_LootMax>
-  <EF_Settings_RewardLoot_Desc>Only weapons, apparel and furniture can become entads. Loot covers item stashes, ancient complexes and crates, cryptosleep pods, faction settlement stockpiles and the like. Reward and loot entads start unidentified.</EF_Settings_RewardLoot_Desc>
+  <EF_Settings_RewardLoot_Desc>Only weapons, apparel and furniture can become entads. Loot covers item stashes, ancient complexes and crates, cryptosleep pods, faction settlement stockpiles and the like. Like a trader, a quest giver knows part of what it hands over: each reward entad shows a random share of its traits. Loot entads are found unidentified.</EF_Settings_RewardLoot_Desc>
   <EF_Settings_ItemCurveRow>Entad points at {0} total value: {1}</EF_Settings_ItemCurveRow>
   <EF_Settings_ItemVariance>Random spread: ±{0}</EF_Settings_ItemVariance>
   <EF_Settings_ItemCurve_Desc>How strong an entad is, by the total market value of the stock, reward or loot pile it was found in. Between the rows the value follows a straight line; below the first and above the last it stays flat. Each entad's points are then moved up or down by up to the spread.</EF_Settings_ItemCurve_Desc>
