@@ -239,6 +239,20 @@
   <EF_Settings_CarrierBound>Carried entads bound to their carrier: {0}</EF_Settings_CarrierBound>
   <EF_Settings_CarrierBoundFactor>Bound entad points: x{0}</EF_Settings_CarrierBoundFactor>
   <EF_Settings_CarrierBound_Desc>A bound entad's traits work only for its carrier and their descendants, so looting one gives the colony an ordinary item worth little more than usual. To make up for that, bound entads are stronger for their carrier. Factions from other mods may set their own chances and strength.</EF_Settings_CarrierBound_Desc>
+  <EF_Settings_WorldItems>Entads in trade and loot</EF_Settings_WorldItems>
+  <EF_Settings_WorldItemsEnabled>Traders, rewards and loot hold entads</EF_Settings_WorldItemsEnabled>
+  <EF_Settings_WorldItemsEnabled_Tip>Traders can stock entads, quest rewards can include them, and loot at sites, ancient ruins and faction settlements can turn up entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_WorldItemsEnabled_Tip>
+  <EF_Settings_TraderChance>Chance a trader's stock has entads: {0}</EF_Settings_TraderChance>
+  <EF_Settings_TraderCount>Entads in such a stock: {0} to {1}</EF_Settings_TraderCount>
+  <EF_Settings_Trader_Desc>Rolled each time a trader's stock is made. Exotic goods traders have an 80% chance whatever this is set to. A trader knows part of what it sells: each entad shows a random share of its traits, from none to all, and is priced on what is known.</EF_Settings_Trader_Desc>
+  <EF_Settings_RewardChance>Chance each quest reward item is an entad: {0}</EF_Settings_RewardChance>
+  <EF_Settings_RewardMax>Most entads per reward: {0}</EF_Settings_RewardMax>
+  <EF_Settings_LootChance>Chance each loot item is an entad: {0}</EF_Settings_LootChance>
+  <EF_Settings_LootMax>Most entads per loot pile: {0}</EF_Settings_LootMax>
+  <EF_Settings_RewardLoot_Desc>Only weapons, apparel and furniture can become entads. Loot covers item stashes, ancient complexes and crates, cryptosleep pods, faction settlement stockpiles and the like. Reward and loot entads start unidentified.</EF_Settings_RewardLoot_Desc>
+  <EF_Settings_ItemCurveRow>Entad points at {0} total value: {1}</EF_Settings_ItemCurveRow>
+  <EF_Settings_ItemVariance>Random spread: ±{0}</EF_Settings_ItemVariance>
+  <EF_Settings_ItemCurve_Desc>How strong an entad is, by the total market value of the stock, reward or loot pile it was found in. Between the rows the value follows a straight line; below the first and above the last it stays flat. Each entad's points are then moved up or down by up to the spread.</EF_Settings_ItemCurve_Desc>
   <EF_Settings_Appraisers>Appraisers</EF_Settings_Appraisers>
   <EF_Settings_CaravanAppraiser>Chance a trade caravan brings an appraiser: {0}</EF_Settings_CaravanAppraiser>
   <EF_Settings_SettlementAppraiser>Chance a settlement has an appraiser: {0}</EF_Settings_SettlementAppraiser>

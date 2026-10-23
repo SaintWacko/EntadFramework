@@ -122,6 +122,29 @@ namespace EntadFramework
         public const float DefaultCarrierBoundPointFactor = 1.5f;
         public static float CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
 
+        // Entads in trader stock, quest rewards and site loot (EntadWorldItems.cs): a trader's stock rolls once and
+        // converts a few items; each reward or loot item rolls on its own up to a most per set. Points come from a
+        // curve over the set's market value (four anchors), rolled within the variance. ThingSetMakerDefs and
+        // TraderKindDefs may override (EntadThingSetExtension, EntadTraderExtension).
+        public static bool WorldItemsEnabled = true;
+        public const float DefaultTraderStockChance = 0.4f;
+        public static float TraderStockChance = DefaultTraderStockChance;
+        public static readonly IntRange DefaultTraderEntadCount = new IntRange(1, 2);
+        public static IntRange TraderEntadCount = DefaultTraderEntadCount;
+        public const float DefaultRewardItemChance = 0.15f;
+        public static float RewardItemChance = DefaultRewardItemChance;
+        public const int DefaultRewardMaxEntads = 1;
+        public static int RewardMaxEntads = DefaultRewardMaxEntads;
+        public const float DefaultLootItemChance = 0.25f;
+        public static float LootItemChance = DefaultLootItemChance;
+        public const int DefaultLootMaxEntads = 2;
+        public static int LootMaxEntads = DefaultLootMaxEntads;
+        public static readonly float[] ItemCurveValues = { 1000f, 4000f, 10000f, 25000f };
+        public static readonly float[] DefaultItemCurvePoints = { 3f, 8f, 15f, 25f };
+        public static readonly float[] ItemCurvePoints = (float[])DefaultItemCurvePoints.Clone();
+        public const float DefaultItemPointVariance = 0.25f;
+        public static float ItemPointVariance = DefaultItemPointVariance;
+
         // The colony's verity as a row under the resource readout, once there is any
         public static bool VerityReadout = true;
 
@@ -173,6 +196,15 @@ namespace EntadFramework
             CarrierPointVariance = DefaultCarrierPointVariance;
             CarrierBoundChance = DefaultCarrierBoundChance;
             CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
+            WorldItemsEnabled = true;
+            TraderStockChance = DefaultTraderStockChance;
+            TraderEntadCount = DefaultTraderEntadCount;
+            RewardItemChance = DefaultRewardItemChance;
+            RewardMaxEntads = DefaultRewardMaxEntads;
+            LootItemChance = DefaultLootItemChance;
+            LootMaxEntads = DefaultLootMaxEntads;
+            DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
+            ItemPointVariance = DefaultItemPointVariance;
             VerityReadout = true;
             ResetRarityWeights();
         }
@@ -244,6 +276,27 @@ namespace EntadFramework
             CarrierBoundChance = Mathf.Clamp01(CarrierBoundChance);
             Scribe_Values.Look(ref CarrierBoundPointFactor, "carrierBoundPointFactor", DefaultCarrierBoundPointFactor);
             CarrierBoundPointFactor = Mathf.Clamp(CarrierBoundPointFactor, 0.5f, 4f);
+            Scribe_Values.Look(ref WorldItemsEnabled, "worldItemsEnabled", true);
+            Scribe_Values.Look(ref TraderStockChance, "traderStockChance", DefaultTraderStockChance);
+            TraderStockChance = Mathf.Clamp01(TraderStockChance);
+            Scribe_Values.Look(ref TraderEntadCount, "traderEntadCount", DefaultTraderEntadCount);
+            TraderEntadCount = new IntRange(Mathf.Clamp(TraderEntadCount.min, 1, 5), Mathf.Clamp(TraderEntadCount.max, Mathf.Clamp(TraderEntadCount.min, 1, 5), 5));
+            Scribe_Values.Look(ref RewardItemChance, "rewardItemChance", DefaultRewardItemChance);
+            RewardItemChance = Mathf.Clamp01(RewardItemChance);
+            Scribe_Values.Look(ref RewardMaxEntads, "rewardMaxEntads", DefaultRewardMaxEntads);
+            RewardMaxEntads = Mathf.Clamp(RewardMaxEntads, 1, 10);
+            Scribe_Values.Look(ref LootItemChance, "lootItemChance", DefaultLootItemChance);
+            LootItemChance = Mathf.Clamp01(LootItemChance);
+            Scribe_Values.Look(ref LootMaxEntads, "lootMaxEntads", DefaultLootMaxEntads);
+            LootMaxEntads = Mathf.Clamp(LootMaxEntads, 1, 10);
+            for (int i = 0; i < ItemCurvePoints.Length; i++)
+            {
+                float v = ItemCurvePoints[i];
+                Scribe_Values.Look(ref v, "itemCurve" + i, DefaultItemCurvePoints[i]);
+                ItemCurvePoints[i] = Mathf.Clamp(v, 0f, 100f);
+            }
+            Scribe_Values.Look(ref ItemPointVariance, "itemPointVariance", DefaultItemPointVariance);
+            ItemPointVariance = Mathf.Clamp(ItemPointVariance, 0f, 0.9f);
             Scribe_Values.Look(ref VerityReadout, "verityReadout", true);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
@@ -516,6 +569,38 @@ namespace EntadFramework
                 list.Label("EF_Settings_CarrierBoundFactor".Translate(EntadSettings.CarrierBoundPointFactor.ToString("0.##")));
                 EntadSettings.CarrierBoundPointFactor = Mathf.Round(list.Slider(EntadSettings.CarrierBoundPointFactor, 0.5f, 4f) * 20f) / 20f;
                 list.Label("EF_Settings_CarrierBound_Desc".Translate());
+            }
+            list.Gap();
+
+            Section(list, "EF_Settings_WorldItems");
+            list.CheckboxLabeled("EF_Settings_WorldItemsEnabled".Translate(), ref EntadSettings.WorldItemsEnabled, "EF_Settings_WorldItemsEnabled_Tip".Translate());
+            if (EntadSettings.WorldItemsEnabled)
+            {
+                list.Label("EF_Settings_TraderChance".Translate(EntadSettings.TraderStockChance.ToStringPercent()));
+                EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_TraderCount".Translate(EntadSettings.TraderEntadCount.min, EntadSettings.TraderEntadCount.max));
+                Widgets.IntRange(list.GetRect(28f), 0x45465754, ref EntadSettings.TraderEntadCount, 1, 5);
+                list.Label("EF_Settings_Trader_Desc".Translate());
+                list.Gap();
+                list.Label("EF_Settings_RewardChance".Translate(EntadSettings.RewardItemChance.ToStringPercent()));
+                EntadSettings.RewardItemChance = Mathf.Round(list.Slider(EntadSettings.RewardItemChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_RewardMax".Translate(EntadSettings.RewardMaxEntads));
+                EntadSettings.RewardMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.RewardMaxEntads, 1f, 10f));
+                list.Label("EF_Settings_LootChance".Translate(EntadSettings.LootItemChance.ToStringPercent()));
+                EntadSettings.LootItemChance = Mathf.Round(list.Slider(EntadSettings.LootItemChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_LootMax".Translate(EntadSettings.LootMaxEntads));
+                EntadSettings.LootMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.LootMaxEntads, 1f, 10f));
+                list.Label("EF_Settings_RewardLoot_Desc".Translate());
+                list.Gap();
+                for (int i = 0; i < EntadSettings.ItemCurvePoints.Length; i++)
+                {
+                    float v = EntadSettings.ItemCurvePoints[i];
+                    list.Label("EF_Settings_ItemCurveRow".Translate(EntadSettings.ItemCurveValues[i].ToStringMoney(), v.ToString("0.#")));
+                    EntadSettings.ItemCurvePoints[i] = Mathf.Round(list.Slider(v, 0f, 100f) * 2f) / 2f;
+                }
+                list.Label("EF_Settings_ItemVariance".Translate(EntadSettings.ItemPointVariance.ToStringPercent()));
+                EntadSettings.ItemPointVariance = Mathf.Round(list.Slider(EntadSettings.ItemPointVariance, 0f, 0.9f) * 20f) / 20f;
+                list.Label("EF_Settings_ItemCurve_Desc".Translate());
             }
             list.Gap();
 
