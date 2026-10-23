@@ -42,12 +42,17 @@ namespace EntadFramework
                 if (ing == null || ing.def.stackLimit <= 1 || ing is MinifiedThing || ing.TryGetComp<CompQuality>() != null) continue;
                 int count = GenMath.RoundRandom(ing.stackCount * 0.5f);
                 var rot = ing.TryGetComp<CompRottable>();
+                var ingIngredients = ing.TryGetComp<CompIngredients>();
                 while (count > 0)
                 {
                     var t = ThingMaker.MakeThing(ing.def, ing.Stuff);
                     t.stackCount = System.Math.Min(count, ing.def.stackLimit);
                     var tRot = t.TryGetComp<CompRottable>();
                     if (rot != null && tRot != null) tRot.RotProgress = rot.RotProgress;
+                    // A modded recipe taking meals: the refund keeps what they were made of, for food precepts
+                    var tIngredients = t.TryGetComp<CompIngredients>();
+                    if (ingIngredients != null && tIngredients != null)
+                        foreach (var def in ingIngredients.ingredients) tIngredients.RegisterIngredient(def);
                     // Damaged cloth or leather mustn't come back mended
                     if (ing.def.useHitPoints) t.HitPoints = UnityEngine.Mathf.CeilToInt(t.MaxHitPoints * (float)ing.HitPoints / ing.MaxHitPoints);
                     count -= t.stackCount;

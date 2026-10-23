@@ -353,6 +353,8 @@ namespace EntadFramework
             return 0f;
         }
         private int spawnedTick;
+        // When a Humble item first counted for less colony wealth (EntadFurnitureEffects.ReduceWealth), -1 before
+        internal int humbleSinceTick = -1;
 
         internal int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
 
@@ -697,6 +699,7 @@ namespace EntadFramework
             ExposeBinding();
             ExposePersona();
             Scribe_Values.Look(ref dismantleWorkDone, "dismantleWorkDone", 0f);
+            Scribe_Values.Look(ref humbleSinceTick, "entadHumbleSince", -1);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();

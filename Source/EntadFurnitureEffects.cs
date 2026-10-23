@@ -32,9 +32,6 @@ namespace EntadFramework
         private class HumbleItem
         {
             public CompEntad comp;
-            // The first recount (this session) that took the item out of the player's wealth: the day before the
-            // colony notices counts from there, not from when the item was generated on some trader's pawn
-            public int sinceTick = -1;
         }
 
         private static readonly List<Source> sources = new List<Source>();
@@ -188,8 +185,10 @@ namespace EntadFramework
                     if (factor >= 1f) continue;
                     wealthItems -= counted.MarketValue * counted.stackCount * (1f - factor);
                 }
-                if (entry.sinceTick < 0) entry.sinceTick = Find.TickManager.TicksGame;
-                else if (entry.comp.HasHidden && Find.TickManager.TicksGame - entry.sinceTick >= HumbleNoticeTicks)
+                // The day before the colony notices counts from the first recount that took the item out of the
+                // player's wealth, not from when it was generated on some trader's pawn; saved, so reloads don't reset it
+                if (entry.comp.humbleSinceTick < 0) entry.comp.humbleSinceTick = Find.TickManager.TicksGame;
+                else if (entry.comp.HasHidden && Find.TickManager.TicksGame - entry.comp.humbleSinceTick >= HumbleNoticeTicks)
                     entry.comp.RevealStat(EntadStatDefOf.Entad_ColonyWealthFactor);
             }
         }
@@ -254,8 +253,10 @@ namespace EntadFramework
         }
     }
 
-    // The rot step, the time-until-rotten count (inspect pane, caravan food) and the inspect pane's refrigerated
-    // label each call GenTemperature.RotRateAtTemperature; each call's result is passed through RotRate
+    // The rot step and the time-until-rotten count (inspect pane, caravan food) each call
+    // GenTemperature.RotRateAtTemperature; each call's result is passed through RotRate. The inspect pane's own call
+    // only picks its label, and through RotRate a warm Preserving shelf would read 'refrigerated', giving away a
+    // hidden trait; its days left come from TicksUntilRotAtTemp, so they are right without it.
     [HarmonyPatch]
     public static class Patch_CompRottable_RotRate_Preserving
     {
@@ -266,7 +267,6 @@ namespace EntadFramework
         {
             yield return AccessTools.DeclaredMethod(typeof(CompRottable), "TickInterval");
             yield return AccessTools.DeclaredMethod(typeof(CompRottable), nameof(CompRottable.TicksUntilRotAtTemp));
-            yield return AccessTools.DeclaredMethod(typeof(CompRottable), nameof(CompRottable.CompInspectStringExtra));
         }
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
