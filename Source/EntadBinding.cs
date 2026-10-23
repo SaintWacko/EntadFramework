@@ -172,6 +172,13 @@ namespace EntadFramework
         public static void Keep(Pawn pawn, CompEntad item)
         {
             if (pawn == null) return;
+            // World pawn GC asks about a carrier while it still holds its gear, then discards it, and nothing asks
+            // again; binds are rare, so this is where those entries go
+            if (kept.Count > 0)
+            {
+                var gone = kept.Keys.Where(p => p.Discarded).ToList();
+                foreach (var p in gone) kept.Remove(p);
+            }
             if (!kept.TryGetValue(pawn, out var items)) kept[pawn] = items = new List<CompEntad>();
             if (item != null && !items.Contains(item)) items.Add(item);
         }

@@ -42,17 +42,19 @@ namespace EntadFramework
             return curve.Evaluate(groupPoints);
         }
 
-        public static void TryGiveEntads(PawnGroupMakerParms parms, List<Pawn> pawns)
+        public static void TryGiveEntads(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> pawns)
         {
             if (!EntadSettings.CarriersEnabled || parms?.faction == null || parms.faction.IsPlayer || pawns.NullOrEmpty()) return;
             if (!Rand.Chance(GroupChance(parms.faction))) return;
 
-            // Members only. A trade caravan's slaves for sale carry the caravan's faction with no guest status, so
-            // they are told apart by their caravan role, as the appraiser patch does.
+            // Members only. A trade caravan's slaves for sale carry the caravan's faction with no guest status, and
+            // the caravan role only recognises the vanilla slave kind, so in a caravan only the trader and its guards
+            // count.
+            bool trader = parms.groupKind == PawnGroupKindDefOf.Trader;
             var candidates = new List<Pawn>();
             foreach (Pawn p in pawns)
                 if (p.RaceProps.Humanlike && !p.Dead && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave
-                    && p.GetTraderCaravanRole() != TraderCaravanRole.Chattel && HasGearFor(p))
+                    && (!trader || IsTraderOrGuard(p, groupMaker)) && HasGearFor(p))
                     candidates.Add(p);
             if (candidates.Count == 0) return;
 
@@ -66,6 +68,16 @@ namespace EntadFramework
                     * Rand.Range(1f - EntadSettings.CarrierPointVariance, 1f + EntadSettings.CarrierPointVariance);
                 GiveEntad(pawn, Mathf.Max(0f, points), bound);
             }
+        }
+
+        private static bool IsTraderOrGuard(Pawn p, PawnGroupMaker groupMaker)
+        {
+            if (p.kindDef.trader) return true;
+            var guards = groupMaker?.guards;
+            if (guards == null) return false;
+            for (int i = 0; i < guards.Count; i++)
+                if (guards[i].kind == p.kindDef) return true;
+            return false;
         }
 
         private static bool HasGearFor(Pawn p) => Candidate(p.equipment?.Primary) != null || PickApparel(p) != null;
@@ -125,12 +137,13 @@ namespace EntadFramework
 
         // Group generation is called from raids, caravans, quests and map generation. Vanilla's own try/catch only
         // covers the pawns being made, so a failure here would lose the whole group: it costs the group its entads.
-        public static void TryGiveEntadsSafe(PawnGroupMakerParms parms, List<Pawn> pawns)
+        public static void TryGiveEntadsSafe(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> pawns)
         {
+            bool wasQuiet = CompEntad.quietReveals;
             CompEntad.quietReveals = true;
-            try { TryGiveEntads(parms, pawns); }
+            try { TryGiveEntads(parms, groupMaker, pawns); }
             catch (System.Exception e) { Log.ErrorOnce("[Entad Framework] Could not give entads to a pawn group: " + e, 0x45465750); }
-            finally { CompEntad.quietReveals = false; }
+            finally { CompEntad.quietReveals = wasQuiet; }
         }
     }
 
@@ -140,9 +153,9 @@ namespace EntadFramework
         new[] { typeof(PawnGroupMakerParms), typeof(PawnGroupMaker), typeof(bool) })]
     public static class Patch_PawnGroupKindWorker_GeneratePawns_Entads
     {
-        public static void Postfix(PawnGroupMakerParms parms, List<Pawn> __result)
+        public static void Postfix(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> __result)
         {
-            EntadWorldPawns.TryGiveEntadsSafe(parms, __result);
+            EntadWorldPawns.TryGiveEntadsSafe(parms, groupMaker, __result);
         }
     }
 }
