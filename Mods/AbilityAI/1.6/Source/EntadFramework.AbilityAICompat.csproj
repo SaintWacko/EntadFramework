@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!--
+        RimWorld 1.6 build of Entad's Ability AI compat assembly. The C# is shared with 1.7: Mods/AbilityAI/Source.
+        Output goes to Mods/AbilityAI/1.6/Assemblies, which LoadFolders.xml loads only on 1.6 and only when Ability AI
+        (saintwacko.AbilityAI) is active.
+
+        Neither EntadFramework.dll nor AbilityAI.dll is copied to the output: the first ships in 1.6/Assemblies, the
+        second with Ability AI itself. Nothing here patches, so there is no Harmony reference.
+    -->
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net472</TargetFramework>
+        <RootNamespace>EntadFramework.AbilityAICompat</RootNamespace>
+        <AssemblyName>EntadFramework.AbilityAICompat</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Deterministic>true</Deterministic>
+        <OutputPath>..\Assemblies\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <DefineConstants>$(DefineConstants);RW16</DefineConstants>
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Product>Entad Framework</Product>
+        <Authors>SaintWacko</Authors>
+        <!-- Ability AI's workspace folder; build it first, its DLLs are read from there. Override with
+             /p:AbilityAIDir=... on a checkout where it lives elsewhere. -->
+        <AbilityAIDir Condition="'$(AbilityAIDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\4b7a8f666d21\</AbilityAIDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <Optimize>true</Optimize>
+        <DebugType>none</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <Optimize>false</Optimize>
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\Source\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\..\1.6\Source\EntadFramework.csproj">
+            <Private>false</Private>
+        </ProjectReference>
+        <Reference Include="AbilityAI">
+            <HintPath>$(AbilityAIDir)1.6\Assemblies\AbilityAI.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+</Project>

@@ -2,7 +2,9 @@
   <!--
     Build entry point only: compiles nothing and ships nothing (its own output stays in Source/bin, which is never
     published). Circinus's build looks for a .csproj in Source/; the real projects are 1.6/Source and 1.7/Source,
-    and both compile the shared .cs files in this folder. Referencing them here builds both.
+    and both compile the shared .cs files in this folder. Referencing them here builds both, plus the Ability AI
+    compat assembly for each version (Mods/AbilityAI/1.6|1.7/Source, shared C# in Mods/AbilityAI/Source), which
+    needs Ability AI's own DLLs built in its workspace folder (4b7a8f666d21).
 
     Open this project in an IDE to get both. It has to be the only project file directly in Source/, or
     `dotnet build` there stops and asks which one to build.
@@ -11,6 +13,12 @@
     <TargetFramework>net472</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AssemblyName>EntadFramework.Build</AssemblyName>
+    <!-- Same default as the compat projects; pass /p:AbilityAIDir=... to point both somewhere else -->
+    <AbilityAIDir Condition="'$(AbilityAIDir)' == ''">$(MSBuildThisFileDirectory)..\..\4b7a8f666d21\</AbilityAIDir>
+    <HasAbilityAI16>false</HasAbilityAI16>
+    <HasAbilityAI16 Condition="Exists('$(AbilityAIDir)1.6\Assemblies\AbilityAI.dll')">true</HasAbilityAI16>
+    <HasAbilityAI17>false</HasAbilityAI17>
+    <HasAbilityAI17 Condition="Exists('$(AbilityAIDir)1.7\Assemblies\AbilityAI.dll')">true</HasAbilityAI17>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
@@ -22,5 +30,16 @@
     <ProjectReference Include="..\1.7\Source\EntadFramework.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <!-- Skipped, with a warning below, when Ability AI isn't built there: the main DLLs need nothing from it, but
+         the compat DLLs under Mods/AbilityAI are then left as they were -->
+    <ProjectReference Include="..\Mods\AbilityAI\1.6\Source\EntadFramework.AbilityAICompat.csproj" Condition="'$(HasAbilityAI16)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\AbilityAI\1.7\Source\EntadFramework.AbilityAICompat.csproj" Condition="'$(HasAbilityAI17)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
+  <Target Name="WarnNoAbilityAI" BeforeTargets="Build" Condition="'$(HasAbilityAI16)' != 'true' Or '$(HasAbilityAI17)' != 'true'">
+    <Warning Text="Ability AI's DLLs were not found under $(AbilityAIDir) (1.6 and 1.7 Assemblies): the Ability AI compat assemblies were not rebuilt." />
+  </Target>
 </Project>

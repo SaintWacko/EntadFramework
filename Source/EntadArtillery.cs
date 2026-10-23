@@ -120,6 +120,11 @@ namespace EntadFramework
             return base.Valid(target, throwMessages);
         }
 
+        // Vanilla's fight AI (the fallback when Ability AI is not active) never calls Valid, only this, so without it
+        // an NPC with no ranged weapon would spend the charge with nothing fired
+        public override bool AICanTargetNow(LocalTargetInfo target) =>
+            EntadArtillery.WeaponVerb(parent.pawn)?.Projectile != null && base.AICanTargetNow(target);
+
         // The number of projectiles the shot will have split into by the cell under the cursor
         public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
         {

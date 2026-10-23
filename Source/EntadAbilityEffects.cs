@@ -14,8 +14,10 @@ namespace EntadFramework
     // One pulse of effects: on the pawn the ability targets (the caster, for an untargeted ability), or with a radius,
     // on every pawn 'targets' picks around the target. Values are fixed per ability, unlike triggers, whose values
     // are rolled per item. Uses the trigger code's target rules and effects, so 'Allies' means the same thing in both.
-    // Partial: the ability AI's IAbilityAIInfo half is in EntadAbilityAI.cs
-    public partial class CompProperties_AbilityEntadPulse : CompProperties_AbilityEffect
+    // Ability AI (an optional mod) reads radius, hediff and stunSeconds through a registration in the compat
+    // assembly (Mods/AbilityAI/Source/EntadAbilityAICompat.cs). Nothing here may name an Ability AI type: the main
+    // assembly has to load without it.
+    public class CompProperties_AbilityEntadPulse : CompProperties_AbilityEffect
     {
         public float radius;
         public EntadTriggerTargets targets = EntadTriggerTargets.Self;
@@ -40,6 +42,23 @@ namespace EntadFramework
         }
     }
 
+    /// <summary>The verb for abilities cast on the user (Sprint, Battle Cry, Second Wind). Vanilla's
+    /// Verb_CastAbility.CanHitTarget is true for ANY target at range 0, so vanilla's fight AI
+    /// (JobGiver_AIFightEnemy.GetAbilityJob, first loop) hands the ability the enemy it is fighting. The cast then
+    /// dies in Verb.TryStartCastOn: with a warmup, TryFindShootLineFromTo treats a range under 1.42 as melee and
+    /// wants the target adjacent, so the job ends at once, the pawn thinks again, gets the same job, and spends the
+    /// fight twitching in place without shooting. Seen in game without Ability AI (build 255). Accepting only the
+    /// caster at range 0 makes that loop skip the ability and vanilla's third loop cast it on the caster
+    /// (canTargetSelf). The player's gizmo and Ability AI both target the caster already.</summary>
+    public class Verb_EntadSelfCast : Verb_CastAbility
+    {
+        public override bool CanHitTarget(LocalTargetInfo targ)
+        {
+            if (EffectiveRange <= 0f) return targ.Thing != null && targ.Thing == caster;
+            return base.CanHitTarget(targ);
+        }
+    }
+
     public class CompAbilityEffect_EntadPulse : CompAbilityEffect
     {
         public new CompProperties_AbilityEntadPulse Props => (CompProperties_AbilityEntadPulse)props;
@@ -48,8 +67,12 @@ namespace EntadFramework
 
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
-            base.Apply(target, dest);
             Pawn caster = parent.pawn;
+            // An untargeted ability is always about the caster. Verb_EntadSelfCast already keeps vanilla's fight AI
+            // from handing it the enemy; this covers another mod's def that uses the pulse with plain
+            // Verb_CastAbility at range 0. Before base.Apply, which uses the target for goodwill, clamor and sound.
+            if (!parent.def.targetRequired) target = caster;
+            base.Apply(target, dest);
             Map map = caster.MapHeld;
             if (Props.radius <= 0f)
             {

@@ -9,6 +9,8 @@
   <modVersion>1.0.0</modVersion>
   <loadAfter>
     <li>brrainz.harmony</li>
+    <!-- Optional, so not in modDependencies: Mods/AbilityAI loads only when it is active -->
+    <li>saintwacko.AbilityAI</li>
   </loadAfter>
   <description>Core framework for dynamic, randomized item traits and abilities.</description>
   <modDependencies>
