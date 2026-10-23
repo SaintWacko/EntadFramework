@@ -244,7 +244,7 @@
   <EF_Settings_WorldItemsEnabled_Tip>Traders can stock entads, quest rewards can include them, and loot at sites, ancient ruins and faction settlements can turn up entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_WorldItemsEnabled_Tip>
   <EF_Settings_TraderChance>Chance a trader's stock has entads: {0}</EF_Settings_TraderChance>
   <EF_Settings_TraderCount>Entads in such a stock: {0} to {1}</EF_Settings_TraderCount>
-  <EF_Settings_Trader_Desc>Rolled each time a trader's stock is made. Exotic goods traders have an 80% chance whatever this is set to. A trader knows part of what it sells: each entad shows a random share of its traits, from none to all, and is priced on what is known.</EF_Settings_Trader_Desc>
+  <EF_Settings_Trader_Desc>Rolled each time a trader's stock is made. Exotic goods traders have twice this chance. A trader knows part of what it sells: each entad shows a random share of its traits, from none to all, and is priced on what is known.</EF_Settings_Trader_Desc>
   <EF_Settings_RewardChance>Chance each quest reward item is an entad: {0}</EF_Settings_RewardChance>
   <EF_Settings_RewardMax>Most entads per reward: {0}</EF_Settings_RewardMax>
   <EF_Settings_LootChance>Chance each loot item is an entad: {0}</EF_Settings_LootChance>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -28,10 +29,12 @@ namespace EntadFramework
         }
     }
 
-    // Per-trader override for stocks: the chance a stock holds entads, how many, and a points multiplier
+    // Per-trader override for stocks: the chance a stock holds entads (absolute, or a multiplier on the settings'
+    // chance so the slider at 0% still means none), how many, and a points multiplier
     public class EntadTraderExtension : DefModExtension
     {
         public float chance = -1f;
+        public float chanceFactor = 1f;
         public IntRange count = new IntRange(-1, -1);
         public float pointFactor = 1f;
 
@@ -39,14 +42,17 @@ namespace EntadFramework
         {
             foreach (var e in base.ConfigErrors()) yield return e;
             if (chance > 1f) yield return "EntadTraderExtension chance is above 1";
+            if (chanceFactor < 0f) yield return "EntadTraderExtension chanceFactor is negative";
             if (count.min >= 0 && count.max < count.min) yield return "EntadTraderExtension count max is below min";
             if (pointFactor < 0f) yield return "EntadTraderExtension pointFactor is negative";
         }
     }
 
     // Entads in trader stock, quest rewards and site loot: items the set already made are turned into entads after
-    // it is generated, so the set keeps its size and its value budget was spent on ordinary items. Points come from
-    // the set's market value before any conversion, so a rich trader or a big reward carries stronger entads.
+    // it is generated, so the set keeps its size. Its value budget was spent on ordinary items, so a converted set is
+    // worth more than was asked for (a quest reward reads above its budget); like carried entads, they are extra.
+    // Points come from the set's market value before any conversion, silver left out (a trader's cash would
+    // otherwise outweigh its goods), so a rich trader or a big reward carries stronger entads.
     public static class EntadWorldItems
     {
         // Root maker of each marked def. ThingSetMaker.Generate also runs for every nested maker (Sum, RandomOption,
@@ -58,8 +64,9 @@ namespace EntadFramework
         [System.ThreadStatic] private static ThingSetMaker active;
 
         // Item stash sites draw from Reward_ItemsStandard like quest rewards do; while one is being made its set
-        // counts as loot
-        [System.ThreadStatic] internal static bool stashAsLoot;
+        // counts as loot. A depth, since a subclass's override may call the base one.
+        [System.ThreadStatic] internal static int stashDepth;
+        private static bool StashAsLoot => stashDepth > 0;
 
         private static EntadThingSetExtension ExtensionFor(ThingSetMaker maker)
         {
@@ -114,18 +121,19 @@ namespace EntadFramework
             float setValue = 0f;
             foreach (Thing t in things)
             {
-                setValue += t.MarketValue * t.stackCount;
+                if (t.def != ThingDefOf.Silver) setValue += t.MarketValue * t.stackCount;
                 var comp = t.stackCount == 1 ? Candidate(t.GetInnerIfMinified() as ThingWithComps) : null;
                 if (comp != null) candidates.Add(comp);
             }
             if (candidates.Count == 0) return;
 
             float basePoints = BasePoints(setValue) * Mathf.Max(0f, ext.pointFactor);
-            EntadThingSetKind kind = stashAsLoot ? EntadThingSetKind.Loot : ext.kind;
+            EntadThingSetKind kind = StashAsLoot ? EntadThingSetKind.Loot : ext.kind;
             if (kind == EntadThingSetKind.Trader)
             {
                 var trader = parms.traderDef?.GetModExtension<EntadTraderExtension>();
-                float chance = trader != null && trader.chance >= 0f ? trader.chance : ext.chance >= 0f ? ext.chance : EntadSettings.TraderStockChance;
+                float chance = trader != null && trader.chance >= 0f ? trader.chance
+                    : (ext.chance >= 0f ? ext.chance : EntadSettings.TraderStockChance) * Mathf.Max(0f, trader?.chanceFactor ?? 1f);
                 if (!Rand.Chance(chance)) return;
                 IntRange range = trader != null && trader.count.min >= 0 ? trader.count : EntadSettings.TraderEntadCount;
                 int count = Mathf.Max(0, range.RandomInRange);
@@ -143,7 +151,7 @@ namespace EntadFramework
             {
                 bool reward = kind == EntadThingSetKind.Reward;
                 // A stash reads the loot settings: the extension it passed through belongs to Reward_ItemsStandard
-                bool useExt = !stashAsLoot;
+                bool useExt = !StashAsLoot;
                 float chance = useExt && ext.chance >= 0f ? ext.chance : reward ? EntadSettings.RewardItemChance : EntadSettings.LootItemChance;
                 int max = useExt && ext.maxEntads >= 0 ? ext.maxEntads : reward ? EntadSettings.RewardMaxEntads : EntadSettings.LootMaxEntads;
                 int converted = 0;
@@ -198,11 +206,24 @@ namespace EntadFramework
         public static void Finalizer(ThingSetMaker __instance) => EntadWorldItems.Clear(__instance);
     }
 
-    [HarmonyPatch(typeof(SitePartWorker_ItemStash), nameof(SitePartWorker_ItemStash.Notify_GeneratedByQuestGen))]
+    // Every stash worker that declares its own override: VFE Deserters' dead drop replaces the vanilla one without
+    // calling it, and makes its set from Reward_ItemsStandard itself
+    [HarmonyPatch]
     public static class Patch_SitePartWorker_ItemStash_Entads
     {
-        public static void Prefix() => EntadWorldItems.stashAsLoot = true;
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            var types = new List<System.Type> { typeof(SitePartWorker_ItemStash) };
+            types.AddRange(typeof(SitePartWorker_ItemStash).AllSubclassesNonAbstract());
+            foreach (var type in types)
+            {
+                var method = AccessTools.DeclaredMethod(type, nameof(SitePartWorker_ItemStash.Notify_GeneratedByQuestGen));
+                if (method != null) yield return method;
+            }
+        }
 
-        public static void Finalizer() => EntadWorldItems.stashAsLoot = false;
+        public static void Prefix() => EntadWorldItems.stashDepth++;
+
+        public static void Finalizer() => EntadWorldItems.stashDepth--;
     }
 }

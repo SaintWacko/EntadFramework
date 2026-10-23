@@ -95,12 +95,12 @@
       </operations>
     </match>
   </Operation>
-  <!-- Exotic goods traders deal in the strange and rare -->
+  <!-- Exotic goods traders deal in the strange and rare: twice the settings' chance -->
   <Operation Class="PatchOperationAddModExtension">
     <xpath>Defs/TraderKindDef[defName="Orbital_Exotic"]</xpath>
     <value>
       <li Class="EntadFramework.EntadTraderExtension">
-        <chance>0.8</chance>
+        <chanceFactor>2</chanceFactor>
       </li>
     </value>
   </Operation>
