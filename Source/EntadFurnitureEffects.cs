@@ -196,14 +196,16 @@ namespace EntadFramework
     [HarmonyPatch(typeof(WealthWatcher), nameof(WealthWatcher.ForceRecount))]
     public static class Patch_WealthWatcher_ForceRecount_Humble
     {
-        public static void Postfix(Map ___map, ref float ___wealthBuildings)
+        public static void Postfix(bool allowDuringInit, Map ___map, ref float ___wealthBuildings)
         {
+            // Vanilla refused the recount and left the old total, already reduced
+            if (!allowDuringInit && Current.ProgramState != ProgramState.Playing) return;
             EntadFurnitureEffects.ReduceWealth(___map, ref ___wealthBuildings);
         }
     }
 
-    // Both the rot step and the time-until-rotten readout (inspect pane, caravan food) go through
-    // GenTemperature.RotRateAtTemperature; each call's result is passed through RotRate
+    // The rot step, the time-until-rotten count (inspect pane, caravan food) and the inspect pane's refrigerated
+    // label each call GenTemperature.RotRateAtTemperature; each call's result is passed through RotRate
     [HarmonyPatch]
     public static class Patch_CompRottable_RotRate_Preserving
     {
@@ -214,19 +216,23 @@ namespace EntadFramework
         {
             yield return AccessTools.DeclaredMethod(typeof(CompRottable), "TickInterval");
             yield return AccessTools.DeclaredMethod(typeof(CompRottable), nameof(CompRottable.TicksUntilRotAtTemp));
+            yield return AccessTools.DeclaredMethod(typeof(CompRottable), nameof(CompRottable.CompInspectStringExtra));
         }
 
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
         {
+            bool found = false;
             foreach (var ins in instructions)
             {
                 yield return ins;
                 if (ins.Calls(rotRateAt))
                 {
+                    found = true;
                     yield return new CodeInstruction(OpCodes.Ldarg_0);
                     yield return new CodeInstruction(OpCodes.Call, rotRate);
                 }
             }
+            if (!found) Log.Warning($"[Entad Framework] {original.DeclaringType.Name}.{original.Name} no longer calls RotRateAtTemperature; Preserving won't change it");
         }
     }
 

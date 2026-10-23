@@ -186,12 +186,35 @@ namespace EntadFramework
             }
             if (!kept.TryGetValue(pawn, out var items)) kept[pawn] = items = new List<CompEntad>();
             if (item != null && !items.Contains(item)) items.Add(item);
+            neededTick = -1;
+        }
+
+        private static int neededTick = -1;
+        private static bool anyNeeded;
+
+        // Whether any entry needs keeping right now. NPC carriers still holding their own gear don't, and in most
+        // games that is every entry (Phase 1 binds carriers at generation), so the GC's ancestor walk and the alert
+        // stop here. Asking every entry also drops the ones GC discarded since. Once per tick: GC asks about many
+        // pawns in the same tick.
+        public static bool AnyNeeded
+        {
+            get
+            {
+                if (kept.Count == 0) return false;
+                int tick = Find.TickManager?.TicksGame ?? 0;
+                if (tick == neededTick) return anyNeeded;
+                neededTick = tick;
+                anyNeeded = false;
+                foreach (var p in kept.Keys.ToList()) if (Needed(p)) anyNeeded = true;
+                return anyNeeded;
+            }
         }
 
         public static bool IsKept(Pawn pawn) => kept.Count > 0 && Needed(pawn);
 
-        // The player's own pawns are always kept: a colonist wearing their own item is still the link between dead
-        // descendants and later generations. Discarding a pawn doesn't destroy what it carried, so a discarded pawn's
+        // The player's own pawns are always kept: a pawn wearing their own item is still the link between dead
+        // descendants and later generations. Vanilla's GC already keeps anyone who was ever a colonist, so for GC this
+        // only matters for player-faction pawns it doesn't count as colonists; it also keeps AnyNeeded true for the alert. Discarding a pawn doesn't destroy what it carried, so a discarded pawn's
         // entry is dropped here rather than waiting for its items.
         private static bool Needed(Pawn pawn)
         {
@@ -214,7 +237,7 @@ namespace EntadFramework
         // Walks parents upward with a visited set and a depth cap. Only called from world pawn GC passes.
         public static bool IsKeptOrDescendant(Pawn pawn)
         {
-            if (kept.Count == 0 || pawn == null) return false;
+            if (pawn == null || !AnyNeeded) return false;
             if (Needed(pawn)) return true;
             if (!pawn.RaceProps.Humanlike) return false;
             var visited = new HashSet<Pawn>();
@@ -236,13 +259,15 @@ namespace EntadFramework
             return false;
         }
 
-        public static void Clear() => kept.Clear();
-
-        public static bool Any => kept.Count > 0;
+        public static void Clear()
+        {
+            kept.Clear();
+            neededTick = -1;
+        }
     }
 
     // Side alert, like "Need colonist beds": a colonist is using gear bound to another bloodline, so its traits do
-    // nothing for them. Returns at once in a session where nothing has been bound.
+    // nothing for them. Returns at once while no binding needs keeping (only NPC carriers holding their own gear).
     public class Alert_EntadWrongBloodline : Alert
     {
         private readonly List<Pawn> culprits = new List<Pawn>();
@@ -261,7 +286,7 @@ namespace EntadFramework
             culprits.Clear();
             users.Clear();
             items.Clear();
-            if (!EntadBindingRegistry.Any) return false;
+            if (!EntadBindingRegistry.AnyNeeded) return false;
             // Colonists and slaves; the same cached vanilla list, so slaves cost nothing extra
             foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
             {

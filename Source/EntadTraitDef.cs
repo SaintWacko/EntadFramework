@@ -854,13 +854,16 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_MercilessDamageFactor) return td.IsWeapon && !HasNoDamageHook(td);
             if (stat == EntadStatDefOf.Entad_ProductQualityChance) return td.building != null && MakesAny(td, p => p.HasComp(typeof(CompQuality)), false);
             if (stat == EntadStatDefOf.Entad_ProductDoubleChance) return td.building != null && MakesAny(td, p => p.stackLimit > 1, true);
-            if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && UsesStackableIngredients(td);
+            if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && Cached(stackableIngredients, td, UsesStackableIngredients);
             // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
-            // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
-            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.building != null && td.GetCompProperties<CompProperties_Glower>() == null;
+            // to scale, and a heater or cooler warming its room by magic as well reads as a bug. A conduit hidden
+            // under a wall would give light or heat from nowhere.
+            if (stat == EntadStatDefOf.Entad_GlowRadius)
+                return td.building != null && !td.building.isPowerConduit && td.GetCompProperties<CompProperties_Glower>() == null;
             if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
-                return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
-            if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && StoresRottables(td);
+                return td.building != null && !td.building.isPowerConduit
+                    && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
+            if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && Cached(storesRottables, td, StoresRottables);
             if (stat == EntadStatDefOf.Entad_ColonyWealthFactor) return td.building != null;
             // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
             if (stat == EntadStatDefOf.Entad_FertilityOffset) return td.building != null && td.fertility > 0f;
@@ -881,6 +884,17 @@ namespace EntadFramework
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Both checks below walk every recipe's or filter's allowed defs, and the card asks them per partialStats
+        // trait while it builds, so each answer is kept per def
+        private static readonly Dictionary<ThingDef, bool> stackableIngredients = new Dictionary<ThingDef, bool>();
+        private static readonly Dictionary<ThingDef, bool> storesRottables = new Dictionary<ThingDef, bool>();
+
+        private static bool Cached(Dictionary<ThingDef, bool> cache, ThingDef td, System.Func<ThingDef, bool> check)
+        {
+            if (!cache.TryGetValue(td, out bool result)) cache[td] = result = check(td);
+            return result;
         }
 
         // Sparing only gives back stackable ingredients: a smelted rifle or a butchered corpse can't come back in half

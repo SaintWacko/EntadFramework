@@ -131,8 +131,11 @@ namespace EntadFramework
             }
             if (candidates.Count == 0) return;
 
-            float basePoints = BasePoints(setValue) * Mathf.Max(0f, ext.pointFactor);
             EntadThingSetKind kind = FoundAsLoot ? EntadThingSetKind.Loot : ext.kind;
+            // VE Events' cargo chunk makes a whole trader stock and keeps a few hundred silver of it; points from
+            // the whole stock would give that handful the strength of a rich trader's goods
+            if (FoundAsLoot && ext.kind == EntadThingSetKind.Trader) setValue = Mathf.Min(setValue, EntadSettings.ItemCurveValues[0]);
+            float basePoints = BasePoints(setValue) * Mathf.Max(0f, ext.pointFactor);
             if (kind == EntadThingSetKind.Trader)
             {
                 var trader = parms.traderDef?.GetModExtension<EntadTraderExtension>();
@@ -232,7 +235,8 @@ namespace EntadFramework
                 var method = AccessTools.DeclaredMethod(type, nameof(SitePartWorker_ItemStash.Notify_GeneratedByQuestGen));
                 if (method != null) yield return method;
             }
-            yield return AccessTools.DeclaredMethod(typeof(LayoutWorkerComplex), "SpawnRoomRewards");
+            var complexRewards = AccessTools.DeclaredMethod(typeof(LayoutWorkerComplex), "SpawnRoomRewards");
+            if (complexRewards != null) yield return complexRewards;
             // VE Events: a falling trade ship's cargo is made from its stock when the chunk is destroyed
             var cargo = AccessTools.TypeByName("VEE.CargoChunkSpawner");
             var destroy = cargo == null ? null : AccessTools.DeclaredMethod(cargo, nameof(Thing.Destroy));

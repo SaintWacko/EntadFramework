@@ -167,4 +167,94 @@
       <li><stat>Entad_ProductDoubleChance</stat><min>0.08</min><max>0.12</max></li>
     </statOffsets>
   </EntadFramework.EntadTraitDef>
+
+  <!-- Furniture acting on its surroundings (EntadFurnitureEffects.cs). Plain stat traits: StatAppliesTo decides
+       which buildings each can roll on. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Luminous</defName>
+    <label>Luminous</label>
+    <description>A soft light hangs about it that no one ever lit.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on buildings without a light of their own; Bright scales those -->
+    <statOffsets>
+      <li><stat>Entad_GlowRadius</stat><min>6</min><max>9</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Warm</defName>
+    <label>Warm</label>
+    <description>Always warm to the touch, as if someone had just stood up from it.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusiveWith><li>Entad_Cool</li></exclusiveWith>
+    <statOffsets>
+      <li><stat>Entad_RoomHeating</stat><min>4</min><max>8</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Cool</defName>
+    <label>Cool</label>
+    <description>The air around it always feels like a cellar's.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets>
+      <li><stat>Entad_RoomCooling</stat><min>4</min><max>8</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Preserving</defName>
+    <label>Preserving</label>
+    <description>What is put away here keeps, as though it had been forgotten by time as well as by the cook.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on storage that can hold something that rots -->
+    <statFactors>
+      <li><stat>Entad_StoredRotFactor</stat><min>0.5</min><max>0.7</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Humble</defName>
+    <label>Humble</label>
+    <description>Nobody ever seems to think it is worth much, whatever the traders say.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <statFactors>
+      <li><stat>Entad_ColonyWealthFactor</stat><min>0.1</min><max>0.3</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sparing</defName>
+    <label>Sparing</label>
+    <description>Some days the work seems to take only half of what was brought for it.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on benches with a bill that takes stackable ingredients -->
+    <statOffsets>
+      <li><stat>Entad_IngredientRefundChance</stat><min>0.1</min><max>0.2</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Fertile</defName>
+    <label>Fertile</label>
+    <description>Whatever is planted in it grows as if it had been waiting to.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <!-- Only on buildings plants grow in (plant pots, hydroponics) -->
+    <statOffsets>
+      <li><stat>Entad_FertilityOffset</stat><min>0.2</min><max>0.35</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
 </Defs>

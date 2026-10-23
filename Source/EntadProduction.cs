@@ -27,11 +27,12 @@ namespace EntadFramework
             if (quality <= 0f && doubled <= 0f && refund <= 0f) return __result;
             // One roll per bill for doubling, so a butchered animal gives double meat and double leather or neither
             return Wrap(__result, worker, bench, comp, quality, doubled > 0f && Rand.Chance(doubled),
-                refund > 0f && Rand.Chance(refund) ? ingredients : null);
+                ingredients != null && refund > 0f && Rand.Chance(refund) ? ingredients : null);
         }
 
         // Sparing gives back half of each stackable ingredient, rounded at random, as more products. The ingredients
-        // still exist here: vanilla consumes them after it has the product list.
+        // still exist here: vanilla consumes them after it has the product list. A refund keeps the ingredient's rot,
+        // so spoiling meat doesn't come back fresh.
         private static List<Thing> Refunds(List<Thing> ingredients)
         {
             var refunds = new List<Thing>();
@@ -40,10 +41,13 @@ namespace EntadFramework
                 var ing = ingredients[i];
                 if (ing == null || ing.def.stackLimit <= 1 || ing is MinifiedThing || ing.TryGetComp<CompQuality>() != null) continue;
                 int count = GenMath.RoundRandom(ing.stackCount * 0.5f);
+                var rot = ing.TryGetComp<CompRottable>();
                 while (count > 0)
                 {
                     var t = ThingMaker.MakeThing(ing.def, ing.Stuff);
                     t.stackCount = System.Math.Min(count, ing.def.stackLimit);
+                    var tRot = t.TryGetComp<CompRottable>();
+                    if (rot != null && tRot != null) tRot.RotProgress = rot.RotProgress;
                     count -= t.stackCount;
                     refunds.Add(t);
                 }
