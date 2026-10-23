@@ -63,10 +63,11 @@ namespace EntadFramework
         // call Reward_ItemsStandard) converts once, by the outer def's rules.
         [System.ThreadStatic] private static ThingSetMaker active;
 
-        // Item stash sites draw from Reward_ItemsStandard like quest rewards do; while one is being made its set
-        // counts as loot. A depth, since a subclass's override may call the base one.
-        [System.ThreadStatic] internal static int stashDepth;
-        private static bool StashAsLoot => stashDepth > 0;
+        // Item stashes and ancient complex reward crates draw from Reward_ItemsStandard, VE Events' cargo chunks from
+        // TraderStock; nobody is there to say what's in them, so while one is being filled its set counts as loot.
+        // A depth, since a subclass's override may call the base one.
+        [System.ThreadStatic] internal static int foundDepth;
+        private static bool FoundAsLoot => foundDepth > 0;
 
         private static EntadThingSetExtension ExtensionFor(ThingSetMaker maker)
         {
@@ -128,7 +129,7 @@ namespace EntadFramework
             if (candidates.Count == 0) return;
 
             float basePoints = BasePoints(setValue) * Mathf.Max(0f, ext.pointFactor);
-            EntadThingSetKind kind = StashAsLoot ? EntadThingSetKind.Loot : ext.kind;
+            EntadThingSetKind kind = FoundAsLoot ? EntadThingSetKind.Loot : ext.kind;
             if (kind == EntadThingSetKind.Trader)
             {
                 var trader = parms.traderDef?.GetModExtension<EntadTraderExtension>();
@@ -150,8 +151,9 @@ namespace EntadFramework
             else
             {
                 bool reward = kind == EntadThingSetKind.Reward;
-                // A stash reads the loot settings: the extension it passed through belongs to Reward_ItemsStandard
-                bool useExt = !StashAsLoot;
+                // Found loot reads the loot settings: the extension it passed through belongs to the reward or
+                // trader def
+                bool useExt = !FoundAsLoot;
                 float chance = useExt && ext.chance >= 0f ? ext.chance : reward ? EntadSettings.RewardItemChance : EntadSettings.LootItemChance;
                 int max = useExt && ext.maxEntads >= 0 ? ext.maxEntads : reward ? EntadSettings.RewardMaxEntads : EntadSettings.LootMaxEntads;
                 int converted = 0;
@@ -208,10 +210,11 @@ namespace EntadFramework
         public static void Finalizer(ThingSetMaker __instance) => EntadWorldItems.Clear(__instance);
     }
 
-    // Every stash worker that declares its own override: VFE Deserters' dead drop replaces the vanilla one without
-    // calling it, and makes its set from Reward_ItemsStandard itself
+    // Generators whose sets are found rather than given. Every stash worker that declares its own override: VFE
+    // Deserters' dead drop replaces the vanilla one without calling it, and makes its set from Reward_ItemsStandard
+    // itself.
     [HarmonyPatch]
-    public static class Patch_SitePartWorker_ItemStash_Entads
+    public static class Patch_FoundLoot_Entads
     {
         public static IEnumerable<MethodBase> TargetMethods()
         {
@@ -222,10 +225,15 @@ namespace EntadFramework
                 var method = AccessTools.DeclaredMethod(type, nameof(SitePartWorker_ItemStash.Notify_GeneratedByQuestGen));
                 if (method != null) yield return method;
             }
+            yield return AccessTools.DeclaredMethod(typeof(LayoutWorkerComplex), "SpawnRoomRewards");
+            // VE Events: a falling trade ship's cargo is made from its stock when the chunk is destroyed
+            var cargo = AccessTools.TypeByName("VEE.CargoChunkSpawner");
+            var destroy = cargo == null ? null : AccessTools.DeclaredMethod(cargo, nameof(Thing.Destroy));
+            if (destroy != null) yield return destroy;
         }
 
-        public static void Prefix() => EntadWorldItems.stashDepth++;
+        public static void Prefix() => EntadWorldItems.foundDepth++;
 
-        public static void Finalizer() => EntadWorldItems.stashDepth--;
+        public static void Finalizer() => EntadWorldItems.foundDepth--;
     }
 }

@@ -591,6 +591,9 @@ namespace EntadFramework
             if (exclusiveWith != null && exclusiveWith.Contains(other)) return true;
             if (other.exclusiveWith != null && other.exclusiveWith.Contains(this)) return true;
             if (exclusivityTags != null && other.exclusivityTags != null && exclusivityTags.Any(t => other.exclusivityTags.Contains(t))) return true;
+            // One aura per item, whatever allowOverlap says: furniture with three overlapping fields read as noise
+            // rather than as one strange object
+            if (aura != null && other.aura != null) return true;
             if (allowOverlap || other.allowOverlap) return false;
 
             if (mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f)
