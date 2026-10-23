@@ -168,8 +168,8 @@
     </statOffsets>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Furniture acting on its surroundings (EntadFurnitureEffects.cs). Plain stat traits: StatAppliesTo decides
-       which buildings each can roll on. -->
+  <!-- Traits acting on their surroundings (EntadFurnitureEffects.cs). Plain stat traits: StatAppliesTo decides
+       which items each can roll on. Warm and Cool push heat until their room reaches targetTemperature. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Luminous</defName>
     <label>Luminous</label>
@@ -191,6 +191,7 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <exclusiveWith><li>Entad_Cool</li></exclusiveWith>
+    <targetTemperature>22</targetTemperature>
     <statOffsets>
       <li><stat>Entad_RoomHeating</stat><min>4</min><max>8</max></li>
     </statOffsets>
@@ -203,6 +204,7 @@
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
+    <targetTemperature>18</targetTemperature>
     <statOffsets>
       <li><stat>Entad_RoomCooling</stat><min>4</min><max>8</max></li>
     </statOffsets>
@@ -225,7 +227,7 @@
     <defName>Entad_Humble</defName>
     <label>Humble</label>
     <description>Nobody ever seems to think it is worth much, whatever the traders say.</description>
-    <categories><li>Furniture</li></categories>
+    <categories><li>Furniture</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <statFactors>
       <li><stat>Entad_ColonyWealthFactor</stat><min>0.1</min><max>0.3</max></li>

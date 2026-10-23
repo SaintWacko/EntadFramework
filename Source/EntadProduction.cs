@@ -16,7 +16,7 @@ namespace EntadFramework
     [HarmonyPatch(typeof(GenRecipe), nameof(GenRecipe.MakeRecipeProducts))]
     public static class Patch_GenRecipe_MakeRecipeProducts_Entad
     {
-        public static IEnumerable<Thing> Postfix(IEnumerable<Thing> __result, Pawn worker, List<Thing> ingredients, IBillGiver billGiver)
+        public static IEnumerable<Thing> Postfix(IEnumerable<Thing> __result, RecipeDef recipeDef, Pawn worker, List<Thing> ingredients, IBillGiver billGiver)
         {
             if (!(billGiver is Thing bench) || worker == null || !EntadCompInjector.MayHaveComp(bench.def)) return __result;
             var comp = bench.TryGetComp<CompEntad>();
@@ -27,7 +27,7 @@ namespace EntadFramework
             if (quality <= 0f && doubled <= 0f && refund <= 0f) return __result;
             // One roll per bill for doubling, so a butchered animal gives double meat and double leather or neither
             return Wrap(__result, worker, bench, comp, quality, doubled > 0f && Rand.Chance(doubled),
-                ingredients != null && refund > 0f && Rand.Chance(refund) ? ingredients : null);
+                ingredients != null && MakesSomething(recipeDef) && refund > 0f && Rand.Chance(refund) ? ingredients : null);
         }
 
         // Sparing gives back half of each stackable ingredient, rounded at random, as more products. The ingredients
@@ -48,12 +48,17 @@ namespace EntadFramework
                     t.stackCount = System.Math.Min(count, ing.def.stackLimit);
                     var tRot = t.TryGetComp<CompRottable>();
                     if (rot != null && tRot != null) tRot.RotProgress = rot.RotProgress;
+                    // Damaged cloth or leather mustn't come back mended
+                    if (ing.def.useHitPoints) t.HitPoints = UnityEngine.Mathf.CeilToInt(t.MaxHitPoints * (float)ing.HitPoints / ing.MaxHitPoints);
                     count -= t.stackCount;
                     refunds.Add(t);
                 }
             }
             return refunds;
         }
+
+        // A bill that only destroys (the crematorium burning drugs) would hand half of them back
+        private static bool MakesSomething(RecipeDef recipe) => recipe == null || !recipe.products.NullOrEmpty() || !recipe.specialProducts.NullOrEmpty();
 
         private static IEnumerable<Thing> Wrap(IEnumerable<Thing> products, Pawn worker, Thing bench, CompEntad comp, float qualityChance, bool doubled, List<Thing> refundFrom)
         {

@@ -32,7 +32,9 @@ namespace EntadFramework
         private class HumbleItem
         {
             public CompEntad comp;
-            public int sinceTick;
+            // The first recount (this session) that took the item out of the player's wealth: the day before the
+            // colony notices counts from there, not from when the item was generated on some trader's pawn
+            public int sinceTick = -1;
         }
 
         private static readonly List<Source> sources = new List<Source>();
@@ -93,7 +95,7 @@ namespace EntadFramework
         {
             int index = humbleItems.FindIndex(h => h.comp == comp);
             bool humble = comp.activeTraits.Count > 0 && comp.HasStatTrait(EntadStatDefOf.Entad_ColonyWealthFactor);
-            if (humble && index < 0) humbleItems.Add(new HumbleItem { comp = comp, sinceTick = Find.TickManager.TicksGame });
+            if (humble && index < 0) humbleItems.Add(new HumbleItem { comp = comp });
             else if (!humble && index >= 0) humbleItems.RemoveAt(index);
         }
 
@@ -186,7 +188,8 @@ namespace EntadFramework
                     if (factor >= 1f) continue;
                     wealthItems -= counted.MarketValue * counted.stackCount * (1f - factor);
                 }
-                if (entry.comp.HasHidden && Find.TickManager.TicksGame - entry.sinceTick >= HumbleNoticeTicks)
+                if (entry.sinceTick < 0) entry.sinceTick = Find.TickManager.TicksGame;
+                else if (entry.comp.HasHidden && Find.TickManager.TicksGame - entry.sinceTick >= HumbleNoticeTicks)
                     entry.comp.RevealStat(EntadStatDefOf.Entad_ColonyWealthFactor);
             }
         }

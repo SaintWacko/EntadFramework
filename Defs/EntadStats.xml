@@ -95,7 +95,7 @@
   <StatDef>
     <defName>Entad_RoomHeating</defName>
     <label>room warming</label>
-    <description>Heat this gives off into its room, stopping once the room reaches 22°C. A torch gives about 3.5, a campfire about 21.</description>
+    <description>Heat this gives off into its room, until the room reaches the temperature its trait names. A torch gives about 3.5, a campfire about 21.</description>
     <category>Building</category>
     <defaultBaseValue>0</defaultBaseValue>
     <minValue>0</minValue>
@@ -106,7 +106,7 @@
   <StatDef>
     <defName>Entad_RoomCooling</defName>
     <label>room cooling</label>
-    <description>Heat this draws out of its room, stopping once the room is down to 18°C. On the same scale as a heat source: a torch gives about 3.5.</description>
+    <description>Heat this draws out of its room, until the room is down to the temperature its trait names. On the same scale as a heat source: a torch gives about 3.5.</description>
     <category>Building</category>
     <defaultBaseValue>0</defaultBaseValue>
     <minValue>0</minValue>
@@ -129,8 +129,8 @@
   <StatDef>
     <defName>Entad_ColonyWealthFactor</defName>
     <label>counted in colony wealth</label>
-    <description>How much of this building's value counts toward the colony's wealth, which sets how large raids are. Its market value for trade is unchanged. Only while it is built.</description>
-    <category>Building</category>
+    <description>How much of this item's value counts toward the colony's wealth, which sets how large raids are. Its market value for trade is unchanged.</description>
+    <category>BasicsNonPawn</category>
     <defaultBaseValue>1</defaultBaseValue>
     <minValue>0</minValue>
     <maxValue>1</maxValue>

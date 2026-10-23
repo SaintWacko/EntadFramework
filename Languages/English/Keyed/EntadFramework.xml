@@ -108,6 +108,8 @@
   <EF_InspirationReason>Inspired by {0}.</EF_InspirationReason>
   <EF_ProductQualityRaised>{0} made {2} at {1}, and it came out better than expected: {3}.</EF_ProductQualityRaised>
   <EF_ProductDoubled>{0}'s work at {1} yielded twice the usual {2}.</EF_ProductDoubled>
+  <EF_Card_HeatsTo>Warms its room up to {0}</EF_Card_HeatsTo>
+  <EF_Card_CoolsTo>Cools its room down to {0}</EF_Card_CoolsTo>
   <EF_IngredientsSpared>{0}'s work at {1} used only half the ingredients.</EF_IngredientsSpared>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
