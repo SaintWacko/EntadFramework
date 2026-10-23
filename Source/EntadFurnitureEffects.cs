@@ -211,20 +211,33 @@ namespace EntadFramework
         }
 
         // Preserving: rot rate for food on a preserving shelf. Called for every rottable stack's rot step (every 250
-        // ticks) and for rot time readouts; for anything not frozen it costs a slot group lookup, and for an entad
-        // shelf a cached stat read.
+        // ticks); for anything not frozen it costs a slot group lookup, and for an entad shelf a cached stat read.
         public static float RotRate(float rate, CompRottable rottable)
         {
             if (rate <= 0f) return rate;
-            Thing storage = StorageOf(rottable.parent);
-            if (storage == null || !EntadCompInjector.MayHaveComp(storage.def)) return rate;
-            var comp = storage.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.Count == 0) return rate;
-            float factor = storage.GetStatValue(EntadStatDefOf.Entad_StoredRotFactor, true, 250);
+            float factor = StoredRotFactor(rottable, out var comp);
             if (factor >= 1f) return rate;
-            if (comp.HasHidden && storage.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
+            if (comp.HasHidden && comp.parent.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
                 comp.RevealStat(EntadStatDefOf.Entad_StoredRotFactor);
             return rate * factor;
+        }
+
+        // The time-until-rotten readout for food where it sits now. The rot step's reveal covers noticing the trait.
+        internal static int TicksUntilRot(int ticks, CompRottable rottable)
+        {
+            if (ticks <= 0 || ticks >= 72000000) return ticks;
+            float factor = StoredRotFactor(rottable, out _);
+            return factor >= 1f || factor <= 0f ? ticks : Mathf.Min(72000000, Mathf.RoundToInt(ticks / factor));
+        }
+
+        private static float StoredRotFactor(CompRottable rottable, out CompEntad comp)
+        {
+            comp = null;
+            Thing storage = StorageOf(rottable.parent);
+            if (storage == null || !EntadCompInjector.MayHaveComp(storage.def)) return 1f;
+            comp = storage.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.Count == 0) return 1f;
+            return storage.GetStatValue(EntadStatDefOf.Entad_StoredRotFactor, true, 250);
         }
 
         // Fertile: fertility of a cell whose planter has the trait
@@ -253,10 +266,10 @@ namespace EntadFramework
         }
     }
 
-    // The rot step and the time-until-rotten count (inspect pane, caravan food) each call
-    // GenTemperature.RotRateAtTemperature; each call's result is passed through RotRate. The inspect pane's own call
-    // only picks its label, and through RotRate a warm Preserving shelf would read 'refrigerated', giving away a
-    // hidden trait; its days left come from TicksUntilRotAtTemp, so they are right without it.
+    // The rot step's GenTemperature.RotRateAtTemperature result is passed through RotRate. The inspect pane's call
+    // only picks its label (through RotRate a warm Preserving shelf would read 'refrigerated', giving away a hidden
+    // trait), and TicksUntilRotAtTemp also feeds caravan estimates for food that is about to leave the shelf, so
+    // the readout is corrected in the getter below instead.
     [HarmonyPatch]
     public static class Patch_CompRottable_RotRate_Preserving
     {
@@ -266,7 +279,6 @@ namespace EntadFramework
         public static IEnumerable<MethodBase> TargetMethods()
         {
             yield return AccessTools.DeclaredMethod(typeof(CompRottable), "TickInterval");
-            yield return AccessTools.DeclaredMethod(typeof(CompRottable), nameof(CompRottable.TicksUntilRotAtTemp));
         }
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
@@ -283,6 +295,15 @@ namespace EntadFramework
                 }
             }
             if (!found) Log.Warning($"[Entad Framework] {original.DeclaringType.Name}.{original.Name} no longer calls RotRateAtTemperature; Preserving won't change it");
+        }
+    }
+
+    [HarmonyPatch(typeof(CompRottable), nameof(CompRottable.TicksUntilRotAtCurrentTemp), MethodType.Getter)]
+    public static class Patch_CompRottable_TicksUntilRot_Preserving
+    {
+        public static void Postfix(CompRottable __instance, ref int __result)
+        {
+            __result = EntadFurnitureEffects.TicksUntilRot(__result, __instance);
         }
     }
 
