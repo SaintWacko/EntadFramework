@@ -728,6 +728,7 @@ namespace EntadFramework
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
                 EntadAuras.Refresh(this);
+                EntadFurnitureEffects.Refresh(this);
             }
         }
 
@@ -828,6 +829,11 @@ namespace EntadFramework
                     var stat = trait.def.statFactors[i].stat;
                     if (stat == null || !trait.def.UsesStat(stat, parent)) continue;
                     infoString.AppendLine(" - " + "EF_Card_StatFactor".Translate(stat.LabelCap, trait.FactorFor(i).ToStringPercent()));
+                }
+                if (trait.IsRevealed(EntadEffectKind.Stat) && trait.def.ChangesRoomTemperature)
+                {
+                    bool heating = trait.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_RoomHeating);
+                    infoString.AppendLine(" - " + (heating ? "EF_Card_HeatsTo" : "EF_Card_CoolsTo").Translate(trait.def.TargetTemperature(heating).ToStringTemperature("F0")));
                 }
                 if (trait.thought != null && trait.IsRevealed(EntadEffectKind.Mood))
                 {

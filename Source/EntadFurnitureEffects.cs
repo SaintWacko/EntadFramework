@@ -9,31 +9,34 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Furniture traits that act on the building's surroundings: Luminous (a light of its own), Warm and Cool (heat
-    // pushed into the room), Humble (counts for less colony wealth), Preserving (food stored on it rots slower) and
-    // Fertile (more fertility for what grows in it). All are plain stats on the building, so they roll, scale and
-    // show on the card like any other; each is read by one hook here.
+    // Traits that act on an entad's surroundings: Luminous (a light of its own), Warm and Cool (heat pushed into the
+    // room), Preserving (food stored on it rots slower) and Fertile (more fertility for what grows in it) on
+    // furniture, and Humble (counts for less colony wealth) on furniture and gear. All are plain stats on the item,
+    // so they roll, scale and show on the card like any other; each is read by one hook here.
     //
-    // Buildings that light, heat or hide wealth are kept in one registry, refreshed when a building spawns, despawns
-    // or changes traits. It ticks every 250 ticks over those buildings only (heat, and noticing a light).
-    // The rot and fertility hooks look the building up from the item or cell they are asked about.
+    // Buildings that light or heat are kept in one registry, refreshed when a building spawns, despawns or changes
+    // traits; it ticks every 250 ticks over those buildings only. Humble items are a second list, kept wherever the
+    // item is (worn, stored, minified) and only read on vanilla's wealth recount. The rot and fertility hooks look
+    // the building up from the item or cell they are asked about.
     public class EntadFurnitureEffects : GameComponent
     {
         private class Source
         {
             public CompEntad comp;
             public float heat;
-            public bool humble;
+            public float targetTemperature;
             public CompGlower glower;
             public Map glowMap;
         }
 
-        private static readonly List<Source> sources = new List<Source>();
+        private class HumbleItem
+        {
+            public CompEntad comp;
+            public int sinceTick;
+        }
 
-        // Warm stops pushing heat at this room temperature and Cool at the other, so neither cooks or freezes a room
-        // on its own: both stay inside vanilla's comfortable range
-        private const float WarmUntil = 22f;
-        private const float CoolUntil = 18f;
+        private static readonly List<Source> sources = new List<Source>();
+        private static readonly List<HumbleItem> humbleItems = new List<HumbleItem>();
 
         // The effect has to be around this long before the colony notices it (as RevealProperty's lights and heat)
         private const int NoticeTicks = 2500;
@@ -43,6 +46,7 @@ namespace EntadFramework
         public EntadFurnitureEffects(Game game)
         {
             sources.Clear();
+            humbleItems.Clear();
         }
 
         private static Source Lookup(CompEntad comp)
@@ -53,29 +57,44 @@ namespace EntadFramework
 
         public static void Refresh(CompEntad comp)
         {
+            RefreshHumble(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
             float heat = 0f, glow = 0f;
-            bool humble = false;
             if (spawned)
             {
                 if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomHeating)) heat += thing.GetStatValue(EntadStatDefOf.Entad_RoomHeating);
                 if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomCooling)) heat -= thing.GetStatValue(EntadStatDefOf.Entad_RoomCooling);
                 if (comp.HasStatTrait(EntadStatDefOf.Entad_GlowRadius)) glow = thing.GetStatValue(EntadStatDefOf.Entad_GlowRadius);
-                humble = comp.HasStatTrait(EntadStatDefOf.Entad_ColonyWealthFactor);
             }
             if (source != null && source.glower != null && (glow <= 0f || source.glowMap != thing.MapHeld || source.glower.Props.glowRadius != glow))
                 RemoveGlower(source);
-            if (heat == 0f && glow <= 0f && !humble)
+            if (heat == 0f && glow <= 0f)
             {
                 if (source != null) sources.Remove(source);
                 return;
             }
             if (source == null) sources.Add(source = new Source { comp = comp });
             source.heat = heat;
-            source.humble = humble;
+            if (heat != 0f) source.targetTemperature = TargetTemperature(comp, heat > 0f);
             if (glow > 0f && source.glower == null) AddGlower(source, glow);
+        }
+
+        // The temperature the trait doing the net heating (or cooling) aims for. Only a modded item would carry both.
+        private static float TargetTemperature(CompEntad comp, bool heating)
+        {
+            StatDef stat = heating ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling;
+            var trait = comp.activeTraits.FirstOrDefault(t => t.def.AllRanges().Any(r => r.stat == stat));
+            return trait?.def.TargetTemperature(heating) ?? (heating ? EntadTraitDef.DefaultWarmTarget : EntadTraitDef.DefaultCoolTarget);
+        }
+
+        private static void RefreshHumble(CompEntad comp)
+        {
+            int index = humbleItems.FindIndex(h => h.comp == comp);
+            bool humble = comp.activeTraits.Count > 0 && comp.HasStatTrait(EntadStatDefOf.Entad_ColonyWealthFactor);
+            if (humble && index < 0) humbleItems.Add(new HumbleItem { comp = comp, sinceTick = Find.TickManager.TicksGame });
+            else if (!humble && index >= 0) humbleItems.RemoveAt(index);
         }
 
         // A vanilla CompGlower registered with the map's glow grid but never added to the building's comps, so it
@@ -130,28 +149,56 @@ namespace EntadFramework
             Room room = thing.GetRoom();
             if (room == null || room.UsesOutdoorTemperature) return;
             float temperature = room.Temperature;
-            if (source.heat > 0f ? temperature >= WarmUntil : temperature <= CoolUntil) return;
+            if (source.heat > 0f ? temperature >= source.targetTemperature : temperature <= source.targetTemperature) return;
             // Per second, over the 250 ticks since the last push, as CompHeatPusher
             GenTemperature.PushHeat(thing, source.heat * 250f / 60f);
             if (noticed) source.comp.RevealStat(source.heat > 0f ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling);
         }
 
-        // Humble: the building counts toward colony wealth at its factor. Vanilla's own sum of building wealth just
-        // ran; this takes the rest back out for the player's humble buildings on that map. Minified ones in storage
-        // count as items, in full.
-        internal static void ReduceWealth(Map map, ref float wealthBuildings)
+        // Humble: the item counts toward colony wealth at its factor. Vanilla's own sums just ran; this takes the rest
+        // back out of the sum vanilla put the item in: buildings at their undamaged value while built by the player,
+        // anything else (worn, carried, stored, a minified building) at its market value wherever vanilla's item count
+        // reaches it. A bound item on the wrong pawn reads factor 1, like its other stats.
+        internal static void ReduceWealth(Map map, ref float wealthBuildings, ref float wealthItems)
         {
-            for (int i = 0; i < sources.Count; i++)
+            for (int i = humbleItems.Count - 1; i >= 0; i--)
             {
-                var source = sources[i];
-                if (!source.humble) continue;
-                Thing thing = source.comp.parent;
-                if (thing.Map != map || thing.Faction != Faction.OfPlayer) continue;
-                float factor = thing.GetStatValue(EntadStatDefOf.Entad_ColonyWealthFactor);
-                wealthBuildings -= thing.GetStatValue(StatDefOf.MarketValueIgnoreHp) * (1f - factor);
-                if (source.comp.HasHidden && source.comp.TicksSinceSpawned >= HumbleNoticeTicks)
-                    source.comp.RevealStat(EntadStatDefOf.Entad_ColonyWealthFactor);
+                var entry = humbleItems[i];
+                Thing thing = entry.comp.parent;
+                if (thing.Destroyed)
+                {
+                    humbleItems.RemoveAt(i);
+                    continue;
+                }
+                float factor;
+                if (thing.Spawned && thing.def.building != null)
+                {
+                    if (thing.Map != map || thing.Faction != Faction.OfPlayer) continue;
+                    factor = thing.GetStatValue(EntadStatDefOf.Entad_ColonyWealthFactor);
+                    if (factor >= 1f) continue;
+                    wealthBuildings -= thing.GetStatValue(StatDefOf.MarketValueIgnoreHp) * (1f - factor);
+                }
+                else
+                {
+                    Thing counted = thing.ParentHolder as MinifiedThing ?? thing;
+                    if (!CountedAsItem(counted, map)) continue;
+                    factor = thing.GetStatValue(EntadStatDefOf.Entad_ColonyWealthFactor);
+                    if (factor >= 1f) continue;
+                    wealthItems -= counted.MarketValue * counted.stackCount * (1f - factor);
+                }
+                if (entry.comp.HasHidden && Find.TickManager.TicksGame - entry.sinceTick >= HumbleNoticeTicks)
+                    entry.comp.RevealStat(EntadStatDefOf.Entad_ColonyWealthFactor);
             }
+        }
+
+        // The same test vanilla's item count makes (WealthWatcher.CalculateWealthItems): on this map, not fogged, and
+        // no holder on the way up it skips (another faction's pawns, quest lodgers, passing ships)
+        private static bool CountedAsItem(Thing thing, Map map)
+        {
+            if (thing.MapHeld != map || !thing.SpawnedOrAnyParentSpawned || thing.PositionHeld.Fogged(map)) return false;
+            for (IThingHolder holder = thing.ParentHolder; holder != null; holder = holder.ParentHolder)
+                if (!WealthWatcher.WealthItemsFilter(holder)) return false;
+            return true;
         }
 
         // The storage building an item sits in: the shelf whose cell it's on, or a building holding it inside
@@ -196,11 +243,11 @@ namespace EntadFramework
     [HarmonyPatch(typeof(WealthWatcher), nameof(WealthWatcher.ForceRecount))]
     public static class Patch_WealthWatcher_ForceRecount_Humble
     {
-        public static void Postfix(bool allowDuringInit, Map ___map, ref float ___wealthBuildings)
+        public static void Postfix(bool allowDuringInit, Map ___map, ref float ___wealthBuildings, ref float ___wealthItems)
         {
-            // Vanilla refused the recount and left the old total, already reduced
+            // Vanilla refused the recount and left the old totals, already reduced
             if (!allowDuringInit && Current.ProgramState != ProgramState.Playing) return;
-            EntadFurnitureEffects.ReduceWealth(___map, ref ___wealthBuildings);
+            EntadFurnitureEffects.ReduceWealth(___map, ref ___wealthBuildings, ref ___wealthItems);
         }
     }
 
