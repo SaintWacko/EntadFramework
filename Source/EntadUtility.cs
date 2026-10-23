@@ -50,8 +50,9 @@ namespace EntadFramework
         {
             if (def.building == null || def.designationCategory == null) return false;
             if (IsSingleUse(def)) return false;
-            // Power conduits sit in the Power tab but are wiring, not furniture: often hidden under walls and floors
-            if (def.building.isPowerConduit) return false;
+            // Power conduits sit in the Power tab but are wiring, not furniture: often hidden under walls and floors.
+            // The conduit layer catches modded pipes too (Dubs Bad Hygiene's air ducts are in the Temperature tab).
+            if (def.building.isPowerConduit || def.altitudeLayer == AltitudeLayer.Conduits) return false;
             // Quality is not required: workbenches, lights, heaters etc. count too. Storage counts whatever its build
             // menu tab (storage mods often add their own, such as Adaptive Storage's).
             return FurnitureCategories.Contains(def.designationCategory.defName)
