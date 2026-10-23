@@ -101,6 +101,30 @@ namespace EntadFramework
         public const int DefaultAppraiserDailyMin = 1;
         public static int AppraiserDailyMin = DefaultAppraiserDailyMin;
 
+        // Entads carried by NPC groups (EntadWorldPawns.cs): the chance a group has any carriers, one more carrier per
+        // so many group points up to the most, each entad's points from a curve over group points (four anchors,
+        // straight lines between) rolled within the variance, and the share bound to their carrier with its points
+        // multiplier. Factions may override the chances and add their own multiplier (EntadFactionExtension).
+        public static bool CarriersEnabled = true;
+        public const float DefaultCarrierGroupChance = 0.35f;
+        public static float CarrierGroupChance = DefaultCarrierGroupChance;
+        public const float DefaultCarrierPointsPerExtra = 1500f;
+        public static float CarrierPointsPerExtra = DefaultCarrierPointsPerExtra;
+        public const int DefaultMaxCarriers = 3;
+        public static int MaxCarriers = DefaultMaxCarriers;
+        public static readonly float[] CarrierCurveGroupPoints = { 100f, 1000f, 3000f, 7000f };
+        public static readonly float[] DefaultCarrierCurvePoints = { 3f, 8f, 15f, 25f };
+        public static readonly float[] CarrierCurvePoints = (float[])DefaultCarrierCurvePoints.Clone();
+        public const float DefaultCarrierPointVariance = 0.25f;
+        public static float CarrierPointVariance = DefaultCarrierPointVariance;
+        public const float DefaultCarrierBoundChance = 0.5f;
+        public static float CarrierBoundChance = DefaultCarrierBoundChance;
+        public const float DefaultCarrierBoundPointFactor = 1.5f;
+        public static float CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
+
+        // The colony's verity as a row under the resource readout, once there is any
+        public static bool VerityReadout = true;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -141,6 +165,15 @@ namespace EntadFramework
             IdentifyWealthFraction = DefaultIdentifyWealthFraction;
             AppraiserMax = DefaultAppraiserMax;
             AppraiserDailyMin = DefaultAppraiserDailyMin;
+            CarriersEnabled = true;
+            CarrierGroupChance = DefaultCarrierGroupChance;
+            CarrierPointsPerExtra = DefaultCarrierPointsPerExtra;
+            MaxCarriers = DefaultMaxCarriers;
+            DefaultCarrierCurvePoints.CopyTo(CarrierCurvePoints, 0);
+            CarrierPointVariance = DefaultCarrierPointVariance;
+            CarrierBoundChance = DefaultCarrierBoundChance;
+            CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
+            VerityReadout = true;
             ResetRarityWeights();
         }
 
@@ -192,6 +225,26 @@ namespace EntadFramework
             AppraiserMax = new IntRange(Mathf.Clamp(AppraiserMax.min, 1, 20), Mathf.Clamp(AppraiserMax.max, Mathf.Clamp(AppraiserMax.min, 1, 20), 20));
             Scribe_Values.Look(ref AppraiserDailyMin, "appraiserDailyMin", DefaultAppraiserDailyMin);
             AppraiserDailyMin = Mathf.Clamp(AppraiserDailyMin, 1, 20);
+            Scribe_Values.Look(ref CarriersEnabled, "carriersEnabled", true);
+            Scribe_Values.Look(ref CarrierGroupChance, "carrierGroupChance", DefaultCarrierGroupChance);
+            CarrierGroupChance = Mathf.Clamp01(CarrierGroupChance);
+            Scribe_Values.Look(ref CarrierPointsPerExtra, "carrierPointsPerExtra", DefaultCarrierPointsPerExtra);
+            CarrierPointsPerExtra = Mathf.Clamp(CarrierPointsPerExtra, 250f, 10000f);
+            Scribe_Values.Look(ref MaxCarriers, "maxCarriers", DefaultMaxCarriers);
+            MaxCarriers = Mathf.Clamp(MaxCarriers, 1, 10);
+            for (int i = 0; i < CarrierCurvePoints.Length; i++)
+            {
+                float v = CarrierCurvePoints[i];
+                Scribe_Values.Look(ref v, "carrierCurve" + i, DefaultCarrierCurvePoints[i]);
+                CarrierCurvePoints[i] = Mathf.Clamp(v, 0f, 100f);
+            }
+            Scribe_Values.Look(ref CarrierPointVariance, "carrierPointVariance", DefaultCarrierPointVariance);
+            CarrierPointVariance = Mathf.Clamp(CarrierPointVariance, 0f, 0.9f);
+            Scribe_Values.Look(ref CarrierBoundChance, "carrierBoundChance", DefaultCarrierBoundChance);
+            CarrierBoundChance = Mathf.Clamp01(CarrierBoundChance);
+            Scribe_Values.Look(ref CarrierBoundPointFactor, "carrierBoundPointFactor", DefaultCarrierBoundPointFactor);
+            CarrierBoundPointFactor = Mathf.Clamp(CarrierBoundPointFactor, 0.5f, 4f);
+            Scribe_Values.Look(ref VerityReadout, "verityReadout", true);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -394,6 +447,7 @@ namespace EntadFramework
 
             Section(list, "EF_Settings_Visuals");
             list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
             list.Gap();
 
             Section(list, "EF_Settings_Generation");
@@ -433,6 +487,36 @@ namespace EntadFramework
             list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
             EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_MysteryBonus_Desc".Translate());
+            list.Gap();
+
+            Section(list, "EF_Settings_Carriers");
+            list.CheckboxLabeled("EF_Settings_CarriersEnabled".Translate(), ref EntadSettings.CarriersEnabled, "EF_Settings_CarriersEnabled_Tip".Translate());
+            if (EntadSettings.CarriersEnabled)
+            {
+                list.Label("EF_Settings_CarrierChance".Translate(EntadSettings.CarrierGroupChance.ToStringPercent()));
+                EntadSettings.CarrierGroupChance = Mathf.Round(list.Slider(EntadSettings.CarrierGroupChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierPerExtra".Translate(EntadSettings.CarrierPointsPerExtra.ToString("0")));
+                EntadSettings.CarrierPointsPerExtra = Mathf.Round(list.Slider(EntadSettings.CarrierPointsPerExtra, 250f, 10000f) / 250f) * 250f;
+                list.Label("EF_Settings_MaxCarriers".Translate(EntadSettings.MaxCarriers));
+                EntadSettings.MaxCarriers = Mathf.RoundToInt(list.Slider(EntadSettings.MaxCarriers, 1f, 10f));
+                list.Label("EF_Settings_Carriers_Desc".Translate());
+                list.Gap();
+                for (int i = 0; i < EntadSettings.CarrierCurvePoints.Length; i++)
+                {
+                    float v = EntadSettings.CarrierCurvePoints[i];
+                    list.Label("EF_Settings_CarrierCurveRow".Translate(EntadSettings.CarrierCurveGroupPoints[i].ToString("0"), v.ToString("0.#")));
+                    EntadSettings.CarrierCurvePoints[i] = Mathf.Round(list.Slider(v, 0f, 100f) * 2f) / 2f;
+                }
+                list.Label("EF_Settings_CarrierVariance".Translate(EntadSettings.CarrierPointVariance.ToStringPercent()));
+                EntadSettings.CarrierPointVariance = Mathf.Round(list.Slider(EntadSettings.CarrierPointVariance, 0f, 0.9f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierCurve_Desc".Translate());
+                list.Gap();
+                list.Label("EF_Settings_CarrierBound".Translate(EntadSettings.CarrierBoundChance.ToStringPercent()));
+                EntadSettings.CarrierBoundChance = Mathf.Round(list.Slider(EntadSettings.CarrierBoundChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierBoundFactor".Translate(EntadSettings.CarrierBoundPointFactor.ToString("0.##")));
+                EntadSettings.CarrierBoundPointFactor = Mathf.Round(list.Slider(EntadSettings.CarrierBoundPointFactor, 0.5f, 4f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierBound_Desc".Translate());
+            }
             list.Gap();
 
             Section(list, "EF_Settings_Appraisers");

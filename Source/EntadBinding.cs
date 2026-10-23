@@ -80,7 +80,7 @@ namespace EntadFramework
             {
                 if (p == null || boundPawns.Contains(p)) continue;
                 boundPawns.Add(p);
-                EntadBindingRegistry.Keep(p);
+                EntadBindingRegistry.Keep(p, this);
                 changed = true;
             }
             if (changed) BindingChanged();
@@ -147,7 +147,7 @@ namespace EntadFramework
             {
                 boundPawns.RemoveAll(p => p == null);
                 if (boundPawns.Count == 0) boundPawns = null;
-                else foreach (var p in boundPawns) EntadBindingRegistry.Keep(p);
+                else foreach (var p in boundPawns) EntadBindingRegistry.Keep(p, this);
             }
         }
 
@@ -162,16 +162,30 @@ namespace EntadFramework
     // and their parent relations go with them, which would cut every descendant off from the bloodline. Pawns in
     // this set are reported as critical, so they stay. Rebuilt on load from the items themselves, so nothing extra
     // is saved and a destroyed item's pawns are simply not re-added.
+    // A pawn is only kept while one of their items is somewhere else (looted, dropped, worn by someone else). An NPC
+    // generated with a bound entad (EntadWorldPawns) who leaves still carries it, and is discarded together with it,
+    // so nothing is left that needs them; keeping every such raider and caravan guard would pile up world pawns.
     public static class EntadBindingRegistry
     {
-        private static readonly HashSet<Pawn> kept = new HashSet<Pawn>();
+        private static readonly Dictionary<Pawn, List<CompEntad>> kept = new Dictionary<Pawn, List<CompEntad>>();
 
-        public static void Keep(Pawn pawn)
+        public static void Keep(Pawn pawn, CompEntad item)
         {
-            if (pawn != null) kept.Add(pawn);
+            if (pawn == null) return;
+            if (!kept.TryGetValue(pawn, out var items)) kept[pawn] = items = new List<CompEntad>();
+            if (item != null && !items.Contains(item)) items.Add(item);
         }
 
-        public static bool IsKept(Pawn pawn) => kept.Count > 0 && kept.Contains(pawn);
+        public static bool IsKept(Pawn pawn) => kept.Count > 0 && Needed(pawn);
+
+        private static bool Needed(Pawn pawn)
+        {
+            if (!kept.TryGetValue(pawn, out var items)) return false;
+            items.RemoveAll(c => c.parent.Destroyed);
+            for (int i = 0; i < items.Count; i++)
+                if (items[i].Holder != pawn) return true;
+            return false;
+        }
 
         // Bound pawns and every descendant of one. A dead descendant in the middle of the line (a bound pawn's son
         // who died off-map, say) is what links the grandchildren to the binding; vanilla only keeps relatives one
@@ -180,7 +194,7 @@ namespace EntadFramework
         public static bool IsKeptOrDescendant(Pawn pawn)
         {
             if (kept.Count == 0 || pawn == null) return false;
-            if (kept.Contains(pawn)) return true;
+            if (Needed(pawn)) return true;
             if (!pawn.RaceProps.Humanlike) return false;
             var visited = new HashSet<Pawn>();
             var frontier = new List<Pawn> { pawn };
@@ -190,7 +204,7 @@ namespace EntadFramework
                 foreach (var p in frontier)
                 {
                     if (p == null || !visited.Add(p)) continue;
-                    if (kept.Contains(p)) return true;
+                    if (Needed(p)) return true;
                     var rels = p.relations?.DirectRelations;
                     if (rels == null) continue;
                     for (int i = 0; i < rels.Count; i++)

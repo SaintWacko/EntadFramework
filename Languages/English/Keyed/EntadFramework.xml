@@ -154,6 +154,7 @@
   <EF_DesignatorDismantleDesc>Drag over an area to mark every loose entad item in it for dismantling. Furniture isn't marked; use its own dismantle button. A researcher takes each one apart for verity and it is destroyed for good. Use Cancel to unmark.</EF_DesignatorDismantleDesc>
   <EF_MustDesignateEntad>Must designate an entad.</EF_MustDesignateEntad>
   <EF_VerityReadout>Entad verity: {0}</EF_VerityReadout>
+  <EF_VerityReadoutTip>Entad verity: {0}\n\nGained by having researchers dismantle entads. Other mods can spend it.</EF_VerityReadoutTip>
   <EF_DismantleNoBench>No free research bench to dismantle it at.</EF_DismantleNoBench>
   <EF_DismantleMessage>{0} dismantled {1}. The colony gained {2} verity and now has {3}. It held: {4}.</EF_DismantleMessage>
   <EF_DismantleTraitEntry>{0} ({1})</EF_DismantleTraitEntry>
@@ -199,6 +200,8 @@
   <EF_Settings_Visuals>Visuals</EF_Settings_Visuals>
   <EF_Settings_AuraEffects>Aura glow and links</EF_Settings_AuraEffects>
   <EF_Settings_AuraEffects_Tip>With Ideology, an active aura you know about lights the ground it covers and draws a line to each pawn it affects. Without Ideology, or with this off, selecting the carrier or furniture outlines the aura's range instead.</EF_Settings_AuraEffects_Tip>
+  <EF_Settings_VerityReadout>Show verity with the resources</EF_Settings_VerityReadout>
+  <EF_Settings_VerityReadout_Tip>Adds the colony's entad verity as a row under the resource list in the top left, once the colony has any. Research benches show it either way.</EF_Settings_VerityReadout_Tip>
   <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
   <EF_Settings_Generation>Generation</EF_Settings_Generation>
   <EF_Settings_WeaponWeight>Weapon-specific trait weight: x{0}</EF_Settings_WeaponWeight>
@@ -223,6 +226,19 @@
   <EF_Settings_DrawbackChance>Chance an item can have drawbacks: {0}</EF_Settings_DrawbackChance>
   <EF_Settings_MaxDrawbacks>Most drawbacks per item: {0}</EF_Settings_MaxDrawbacks>
   <EF_Settings_Drawbacks_Desc>Drawbacks are traits with a cost below zero. Each one adds its points back to the target, so the item gets more or better traits to make up for it.</EF_Settings_Drawbacks_Desc>
+  <EF_Settings_Carriers>Entads in NPC groups</EF_Settings_Carriers>
+  <EF_Settings_CarriersEnabled>NPC groups carry entads</EF_Settings_CarriersEnabled>
+  <EF_Settings_CarriersEnabled_Tip>Raids, visitors, trade caravans and settlement defenders can have members whose own weapon or apparel is an entad. Only humanlike members, never animals or mechanoids. Their entads start unidentified.</EF_Settings_CarriersEnabled_Tip>
+  <EF_Settings_CarrierChance>Chance a group has entad carriers: {0}</EF_Settings_CarrierChance>
+  <EF_Settings_CarrierPerExtra>One more carrier per {0} group points</EF_Settings_CarrierPerExtra>
+  <EF_Settings_MaxCarriers>Most carriers per group: {0}</EF_Settings_MaxCarriers>
+  <EF_Settings_Carriers_Desc>A group that rolls carriers has one, plus one more for every so many points the group was made with (a raid's points, for example). The entads are extra: the group is not made smaller to pay for them.</EF_Settings_Carriers_Desc>
+  <EF_Settings_CarrierCurveRow>Entad points at {0} group points: {1}</EF_Settings_CarrierCurveRow>
+  <EF_Settings_CarrierVariance>Random spread: ±{0}</EF_Settings_CarrierVariance>
+  <EF_Settings_CarrierCurve_Desc>How strong a carried entad is, by the group's points. Between the rows the value follows a straight line; below the first and above the last it stays flat. Each entad's points are then moved up or down by up to the spread.</EF_Settings_CarrierCurve_Desc>
+  <EF_Settings_CarrierBound>Carried entads bound to their carrier: {0}</EF_Settings_CarrierBound>
+  <EF_Settings_CarrierBoundFactor>Bound entad points: x{0}</EF_Settings_CarrierBoundFactor>
+  <EF_Settings_CarrierBound_Desc>A bound entad's traits work only for its carrier and their descendants, so looting one gives the colony an ordinary item worth little more than usual. To make up for that, bound entads are stronger for their carrier. Factions from other mods may set their own chances and strength.</EF_Settings_CarrierBound_Desc>
   <EF_Settings_Appraisers>Appraisers</EF_Settings_Appraisers>
   <EF_Settings_CaravanAppraiser>Chance a trade caravan brings an appraiser: {0}</EF_Settings_CaravanAppraiser>
   <EF_Settings_SettlementAppraiser>Chance a settlement has an appraiser: {0}</EF_Settings_SettlementAppraiser>

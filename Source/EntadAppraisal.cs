@@ -16,12 +16,17 @@ namespace EntadFramework
     // has a daily maximum (rolled once) and a number for today (rolled at local midnight, between the settings'
     // minimum and their maximum). Nothing ticks: today's number is rerolled the first time it's asked for on a new day.
 
-    // Per-faction override of the settings' chances, for content mods (a temple faction that always has one).
-    // A negative value (the default) means "use the settings".
+    // Per-faction override of the settings, for content mods (a temple faction that always has an appraiser).
+    // A negative chance (the default) means "use the settings".
     public class EntadFactionExtension : DefModExtension
     {
         public float appraiserCaravanChance = -1f;
         public float appraiserSettlementChance = -1f;
+        // Entads carried by this faction's groups (EntadWorldPawns.cs): the chance a group has any carriers, the
+        // share of carried entads bound to their carrier, and a multiplier on their points
+        public float carrierChance = -1f;
+        public float carrierBoundChance = -1f;
+        public float carrierPointFactor = 1f;
     }
 
     public class AppraiserState : IExposable

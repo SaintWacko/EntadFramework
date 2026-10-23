@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -395,6 +396,37 @@ namespace EntadFramework
         // The colony's own benches only: ruins and other factions' bases have nothing to do with our pool
         public override string CompInspectStringExtra() =>
             parent.Faction == Faction.OfPlayer ? "EF_VerityReadout".Translate(EntadApi.Verity.ToString("0.#")).ToString() : null;
+    }
+
+    // The colony's verity as one more row under the resource readout (top left), drawn after vanilla's. The readout
+    // has a fixed area and scrolls inside it, so the row goes under whichever is shorter: the rows or the area.
+    [HarmonyPatch(typeof(ResourceReadout), nameof(ResourceReadout.ResourceReadoutOnGUI))]
+    [StaticConstructorOnStartup]
+    public static class Patch_ResourceReadout_Verity
+    {
+        private static readonly Texture2D icon = ContentFinder<Texture2D>.Get("UI/Icons/EntadVerity");
+        private static readonly AccessTools.FieldRef<ResourceReadout, float> lastDrawnHeight =
+            AccessTools.FieldRefAccess<ResourceReadout, float>("lastDrawnHeight");
+
+        public static void Postfix(ResourceReadout __instance)
+        {
+            if (!EntadSettings.VerityReadout || Event.current.type == EventType.Layout || Current.ProgramState != ProgramState.Playing
+                || Find.MainTabsRoot.OpenTab == MainButtonDefOf.Menu) return;
+            float verity = EntadApi.Verity;
+            if (verity <= 0f) return;
+            // Vanilla's own rect for each layout mode
+            bool categorized = Prefs.ResourceReadoutCategorized;
+            float x = categorized ? 2f : 7f;
+            float areaHeight = UI.screenHeight - 7f - 200f;
+            float y = 7f + Mathf.Min(lastDrawnHeight(__instance), areaHeight);
+            var row = new Rect(x, y, categorized ? 124f : 110f, 24f);
+            GUI.DrawTexture(new Rect(row.x, row.y, 27f, 27f), icon);
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(row.x + 34f, row.y + 2f, row.width - 34f, row.height), verity.ToString("0.#"));
+            Text.Anchor = TextAnchor.UpperLeft;
+            if (Mouse.IsOver(row)) TooltipHandler.TipRegion(row, "EF_VerityReadoutTip".Translate(verity.ToString("0.#")));
+        }
     }
 
     [StaticConstructorOnStartup]
