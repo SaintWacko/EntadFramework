@@ -187,7 +187,7 @@ namespace EntadFramework
         {
             var traits = comp.activeTraits;
             foreach (var trait in traits) trait.Hide();
-            int known = Mathf.RoundToInt(Rand.Value * traits.Count);
+            int known = Rand.RangeInclusive(0, traits.Count);
             foreach (var trait in traits.InRandomOrder())
             {
                 if (known-- <= 0) break;
