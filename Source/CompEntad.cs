@@ -370,6 +370,10 @@ namespace EntadFramework
             for (int i = 0; i < activeTraits.Count; i++) activeTraits[i].Reveal(EntadEffectKind.All, false);
         }
 
+        // Set while traits go onto gear that is already in use somewhere the player can't see (EntadWorldPawns):
+        // adding and granting reveal what a holder would notice, and those reveals are undone straight after
+        [System.ThreadStatic] internal static bool quietReveals;
+
         public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
@@ -379,7 +383,7 @@ namespace EntadFramework
             // No glower refresh here: a reveal never changes the radius (building factors apply whether revealed or
             // not), and a reveal can be triggered from inside GlowGrid.RegisterGlower (the radius read in the GlowLight
             // constructor), where re-registering would corrupt the glow grid's light list.
-            if (announce) Messages.Message("EF_TraitRevealed".Translate(parent.LabelNoCount, m.def.label), parent, MessageTypeDefOf.NeutralEvent, false);
+            if (announce && !quietReveals) Messages.Message("EF_TraitRevealed".Translate(parent.LabelNoCount, m.def.label), parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
         // Applies a changed glow radius to a light that is on. The glow grid keeps the radius it read when the light

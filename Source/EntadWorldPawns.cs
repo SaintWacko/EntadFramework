@@ -47,10 +47,12 @@ namespace EntadFramework
             if (!EntadSettings.CarriersEnabled || parms?.faction == null || parms.faction.IsPlayer || pawns.NullOrEmpty()) return;
             if (!Rand.Chance(GroupChance(parms.faction))) return;
 
-            // Members only: slaves for sale and prisoners travel with a trade caravan under another faction or none
+            // Members only. A trade caravan's slaves for sale carry the caravan's faction with no guest status, so
+            // they are told apart by their caravan role, as the appraiser patch does.
             var candidates = new List<Pawn>();
             foreach (Pawn p in pawns)
-                if (p.RaceProps.Humanlike && !p.Dead && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave && HasGearFor(p))
+                if (p.RaceProps.Humanlike && !p.Dead && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave
+                    && p.GetTraderCaravanRole() != TraderCaravanRole.Chattel && HasGearFor(p))
                     candidates.Add(p);
             if (candidates.Count == 0) return;
 
@@ -115,10 +117,20 @@ namespace EntadFramework
             // traits were added to gear already in use, which no equip notification will announce.
             if (bound) comp.Bind(new[] { pawn });
             else EntadAbilities.Grant(pawn, comp);
-            // Granting reveals what the holder would notice at once (equipped stats, hediffs, moods). An NPC's gear
-            // is a stranger's: the player learns nothing until it is seen in use.
+            // Adding and granting reveal what the holder would notice at once (equipped stats, hediffs, moods). An
+            // NPC's gear is a stranger's: the player learns nothing until it is seen in use.
             if (EntadSettings.HideTraits)
                 foreach (var trait in comp.activeTraits) trait.Hide();
+        }
+
+        // Group generation is called from raids, caravans, quests and map generation. Vanilla's own try/catch only
+        // covers the pawns being made, so a failure here would lose the whole group: it costs the group its entads.
+        public static void TryGiveEntadsSafe(PawnGroupMakerParms parms, List<Pawn> pawns)
+        {
+            CompEntad.quietReveals = true;
+            try { TryGiveEntads(parms, pawns); }
+            catch (System.Exception e) { Log.ErrorOnce("[Entad Framework] Could not give entads to a pawn group: " + e, 0x45465750); }
+            finally { CompEntad.quietReveals = false; }
         }
     }
 
@@ -130,7 +142,7 @@ namespace EntadFramework
     {
         public static void Postfix(PawnGroupMakerParms parms, List<Pawn> __result)
         {
-            EntadWorldPawns.TryGiveEntads(parms, __result);
+            EntadWorldPawns.TryGiveEntadsSafe(parms, __result);
         }
     }
 }

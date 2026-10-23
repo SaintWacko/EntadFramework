@@ -178,10 +178,19 @@ namespace EntadFramework
 
         public static bool IsKept(Pawn pawn) => kept.Count > 0 && Needed(pawn);
 
+        // The player's own pawns are always kept: a colonist wearing their own item is still the link between dead
+        // descendants and later generations. Discarding a pawn doesn't destroy what it carried, so a discarded pawn's
+        // entry is dropped here rather than waiting for its items.
         private static bool Needed(Pawn pawn)
         {
             if (!kept.TryGetValue(pawn, out var items)) return false;
             items.RemoveAll(c => c.parent.Destroyed);
+            if (pawn.Discarded || items.Count == 0)
+            {
+                kept.Remove(pawn);
+                return false;
+            }
+            if (pawn.Faction == Faction.OfPlayer) return true;
             for (int i = 0; i < items.Count; i++)
                 if (items[i].Holder != pawn) return true;
             return false;
