@@ -311,6 +311,15 @@ namespace EntadFramework
         // Masterwork and Abundant: workbench stats read when a bill's products are made (EntadProduction.cs)
         public static StatDef Entad_ProductQualityChance;
         public static StatDef Entad_ProductDoubleChance;
+        // Sparing: read with the two above
+        public static StatDef Entad_IngredientRefundChance;
+        // Furniture that acts on its surroundings (EntadFurnitureEffects.cs)
+        public static StatDef Entad_GlowRadius;
+        public static StatDef Entad_RoomHeating;
+        public static StatDef Entad_RoomCooling;
+        public static StatDef Entad_StoredRotFactor;
+        public static StatDef Entad_ColonyWealthFactor;
+        public static StatDef Entad_FertilityOffset;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
     }

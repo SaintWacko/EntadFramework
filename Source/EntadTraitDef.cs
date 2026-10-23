@@ -436,6 +436,10 @@ namespace EntadFramework
         // A hediff given to pawns around the carrier (worn or wielded gear) or around the furniture (EntadAuras.cs)
         public EntadAura aura;
 
+        // The colour of the light a trait with Entad_GlowRadius gives off (EntadFurnitureEffects); a lamp's by default
+        public static readonly ColorInt LampGlowColor = new ColorInt(217, 217, 208, 0);
+        public ColorInt glowColor = LampGlowColor;
+
         // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
         // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
@@ -850,6 +854,16 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_MercilessDamageFactor) return td.IsWeapon && !HasNoDamageHook(td);
             if (stat == EntadStatDefOf.Entad_ProductQualityChance) return td.building != null && MakesAny(td, p => p.HasComp(typeof(CompQuality)), false);
             if (stat == EntadStatDefOf.Entad_ProductDoubleChance) return td.building != null && MakesAny(td, p => p.stackLimit > 1, true);
+            if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && UsesStackableIngredients(td);
+            // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
+            // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
+            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.building != null && td.GetCompProperties<CompProperties_Glower>() == null;
+            if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
+                return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
+            if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && StoresRottables(td);
+            if (stat == EntadStatDefOf.Entad_ColonyWealthFactor) return td.building != null;
+            // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
+            if (stat == EntadStatDefOf.Entad_FertilityOffset) return td.building != null && td.fertility > 0f;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
@@ -867,6 +881,28 @@ namespace EntadFramework
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Sparing only gives back stackable ingredients: a smelted rifle or a butchered corpse can't come back in half
+        private static bool UsesStackableIngredients(ThingDef td)
+        {
+            var recipes = td.AllRecipes;
+            for (int i = 0; recipes != null && i < recipes.Count; i++)
+            {
+                var ingredients = recipes[i].ingredients;
+                for (int j = 0; ingredients != null && j < ingredients.Count; j++)
+                    if (ingredients[j].filter != null && ingredients[j].filter.AllowedThingDefs.Any(d => d.stackLimit > 1)) return true;
+            }
+            return false;
+        }
+
+        // Storage that can hold something that rots: a shelf, not a weapon rack. Read only when traits are rolled.
+        private static bool StoresRottables(ThingDef td)
+        {
+            if (td.thingClass == null || !typeof(Building_Storage).IsAssignableFrom(td.thingClass)) return false;
+            var filter = td.building.fixedStorageSettings?.filter;
+            if (filter == null) return true;
+            return filter.AllowedThingDefs.Any(d => d.GetCompProperties<CompProperties_Rottable>() != null);
         }
 
         // Whether any bill done at this building makes a product that passes the check. Butchering, smelting and

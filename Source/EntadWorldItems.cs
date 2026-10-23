@@ -20,11 +20,14 @@ namespace EntadFramework
         public float chance = -1f;
         public int maxEntads = -1;
         public float pointFactor = 1f;
+        // Loot only: the chance an entad binds to the first colonist to use it
+        public float bindChance = -1f;
 
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (var e in base.ConfigErrors()) yield return e;
             if (chance > 1f) yield return "EntadThingSetExtension chance is above 1";
+            if (bindChance > 1f) yield return "EntadThingSetExtension bindChance is above 1";
             if (pointFactor < 0f) yield return "EntadThingSetExtension pointFactor is negative";
         }
     }
@@ -156,12 +159,16 @@ namespace EntadFramework
                 bool useExt = !FoundAsLoot;
                 float chance = useExt && ext.chance >= 0f ? ext.chance : reward ? EntadSettings.RewardItemChance : EntadSettings.LootItemChance;
                 int max = useExt && ext.maxEntads >= 0 ? ext.maxEntads : reward ? EntadSettings.RewardMaxEntads : EntadSettings.LootMaxEntads;
+                float bindChance = reward ? 0f : useExt && ext.bindChance >= 0f ? ext.bindChance : EntadSettings.LootBindChance;
                 int converted = 0;
                 foreach (var comp in candidates.InRandomOrder())
                 {
                     if (converted >= max) break;
                     if (!Rand.Chance(chance) || !TryConvert(comp, basePoints)) continue;
                     converted++;
+                    // Bought and given entads are never bound; a found one may take to whoever picks it up first.
+                    // Nothing on the item says so.
+                    if (bindChance > 0f && Rand.Chance(bindChance)) comp.bindOnFirstUse = true;
                     if (!EntadSettings.HideTraits) continue;
                     // The quest giver knows part of what it hands over, as a trader does; loot is found unknown
                     if (reward) RevealShare(comp);

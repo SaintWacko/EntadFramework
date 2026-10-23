@@ -139,6 +139,8 @@ namespace EntadFramework
         public static float LootItemChance = DefaultLootItemChance;
         public const int DefaultLootMaxEntads = 2;
         public static int LootMaxEntads = DefaultLootMaxEntads;
+        public const float DefaultLootBindChance = 0.25f;
+        public static float LootBindChance = DefaultLootBindChance;
         public static readonly float[] ItemCurveValues = { 1000f, 4000f, 10000f, 25000f };
         public static readonly float[] DefaultItemCurvePoints = { 3f, 8f, 15f, 25f };
         public static readonly float[] ItemCurvePoints = (float[])DefaultItemCurvePoints.Clone();
@@ -203,6 +205,7 @@ namespace EntadFramework
             RewardMaxEntads = DefaultRewardMaxEntads;
             LootItemChance = DefaultLootItemChance;
             LootMaxEntads = DefaultLootMaxEntads;
+            LootBindChance = DefaultLootBindChance;
             DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
             ItemPointVariance = DefaultItemPointVariance;
             VerityReadout = true;
@@ -289,6 +292,8 @@ namespace EntadFramework
             LootItemChance = Mathf.Clamp01(LootItemChance);
             Scribe_Values.Look(ref LootMaxEntads, "lootMaxEntads", DefaultLootMaxEntads);
             LootMaxEntads = Mathf.Clamp(LootMaxEntads, 1, 10);
+            Scribe_Values.Look(ref LootBindChance, "lootBindChance", DefaultLootBindChance);
+            LootBindChance = Mathf.Clamp01(LootBindChance);
             for (int i = 0; i < ItemCurvePoints.Length; i++)
             {
                 float v = ItemCurvePoints[i];
@@ -590,6 +595,8 @@ namespace EntadFramework
                 EntadSettings.LootItemChance = Mathf.Round(list.Slider(EntadSettings.LootItemChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_LootMax".Translate(EntadSettings.LootMaxEntads));
                 EntadSettings.LootMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.LootMaxEntads, 1f, 10f));
+                list.Label("EF_Settings_LootBind".Translate(EntadSettings.LootBindChance.ToStringPercent()), tooltip: "EF_Settings_LootBind_Tip".Translate());
+                EntadSettings.LootBindChance = Mathf.Round(list.Slider(EntadSettings.LootBindChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_RewardLoot_Desc".Translate());
                 list.Gap();
                 for (int i = 0; i < EntadSettings.ItemCurvePoints.Length; i++)

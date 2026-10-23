@@ -249,6 +249,8 @@
   <EF_Settings_RewardMax>Most entads per reward: {0}</EF_Settings_RewardMax>
   <EF_Settings_LootChance>Chance each loot item is an entad: {0}</EF_Settings_LootChance>
   <EF_Settings_LootMax>Most entads per loot pile: {0}</EF_Settings_LootMax>
+  <EF_Settings_LootBind>Loot entads that bind to their first user: {0}</EF_Settings_LootBind>
+  <EF_Settings_LootBind_Tip>The chance a found entad binds to the first colonist to equip or use it. Nothing on the item says it will. Entads bought from traders or given as quest rewards never bind this way.</EF_Settings_LootBind_Tip>
   <EF_Settings_RewardLoot_Desc>Only weapons, apparel and furniture can become entads. Loot covers item stashes, ancient complexes and crates, cryptosleep pods, faction settlement stockpiles and the like. Like a trader, a quest giver knows part of what it hands over: each reward entad shows a random share of its traits. Loot entads are found unidentified.</EF_Settings_RewardLoot_Desc>
   <EF_Settings_ItemCurveRow>Entad points at {0} total value: {1}</EF_Settings_ItemCurveRow>
   <EF_Settings_ItemVariance>Random spread: ±{0}</EF_Settings_ItemVariance>

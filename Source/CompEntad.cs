@@ -353,6 +353,28 @@ namespace EntadFramework
             return 0f;
         }
         private int spawnedTick;
+
+        internal int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
+
+        // Whether a trait on the item changes the stat; cheap enough for a spawn or a trait change, not a tick
+        internal bool HasStatTrait(StatDef stat)
+        {
+            for (int t = 0; t < activeTraits.Count; t++)
+                foreach (var r in activeTraits[t].def.AllRanges())
+                    if (r.stat == stat) return true;
+            return false;
+        }
+
+        // Reveals the traits that change the stat, for an effect the player has now seen happen
+        internal void RevealStat(StatDef stat)
+        {
+            if (!HasHidden) return;
+            RevealWhere(EntadEffectKind.Stat, m =>
+            {
+                foreach (var r in m.def.AllRanges()) if (r.stat == stat) return true;
+                return false;
+            });
+        }
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
 
         public bool HasHidden
@@ -551,6 +573,7 @@ namespace EntadFramework
             ClearStatCaches();
             EntadAuras.Refresh(this);
             EntadStorage.Refresh(this, parent.Spawned);
+            EntadFurnitureEffects.Refresh(this);
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);
@@ -616,6 +639,7 @@ namespace EntadFramework
             spawnedTick = Find.TickManager.TicksGame;
             if (!activeTraits.NullOrEmpty()) EntadFuel.Refresh(parent, this);
             if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true, fromSpawn: true);
+            if (!activeTraits.NullOrEmpty()) EntadFurnitureEffects.Refresh(this);
         }
 
         // Set while BaseMarketValue reads the stat, so StatPart_Entad leaves this item's market value untouched
@@ -634,6 +658,7 @@ namespace EntadFramework
         {
             base.PostDeSpawn(map, mode);
             EntadStorage.Refresh(this, false);
+            EntadFurnitureEffects.Refresh(this);
         }
 
         public void RemoveTrait(AppliedEntadTrait trait)

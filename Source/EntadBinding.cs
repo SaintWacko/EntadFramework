@@ -103,10 +103,14 @@ namespace EntadFramework
             Bind(new[] { pawn });
         }
 
+        // Set on some found loot (EntadWorldItems): binds like a bindOnFirstUse trait, without a trait to show it
+        public bool bindOnFirstUse;
+
         public bool BindsOnFirstUse
         {
             get
             {
+                if (bindOnFirstUse) return true;
                 for (int i = 0; i < activeTraits.Count; i++) if (activeTraits[i].def.bindOnFirstUse) return true;
                 return false;
             }
@@ -143,6 +147,7 @@ namespace EntadFramework
             // A pawn discarded some other way is never written to the save, so its reference couldn't resolve on load
             if (Scribe.mode == LoadSaveMode.Saving && boundPawns != null) boundPawns.RemoveAll(p => p == null || p.Discarded);
             Scribe_Collections.Look(ref boundPawns, "boundPawns", true, LookMode.Reference);
+            Scribe_Values.Look(ref bindOnFirstUse, "entadBindOnFirstUse");
             if (Scribe.mode == LoadSaveMode.PostLoadInit && boundPawns != null)
             {
                 boundPawns.RemoveAll(p => p == null);
