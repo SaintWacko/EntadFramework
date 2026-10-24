@@ -127,7 +127,13 @@ namespace EntadFramework
             // Dropped beside the crafter rather than added to the product list: vanilla counts everything in that list
             // toward the crafter's records (ThingsCrafted, MealsCooked) and 'produce X' quests, and hauls the first entry
             // as the product, which a refund would become on a bill whose real products all came out empty
-            for (int i = 0; i < refunds.Count; i++) GenPlace.TryPlaceThing(refunds[i], worker.PositionHeld, worker.MapHeld, ThingPlaceMode.Near);
+            // At the bench, not the worker: Vanilla Psycasts Expanded's Finish ability passes a worker who may be on
+            // another map or in a caravan. Never onto a cell holding an ingredient, which vanilla consumes right after
+            // and would take a merged refund with it.
+            var map = bench.Map;
+            var at = bench.def.hasInteractionCell ? bench.InteractionCell : bench.Position;
+            for (int i = 0; i < refunds.Count; i++)
+                GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c));
             Reveal(comp, EntadStatDefOf.Entad_IngredientRefundChance);
             Messages.Message("EF_IngredientsSpared".Translate(worker.LabelShort, bench.LabelShort),
                 new LookTargets(bench), MessageTypeDefOf.PositiveEvent);

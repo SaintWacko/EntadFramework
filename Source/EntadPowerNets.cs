@@ -327,6 +327,7 @@ namespace EntadFramework
         }
 
         // Grounded: vanilla's own test for a rain short circuit, so the trait is only noticed when it stopped one
+        // Only true where vanilla would short: anything else goes on to vanilla (and any other mod's prefix)
         internal static bool BlocksRainShortCircuit(Thing thing)
         {
             if (groundedCount == 0) return false;
@@ -334,8 +335,8 @@ namespace EntadFramework
             if (!IsGrounded(net)) return false;
             var trader = thing.TryGetComp<CompPowerTrader>();
             var battery = thing.TryGetComp<CompPowerBattery>();
-            if ((trader != null && trader.PowerOn && trader.Props.shortCircuitInRain) || (battery != null && battery.StoredEnergy > 100f))
-                RevealGrounded(net);
+            if (!((trader != null && trader.PowerOn && trader.Props.shortCircuitInRain) || (battery != null && battery.StoredEnergy > 100f))) return false;
+            RevealGrounded(net);
             return true;
         }
 
@@ -431,6 +432,10 @@ namespace EntadFramework
             string label = "PowerNeeded".Translate() + ": ";
             string vanilla = label + (0f - __instance.PowerOutput).ToString("#####0") + " W";
             __result = __result.Replace(vanilla, label + (0f - __instance.PowerOutput * factor).ToString("#####0") + " W");
+            var props = __instance.Props;
+            if (props.idlePowerDraw > 0f || props.alwaysDisplayAsUsingPower)
+                __result = __result.Replace("PowerActiveNeeded".Translate(props.PowerConsumption.ToString("#####0")),
+                    "PowerActiveNeeded".Translate((props.PowerConsumption * factor).ToString("#####0")));
         }
     }
 
