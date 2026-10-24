@@ -279,7 +279,7 @@ namespace EntadFramework
                     {
                         c.comp.arcTicksLeft = RollArcTicks(c.arcTrait);
                         Arc(c, net);
-                        // The short circuit may have destroyed the carrier, and with it this list's entry
+                        // An arc is all this carrier does on this pass: no reveal check on the same tick
                         continue;
                     }
                 }

@@ -2,7 +2,7 @@
 <Defs>
   <!-- Network traits (EntadPowerNets.cs): on any furniture with a power comp (batteries, generators, switches, powered
        benches), acting on the whole power network the building is on. Conduits never become entads, so the effect
-       moves with the building, not the wiring. Efficient and Capacitive are plain stats; Grounded and Stormcaught use
+       moves with the building, not the wiring. Conserving and Capacitive are plain stats; Grounded and Stormcaught use
        the powerNet block. The drawbacks Leaky and Sparking are in EntadTraits_Drawbacks.xml. -->
 
   <EntadFramework.EntadTraitDef>
