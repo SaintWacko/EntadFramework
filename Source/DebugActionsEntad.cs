@@ -209,6 +209,21 @@ namespace EntadFramework
             Messages.Message($"Removed {n} trait(s) from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
         }
 
+        // The arc timer runs 15-40 days of live network; this brings it to the next 250-tick pass
+        [DebugAction(category = "Entad Framework", name = "Arc Entad now", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void ArcEntadNow()
+        {
+            CompEntad comp = EntadAtMouse(out Thing thing);
+            if (comp == null) return;
+            if (comp.arcTicksLeft < 0)
+            {
+                Messages.Message($"{thing.Label} has no arcing trait.", MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+            comp.arcTicksLeft = 1;
+            Messages.Message($"{thing.Label} arcs within 250 ticks, if its network has a live power source.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(category = "Entad Framework", name = "Reveal all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void RevealAllEntad()
         {
