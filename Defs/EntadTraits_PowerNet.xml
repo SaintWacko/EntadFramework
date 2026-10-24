@@ -21,7 +21,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Efficient</defName>
     <label>Efficient</label>
-    <description>Lights wired to it burn just as bright on less, and nobody can say why.</description>
+    <description>Everything wired to it runs just as well on less, and nobody can say why.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -36,7 +36,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Capacitive</defName>
     <label>Capacitive</label>
-    <description>Batteries near it hold their charge as if they were afraid to let go of it.</description>
+    <description>Batteries wired to it hold their charge as if they were afraid to let go of it.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>

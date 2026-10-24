@@ -270,7 +270,8 @@ namespace EntadFramework
             if (c.lossFactor < 1f && live && net.batteryComps.Count > 0) c.comp.RevealStat(EntadStatDefOf.Entad_NetBatteryLossFactor);
             if (c.grounded && live)
             {
-                // Saved, so a reload doesn't restart the day
+                // Counted from the first time it was seen on a live player network, not reset when the network goes
+                // dark or the building moves; saved, so a reload doesn't restart it
                 if (c.comp.groundedSinceTick < 0) c.comp.groundedSinceTick = now;
                 else if (now - c.comp.groundedSinceTick >= GroundedNoticeTicks) RevealNetwork(c.comp, e => e.grounded);
             }
