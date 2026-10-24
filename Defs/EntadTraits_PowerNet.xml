@@ -19,8 +19,8 @@
 
   <!-- Strongest one on a network counts; several don't stack -->
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_Efficient</defName>
-    <label>Efficient</label>
+    <defName>Entad_Conserving</defName>
+    <label>Conserving</label>
     <description>Everything wired to it runs just as well on less, and nobody can say why.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>

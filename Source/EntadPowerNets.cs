@@ -9,7 +9,7 @@ using Verse;
 namespace EntadFramework
 {
     // The <powerNet> block on a trait: effects that cover the whole power network its building is on rather than the
-    // building itself. Efficient, Leaky and Capacitive are plain stats instead (Entad_NetPowerFactor,
+    // building itself. Conserving, Leaky and Capacitive are plain stats instead (Entad_NetPowerFactor,
     // Entad_NetPowerLeak, Entad_NetBatteryLossFactor), so they roll and scale like any other; what is left here are
     // the on/off effects. Read in EntadPowerNets.
     public class EntadPowerNetEffect
@@ -150,7 +150,7 @@ namespace EntadFramework
 
         private static bool IsPlayers(Carrier c) => c.comp.parent.Faction == Faction.OfPlayer;
 
-        // Efficient: what the network's running consumers draw, times the strongest factor on it (two Efficient
+        // Conserving: what the network's running consumers draw, times the strongest factor on it (two Conserving
         // carriers don't stack, or a few rolls would run a base on nothing). Leaky: every leak on the network, while
         // it has something to leak from. Called every tick for every network, and by the power readout.
         internal static float GainRate(PowerNet net, float rate)
@@ -287,7 +287,7 @@ namespace EntadFramework
             }
         }
 
-        // Effects the colony can only see as numbers: the network's power readout (Efficient, Leaky) and its
+        // Effects the colony can only see as numbers: the network's power readout (Conserving, Leaky) and its
         // batteries' charge (Capacitive). Grounded is noticed after a day of nothing going wrong.
         private static void Notice(Carrier c, PowerNet net, bool live, int now)
         {
@@ -351,7 +351,7 @@ namespace EntadFramework
     }
 
     [HarmonyPatch(typeof(PowerNet), nameof(PowerNet.CurrentEnergyGainRate))]
-    public static class Patch_PowerNet_CurrentEnergyGainRate_Efficient
+    public static class Patch_PowerNet_CurrentEnergyGainRate_Conserving
     {
         public static void Postfix(PowerNet __instance, ref float __result)
         {
@@ -420,9 +420,9 @@ namespace EntadFramework
         }
     }
 
-    // Efficient on each consumer's 'Power needed' line, which vanilla prints from the def's draw
+    // Conserving on each consumer's 'Power needed' line, which vanilla prints from the def's draw
     [HarmonyPatch(typeof(CompPowerTrader), nameof(CompPowerTrader.CompInspectStringExtra))]
-    public static class Patch_CompPowerTrader_Inspect_Efficient
+    public static class Patch_CompPowerTrader_Inspect_Conserving
     {
         public static void Postfix(CompPowerTrader __instance, ref string __result)
         {
