@@ -124,7 +124,10 @@ namespace EntadFramework
             if (refundFrom == null) yield break;
             var refunds = Refunds(refundFrom);
             if (refunds.Count == 0) yield break;
-            for (int i = 0; i < refunds.Count; i++) yield return refunds[i];
+            // Dropped beside the crafter rather than added to the product list: vanilla counts everything in that list
+            // toward the crafter's records (ThingsCrafted, MealsCooked) and 'produce X' quests, and hauls the first entry
+            // as the product, which a refund would become on a bill whose real products all came out empty
+            for (int i = 0; i < refunds.Count; i++) GenPlace.TryPlaceThing(refunds[i], worker.PositionHeld, worker.MapHeld, ThingPlaceMode.Near);
             Reveal(comp, EntadStatDefOf.Entad_IngredientRefundChance);
             Messages.Message("EF_IngredientsSpared".Translate(worker.LabelShort, bench.LabelShort),
                 new LookTargets(bench), MessageTypeDefOf.PositiveEvent);

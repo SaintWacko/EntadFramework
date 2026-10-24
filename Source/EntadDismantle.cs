@@ -405,12 +405,21 @@ namespace EntadFramework
     public static class Patch_ResourceReadout_Verity
     {
         private static readonly Texture2D icon = ContentFinder<Texture2D>.Get("UI/Icons/EntadVerity");
-        private static readonly AccessTools.FieldRef<ResourceReadout, float> lastDrawnHeight =
-            AccessTools.FieldRefAccess<ResourceReadout, float>("lastDrawnHeight");
+        // Private, so looked up by name and allowed to be missing (checked against 1.6 only): without it the row is
+        // not drawn, rather than the static constructor throwing on every OnGUI call
+        private static readonly AccessTools.FieldRef<ResourceReadout, float> lastDrawnHeight = LastDrawnHeight();
+
+        private static AccessTools.FieldRef<ResourceReadout, float> LastDrawnHeight()
+        {
+            var field = AccessTools.Field(typeof(ResourceReadout), "lastDrawnHeight");
+            if (field != null && field.FieldType == typeof(float)) return AccessTools.FieldRefAccess<ResourceReadout, float>(field);
+            Log.Warning("[Entad Framework] ResourceReadout.lastDrawnHeight not found; verity won't show under the resource readout");
+            return null;
+        }
 
         public static void Postfix(ResourceReadout __instance)
         {
-            if (!EntadSettings.VerityReadout || Event.current.type == EventType.Layout || Current.ProgramState != ProgramState.Playing
+            if (lastDrawnHeight == null || !EntadSettings.VerityReadout || Event.current.type == EventType.Layout || Current.ProgramState != ProgramState.Playing
                 || Find.MainTabsRoot.OpenTab == MainButtonDefOf.Menu) return;
             float verity = EntadApi.Verity;
             if (verity <= 0f) return;
@@ -418,7 +427,11 @@ namespace EntadFramework
             bool categorized = Prefs.ResourceReadoutCategorized;
             float x = categorized ? 2f : 7f;
             float areaHeight = UI.screenHeight - 7f - 200f;
-            float y = 7f + Mathf.Min(lastDrawnHeight(__instance), areaHeight);
+            // A resource list that fills its area runs down to where the inspect pane starts, so there is no room
+            // under it; the research benches still show verity
+            float drawn = lastDrawnHeight(__instance);
+            if (drawn + 24f > areaHeight) return;
+            float y = 7f + drawn;
             var row = new Rect(x, y, categorized ? 124f : 110f, 24f);
             GUI.DrawTexture(new Rect(row.x, row.y, 27f, 27f), icon);
             Text.Font = GameFont.Small;

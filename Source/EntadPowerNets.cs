@@ -186,6 +186,32 @@ namespace EntadFramework
             return factor;
         }
 
+        // The factors as the player knows them, for inspect text: only carriers whose trait has been revealed count,
+        // so a selected battery or lamp never gives a hidden trait away. Built only when something is selected.
+        internal static float ShownFactor(PowerNet net, StatDef stat)
+        {
+            if (net == null || (stat == EntadStatDefOf.Entad_NetPowerFactor ? gainCount : capacitiveCount) == 0) return 1f;
+            float factor = 1f;
+            for (int i = 0; i < carriers.Count; i++)
+            {
+                var c = carriers[i];
+                float f = stat == EntadStatDefOf.Entad_NetPowerFactor ? c.powerFactor : c.lossFactor;
+                if (f < factor && c.power.PowerNet == net && StatRevealed(c.comp, stat)) factor = f;
+            }
+            return factor;
+        }
+
+        private static bool StatRevealed(CompEntad comp, StatDef stat)
+        {
+            for (int t = 0; t < comp.activeTraits.Count; t++)
+            {
+                var trait = comp.activeTraits[t];
+                if (!trait.IsRevealed(EntadEffectKind.Stat)) continue;
+                foreach (var r in trait.def.AllRanges()) if (r.stat == stat) return true;
+            }
+            return false;
+        }
+
         internal static bool IsGrounded(PowerNet net)
         {
             if (groundedCount == 0 || net == null) return false;
@@ -372,6 +398,39 @@ namespace EntadFramework
             if (factor >= 1f) return;
             float better = 1f - (1f - efficiency) * factor;
             stored = Mathf.Min(__instance.Props.storedEnergyMax, stored + added * (better / efficiency - 1f));
+        }
+    }
+
+    // Capacitive on a battery's own inspect text: vanilla prints its def efficiency and a 5 W self-discharge line.
+    // The two segments are rebuilt with vanilla's own keys and format, then swapped, so another mod's additions stay.
+    [HarmonyPatch(typeof(CompPowerBattery), nameof(CompPowerBattery.CompInspectStringExtra))]
+    public static class Patch_CompPowerBattery_Inspect_Capacitive
+    {
+        public static void Postfix(CompPowerBattery __instance, ref string __result)
+        {
+            if (__result == null || !EntadPowerNets.AnyCapacitive) return;
+            float factor = EntadPowerNets.ShownFactor(__instance.PowerNet, EntadStatDefOf.Entad_NetBatteryLossFactor);
+            if (factor >= 1f) return;
+            float efficiency = __instance.Props.efficiency;
+            string label = "PowerBatteryEfficiency".Translate() + ": ";
+            float better = 1f - (1f - efficiency) * factor;
+            __result = __result.Replace(label + (efficiency * 100f).ToString("F0") + "%", label + (better * 100f).ToString("F0") + "%");
+            __result = __result.Replace("\n" + "SelfDischarging".Translate() + ": " + 5f.ToString("F0") + " W", "");
+        }
+    }
+
+    // Efficient on each consumer's 'Power needed' line, which vanilla prints from the def's draw
+    [HarmonyPatch(typeof(CompPowerTrader), nameof(CompPowerTrader.CompInspectStringExtra))]
+    public static class Patch_CompPowerTrader_Inspect_Efficient
+    {
+        public static void Postfix(CompPowerTrader __instance, ref string __result)
+        {
+            if (__result == null || __instance.PowerOutput >= 0f) return;
+            float factor = EntadPowerNets.ShownFactor(__instance.PowerNet, EntadStatDefOf.Entad_NetPowerFactor);
+            if (factor >= 1f) return;
+            string label = "PowerNeeded".Translate() + ": ";
+            string vanilla = label + (0f - __instance.PowerOutput).ToString("#####0") + " W";
+            __result = __result.Replace(vanilla, label + (0f - __instance.PowerOutput * factor).ToString("#####0") + " W");
         }
     }
 
