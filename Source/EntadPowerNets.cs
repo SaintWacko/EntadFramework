@@ -440,7 +440,10 @@ namespace EntadFramework
         public static IEnumerable<MethodBase> TargetMethods()
         {
             yield return AccessTools.PropertyGetter(typeof(Building_CommsConsole), nameof(Building_CommsConsole.CanUseCommsNow));
-            yield return AccessTools.Method(typeof(Building_CommsConsole), "GetFailureReason");
+            // Private, so found by name: a null target would stop Harmony applying every patch in the assembly
+            var failureReason = AccessTools.Method(typeof(Building_CommsConsole), "GetFailureReason");
+            if (failureReason != null) yield return failureReason;
+            else Log.Warning("[Entad Framework] Building_CommsConsole.GetFailureReason not found; a console on a Stormcaught network may still say it can't be used in a solar flare");
         }
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original) =>
