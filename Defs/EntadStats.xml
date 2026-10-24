@@ -121,7 +121,7 @@
     <category>Building</category>
     <defaultBaseValue>1</defaultBaseValue>
     <minValue>0</minValue>
-    <maxValue>1</maxValue>
+    <maxValue>4</maxValue>
     <hideAtValue>1</hideAtValue>
     <toStringStyle>PercentZero</toStringStyle>
   </StatDef>
@@ -140,12 +140,23 @@
 
   <StatDef>
     <defName>Entad_FertilityOffset</defName>
-    <label>fertility bonus</label>
-    <description>Added to the fertility of the soil this holds, so plants grow faster in it.</description>
+    <label>soil fertility</label>
+    <description>Added to the fertility of the soil this holds: plants grow faster in it, or slower when it's below zero.</description>
     <category>Building</category>
     <defaultBaseValue>0</defaultBaseValue>
     <hideAtValue>0</hideAtValue>
     <toStringStyle>PercentZero</toStringStyle>
     <toStringNumberSense>Offset</toStringNumberSense>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_FilthPerDay</defName>
+    <label>filth shed per day</label>
+    <description>How much filth this leaves around it each day: around a building, or wherever its wearer or carrier goes.</description>
+    <category>BasicsNonPawn</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatOne</toStringStyle>
   </StatDef>
 </Defs>

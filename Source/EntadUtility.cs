@@ -73,7 +73,9 @@ namespace EntadFramework
 
         private static readonly HashSet<string> FurnitureCategories = new HashSet<string>
         {
-            "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship"
+            "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship",
+            // Dubs Bad Hygiene's toilets, baths, tanks and pumps (its pipes are left out by the conduit layer)
+            "Hygiene"
         };
 
         // Buildings pawns actually use: seats, beds, eating surfaces, and anything with an interaction cell (workbenches etc.)

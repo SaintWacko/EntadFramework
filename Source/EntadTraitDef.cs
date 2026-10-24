@@ -450,6 +450,9 @@ namespace EntadFramework
 
         public float TargetTemperature(bool heating) => !float.IsNaN(targetTemperature) ? targetTemperature : heating ? DefaultWarmTarget : DefaultCoolTarget;
 
+        // The filth a trait with Entad_FilthPerDay leaves (EntadFurnitureEffects); dirt when unset
+        public ThingDef filth;
+
         // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
         // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
@@ -745,6 +748,10 @@ namespace EntadFramework
                 yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
             if (!float.IsNaN(targetTemperature) && !ChangesRoomTemperature)
                 yield return $"{defName}: targetTemperature only applies to traits with Entad_RoomHeating or Entad_RoomCooling";
+            if (filth != null && !AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))
+                yield return $"{defName}: filth only applies to traits with Entad_FilthPerDay";
+            if (filth != null && filth.filth == null)
+                yield return $"{defName}: filth {filth.defName} is not a filth def";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -877,6 +884,7 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_ColonyWealthFactor) return true;
             // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
             if (stat == EntadStatDefOf.Entad_FertilityOffset) return td.building != null && td.fertility > 0f;
+            if (stat == EntadStatDefOf.Entad_FilthPerDay) return td.building != null || td.IsWeapon || td.IsApparel;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;

@@ -9,15 +9,16 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Traits that act on an entad's surroundings: Luminous (a light of its own), Warm and Cool (heat pushed into the
-    // room), Preserving (food stored on it rots slower) and Fertile (more fertility for what grows in it) on
-    // furniture, and Humble (counts for less colony wealth) on furniture and gear. All are plain stats on the item,
-    // so they roll, scale and show on the card like any other; each is read by one hook here.
+    // Traits that act on an entad's surroundings: Luminous (a light of its own), Warm, Cool, Sweltering and Frigid
+    // (heat pushed into the room), Preserving and Spoiling (food stored on it rots slower or faster) and Fertile and
+    // Barren (fertility for what grows in it) on furniture, Humble (counts for less colony wealth) on furniture and
+    // gear, and Shedding (leaves filth) on anything. All are plain stats on the item, so they roll, scale and show on
+    // the card like any other; each is read by one hook here.
     //
     // Buildings that light or heat are kept in one registry, refreshed when a building spawns, despawns or changes
-    // traits; it ticks every 250 ticks over those buildings only. Humble items are a second list, kept wherever the
-    // item is (worn, stored, minified) and only read on vanilla's wealth recount. The rot and fertility hooks look
-    // the building up from the item or cell they are asked about.
+    // traits; it ticks every 250 ticks over those buildings only. Humble and Shedding items are two more lists, kept
+    // wherever the item is (worn, stored, minified): Humble is only read on vanilla's wealth recount, Shedding on the
+    // same 250-tick pass. The rot and fertility hooks look the building up from the item or cell they are asked about.
     public class EntadFurnitureEffects : GameComponent
     {
         private class Source
@@ -36,6 +37,7 @@ namespace EntadFramework
 
         private static readonly List<Source> sources = new List<Source>();
         private static readonly List<HumbleItem> humbleItems = new List<HumbleItem>();
+        private static readonly List<CompEntad> sheddingItems = new List<CompEntad>();
 
         // The effect has to be around this long before the colony notices it (as RevealProperty's lights and heat)
         private const int NoticeTicks = 2500;
@@ -46,6 +48,7 @@ namespace EntadFramework
         {
             sources.Clear();
             humbleItems.Clear();
+            sheddingItems.Clear();
         }
 
         private static Source Lookup(CompEntad comp)
@@ -57,6 +60,7 @@ namespace EntadFramework
         public static void Refresh(CompEntad comp)
         {
             RefreshHumble(comp);
+            RefreshShedding(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
@@ -96,6 +100,14 @@ namespace EntadFramework
             else if (!humble && index >= 0) humbleItems.RemoveAt(index);
         }
 
+        private static void RefreshShedding(CompEntad comp)
+        {
+            int index = sheddingItems.IndexOf(comp);
+            bool shedding = comp.activeTraits.Count > 0 && comp.HasStatTrait(EntadStatDefOf.Entad_FilthPerDay);
+            if (shedding && index < 0) sheddingItems.Add(comp);
+            else if (!shedding && index >= 0) sheddingItems.RemoveAt(index);
+        }
+
         // A vanilla CompGlower registered with the map's glow grid but never added to the building's comps, so it
         // isn't saved and nothing that looks for a lamp finds it. The grid reads only its parent's position and id
         // and its radius and colour. A building never moves while spawned, so it is registered once.
@@ -125,7 +137,8 @@ namespace EntadFramework
 
         public override void GameComponentTick()
         {
-            if (sources.Count == 0 || Find.TickManager.TicksGame % 250 != 0) return;
+            if (Find.TickManager.TicksGame % 250 != 0) return;
+            if (sheddingItems.Count > 0) TickShedding();
             for (int i = sources.Count - 1; i >= 0; i--)
             {
                 var source = sources[i];
@@ -140,6 +153,32 @@ namespace EntadFramework
                 bool noticed = thing.Faction == Faction.OfPlayer && source.comp.HasHidden && source.comp.TicksSinceSpawned >= NoticeTicks;
                 if (source.glower != null && noticed) source.comp.RevealStat(EntadStatDefOf.Entad_GlowRadius);
                 if (source.heat != 0f) PushHeat(source, thing, noticed);
+            }
+        }
+
+        // Shedding: filth around a building, or where the pawn or container holding the item is. A bound item on the
+        // wrong pawn reads 0, like its other stats. Removed only once destroyed, as the humble list.
+        private static void TickShedding()
+        {
+            for (int i = sheddingItems.Count - 1; i >= 0; i--)
+            {
+                var comp = sheddingItems[i];
+                Thing thing = comp.parent;
+                if (thing.Destroyed)
+                {
+                    sheddingItems.RemoveAt(i);
+                    continue;
+                }
+                Thing at = thing.SpawnedParentOrMe;
+                if (at == null) continue;
+                float perDay = thing.GetStatValue(EntadStatDefOf.Entad_FilthPerDay, true, 250);
+                if (perDay <= 0f || !Rand.Chance(perDay * 250f / 60000f)) continue;
+                IntVec3 cell = at.def.building != null ? at.RandomAdjacentCell8Way() : at.Position;
+                if (!cell.InBounds(at.Map)) continue;
+                ThingDef filth = comp.activeTraits
+                    .FirstOrDefault(t => t.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))?.def.filth ?? ThingDefOf.Filth_Dirt;
+                if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Faction == Faction.OfPlayer)
+                    comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }
 
@@ -210,13 +249,13 @@ namespace EntadFramework
             return item.ParentHolder as Building;
         }
 
-        // Preserving: rot rate for food on a preserving shelf. Called for every rottable stack's rot step (every 250
-        // ticks); for anything not frozen it costs a slot group lookup, and for an entad shelf a cached stat read.
+        // Preserving and Spoiling: rot rate for food on the shelf. Called for every rottable stack's rot step (every
+        // 250 ticks); for anything not frozen it costs a slot group lookup, and for an entad shelf a cached stat read.
         public static float RotRate(float rate, CompRottable rottable)
         {
             if (rate <= 0f) return rate;
             float factor = StoredRotFactor(rottable, out var comp);
-            if (factor >= 1f) return rate;
+            if (factor == 1f) return rate;
             if (comp.HasHidden && comp.parent.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
                 comp.RevealStat(EntadStatDefOf.Entad_StoredRotFactor);
             return rate * factor;
@@ -227,7 +266,7 @@ namespace EntadFramework
         {
             if (ticks <= 0 || ticks >= 72000000) return ticks;
             float factor = StoredRotFactor(rottable, out _);
-            return factor >= 1f || factor <= 0f ? ticks : Mathf.Min(72000000, Mathf.RoundToInt(ticks / factor));
+            return factor == 1f || factor <= 0f ? ticks : Mathf.Min(72000000, Mathf.RoundToInt(ticks / factor));
         }
 
         private static float StoredRotFactor(CompRottable rottable, out CompEntad comp)

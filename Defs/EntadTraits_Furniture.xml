@@ -210,22 +210,6 @@
     </statOffsets>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Drawback the player can work around: a cooler (21 at full power, less when venting into hot air) mostly
-       outpaces it, a second one always does, and outdoors or in an unroofed room it does nothing. Shares Warm's stat, so the two can't meet; Cool would cancel it. -->
-  <EntadFramework.EntadTraitDef>
-    <defName>Entad_Sweltering</defName>
-    <label>Sweltering</label>
-    <description>It gives off heat like a forge, and never cools down.</description>
-    <categories><li>Furniture</li></categories>
-    <rarity>Common</rarity>
-    <points>-2</points>
-    <exclusiveWith><li>Entad_Cool</li></exclusiveWith>
-    <targetTemperature>40</targetTemperature>
-    <statOffsets>
-      <li><stat>Entad_RoomHeating</stat><min>10</min><max>15</max></li>
-    </statOffsets>
-  </EntadFramework.EntadTraitDef>
-
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Preserving</defName>
     <label>Preserving</label>
