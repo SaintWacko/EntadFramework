@@ -171,4 +171,41 @@
     <hideAtValue>0</hideAtValue>
     <toStringStyle>FloatOne</toStringStyle>
   </StatDef>
+
+  <!-- Network traits (EntadPowerNets.cs): read from a power building, they act on its whole power network -->
+  <StatDef>
+    <defName>Entad_NetPowerFactor</defName>
+    <label>power drawn on its network</label>
+    <description>How much power everything on this building's power network draws, compared to normal. Generators are unaffected. Several of these on one network don't stack: the strongest counts.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0.05</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_NetPowerLeak</defName>
+    <label>power leaked from its network</label>
+    <description>Power this building's network loses all the time, as if it ran one more consumer that nobody can switch off.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatZero</toStringStyle>
+    <formatString>{0} W</formatString>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_NetBatteryLossFactor</defName>
+    <label>battery charging loss on its network</label>
+    <description>How much of the power lost while charging the batteries on this building's network is still lost, compared to normal. A vanilla battery loses half of what goes into it.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
 </Defs>

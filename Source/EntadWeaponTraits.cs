@@ -322,6 +322,10 @@ namespace EntadFramework
         public static StatDef Entad_FertilityOffset;
         public static StatDef Entad_PlantGrowthFactor;
         public static StatDef Entad_FilthPerDay;
+        // Network traits on power buildings (EntadPowerNets.cs)
+        public static StatDef Entad_NetPowerFactor;
+        public static StatDef Entad_NetPowerLeak;
+        public static StatDef Entad_NetBatteryLossFactor;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
     }

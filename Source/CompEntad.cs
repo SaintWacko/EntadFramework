@@ -355,6 +355,10 @@ namespace EntadFramework
         private int spawnedTick;
         // When a Humble item first counted for less colony wealth (EntadFurnitureEffects.ReduceWealth), -1 before
         internal int humbleSinceTick = -1;
+        // Stormcaught and Sparking: ticks of live network left before the next arc, -1 without an arc trait
+        internal int arcTicksLeft = -1;
+        // When a Grounded building was first seen on a live player network, -1 before (EntadPowerNets.Notice)
+        internal int groundedSinceTick = -1;
 
         internal int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
 
@@ -700,6 +704,8 @@ namespace EntadFramework
             ExposePersona();
             Scribe_Values.Look(ref dismantleWorkDone, "dismantleWorkDone", 0f);
             Scribe_Values.Look(ref humbleSinceTick, "entadHumbleSince", -1);
+            Scribe_Values.Look(ref arcTicksLeft, "entadArcTicksLeft", -1);
+            Scribe_Values.Look(ref groundedSinceTick, "entadGroundedSince", -1);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -838,6 +844,10 @@ namespace EntadFramework
                     bool heating = trait.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_RoomHeating);
                     infoString.AppendLine(" - " + (heating ? "EF_Card_HeatsTo" : "EF_Card_CoolsTo").Translate(trait.def.TargetTemperature(heating).ToStringTemperature("F0")));
                 }
+                if (trait.IsRevealed(EntadEffectKind.Stat) && trait.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_NetBatteryLossFactor))
+                    infoString.AppendLine(" - " + "EF_Card_NetNoSelfDischarge".Translate());
+                if (trait.def.powerNet != null && trait.IsRevealed(EntadEffectKind.Network))
+                    foreach (var line in trait.def.powerNet.CardLines()) infoString.AppendLine(" - " + line);
                 if (trait.thought != null && trait.IsRevealed(EntadEffectKind.Mood))
                 {
                     infoString.AppendLine(" - " + "EF_Card_Mood".Translate(trait.thought.stages?.FirstOrDefault()?.LabelCap ?? trait.thought.defName,

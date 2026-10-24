@@ -122,6 +122,34 @@
       <ringColor>(0.75, 0.6, 0.5, 1)</ringColor>
     </aura>
   </EntadFramework.EntadTraitDef>
+  <!-- Network drawbacks (EntadPowerNets.cs). Leaky only leaks from a network with a power source: wire it to a
+       network of its own, or leave it unconnected. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Leaky</defName>
+    <label>Leaky</label>
+    <description>The wires around it are always warm, and the batteries never seem quite as full as they should be.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>Entad_NetPowerLeak</stat><min>75</min><max>150</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Stormcaught's arcs alone. A network without power never arcs, a Grounded entad on the network takes the arc,
+       and with no stored power an arc is only a small fire, so a stone room or a firefoam popper beside it helps. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sparking</defName>
+    <label>Sparking</label>
+    <description>Blue sparks crawl over it on dry days, and every so often one gets away.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <powerNet>
+      <arcIntervalDays>15~30</arcIntervalDays>
+    </powerNet>
+  </EntadFramework.EntadTraitDef>
+
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraNoisy</defName>
     <label>kept awake</label>

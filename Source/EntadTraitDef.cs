@@ -244,7 +244,8 @@ namespace EntadFramework
         Bond = 512,      // persona bond effects (EntadPersona): the persona tells its wielder everything when it bonds
         Space = 1024,    // portable space (EntadPortableSpace): revealed the first time its gizmo is used
         Aura = 2048,     // auras (EntadAuras): revealed the first time the aura affects someone in view
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura
+        Network = 4096,  // power network effects (EntadPowerNets): revealed when one acts (a flare ridden out, an arc) or after a day
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura | Network
     }
 
     public class EntadTraitDef : Def
@@ -435,6 +436,9 @@ namespace EntadFramework
 
         // A hediff given to pawns around the carrier (worn or wielded gear) or around the furniture (EntadAuras.cs)
         public EntadAura aura;
+
+        // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
+        public EntadPowerNetEffect powerNet;
 
         // The colour of the light a trait with Entad_GlowRadius gives off (EntadFurnitureEffects); a lamp's by default
         public static readonly ColorInt LampGlowColor = new ColorInt(217, 217, 208, 0);
@@ -693,6 +697,7 @@ namespace EntadFramework
                 if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 if (HasPortableSpace) kinds |= EntadEffectKind.Space;
                 if (aura != null) kinds |= EntadEffectKind.Aura;
+                if (powerNet != null) kinds |= EntadEffectKind.Network;
                 return kinds;
             }
         }
@@ -743,6 +748,8 @@ namespace EntadFramework
             if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
+            if (powerNet != null)
+                foreach (var e in powerNet.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
             if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
                 yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
@@ -803,6 +810,7 @@ namespace EntadFramework
                 else if (!td.IsApparel && !td.IsWeapon) return false;
             }
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
+            if (powerNet != null && !EntadPowerNets.IsCarrier(td)) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())
@@ -885,6 +893,9 @@ namespace EntadFramework
             // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
             if (stat == EntadStatDefOf.Entad_FertilityOffset || stat == EntadStatDefOf.Entad_PlantGrowthFactor) return td.building != null && td.fertility > 0f;
             if (stat == EntadStatDefOf.Entad_FilthPerDay) return td.building != null || td.IsWeapon || td.IsApparel;
+            // Network traits (EntadPowerNets.cs): any building on a power network, the battery or generator itself included
+            if (stat == EntadStatDefOf.Entad_NetPowerFactor || stat == EntadStatDefOf.Entad_NetPowerLeak || stat == EntadStatDefOf.Entad_NetBatteryLossFactor)
+                return EntadPowerNets.IsCarrier(td);
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;

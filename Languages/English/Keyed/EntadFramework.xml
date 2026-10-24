@@ -110,6 +110,11 @@
   <EF_ProductDoubled>{0}'s work at {1} yielded twice the usual {2}.</EF_ProductDoubled>
   <EF_Card_HeatsTo>Warms its room up to {0}</EF_Card_HeatsTo>
   <EF_Card_CoolsTo>Cools its room down to {0}</EF_Card_CoolsTo>
+  <EF_Card_NetNoSelfDischarge>Batteries on its power network don't self-discharge</EF_Card_NetNoSelfDischarge>
+  <EF_Card_NetGrounded>Short circuits never strike its power network, in rain or otherwise</EF_Card_NetGrounded>
+  <EF_Card_NetFlareProof>Its power network keeps running through solar flares</EF_Card_NetFlareProof>
+  <EF_Card_NetArcs>Every {0} to {1} days while its power network has power, it short-circuits the network: the stored power explodes at it, or it starts a fire</EF_Card_NetArcs>
+  <EF_ArcGrounded>{0} arced, but its power network is grounded and the spark died harmlessly.</EF_ArcGrounded>
   <EF_IngredientsSpared>{0}'s work at {1} used only half the ingredients.</EF_IngredientsSpared>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
@@ -288,6 +293,9 @@
   <EF_Summary_Mood>Mood</EF_Summary_Mood>
   <EF_Summary_Meal>Meals</EF_Summary_Meal>
   <EF_Summary_Space>Portable Space</EF_Summary_Space>
+  <EF_Summary_NetGrounded>No short circuits on its network</EF_Summary_NetGrounded>
+  <EF_Summary_NetFlareProof>Network runs through solar flares</EF_Summary_NetFlareProof>
+  <EF_Summary_NetArcs>Short-circuits its network now and then</EF_Summary_NetArcs>
   <EF_Summary_Persona>Bonds to one wielder</EF_Summary_Persona>
   <EF_Summary_NeverBond>Never bonds</EF_Summary_NeverBond>
   <EF_Summary_Secretive>Hides its other traits</EF_Summary_Secretive>

@@ -61,6 +61,7 @@ namespace EntadFramework
         {
             RefreshHumble(comp);
             RefreshShedding(comp);
+            EntadPowerNets.Refresh(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
