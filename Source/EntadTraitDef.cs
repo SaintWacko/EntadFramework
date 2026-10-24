@@ -883,7 +883,7 @@ namespace EntadFramework
             // Furniture while built, anything else wherever the colony's wealth counts it (stored, worn, carried)
             if (stat == EntadStatDefOf.Entad_ColonyWealthFactor) return true;
             // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
-            if (stat == EntadStatDefOf.Entad_FertilityOffset) return td.building != null && td.fertility > 0f;
+            if (stat == EntadStatDefOf.Entad_FertilityOffset || stat == EntadStatDefOf.Entad_PlantGrowthFactor) return td.building != null && td.fertility > 0f;
             if (stat == EntadStatDefOf.Entad_FilthPerDay) return td.building != null || td.IsWeapon || td.IsApparel;
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type

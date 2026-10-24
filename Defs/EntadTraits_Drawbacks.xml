@@ -3,8 +3,8 @@
   <!-- Drawbacks the player can work around rather than flat penalties: each has a counter (a cooler, a heater,
        storing something that doesn't rot, a cleaner, the right season) or a place where it does no harm. Negative
        points: generation takes one only on an item allowed drawbacks, and spends the points it gives back on more
-       traits. Each shares its stat with the matching good trait (Warm, Cool, Preserving, Fertile), so the two can
-       never meet on one item. The furniture ones are read in EntadFurnitureEffects.cs. -->
+       traits. Each shares its stat with the matching good trait (Warm, Cool, Preserving) or names it in exclusiveWith
+       (Fertile), so the two can never meet on one item. The furniture ones are read in EntadFurnitureEffects.cs. -->
 
   <!-- A cooler (21 at full power, less when venting into hot air) mostly outpaces it, a second one always does, and
        outdoors or in an unroofed room it does nothing -->
@@ -50,7 +50,8 @@
     </statFactors>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Only on buildings plants grow in; plant something hardy, or use it for decoration -->
+  <!-- Only on buildings plants grow in; grow something with a long harvest window, or use it for decoration.
+       Slows growth rather than lowering fertility, which would stop most crops being sown in a plant pot at all. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Barren</defName>
     <label>Barren</label>
@@ -58,9 +59,10 @@
     <categories><li>Furniture</li></categories>
     <rarity>Common</rarity>
     <points>-1</points>
-    <statOffsets>
-      <li><stat>Entad_FertilityOffset</stat><min>-0.4</min><max>-0.2</max></li>
-    </statOffsets>
+    <exclusiveWith><li>Entad_Fertile</li></exclusiveWith>
+    <statFactors>
+      <li><stat>Entad_PlantGrowthFactor</stat><min>0.6</min><max>0.8</max></li>
+    </statFactors>
   </EntadFramework.EntadTraitDef>
 
   <!-- Anywhere: a cleaner keeps up with it -->

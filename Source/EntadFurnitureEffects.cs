@@ -281,18 +281,39 @@ namespace EntadFramework
             return storage.GetStatValue(EntadStatDefOf.Entad_StoredRotFactor, true, 250);
         }
 
-        // Fertile: fertility of a cell whose planter has the trait
+        private static CompEntad PlanterComp(IntVec3 loc, Map map, out Building planter)
+        {
+            planter = loc.GetEdifice(map);
+            if (planter == null || !planter.def.AffectsFertility || !EntadCompInjector.MayHaveComp(planter.def)) return null;
+            var comp = planter.TryGetComp<CompEntad>();
+            return comp == null || comp.activeTraits.Count == 0 ? null : comp;
+        }
+
+        // Fertile: fertility of a cell whose planter has the trait. Only ever raised: sowing is gated on
+        // fertility (most crops need 90%, and a plant pot only has 100%), so lowering it would leave a pot that
+        // nothing can be planted in. Barren slows growth below instead.
         internal static float Fertility(float fertility, IntVec3 loc, Map map)
         {
-            Building edifice = loc.GetEdifice(map);
-            if (edifice == null || !edifice.def.AffectsFertility || !EntadCompInjector.MayHaveComp(edifice.def)) return fertility;
-            var comp = edifice.TryGetComp<CompEntad>();
-            if (comp == null || comp.activeTraits.Count == 0) return fertility;
-            float offset = edifice.GetStatValue(EntadStatDefOf.Entad_FertilityOffset, true, 250);
-            if (offset == 0f) return fertility;
-            if (comp.HasHidden && edifice.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
+            var comp = PlanterComp(loc, map, out Building planter);
+            if (comp == null) return fertility;
+            float offset = planter.GetStatValue(EntadStatDefOf.Entad_FertilityOffset, true, 250);
+            if (offset <= 0f) return fertility;
+            if (comp.HasHidden && planter.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
                 comp.RevealStat(EntadStatDefOf.Entad_FertilityOffset);
-            return Mathf.Max(0f, fertility + offset);
+            return fertility + offset;
+        }
+
+        // Barren: the fertility part of a plant's growth rate, for a plant in a planter with the trait
+        internal static float PlantGrowth(float factor, Plant plant)
+        {
+            if (!plant.Spawned) return factor;
+            var comp = PlanterComp(plant.Position, plant.Map, out Building planter);
+            if (comp == null) return factor;
+            float growth = planter.GetStatValue(EntadStatDefOf.Entad_PlantGrowthFactor, true, 250);
+            if (growth == 1f) return factor;
+            if (comp.HasHidden && planter.Faction == Faction.OfPlayer && comp.TicksSinceSpawned >= NoticeTicks)
+                comp.RevealStat(EntadStatDefOf.Entad_PlantGrowthFactor);
+            return factor * growth;
         }
     }
 
@@ -349,6 +370,15 @@ namespace EntadFramework
         public static void Postfix(IntVec3 loc, Map ___map, ref float __result)
         {
             __result = EntadFurnitureEffects.Fertility(__result, loc, ___map);
+        }
+    }
+
+    [HarmonyPatch(typeof(Plant), nameof(Plant.GrowthRateFactor_Fertility), MethodType.Getter)]
+    public static class Patch_Plant_GrowthRateFactorFertility_Barren
+    {
+        public static void Postfix(Plant __instance, ref float __result)
+        {
+            __result = EntadFurnitureEffects.PlantGrowth(__result, __instance);
         }
     }
 }

@@ -320,6 +320,7 @@ namespace EntadFramework
         public static StatDef Entad_StoredRotFactor;
         public static StatDef Entad_ColonyWealthFactor;
         public static StatDef Entad_FertilityOffset;
+        public static StatDef Entad_PlantGrowthFactor;
         public static StatDef Entad_FilthPerDay;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
