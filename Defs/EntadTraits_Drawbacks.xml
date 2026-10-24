@@ -22,7 +22,7 @@
     </statOffsets>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Sweltering's mirror: a heater counters it, and in a freezer it helps -->
+  <!-- Sweltering's mirror: a heater (21) counters it, and in a freezer it helps hold below zero -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Frigid</defName>
     <label>Frigid</label>
@@ -31,7 +31,7 @@
     <rarity>Common</rarity>
     <points>-2</points>
     <exclusiveWith><li>Entad_Warm</li></exclusiveWith>
-    <targetTemperature>0</targetTemperature>
+    <targetTemperature>-5</targetTemperature>
     <statOffsets>
       <li><stat>Entad_RoomCooling</stat><min>10</min><max>15</max></li>
     </statOffsets>

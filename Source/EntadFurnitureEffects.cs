@@ -177,7 +177,9 @@ namespace EntadFramework
                 if (!cell.InBounds(at.Map)) continue;
                 ThingDef filth = comp.activeTraits
                     .FirstOrDefault(t => t.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))?.def.filth ?? ThingDefOf.Filth_Dirt;
-                if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Faction == Faction.OfPlayer)
+                // Seen at home on the colony's own things or loose items; not on a raider's gear
+                if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Map.IsPlayerHome
+                    && (at.Faction == null || at.Faction == Faction.OfPlayer))
                     comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }
@@ -309,16 +311,11 @@ namespace EntadFramework
     // only picks its label (through RotRate a warm Preserving shelf would read 'refrigerated', giving away a hidden
     // trait), and TicksUntilRotAtTemp also feeds caravan estimates for food that is about to leave the shelf, so
     // the readout is corrected in the getter below instead.
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(CompRottable), "TickInterval")]
     public static class Patch_CompRottable_RotRate_Preserving
     {
         private static readonly MethodInfo rotRateAt = AccessTools.Method(typeof(GenTemperature), nameof(GenTemperature.RotRateAtTemperature));
         private static readonly MethodInfo rotRate = AccessTools.Method(typeof(EntadFurnitureEffects), nameof(EntadFurnitureEffects.RotRate));
-
-        public static IEnumerable<MethodBase> TargetMethods()
-        {
-            yield return AccessTools.DeclaredMethod(typeof(CompRottable), "TickInterval");
-        }
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
         {
