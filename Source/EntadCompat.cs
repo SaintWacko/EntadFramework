@@ -31,7 +31,7 @@ namespace EntadFramework
         public static event Action GameStarted;
 
         // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
-        private static WeakReference<Game> startedFor;
+        private static System.WeakReference<Game> startedFor;
 
         public static void RegisterStat(StatDef stat, Func<ThingDef, bool> appliesTo)
         {
@@ -84,7 +84,7 @@ namespace EntadFramework
         internal static void RaiseGameStarted(Game game)
         {
             if (startedFor != null && startedFor.TryGetTarget(out var last) && last == game) return;
-            startedFor = new WeakReference<Game>(game);
+            startedFor = new System.WeakReference<Game>(game);
             Raise(GameStarted);
         }
 
