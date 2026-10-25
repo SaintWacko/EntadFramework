@@ -49,7 +49,7 @@ namespace EntadFramework
             sources.Clear();
             humbleItems.Clear();
             sheddingItems.Clear();
-            EntadCompat.RaiseGameStarted();
+            EntadCompat.RaiseGameStarted(game);
         }
 
         private static Source Lookup(CompEntad comp)

@@ -772,6 +772,9 @@ namespace EntadFramework
             if (!customCardLines.NullOrEmpty() && customEffects.NullOrEmpty())
                 yield return $"{defName}: customCardLines only show for a trait with customEffects";
             if (customEffects != null && customEffects.Any(k => k.NullOrEmpty())) yield return $"{defName}: customEffects contains an empty key";
+            if (!customEffects.NullOrEmpty() && customCardLines.NullOrEmpty())
+                yield return $"{defName}: customEffects need customCardLines, or the card shows the trait with nothing it does";
+            if (customCardLines != null && customCardLines.Any(l => l.NullOrEmpty())) yield return $"{defName}: customCardLines contains an empty line";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item

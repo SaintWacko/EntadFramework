@@ -26,8 +26,12 @@ namespace EntadFramework
         // removing the other mod never leaves a save naming a class that is gone
         public static event Action Tick250;
 
-        // Raised as each game is created or loaded, before anything spawns: the moment to clear static registries
+        // Raised once as each game is created or loaded, before anything spawns: the moment to clear static registries.
+        // Current.Game may not point at the new game yet, so a handler should only clear.
         public static event Action GameStarted;
+
+        // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
+        private static WeakReference<Game> startedFor;
 
         public static void RegisterStat(StatDef stat, Func<ThingDef, bool> appliesTo)
         {
@@ -45,11 +49,23 @@ namespace EntadFramework
         {
             applies = false;
             if (statChecks.Count == 0 || !statChecks.TryGetValue(stat, out var check)) return false;
-            applies = check(td);
+            applies = Ask(check, td);
             return true;
         }
 
-        internal static bool EffectAppliesTo(string key, ThingDef td) => effectChecks.TryGetValue(key, out var check) && check(td);
+        internal static bool EffectAppliesTo(string key, ThingDef td) => effectChecks.TryGetValue(key, out var check) && Ask(check, td);
+
+        // A check that throws (the other mod changed under the module) counts as "doesn't apply" rather than breaking
+        // every roll and card that asks
+        private static bool Ask(Func<ThingDef, bool> check, ThingDef td)
+        {
+            try { return check(td); }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] {check.Method.DeclaringType}.{check.Method.Name} failed on {td}: {e}", check.Method.GetHashCode());
+                return false;
+            }
+        }
 
         // Refreshed runs inside spawn, despawn and load: one module's exception must not stop the item spawning or the
         // other modules hearing about it
@@ -65,7 +81,12 @@ namespace EntadFramework
 
         internal static void RaiseTick250() => Raise(Tick250);
 
-        internal static void RaiseGameStarted() => Raise(GameStarted);
+        internal static void RaiseGameStarted(Game game)
+        {
+            if (startedFor != null && startedFor.TryGetTarget(out var last) && last == game) return;
+            startedFor = new WeakReference<Game>(game);
+            Raise(GameStarted);
+        }
 
         private static void Raise(Action action)
         {
