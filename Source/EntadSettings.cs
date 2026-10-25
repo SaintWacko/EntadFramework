@@ -416,6 +416,7 @@ namespace EntadFramework
             if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) sb.Append(' ').Append(h.label);
             if (d.aura?.hediff != null) sb.Append(' ').Append("EF_Summary_Aura".Translate(d.aura.hediff.label));
             if (d.powerNet != null) foreach (var line in d.powerNet.CardLines()) sb.Append(' ').Append(line);
+            if (d.customCardLines != null) foreach (var line in d.customCardLines) sb.Append(' ').Append(line);
             if (d.triggers != null)
                 foreach (var t in d.triggers) sb.Append(' ').Append(t.EventLabel).Append(' ').Append(t.EffectsLabel(null));
             if (d.extraDamage != null) foreach (var e in d.extraDamage) sb.Append(' ').Append(e.damageType?.label);
@@ -491,6 +492,7 @@ namespace EntadFramework
             if (d.powerNet?.grounded == true) parts.Add("EF_Summary_NetGrounded".Translate());
             if (d.powerNet?.flareProof == true) parts.Add("EF_Summary_NetFlareProof".Translate());
             if (d.powerNet?.Arcs == true) parts.Add("EF_Summary_NetArcs".Translate());
+            if (d.customCardLines != null) parts.AddRange(d.customCardLines);
             if (d.persona) parts.Add("EF_Summary_Persona".Translate());
             if (d.neverBond) parts.Add("EF_Summary_NeverBond".Translate());
             if (d.secretive) parts.Add("EF_Summary_Secretive".Translate());

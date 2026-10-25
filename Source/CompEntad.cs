@@ -360,10 +360,10 @@ namespace EntadFramework
         // When a Grounded building was first seen on a live player network, -1 before (EntadPowerNets.Notice)
         internal int groundedSinceTick = -1;
 
-        internal int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
+        public int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
 
         // Whether a trait on the item changes the stat; cheap enough for a spawn or a trait change, not a tick
-        internal bool HasStatTrait(StatDef stat)
+        public bool HasStatTrait(StatDef stat)
         {
             for (int t = 0; t < activeTraits.Count; t++)
                 foreach (var r in activeTraits[t].def.AllRanges())
@@ -372,7 +372,7 @@ namespace EntadFramework
         }
 
         // Reveals the traits that change the stat, for an effect the player has now seen happen
-        internal void RevealStat(StatDef stat)
+        public void RevealStat(StatDef stat)
         {
             if (!HasHidden) return;
             RevealWhere(EntadEffectKind.Stat, m =>
@@ -380,6 +380,20 @@ namespace EntadFramework
                 foreach (var r in m.def.AllRanges()) if (r.stat == stat) return true;
                 return false;
             });
+        }
+
+        // A compat module's on/off effect (EntadTraitDef.customEffects); as HasStatTrait, for a spawn or trait change
+        public bool HasCustomEffect(string key)
+        {
+            for (int t = 0; t < activeTraits.Count; t++)
+                if (activeTraits[t].def.customEffects?.Contains(key) == true) return true;
+            return false;
+        }
+
+        public void RevealCustomEffect(string key)
+        {
+            if (!HasHidden) return;
+            RevealWhere(EntadEffectKind.Custom, m => m.def.customEffects?.Contains(key) == true);
         }
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
 
@@ -848,6 +862,8 @@ namespace EntadFramework
                     infoString.AppendLine(" - " + "EF_Card_NetNoSelfDischarge".Translate());
                 if (trait.def.powerNet != null && trait.IsRevealed(EntadEffectKind.Network))
                     foreach (var line in trait.def.powerNet.CardLines()) infoString.AppendLine(" - " + line);
+                if (trait.def.customCardLines != null && trait.IsRevealed(EntadEffectKind.Custom))
+                    foreach (var line in trait.def.customCardLines) infoString.AppendLine(" - " + line);
                 if (trait.thought != null && trait.IsRevealed(EntadEffectKind.Mood))
                 {
                     infoString.AppendLine(" - " + "EF_Card_Mood".Translate(trait.thought.stages?.FirstOrDefault()?.LabelCap ?? trait.thought.defName,

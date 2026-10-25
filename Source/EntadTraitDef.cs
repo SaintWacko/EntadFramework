@@ -245,7 +245,8 @@ namespace EntadFramework
         Space = 1024,    // portable space (EntadPortableSpace): revealed the first time its gizmo is used
         Aura = 2048,     // auras (EntadAuras): revealed the first time the aura affects someone in view
         Network = 4096,  // power network effects (EntadPowerNets): revealed when one acts (a flare ridden out, an arc) or after a day
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura | Network
+        Custom = 8192,   // customEffects, implemented by a compat assembly (EntadCompat), which reveals them when they act
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura | Network | Custom
     }
 
     public class EntadTraitDef : Def
@@ -440,6 +441,13 @@ namespace EntadFramework
         // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
         public EntadPowerNetEffect powerNet;
 
+        // On/off effects a compat assembly implements (Mods/<Mod>/), by key: the module registers each key with
+        // EntadCompat.RegisterEffect, saying which buildings it can go on, and reads it with CompEntad.HasCustomEffect.
+        // A key nothing registered (its mod isn't loaded) never rolls. customCardLines say on the card what the
+        // effects do once revealed; translators inject them like the description (customCardLines.0, ...).
+        public List<string> customEffects;
+        [MustTranslate] public List<string> customCardLines;
+
         // The colour of the light a trait with Entad_GlowRadius gives off (EntadFurnitureEffects); a lamp's by default
         public static readonly ColorInt LampGlowColor = new ColorInt(217, 217, 208, 0);
         public ColorInt glowColor = LampGlowColor;
@@ -627,6 +635,7 @@ namespace EntadFramework
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
             if (thought != null && thought == other.thought) return true;
             if (HasPortableSpace && other.HasPortableSpace) return true;
+            if (!customEffects.NullOrEmpty() && !other.customEffects.NullOrEmpty() && customEffects.Any(other.customEffects.Contains)) return true;
 
             foreach (var a in AllRanges())
             {
@@ -698,6 +707,7 @@ namespace EntadFramework
                 if (HasPortableSpace) kinds |= EntadEffectKind.Space;
                 if (aura != null) kinds |= EntadEffectKind.Aura;
                 if (powerNet != null) kinds |= EntadEffectKind.Network;
+                if (!customEffects.NullOrEmpty()) kinds |= EntadEffectKind.Custom;
                 return kinds;
             }
         }
@@ -759,6 +769,9 @@ namespace EntadFramework
                 yield return $"{defName}: filth only applies to traits with Entad_FilthPerDay";
             if (filth != null && filth.filth == null)
                 yield return $"{defName}: filth {filth.defName} is not a filth def";
+            if (!customCardLines.NullOrEmpty() && customEffects.NullOrEmpty())
+                yield return $"{defName}: customCardLines only show for a trait with customEffects";
+            if (customEffects != null && customEffects.Any(k => k.NullOrEmpty())) yield return $"{defName}: customEffects contains an empty key";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -811,6 +824,9 @@ namespace EntadFramework
             }
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
             if (powerNet != null && !EntadPowerNets.IsCarrier(td)) return false;
+            if (!customEffects.NullOrEmpty())
+                for (int i = 0; i < customEffects.Count; i++)
+                    if (!EntadCompat.EffectAppliesTo(customEffects[i], td)) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())
@@ -871,6 +887,8 @@ namespace EntadFramework
                 if (IsRangedOnlyStat(stat) && !td.IsRangedWeapon) return false;
                 if (IsMeleeOnlyStat(stat) && !td.IsMeleeWeapon) return false;
             }
+            // A compat module's own stats (EntadCompat), read by its own hooks
+            if (EntadCompat.TryStatAppliesTo(stat, td, out bool registered)) return registered;
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
             // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.

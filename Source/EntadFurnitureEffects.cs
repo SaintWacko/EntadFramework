@@ -49,6 +49,7 @@ namespace EntadFramework
             sources.Clear();
             humbleItems.Clear();
             sheddingItems.Clear();
+            EntadCompat.RaiseGameStarted();
         }
 
         private static Source Lookup(CompEntad comp)
@@ -62,6 +63,7 @@ namespace EntadFramework
             RefreshHumble(comp);
             RefreshShedding(comp);
             EntadPowerNets.Refresh(comp);
+            EntadCompat.RaiseRefreshed(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
@@ -139,6 +141,7 @@ namespace EntadFramework
         public override void GameComponentTick()
         {
             if (Find.TickManager.TicksGame % 250 != 0) return;
+            EntadCompat.RaiseTick250();
             if (sheddingItems.Count > 0) TickShedding();
             for (int i = sources.Count - 1; i >= 0; i--)
             {
