@@ -58,6 +58,9 @@ namespace EntadFramework.HygieneCompat
 
         static EntadHygiene()
         {
+            // First: if a DBH update removed a target this throws, and nothing below registers, so the traits never
+            // roll instead of rolling and doing nothing
+            new Harmony("SaintWacko.EntadFramework.DubsBadHygiene").PatchAll(typeof(EntadHygiene).Assembly);
             EntadCompat.RegisterEffect(PureKey, IsWaterSupply);
             EntadCompat.RegisterEffect(PitKey, IsFlushToilet);
             EntadCompat.RegisterStat(EntadHygieneStatDefOf.Entad_WaterCapacityFactor, td => HasComp<CompWaterInlet>(td) || HasComp<CompWaterPumpingStation>(td));
@@ -67,7 +70,6 @@ namespace EntadFramework.HygieneCompat
             EntadCompat.Refreshed += Refresh;
             EntadCompat.Tick250 += Tick;
             EntadCompat.GameStarted += Clear;
-            new Harmony("SaintWacko.EntadFramework.DubsBadHygiene").PatchAll(typeof(EntadHygiene).Assembly);
         }
 
         private static readonly Dictionary<(ThingDef, System.Type), bool> compCache = new Dictionary<(ThingDef, System.Type), bool>();

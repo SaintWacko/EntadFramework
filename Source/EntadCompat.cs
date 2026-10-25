@@ -51,10 +51,30 @@ namespace EntadFramework
 
         internal static bool EffectAppliesTo(string key, ThingDef td) => effectChecks.TryGetValue(key, out var check) && check(td);
 
-        internal static void RaiseRefreshed(CompEntad comp) => Refreshed?.Invoke(comp);
+        // Refreshed runs inside spawn, despawn and load: one module's exception must not stop the item spawning or the
+        // other modules hearing about it
+        internal static void RaiseRefreshed(CompEntad comp)
+        {
+            if (Refreshed == null) return;
+            foreach (Action<CompEntad> handler in Refreshed.GetInvocationList())
+            {
+                try { handler(comp); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed on {comp.parent}: {e}", handler.Method.GetHashCode()); }
+            }
+        }
 
-        internal static void RaiseTick250() => Tick250?.Invoke();
+        internal static void RaiseTick250() => Raise(Tick250);
 
-        internal static void RaiseGameStarted() => GameStarted?.Invoke();
+        internal static void RaiseGameStarted() => Raise(GameStarted);
+
+        private static void Raise(Action action)
+        {
+            if (action == null) return;
+            foreach (Action handler in action.GetInvocationList())
+            {
+                try { handler(); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed: {e}", handler.Method.GetHashCode()); }
+            }
+        }
     }
 }
