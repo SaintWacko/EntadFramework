@@ -358,7 +358,7 @@ namespace EntadFramework
             appliedDurability = null;
         }
 
-        private enum Tab { General, Rarity, Traits }
+        private enum Tab { General, Generation, World, Rarity, Traits }
         private Tab tab;
         private string search = "";
         private Vector2 scroll;
@@ -375,6 +375,8 @@ namespace EntadFramework
             var tabs = new List<TabRecord>
             {
                 new TabRecord("EF_Tab_General".Translate(), () => SetTab(Tab.General), tab == Tab.General),
+                new TabRecord("EF_Tab_Generation".Translate(), () => SetTab(Tab.Generation), tab == Tab.Generation),
+                new TabRecord("EF_Tab_World".Translate(), () => SetTab(Tab.World), tab == Tab.World),
                 new TabRecord("EF_Tab_Rarity".Translate(), () => SetTab(Tab.Rarity), tab == Tab.Rarity),
                 new TabRecord("EF_Tab_Traits".Translate(), () => SetTab(Tab.Traits), tab == Tab.Traits),
             };
@@ -392,8 +394,13 @@ namespace EntadFramework
                 // column off to the right, CurHeight measures only that column and the view never grows back.
                 var list = new Listing_Standard { maxOneColumn = true };
                 list.Begin(view);
-                if (tab == Tab.General) DoGeneral(list);
-                else DoRarity(list);
+                switch (tab)
+                {
+                    case Tab.General: DoGeneral(list); break;
+                    case Tab.Generation: DoGeneration(list); break;
+                    case Tab.World: DoWorld(list); break;
+                    default: DoRarity(list); break;
+                }
                 listingHeight = list.CurHeight + 20f;
                 list.End();
                 Widgets.EndScrollView();
@@ -569,6 +576,23 @@ namespace EntadFramework
             list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
             list.Gap();
 
+            Section(list, "EF_Settings_MarketValue");
+            list.Label("EF_Settings_ValuePercent".Translate(EntadSettings.ValuePercentPerPoint.ToStringPercent()));
+            EntadSettings.ValuePercentPerPoint = Mathf.Round(list.Slider(EntadSettings.ValuePercentPerPoint, 0f, 0.5f) * 100f) / 100f;
+            list.Label("EF_Settings_ValueSilver".Translate(EntadSettings.ValueSilverPerPoint.ToStringMoney()));
+            EntadSettings.ValueSilverPerPoint = Mathf.Round(list.Slider(EntadSettings.ValueSilverPerPoint, 0f, 500f) / 5f) * 5f;
+            list.Label("EF_Settings_Value_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent()));
+            EntadSettings.ValueFloor = Mathf.Round(list.Slider(EntadSettings.ValueFloor, 0f, 1f) * 20f) / 20f;
+            list.Gap();
+            list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
+            EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_MysteryBonus_Desc".Translate());
+        }
+
+        private static void DoGeneration(Listing_Standard list)
+        {
             Section(list, "EF_Settings_Generation");
             list.Label("EF_Settings_WeaponWeight".Translate(EntadSettings.WeaponSpecificWeight.ToString("0.#")));
             EntadSettings.WeaponSpecificWeight = Mathf.Round(list.Slider(EntadSettings.WeaponSpecificWeight, 1f, 10f) * 2f) / 2f;
@@ -591,23 +615,10 @@ namespace EntadFramework
             list.Label("EF_Settings_MaxDrawbacks".Translate(EntadSettings.MaxDrawbacks));
             EntadSettings.MaxDrawbacks = Mathf.RoundToInt(list.Slider(EntadSettings.MaxDrawbacks, 0f, 5f));
             list.Label("EF_Settings_Drawbacks_Desc".Translate());
-            list.Gap();
+        }
 
-            Section(list, "EF_Settings_MarketValue");
-            list.Label("EF_Settings_ValuePercent".Translate(EntadSettings.ValuePercentPerPoint.ToStringPercent()));
-            EntadSettings.ValuePercentPerPoint = Mathf.Round(list.Slider(EntadSettings.ValuePercentPerPoint, 0f, 0.5f) * 100f) / 100f;
-            list.Label("EF_Settings_ValueSilver".Translate(EntadSettings.ValueSilverPerPoint.ToStringMoney()));
-            EntadSettings.ValueSilverPerPoint = Mathf.Round(list.Slider(EntadSettings.ValueSilverPerPoint, 0f, 500f) / 5f) * 5f;
-            list.Label("EF_Settings_Value_Desc".Translate());
-            list.Gap();
-            list.Label("EF_Settings_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent()));
-            EntadSettings.ValueFloor = Mathf.Round(list.Slider(EntadSettings.ValueFloor, 0f, 1f) * 20f) / 20f;
-            list.Gap();
-            list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
-            EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
-            list.Label("EF_Settings_MysteryBonus_Desc".Translate());
-            list.Gap();
-
+        private static void DoWorld(Listing_Standard list)
+        {
             Section(list, "EF_Settings_WorldSources");
             bool worldOn = WorldSwitch(list, EntadWorldFeature.World, "EF_Settings_WorldEnabled", ref EntadSettings.WorldEnabled, returnGameValue: true);
             // Dimmed by a box drawn over everything below once it is drawn: sliders and ranges set GUI.color to white

@@ -198,6 +198,8 @@
 
   <!-- Settings -->
   <EF_Tab_General>General</EF_Tab_General>
+  <EF_Tab_Generation>Generation</EF_Tab_Generation>
+  <EF_Tab_World>World</EF_Tab_World>
   <EF_Tab_Rarity>Rarity and durability</EF_Tab_Rarity>
   <EF_Tab_Traits>Traits</EF_Tab_Traits>
   <EF_Settings_Reset>Reset to defaults</EF_Settings_Reset>
