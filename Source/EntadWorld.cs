@@ -37,19 +37,17 @@ namespace EntadFramework
             return FromSettings(feature);
         }
 
-        /// <summary>The settings' value, ignoring any override in the current game. Trader stock, rewards and loot
-        /// share one setting; appraisers have no switch of their own in the settings (their chances decide), so they
-        /// read as on.</summary>
+        /// <summary>The settings' value, ignoring any override in the current game.</summary>
         public static bool FromSettings(EntadWorldFeature feature)
         {
             switch (feature)
             {
-                case EntadWorldFeature.World: return true;
+                case EntadWorldFeature.World: return EntadSettings.WorldEnabled;
                 case EntadWorldFeature.Carriers: return EntadSettings.CarriersEnabled;
-                case EntadWorldFeature.Traders:
-                case EntadWorldFeature.Rewards:
-                case EntadWorldFeature.Loot: return EntadSettings.WorldItemsEnabled;
-                case EntadWorldFeature.Appraisers: return true;
+                case EntadWorldFeature.Traders: return EntadSettings.TradersEnabled;
+                case EntadWorldFeature.Rewards: return EntadSettings.RewardsEnabled;
+                case EntadWorldFeature.Loot: return EntadSettings.LootEnabled;
+                case EntadWorldFeature.Appraisers: return EntadSettings.AppraisersEnabled;
                 default: return false;
             }
         }
@@ -61,17 +59,27 @@ namespace EntadFramework
             return game != null && game.overrides.TryGetValue(feature, out bool v) ? v : (bool?)null;
         }
 
-        /// <summary>SetForGame with no source. Kept so mods compiled against it still bind.</summary>
-        public static void SetForGame(EntadWorldFeature feature, bool? enabled) => SetForGame(feature, enabled, null);
+        /// <summary>Where the player changes this game's overrides, as last given to SetForGame: a Keyed key
+        /// (translated when shown) or plain text. Null if none.</summary>
+        public static string OverrideSourceForGame
+        {
+            get
+            {
+                string source = EntadWorldGame.Instance?.overrideSource;
+                if (source.NullOrEmpty()) return null;
+                // Translate falls back to English, CanTranslate doesn't: a caller that ships English only still shows text
+                return source.CanTranslate() || LanguageDatabase.defaultLanguage.HaveTextForKey(source)
+                    ? source.Translate().ToString() : source;
+            }
+        }
 
         /// <summary>Overrides a feature for the current game only (null goes back to the settings). Call it once the
-        /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. While
-        /// Appraisers is off no new ones turn up and existing ones (settlement or caravan) are hidden; they are
-        /// remembered and come back when it is turned on again.</summary>
-        /// <param name="source">Where the player changes it, shown in Entad's settings while the override stands.
-        /// Best passed as a translation key (shown translated in the player's language), else plain text, e.g.
-        /// "Dungeon Madness's world configurator". Saved with the game.</param>
-        public static void SetForGame(EntadWorldFeature feature, bool? enabled, string source)
+        /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. source names
+        /// where the player can change it (a Keyed key such as "DM_WorldConfigurator", or plain text); it is saved
+        /// with the game and shown beside each overridden switch in Entad's settings. While Appraisers is off no new
+        /// ones turn up and existing ones (settlement or caravan) are hidden; they are remembered and come back when
+        /// it is turned on again.</summary>
+        public static void SetForGame(EntadWorldFeature feature, bool? enabled, string source = null)
         {
             var game = EntadWorldGame.Instance;
             if (game == null)
@@ -79,31 +87,16 @@ namespace EntadFramework
                 Log.Warning("[Entad Framework] EntadWorld.SetForGame was called with no game running; ignored.");
                 return;
             }
-            if (enabled.HasValue)
-            {
-                game.overrides[feature] = enabled.Value;
-                if (source.NullOrEmpty()) game.sources.Remove(feature);
-                else game.sources[feature] = source;
-            }
-            else
-            {
-                game.overrides.Remove(feature);
-                game.sources.Remove(feature);
-            }
-        }
-
-        /// <summary>Where the current game's override of this feature is changed, or null.</summary>
-        public static string SourceForGame(EntadWorldFeature feature)
-        {
-            var game = EntadWorldGame.Instance;
-            return game != null && game.sources.TryGetValue(feature, out string s) ? s : null;
+            if (enabled.HasValue) game.overrides[feature] = enabled.Value;
+            else game.overrides.Remove(feature);
+            if (source != null) game.overrideSource = source;
         }
     }
 
     public class EntadWorldGame : GameComponent
     {
         internal Dictionary<EntadWorldFeature, bool> overrides = new Dictionary<EntadWorldFeature, bool>();
-        internal Dictionary<EntadWorldFeature, string> sources = new Dictionary<EntadWorldFeature, string>();
+        internal string overrideSource;
 
         public EntadWorldGame(Game game) { }
 
@@ -113,9 +106,8 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Collections.Look(ref overrides, "worldOverrides", LookMode.Value, LookMode.Value);
-            Scribe_Collections.Look(ref sources, "worldOverrideSources", LookMode.Value, LookMode.Value);
+            Scribe_Values.Look(ref overrideSource, "worldOverrideSource");
             if (overrides == null) overrides = new Dictionary<EntadWorldFeature, bool>();
-            if (sources == null) sources = new Dictionary<EntadWorldFeature, string>();
         }
     }
 }

@@ -105,6 +105,10 @@ namespace EntadFramework
         // so many group points up to the most, each entad's points from a curve over group points (four anchors,
         // straight lines between) rolled within the variance, and the share bound to their carrier with its points
         // multiplier. Factions may override the chances and add their own multiplier (EntadFactionExtension).
+        // The world switches (this one, WorldEnabled, TradersEnabled, RewardsEnabled, LootEnabled, AppraisersEnabled)
+        // are defaults for new games: a game can override them (EntadWorld.cs). Read them through EntadWorld.Enabled.
+        public static bool WorldEnabled = true;
+        public static bool AppraisersEnabled = true;
         public static bool CarriersEnabled = true;
         public const float DefaultCarrierGroupChance = 0.35f;
         public static float CarrierGroupChance = DefaultCarrierGroupChance;
@@ -126,7 +130,9 @@ namespace EntadFramework
         // converts a few items; each reward or loot item rolls on its own up to a most per set. Points come from a
         // curve over the set's market value (four anchors), rolled within the variance. ThingSetMakerDefs and
         // TraderKindDefs may override (EntadThingSetExtension, EntadTraderExtension).
-        public static bool WorldItemsEnabled = true;
+        public static bool TradersEnabled = true;
+        public static bool RewardsEnabled = true;
+        public static bool LootEnabled = true;
         public const float DefaultTraderStockChance = 0.4f;
         public static float TraderStockChance = DefaultTraderStockChance;
         public static readonly IntRange DefaultTraderEntadCount = new IntRange(1, 2);
@@ -190,6 +196,8 @@ namespace EntadFramework
             IdentifyWealthFraction = DefaultIdentifyWealthFraction;
             AppraiserMax = DefaultAppraiserMax;
             AppraiserDailyMin = DefaultAppraiserDailyMin;
+            WorldEnabled = true;
+            AppraisersEnabled = true;
             CarriersEnabled = true;
             CarrierGroupChance = DefaultCarrierGroupChance;
             CarrierPointsPerExtra = DefaultCarrierPointsPerExtra;
@@ -198,7 +206,9 @@ namespace EntadFramework
             CarrierPointVariance = DefaultCarrierPointVariance;
             CarrierBoundChance = DefaultCarrierBoundChance;
             CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
-            WorldItemsEnabled = true;
+            TradersEnabled = true;
+            RewardsEnabled = true;
+            LootEnabled = true;
             TraderStockChance = DefaultTraderStockChance;
             TraderEntadCount = DefaultTraderEntadCount;
             RewardItemChance = DefaultRewardItemChance;
@@ -260,6 +270,8 @@ namespace EntadFramework
             AppraiserMax = new IntRange(Mathf.Clamp(AppraiserMax.min, 1, 20), Mathf.Clamp(AppraiserMax.max, Mathf.Clamp(AppraiserMax.min, 1, 20), 20));
             Scribe_Values.Look(ref AppraiserDailyMin, "appraiserDailyMin", DefaultAppraiserDailyMin);
             AppraiserDailyMin = Mathf.Clamp(AppraiserDailyMin, 1, 20);
+            Scribe_Values.Look(ref WorldEnabled, "worldEnabled", true);
+            Scribe_Values.Look(ref AppraisersEnabled, "appraisersEnabled", true);
             Scribe_Values.Look(ref CarriersEnabled, "carriersEnabled", true);
             Scribe_Values.Look(ref CarrierGroupChance, "carrierGroupChance", DefaultCarrierGroupChance);
             CarrierGroupChance = Mathf.Clamp01(CarrierGroupChance);
@@ -279,7 +291,9 @@ namespace EntadFramework
             CarrierBoundChance = Mathf.Clamp01(CarrierBoundChance);
             Scribe_Values.Look(ref CarrierBoundPointFactor, "carrierBoundPointFactor", DefaultCarrierBoundPointFactor);
             CarrierBoundPointFactor = Mathf.Clamp(CarrierBoundPointFactor, 0.5f, 4f);
-            Scribe_Values.Look(ref WorldItemsEnabled, "worldItemsEnabled", true);
+            Scribe_Values.Look(ref TradersEnabled, "tradersEnabled", true);
+            Scribe_Values.Look(ref RewardsEnabled, "rewardsEnabled", true);
+            Scribe_Values.Look(ref LootEnabled, "lootEnabled", true);
             Scribe_Values.Look(ref TraderStockChance, "traderStockChance", DefaultTraderStockChance);
             TraderStockChance = Mathf.Clamp01(TraderStockChance);
             Scribe_Values.Look(ref TraderEntadCount, "traderEntadCount", DefaultTraderEntadCount);
@@ -393,44 +407,42 @@ namespace EntadFramework
             listingScroll = Vector2.zero;
         }
 
-        // A per-game override (EntadWorld.SetForGame) beats these settings in the game that's loaded, so say so where
-        // the player would otherwise change a setting and see nothing happen. The settings stay editable: they are
-        // still the defaults for every other game.
-        // Returns true when the section is off in this game, so its controls are greyed. An override to on only
-        // replaces the switch: the chances and curves below are still read from here, so they stay live.
-        private static bool WorldOverrideNotice(Listing_Standard list, params EntadWorldFeature[] features)
+        // A world source's switch, as Bastle Framework draws its own: the source's sliders are only drawn while it is
+        // on. While the loaded game overrides the switch (EntadWorld.SetForGame), the box shows the game's value,
+        // greyed and locked, with a line saying where to change it; the settings' own value is kept for new games.
+        // The sliders show while either the game or the settings has the source on, and stay editable: numbers are
+        // never per game. The master switch asks for the game's value instead, since it dims everything below it.
+        private static bool WorldSwitch(Listing_Standard list, EntadWorldFeature feature, string key, ref bool value, bool returnGameValue = false)
         {
-            if (Current.Game == null) return false;
-            var parts = new List<string>();
-            // Greyed only when the whole section is off: World off, or every feature it covers off (with Traders off,
-            // rewards and loot still read these sliders)
-            bool worldOff = false;
-            int off = 0;
-            void Add(EntadWorldFeature f)
+            string tip = (key + "_Tip").Translate();
+            bool? forGame = EntadWorld.GetForGame(feature);
+            if (!forGame.HasValue)
             {
-                bool? v = EntadWorld.GetForGame(f);
-                // World and Appraisers have no switch here (always on in the settings), so an override to on changes nothing
-                if (!v.HasValue || (v.Value && (f == EntadWorldFeature.World || f == EntadWorldFeature.Appraisers))) return;
-                if (!v.Value) { if (f == EntadWorldFeature.World) worldOff = true; else off++; }
-                string label = ("EF_Settings_OverrideFeature_" + f).Translate();
-                string state = (v.Value ? "EF_Settings_OverrideOn" : "EF_Settings_OverrideOff").Translate(label);
-                parts.Add("EF_Settings_OverridePart".Translate(state, SourceLabel(EntadWorld.SourceForGame(f))));
+                list.CheckboxLabeled(key.Translate(), ref value, tip);
+                return value;
             }
-            Add(EntadWorldFeature.World);
-            foreach (var f in features) Add(f);
-            if (parts.Count == 0) return false;
-            bool anyOff = worldOff || off == features.Length;
-            GUI.color = anyOff ? ColorLibrary.RedReadable : Color.yellow;
-            list.Label((anyOff ? "EF_Settings_OverriddenOff" : "EF_Settings_OverriddenOn").Translate(string.Join("; ", parts)));
-            GUI.color = Color.white;
-            return anyOff;
+            bool shown = forGame.Value;
+            string label = key.Translate();
+            Rect row = list.GetRect(Text.CalcHeight(label, list.ColumnWidth));
+            TooltipHandler.TipRegion(row, tip);
+            Widgets.CheckboxLabeled(row, label, ref shown, disabled: true);
+            list.Gap(list.verticalSpacing);
+            string source = EntadWorld.OverrideSourceForGame;
+            Hint(list, source != null
+                ? "EF_Settings_WorldOverriddenBy".Translate(source).ToString()
+                : "EF_Settings_WorldOverridden".Translate().ToString());
+            return returnGameValue ? shown : shown || value;
         }
 
-        // A caller may pass a translation key so the text follows the player's language after a save is moved
-        private static string SourceLabel(string source)
+        private static void Hint(Listing_Standard list, string text)
         {
-            if (source.NullOrEmpty()) return "EF_Settings_OverrideSourceUnknown".Translate();
-            return source.CanTranslate() || LanguageDatabase.defaultLanguage.HaveTextForKey(source) ? source.Translate().Resolve() : source;
+            Text.Font = GameFont.Tiny;
+            Color before = GUI.color;
+            GUI.color = Color.gray * new Color(1f, 1f, 1f, before.a);
+            list.Label(text);
+            GUI.color = before;
+            Text.Font = GameFont.Small;
+            list.Gap(4f);
         }
 
         private static void Section(Listing_Standard list, string key)
@@ -593,11 +605,14 @@ namespace EntadFramework
             list.Label("EF_Settings_MysteryBonus_Desc".Translate());
             list.Gap();
 
+            Section(list, "EF_Settings_WorldSources");
+            bool worldOn = WorldSwitch(list, EntadWorldFeature.World, "EF_Settings_WorldEnabled", ref EntadSettings.WorldEnabled, returnGameValue: true);
+            Color beforeWorld = GUI.color;
+            if (!worldOn) GUI.color = new Color(1f, 1f, 1f, 0.5f);
+            list.Gap();
+
             Section(list, "EF_Settings_Carriers");
-            bool overridden = WorldOverrideNotice(list, EntadWorldFeature.Carriers);
-            if (overridden) GUI.color = Color.gray;
-            list.CheckboxLabeled("EF_Settings_CarriersEnabled".Translate(), ref EntadSettings.CarriersEnabled, "EF_Settings_CarriersEnabled_Tip".Translate());
-            if (EntadSettings.CarriersEnabled || (Current.Game != null && EntadWorld.Enabled(EntadWorldFeature.Carriers)))
+            if (WorldSwitch(list, EntadWorldFeature.Carriers, "EF_Settings_CarriersEnabled", ref EntadSettings.CarriersEnabled))
             {
                 list.Label("EF_Settings_CarrierChance".Translate(EntadSettings.CarrierGroupChance.ToStringPercent()));
                 EntadSettings.CarrierGroupChance = Mathf.Round(list.Slider(EntadSettings.CarrierGroupChance, 0f, 1f) * 20f) / 20f;
@@ -623,33 +638,39 @@ namespace EntadFramework
                 EntadSettings.CarrierBoundPointFactor = Mathf.Round(list.Slider(EntadSettings.CarrierBoundPointFactor, 0.5f, 4f) * 20f) / 20f;
                 list.Label("EF_Settings_CarrierBound_Desc".Translate());
             }
-            GUI.color = Color.white;
             list.Gap();
 
             Section(list, "EF_Settings_WorldItems");
-            overridden = WorldOverrideNotice(list, EntadWorldFeature.Traders, EntadWorldFeature.Rewards, EntadWorldFeature.Loot);
-            if (overridden) GUI.color = Color.gray;
-            list.CheckboxLabeled("EF_Settings_WorldItemsEnabled".Translate(), ref EntadSettings.WorldItemsEnabled, "EF_Settings_WorldItemsEnabled_Tip".Translate());
-            if (EntadSettings.WorldItemsEnabled || (Current.Game != null && (EntadWorld.Enabled(EntadWorldFeature.Traders)
-                || EntadWorld.Enabled(EntadWorldFeature.Rewards) || EntadWorld.Enabled(EntadWorldFeature.Loot))))
+            bool traders = WorldSwitch(list, EntadWorldFeature.Traders, "EF_Settings_TradersEnabled", ref EntadSettings.TradersEnabled);
+            if (traders)
             {
                 list.Label("EF_Settings_TraderChance".Translate(EntadSettings.TraderStockChance.ToStringPercent()));
                 EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_TraderCount".Translate(EntadSettings.TraderEntadCount.min, EntadSettings.TraderEntadCount.max));
                 Widgets.IntRange(list.GetRect(28f), 0x45465754, ref EntadSettings.TraderEntadCount, 1, 5);
                 list.Label("EF_Settings_Trader_Desc".Translate());
-                list.Gap();
+            }
+            bool rewards = WorldSwitch(list, EntadWorldFeature.Rewards, "EF_Settings_RewardsEnabled", ref EntadSettings.RewardsEnabled);
+            if (rewards)
+            {
                 list.Label("EF_Settings_RewardChance".Translate(EntadSettings.RewardItemChance.ToStringPercent()));
                 EntadSettings.RewardItemChance = Mathf.Round(list.Slider(EntadSettings.RewardItemChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_RewardMax".Translate(EntadSettings.RewardMaxEntads));
                 EntadSettings.RewardMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.RewardMaxEntads, 1f, 10f));
+            }
+            bool loot = WorldSwitch(list, EntadWorldFeature.Loot, "EF_Settings_LootEnabled", ref EntadSettings.LootEnabled);
+            if (loot)
+            {
                 list.Label("EF_Settings_LootChance".Translate(EntadSettings.LootItemChance.ToStringPercent()));
                 EntadSettings.LootItemChance = Mathf.Round(list.Slider(EntadSettings.LootItemChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_LootMax".Translate(EntadSettings.LootMaxEntads));
                 EntadSettings.LootMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.LootMaxEntads, 1f, 10f));
                 list.Label("EF_Settings_LootBind".Translate(EntadSettings.LootBindChance.ToStringPercent()), tooltip: "EF_Settings_LootBind_Tip".Translate());
                 EntadSettings.LootBindChance = Mathf.Round(list.Slider(EntadSettings.LootBindChance, 0f, 1f) * 20f) / 20f;
-                list.Label("EF_Settings_RewardLoot_Desc".Translate());
+            }
+            if (rewards || loot) list.Label("EF_Settings_RewardLoot_Desc".Translate());
+            if (traders || rewards || loot)
+            {
                 list.Gap();
                 for (int i = 0; i < EntadSettings.ItemCurvePoints.Length; i++)
                 {
@@ -661,12 +682,14 @@ namespace EntadFramework
                 EntadSettings.ItemPointVariance = Mathf.Round(list.Slider(EntadSettings.ItemPointVariance, 0f, 0.9f) * 20f) / 20f;
                 list.Label("EF_Settings_ItemCurve_Desc".Translate());
             }
-            GUI.color = Color.white;
             list.Gap();
 
             Section(list, "EF_Settings_Appraisers");
-            overridden = WorldOverrideNotice(list, EntadWorldFeature.Appraisers);
-            if (overridden) GUI.color = Color.gray;
+            if (!WorldSwitch(list, EntadWorldFeature.Appraisers, "EF_Settings_AppraisersEnabled", ref EntadSettings.AppraisersEnabled))
+            {
+                GUI.color = beforeWorld;
+                return;
+            }
             list.Label("EF_Settings_CaravanAppraiser".Translate(EntadSettings.CaravanAppraiserChance.ToStringPercent()));
             EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
@@ -684,7 +707,7 @@ namespace EntadFramework
             list.Label("EF_Settings_AppraiserDailyMin".Translate(EntadSettings.AppraiserDailyMin));
             EntadSettings.AppraiserDailyMin = Mathf.RoundToInt(list.Slider(EntadSettings.AppraiserDailyMin, 1f, 20f));
             list.Label("EF_Settings_AppraiserDaily_Desc".Translate());
-            GUI.color = Color.white;
+            GUI.color = beforeWorld;
         }
 
         private static void DoRarity(Listing_Standard list)

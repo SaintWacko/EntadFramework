@@ -234,6 +234,11 @@
   <EF_Settings_DrawbackChance>Chance an item can have drawbacks: {0}</EF_Settings_DrawbackChance>
   <EF_Settings_MaxDrawbacks>Most drawbacks per item: {0}</EF_Settings_MaxDrawbacks>
   <EF_Settings_Drawbacks_Desc>Drawbacks are traits with a cost below zero. Each one adds its points back to the target, so the item gets more or better traits to make up for it.</EF_Settings_Drawbacks_Desc>
+  <EF_Settings_WorldSources>Entads in the world</EF_Settings_WorldSources>
+  <EF_Settings_WorldEnabled>Entads turn up in the world</EF_Settings_WorldEnabled>
+  <EF_Settings_WorldEnabled_Tip>The master switch for every source below: NPC carriers, traders, quest rewards, loot and appraisers. Off, entads only come from other mods that make them.</EF_Settings_WorldEnabled_Tip>
+  <EF_Settings_WorldOverridden>Set for this game by another mod. Change it there; this setting applies to new games.</EF_Settings_WorldOverridden>
+  <EF_Settings_WorldOverriddenBy>Set for this game. Change it in {0}; this setting applies to new games.</EF_Settings_WorldOverriddenBy>
   <EF_Settings_Carriers>Entads in NPC groups</EF_Settings_Carriers>
   <EF_Settings_CarriersEnabled>NPC groups carry entads</EF_Settings_CarriersEnabled>
   <EF_Settings_CarriersEnabled_Tip>Raids, visitors, trade caravans and settlement defenders can have members whose own weapon or apparel is an entad. Only humanlike members, never animals or mechanoids. Their entads start unidentified.</EF_Settings_CarriersEnabled_Tip>
@@ -248,20 +253,12 @@
   <EF_Settings_CarrierBoundFactor>Bound entad points: x{0}</EF_Settings_CarrierBoundFactor>
   <EF_Settings_CarrierBound_Desc>A bound entad's traits work only for its carrier and their descendants, so looting one gives the colony an ordinary item worth little more than usual. To make up for that, bound entads are stronger for their carrier. Factions from other mods may set their own chances and strength.</EF_Settings_CarrierBound_Desc>
   <EF_Settings_WorldItems>Entads in trade and loot</EF_Settings_WorldItems>
-  <EF_Settings_WorldItemsEnabled>Traders, rewards and loot hold entads</EF_Settings_WorldItemsEnabled>
-  <EF_Settings_OverriddenOff>In this game: {0}. These settings don't apply to this game, but are still used for other games.</EF_Settings_OverriddenOff>
-  <EF_Settings_OverriddenOn>In this game: {0}. The switch here doesn't decide those in this game; the values below still apply.</EF_Settings_OverriddenOn>
-  <EF_Settings_OverridePart>{0} (change it from {1})</EF_Settings_OverridePart>
-  <EF_Settings_OverrideOn>{0} on</EF_Settings_OverrideOn>
-  <EF_Settings_OverrideOff>{0} off</EF_Settings_OverrideOff>
-  <EF_Settings_OverrideSourceUnknown>the mod that set it</EF_Settings_OverrideSourceUnknown>
-  <EF_Settings_OverrideFeature_World>all world entads</EF_Settings_OverrideFeature_World>
-  <EF_Settings_OverrideFeature_Carriers>carriers</EF_Settings_OverrideFeature_Carriers>
-  <EF_Settings_OverrideFeature_Traders>trader stock</EF_Settings_OverrideFeature_Traders>
-  <EF_Settings_OverrideFeature_Rewards>quest rewards</EF_Settings_OverrideFeature_Rewards>
-  <EF_Settings_OverrideFeature_Loot>loot</EF_Settings_OverrideFeature_Loot>
-  <EF_Settings_OverrideFeature_Appraisers>appraisers</EF_Settings_OverrideFeature_Appraisers>
-  <EF_Settings_WorldItemsEnabled_Tip>Traders can stock entads, quest rewards can include them, and loot at sites, ancient ruins and faction settlements can turn up entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_WorldItemsEnabled_Tip>
+  <EF_Settings_TradersEnabled>Traders stock entads</EF_Settings_TradersEnabled>
+  <EF_Settings_TradersEnabled_Tip>Trade caravans, orbital traders and settlements can have entads among their goods. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_TradersEnabled_Tip>
+  <EF_Settings_RewardsEnabled>Quest rewards include entads</EF_Settings_RewardsEnabled>
+  <EF_Settings_RewardsEnabled_Tip>Item rewards from quests can be entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_RewardsEnabled_Tip>
+  <EF_Settings_LootEnabled>Loot holds entads</EF_Settings_LootEnabled>
+  <EF_Settings_LootEnabled_Tip>Loot at item stashes, ancient ruins, crates and faction settlements can turn up entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_LootEnabled_Tip>
   <EF_Settings_TraderChance>Chance a trader's stock has entads: {0}</EF_Settings_TraderChance>
   <EF_Settings_TraderCount>Entads in such a stock: {0} to {1}</EF_Settings_TraderCount>
   <EF_Settings_Trader_Desc>Rolled each time a trader's stock is made. Exotic goods traders have twice this chance. A trader knows part of what it sells: each entad shows a random share of its traits, from none to all, and is priced on what is known.</EF_Settings_Trader_Desc>
@@ -276,6 +273,8 @@
   <EF_Settings_ItemVariance>Random spread: ±{0}</EF_Settings_ItemVariance>
   <EF_Settings_ItemCurve_Desc>How strong an entad is, by the total market value of the stock, reward or loot pile it was found in. Between the rows the value follows a straight line; below the first and above the last it stays flat. Each entad's points are then moved up or down by up to the spread.</EF_Settings_ItemCurve_Desc>
   <EF_Settings_Appraisers>Appraisers</EF_Settings_Appraisers>
+  <EF_Settings_AppraisersEnabled>Appraisers turn up</EF_Settings_AppraisersEnabled>
+  <EF_Settings_AppraisersEnabled_Tip>Trade caravans and settlements can have an appraiser who identifies entads for silver. Off, appraisers already met are hidden until it is turned back on.</EF_Settings_AppraisersEnabled_Tip>
   <EF_Settings_CaravanAppraiser>Chance a trade caravan brings an appraiser: {0}</EF_Settings_CaravanAppraiser>
   <EF_Settings_SettlementAppraiser>Chance a settlement has an appraiser: {0}</EF_Settings_SettlementAppraiser>
   <EF_Settings_Appraiser_Desc>Appraisers identify entads for silver, revealing every hidden trait of one item. A settlement's chance is rolled once, the first time a caravan visits it. Factions from other mods may set their own chances.</EF_Settings_Appraiser_Desc>
