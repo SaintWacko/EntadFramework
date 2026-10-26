@@ -270,7 +270,7 @@ namespace EntadFramework
 
         // The same from a comp's own check (Ideology's lightballs and loudspeakers, Anomaly's flare-sensitive facilities)
         internal static bool ElectricityDisabled(GameConditionManager manager, Map map, ThingComp comp) =>
-            ElectricityDisabled(manager, map, comp?.parent?.PowerComp?.PowerNet);
+            ElectricityDisabled(manager, map, comp?.parent?.GetComp<CompPower>()?.PowerNet);
 
         public override void GameComponentTick()
         {
