@@ -89,7 +89,7 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Collections.Look(ref overrides, "worldOverrides", LookMode.Value, LookMode.Value);
-            if (Scribe.mode == LoadSaveMode.PostLoadInit && overrides == null) overrides = new Dictionary<EntadWorldFeature, bool>();
+            if (overrides == null) overrides = new Dictionary<EntadWorldFeature, bool>();
         }
     }
 }

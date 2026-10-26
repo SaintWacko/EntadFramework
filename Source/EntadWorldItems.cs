@@ -89,7 +89,7 @@ namespace EntadFramework
 
         public static void Begin(ThingSetMaker maker)
         {
-            if (active != null || !AnyItemsEnabled() || ExtensionFor(maker) == null) return;
+            if (active != null || ExtensionFor(maker) == null || !AnyItemsEnabled()) return;
             active = maker;
         }
 
