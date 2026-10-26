@@ -52,6 +52,23 @@ namespace EntadFramework
             EntadCompat.RaiseGameStarted(game);
         }
 
+        // Refresh caches stat values (heat, glow, power factors, module effects) that the settings' rarity multipliers
+        // feed into, so a change there would otherwise hold until each building is reinstalled or the game reloaded.
+        // Only buildings carry these effects. Once per settings close.
+        public static void RefreshAll()
+        {
+            if (Current.Game == null) return;
+            foreach (var map in Find.Maps)
+            {
+                var buildings = map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial);
+                for (int i = 0; i < buildings.Count; i++)
+                {
+                    var comp = buildings[i].TryGetComp<CompEntad>();
+                    if (comp != null && comp.activeTraits.Count > 0) Refresh(comp);
+                }
+            }
+        }
+
         private static Source Lookup(CompEntad comp)
         {
             for (int i = 0; i < sources.Count; i++) if (sources[i].comp == comp) return sources[i];

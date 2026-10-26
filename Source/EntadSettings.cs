@@ -356,6 +356,7 @@ namespace EntadFramework
             base.WriteSettings();
             if (appliedDurability != null && Current.Game != null) EntadUtility.RescaleDurability(appliedDurability);
             appliedDurability = null;
+            EntadFurnitureEffects.RefreshAll();
         }
 
         private enum Tab { General, Generation, World, Rarity, Traits }

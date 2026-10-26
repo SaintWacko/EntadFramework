@@ -176,6 +176,20 @@ namespace EntadFramework
             return rate;
         }
 
+        // Conserving on one consumer's draw, for vanilla's 'can this one switch on' checks (PowerNetTick, CanPowerNow).
+        // GainRate already counts running consumers at the lower draw; without this a consumer that only fits at the
+        // lower draw would never come on. Producers are left alone.
+        internal static float ConservedOutput(CompPowerTrader trader)
+        {
+            float output = trader.EnergyOutputPerTick;
+            if (gainCount == 0 || output >= 0f) return output;
+            PowerNet net = trader.PowerNet;
+            float factor = 1f;
+            for (int i = 0; i < carriers.Count; i++)
+                if (carriers[i].powerFactor < factor && carriers[i].power.PowerNet == net) factor = carriers[i].powerFactor;
+            return output * factor;
+        }
+
         // Capacitive: the share of the battery's charging loss left, 1 when no carrier on the network has the trait
         internal static float LossFactor(PowerNet net)
         {
@@ -253,6 +267,10 @@ namespace EntadFramework
         // The comms console's own flare check, so a console on a Stormcaught network can still be used
         internal static bool ElectricityDisabled(GameConditionManager manager, Map map, Building building) =>
             ElectricityDisabled(manager, map, building?.PowerComp?.PowerNet);
+
+        // The same from a comp's own check (Ideology's lightballs and loudspeakers, Anomaly's flare-sensitive facilities)
+        internal static bool ElectricityDisabled(GameConditionManager manager, Map map, ThingComp comp) =>
+            ElectricityDisabled(manager, map, comp?.parent?.PowerComp?.PowerNet);
 
         public override void GameComponentTick()
         {
@@ -493,6 +511,54 @@ namespace EntadFramework
             }
             if (!found) Log.Warning($"[Entad Framework] {original.DeclaringType.Name}.{original.Name} no longer checks ElectricityDisabled; Stormcaught won't change it");
         }
+    }
+
+    // Conserving: vanilla's checks for whether a consumer can be switched on read its full draw
+    [HarmonyPatch]
+    public static class Patch_PowerNet_SwitchOn_Conserving
+    {
+        private static readonly MethodInfo output = AccessTools.PropertyGetter(typeof(CompPowerTrader), nameof(CompPowerTrader.EnergyOutputPerTick));
+        private static readonly MethodInfo conserved = AccessTools.Method(typeof(EntadPowerNets), nameof(EntadPowerNets.ConservedOutput));
+
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(PowerNet), nameof(PowerNet.PowerNetTick));
+            yield return AccessTools.Method(typeof(PowerNet), nameof(PowerNet.CanPowerNow));
+        }
+
+        // Same stack shape: the trader in, its draw out
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
+        {
+            bool found = false;
+            foreach (var ins in instructions)
+            {
+                if (ins.Calls(output))
+                {
+                    found = true;
+                    ins.opcode = OpCodes.Call;
+                    ins.operand = conserved;
+                }
+                yield return ins;
+            }
+            if (!found) Log.Warning($"[Entad Framework] PowerNet.{original.Name} no longer reads EnergyOutputPerTick; a consumer on a Conserving network may not switch on at its lower draw");
+        }
+    }
+
+    [HarmonyPatch]
+    public static class Patch_Comp_FlareProof
+    {
+        private static readonly MethodInfo disabled = AccessTools.Method(typeof(GameConditionManager), nameof(GameConditionManager.ElectricityDisabled));
+        private static readonly MethodInfo compDisabled = AccessTools.Method(typeof(EntadPowerNets), nameof(EntadPowerNets.ElectricityDisabled),
+            new[] { typeof(GameConditionManager), typeof(Map), typeof(ThingComp) });
+
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.PropertyGetter(typeof(CompAutoPowered), nameof(CompAutoPowered.AppearsPowered));
+            yield return AccessTools.PropertyGetter(typeof(CompFacilityInactiveWhenElectricityDisabled), nameof(CompFacilityInactiveWhenElectricityDisabled.CanBeActive));
+        }
+
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original) =>
+            Patch_PowerNet_PowerNetTick_FlareProof.ReplaceFlareCheck(instructions, original, disabled, compDisabled);
     }
 
     [HarmonyPatch]

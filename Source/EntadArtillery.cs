@@ -121,9 +121,15 @@ namespace EntadFramework
         }
 
         // Vanilla's fight AI (the fallback when Ability AI is not active) never calls Valid, only this, so without it
-        // an NPC with no ranged weapon would spend the charge with nothing fired
-        public override bool AICanTargetNow(LocalTargetInfo target) =>
-            EntadArtillery.WeaponVerb(parent.pawn)?.Projectile != null && base.AICanTargetNow(target);
+        // an NPC with no ranged weapon would spend the charge with nothing fired. It also has no minimum range: an
+        // enemy closer than the first split gets one ordinary shot for the charge, or an explosive at the NPC's feet.
+        public override bool AICanTargetNow(LocalTargetInfo target)
+        {
+            ThingDef projectile = EntadArtillery.WeaponVerb(parent.pawn)?.Projectile;
+            if (projectile == null || !target.IsValid) return false;
+            float distance = (target.Cell - parent.pawn.Position).LengthHorizontal;
+            return Props.SplitsFor(distance, projectile) > 0 && base.AICanTargetNow(target);
+        }
 
         // The number of projectiles the shot will have split into by the cell under the cursor
         public override string ExtraLabelMouseAttachment(LocalTargetInfo target)

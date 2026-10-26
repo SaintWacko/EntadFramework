@@ -219,7 +219,8 @@ namespace EntadFramework
         private static bool Needed(Pawn pawn)
         {
             if (!kept.TryGetValue(pawn, out var items)) return false;
-            items.RemoveAll(c => c.parent.Destroyed);
+            // Unbind leaves the entry behind; it goes here, as a destroyed item's does
+            items.RemoveAll(c => c.parent.Destroyed || !c.BoundPawns.Contains(pawn));
             if (pawn.Discarded || items.Count == 0)
             {
                 kept.Remove(pawn);

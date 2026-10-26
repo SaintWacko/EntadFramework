@@ -43,6 +43,7 @@ namespace EntadFramework
                 int count = GenMath.RoundRandom(ing.stackCount * 0.5f);
                 var rot = ing.TryGetComp<CompRottable>();
                 var ingIngredients = ing.TryGetComp<CompIngredients>();
+                var poison = ing.TryGetComp<CompFoodPoisonable>();
                 while (count > 0)
                 {
                     var t = ThingMaker.MakeThing(ing.def, ing.Stuff);
@@ -53,6 +54,9 @@ namespace EntadFramework
                     var tIngredients = t.TryGetComp<CompIngredients>();
                     if (ingIngredients != null && tIngredients != null)
                         foreach (var def in ingIngredients.ingredients) tIngredients.RegisterIngredient(def);
+                    // A poisoned meal mustn't come back clean. PostSplitOff copies the share and cause to the piece,
+                    // the only public way to set a share below 100%.
+                    if (poison != null && poison.PoisonPercent > 0f && t.TryGetComp<CompFoodPoisonable>() != null) poison.PostSplitOff(t);
                     // Damaged cloth or leather mustn't come back mended
                     if (ing.def.useHitPoints) t.HitPoints = UnityEngine.Mathf.CeilToInt(t.MaxHitPoints * (float)ing.HitPoints / ing.MaxHitPoints);
                     count -= t.stackCount;
@@ -132,8 +136,13 @@ namespace EntadFramework
             // and would take a merged refund with it.
             var map = bench.Map;
             var at = bench.def.hasInteractionCell ? bench.InteractionCell : bench.Position;
+            int placed = 0;
             for (int i = 0; i < refunds.Count; i++)
-                GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c));
+            {
+                if (GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c))) placed++;
+                else if (!refunds[i].Destroyed) refunds[i].Destroy();
+            }
+            if (placed == 0) yield break;
             Reveal(comp, EntadStatDefOf.Entad_IngredientRefundChance);
             Messages.Message("EF_IngredientsSpared".Translate(worker.LabelShort, bench.LabelShort),
                 new LookTargets(bench), MessageTypeDefOf.PositiveEvent);

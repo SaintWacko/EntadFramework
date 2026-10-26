@@ -65,6 +65,14 @@ namespace EntadFramework
 
         private static readonly List<Pawn> hit = new List<Pawn>();
 
+        // Vanilla's fight AI casts a self buff whenever it is ready (GetAbilityJob's third loop asks nothing more), so
+        // an NPC with two charges of Sprint would spend the second while the first still runs
+        public override bool AICanTargetNow(LocalTargetInfo target)
+        {
+            if (Props.hediff != null && !parent.def.targetRequired && parent.pawn?.health.hediffSet.HasHediff(Props.hediff) == true) return false;
+            return base.AICanTargetNow(target);
+        }
+
         public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
         {
             Pawn caster = parent.pawn;
