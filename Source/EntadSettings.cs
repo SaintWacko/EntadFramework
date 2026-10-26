@@ -610,10 +610,9 @@ namespace EntadFramework
 
             Section(list, "EF_Settings_WorldSources");
             bool worldOn = WorldSwitch(list, EntadWorldFeature.World, "EF_Settings_WorldEnabled", ref EntadSettings.WorldEnabled, returnGameValue: true);
-            Color beforeWorld = GUI.color;
-            // Widgets.IntRange sets GUI.color to white, so the dim is put back after each one
-            Color worldColor = worldOn ? beforeWorld : new Color(1f, 1f, 1f, 0.5f);
-            GUI.color = worldColor;
+            // Dimmed by a box drawn over everything below once it is drawn: sliders and ranges set GUI.color to white
+            // themselves, so tinting GUI.color first only dims the labels
+            Rect dimFrom = list.GetRect(0f);
             list.Gap();
 
             Section(list, "EF_Settings_Carriers");
@@ -653,7 +652,6 @@ namespace EntadFramework
                 EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_TraderCount".Translate(EntadSettings.TraderEntadCount.min, EntadSettings.TraderEntadCount.max));
                 Widgets.IntRange(list.GetRect(28f), 0x45465754, ref EntadSettings.TraderEntadCount, 1, 5);
-                GUI.color = worldColor;
                 list.Label("EF_Settings_Trader_Desc".Translate());
             }
             bool rewards = WorldSwitch(list, EntadWorldFeature.Rewards, "EF_Settings_RewardsEnabled", ref EntadSettings.RewardsEnabled);
@@ -691,11 +689,19 @@ namespace EntadFramework
             list.Gap();
 
             Section(list, "EF_Settings_Appraisers");
-            if (!WorldSwitch(list, EntadWorldFeature.Appraisers, "EF_Settings_AppraisersEnabled", ref EntadSettings.AppraisersEnabled))
+            if (WorldSwitch(list, EntadWorldFeature.Appraisers, "EF_Settings_AppraisersEnabled", ref EntadSettings.AppraisersEnabled))
+                DoAppraisers(list);
+
+            if (!worldOn)
             {
-                GUI.color = beforeWorld;
-                return;
+                Rect dimTo = list.GetRect(0f);
+                Widgets.DrawBoxSolid(new Rect(dimFrom.x, dimFrom.y, dimFrom.width, dimTo.y - dimFrom.y), new Color(Widgets.WindowBGFillColor.r,
+                    Widgets.WindowBGFillColor.g, Widgets.WindowBGFillColor.b, 0.6f));
             }
+        }
+
+        private static void DoAppraisers(Listing_Standard list)
+        {
             list.Label("EF_Settings_CaravanAppraiser".Translate(EntadSettings.CaravanAppraiserChance.ToStringPercent()));
             EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
@@ -710,11 +716,9 @@ namespace EntadFramework
             list.Gap();
             list.Label("EF_Settings_AppraiserMax".Translate(EntadSettings.AppraiserMax.min, EntadSettings.AppraiserMax.max));
             Widgets.IntRange(list.GetRect(28f), 0x45465041, ref EntadSettings.AppraiserMax, 1, 20);
-            GUI.color = worldColor;
             list.Label("EF_Settings_AppraiserDailyMin".Translate(EntadSettings.AppraiserDailyMin));
             EntadSettings.AppraiserDailyMin = Mathf.RoundToInt(list.Slider(EntadSettings.AppraiserDailyMin, 1f, 20f));
             list.Label("EF_Settings_AppraiserDaily_Desc".Translate());
-            GUI.color = beforeWorld;
         }
 
         private static void DoRarity(Listing_Standard list)
