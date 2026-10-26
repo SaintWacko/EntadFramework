@@ -65,7 +65,9 @@ namespace EntadFramework
         /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. While
         /// Appraisers is off no new ones turn up and existing ones (settlement or caravan) are hidden; they are
         /// remembered and come back when it is turned on again.</summary>
-        public static void SetForGame(EntadWorldFeature feature, bool? enabled)
+        /// <param name="source">Where the player changes it, shown in Entad's settings while the override stands,
+        /// e.g. "Dungeon Madness's world configurator". Saved with the game.</param>
+        public static void SetForGame(EntadWorldFeature feature, bool? enabled, string source = null)
         {
             var game = EntadWorldGame.Instance;
             if (game == null)
@@ -73,14 +75,31 @@ namespace EntadFramework
                 Log.Warning("[Entad Framework] EntadWorld.SetForGame was called with no game running; ignored.");
                 return;
             }
-            if (enabled.HasValue) game.overrides[feature] = enabled.Value;
-            else game.overrides.Remove(feature);
+            if (enabled.HasValue)
+            {
+                game.overrides[feature] = enabled.Value;
+                if (source.NullOrEmpty()) game.sources.Remove(feature);
+                else game.sources[feature] = source;
+            }
+            else
+            {
+                game.overrides.Remove(feature);
+                game.sources.Remove(feature);
+            }
+        }
+
+        /// <summary>Where the current game's override of this feature is changed, or null.</summary>
+        public static string SourceForGame(EntadWorldFeature feature)
+        {
+            var game = EntadWorldGame.Instance;
+            return game != null && game.sources.TryGetValue(feature, out string s) ? s : null;
         }
     }
 
     public class EntadWorldGame : GameComponent
     {
         internal Dictionary<EntadWorldFeature, bool> overrides = new Dictionary<EntadWorldFeature, bool>();
+        internal Dictionary<EntadWorldFeature, string> sources = new Dictionary<EntadWorldFeature, string>();
 
         public EntadWorldGame(Game game) { }
 
@@ -90,7 +109,9 @@ namespace EntadFramework
         {
             base.ExposeData();
             Scribe_Collections.Look(ref overrides, "worldOverrides", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref sources, "worldOverrideSources", LookMode.Value, LookMode.Value);
             if (overrides == null) overrides = new Dictionary<EntadWorldFeature, bool>();
+            if (sources == null) sources = new Dictionary<EntadWorldFeature, string>();
         }
     }
 }

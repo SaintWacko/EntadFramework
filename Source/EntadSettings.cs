@@ -393,6 +393,31 @@ namespace EntadFramework
             listingScroll = Vector2.zero;
         }
 
+        // A per-game override (EntadWorld.SetForGame) beats these settings in the game that's loaded, so say so where
+        // the player would otherwise change a setting and see nothing happen. The settings stay editable: they are
+        // still the defaults for every other game.
+        private static bool WorldOverrideNotice(Listing_Standard list, params EntadWorldFeature[] features)
+        {
+            if (Current.Game == null) return false;
+            var parts = new List<string>();
+            string source = null;
+            void Add(EntadWorldFeature f, string label)
+            {
+                bool? v = EntadWorld.GetForGame(f);
+                if (!v.HasValue) return;
+                parts.Add((v.Value ? "EF_Settings_OverrideOn" : "EF_Settings_OverrideOff").Translate(label).Resolve());
+                source = source ?? EntadWorld.SourceForGame(f);
+            }
+            Add(EntadWorldFeature.World, "EF_Settings_OverrideFeature_World".Translate());
+            foreach (var f in features) Add(f, ("EF_Settings_OverrideFeature_" + f).Translate());
+            if (parts.Count == 0) return false;
+            string where = source.NullOrEmpty() ? "EF_Settings_OverrideSourceUnknown".Translate().Resolve() : source;
+            GUI.color = ColorLibrary.RedReadable;
+            list.Label("EF_Settings_Overridden".Translate(parts.ToCommaList(), where));
+            GUI.color = Color.white;
+            return true;
+        }
+
         private static void Section(Listing_Standard list, string key)
         {
             Text.Font = GameFont.Medium;
@@ -554,6 +579,8 @@ namespace EntadFramework
             list.Gap();
 
             Section(list, "EF_Settings_Carriers");
+            bool overridden = WorldOverrideNotice(list, EntadWorldFeature.Carriers);
+            if (overridden) GUI.color = Color.gray;
             list.CheckboxLabeled("EF_Settings_CarriersEnabled".Translate(), ref EntadSettings.CarriersEnabled, "EF_Settings_CarriersEnabled_Tip".Translate());
             if (EntadSettings.CarriersEnabled)
             {
@@ -581,9 +608,12 @@ namespace EntadFramework
                 EntadSettings.CarrierBoundPointFactor = Mathf.Round(list.Slider(EntadSettings.CarrierBoundPointFactor, 0.5f, 4f) * 20f) / 20f;
                 list.Label("EF_Settings_CarrierBound_Desc".Translate());
             }
+            GUI.color = Color.white;
             list.Gap();
 
             Section(list, "EF_Settings_WorldItems");
+            overridden = WorldOverrideNotice(list, EntadWorldFeature.Traders, EntadWorldFeature.Rewards, EntadWorldFeature.Loot);
+            if (overridden) GUI.color = Color.gray;
             list.CheckboxLabeled("EF_Settings_WorldItemsEnabled".Translate(), ref EntadSettings.WorldItemsEnabled, "EF_Settings_WorldItemsEnabled_Tip".Translate());
             if (EntadSettings.WorldItemsEnabled)
             {
@@ -615,13 +645,17 @@ namespace EntadFramework
                 EntadSettings.ItemPointVariance = Mathf.Round(list.Slider(EntadSettings.ItemPointVariance, 0f, 0.9f) * 20f) / 20f;
                 list.Label("EF_Settings_ItemCurve_Desc".Translate());
             }
+            GUI.color = Color.white;
             list.Gap();
 
             Section(list, "EF_Settings_Appraisers");
+            overridden = WorldOverrideNotice(list, EntadWorldFeature.Appraisers);
+            if (overridden) GUI.color = Color.gray;
             list.Label("EF_Settings_CaravanAppraiser".Translate(EntadSettings.CaravanAppraiserChance.ToStringPercent()));
             EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
             EntadSettings.SettlementAppraiserChance = Mathf.Round(list.Slider(EntadSettings.SettlementAppraiserChance, 0f, 1f) * 20f) / 20f;
+            GUI.color = Color.white;
             list.Label("EF_Settings_Appraiser_Desc".Translate());
             list.Gap();
             list.Label("EF_Settings_IdentifyMinPrice".Translate(((float)EntadSettings.IdentifyMinPrice).ToStringMoney()));

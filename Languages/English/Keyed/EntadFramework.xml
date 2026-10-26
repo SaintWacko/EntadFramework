@@ -249,6 +249,16 @@
   <EF_Settings_CarrierBound_Desc>A bound entad's traits work only for its carrier and their descendants, so looting one gives the colony an ordinary item worth little more than usual. To make up for that, bound entads are stronger for their carrier. Factions from other mods may set their own chances and strength.</EF_Settings_CarrierBound_Desc>
   <EF_Settings_WorldItems>Entads in trade and loot</EF_Settings_WorldItems>
   <EF_Settings_WorldItemsEnabled>Traders, rewards and loot hold entads</EF_Settings_WorldItemsEnabled>
+  <EF_Settings_Overridden>In this game: {0}. These settings don't apply to it; change it from {1}. They are still used for other games.</EF_Settings_Overridden>
+  <EF_Settings_OverrideOn>{0} on</EF_Settings_OverrideOn>
+  <EF_Settings_OverrideOff>{0} off</EF_Settings_OverrideOff>
+  <EF_Settings_OverrideSourceUnknown>the mod that set it</EF_Settings_OverrideSourceUnknown>
+  <EF_Settings_OverrideFeature_World>all world entads</EF_Settings_OverrideFeature_World>
+  <EF_Settings_OverrideFeature_Carriers>carriers</EF_Settings_OverrideFeature_Carriers>
+  <EF_Settings_OverrideFeature_Traders>trader stock</EF_Settings_OverrideFeature_Traders>
+  <EF_Settings_OverrideFeature_Rewards>quest rewards</EF_Settings_OverrideFeature_Rewards>
+  <EF_Settings_OverrideFeature_Loot>loot</EF_Settings_OverrideFeature_Loot>
+  <EF_Settings_OverrideFeature_Appraisers>appraisers</EF_Settings_OverrideFeature_Appraisers>
   <EF_Settings_WorldItemsEnabled_Tip>Traders can stock entads, quest rewards can include them, and loot at sites, ancient ruins and faction settlements can turn up entads. Items that would have been there anyway become entads: nothing extra is added.</EF_Settings_WorldItemsEnabled_Tip>
   <EF_Settings_TraderChance>Chance a trader's stock has entads: {0}</EF_Settings_TraderChance>
   <EF_Settings_TraderCount>Entads in such a stock: {0} to {1}</EF_Settings_TraderCount>
