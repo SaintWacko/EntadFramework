@@ -291,9 +291,12 @@ namespace EntadFramework
             CarrierBoundChance = Mathf.Clamp01(CarrierBoundChance);
             Scribe_Values.Look(ref CarrierBoundPointFactor, "carrierBoundPointFactor", DefaultCarrierBoundPointFactor);
             CarrierBoundPointFactor = Mathf.Clamp(CarrierBoundPointFactor, 0.5f, 4f);
-            Scribe_Values.Look(ref TradersEnabled, "tradersEnabled", true);
-            Scribe_Values.Look(ref RewardsEnabled, "rewardsEnabled", true);
-            Scribe_Values.Look(ref LootEnabled, "lootEnabled", true);
+            // worldItemsEnabled was one switch for all three before they were split; it seeds them until they are saved
+            bool legacyItems = true;
+            if (Scribe.mode == LoadSaveMode.LoadingVars) Scribe_Values.Look(ref legacyItems, "worldItemsEnabled", true);
+            Scribe_Values.Look(ref TradersEnabled, "tradersEnabled", legacyItems);
+            Scribe_Values.Look(ref RewardsEnabled, "rewardsEnabled", legacyItems);
+            Scribe_Values.Look(ref LootEnabled, "lootEnabled", legacyItems);
             Scribe_Values.Look(ref TraderStockChance, "traderStockChance", DefaultTraderStockChance);
             TraderStockChance = Mathf.Clamp01(TraderStockChance);
             Scribe_Values.Look(ref TraderEntadCount, "traderEntadCount", DefaultTraderEntadCount);
@@ -608,7 +611,9 @@ namespace EntadFramework
             Section(list, "EF_Settings_WorldSources");
             bool worldOn = WorldSwitch(list, EntadWorldFeature.World, "EF_Settings_WorldEnabled", ref EntadSettings.WorldEnabled, returnGameValue: true);
             Color beforeWorld = GUI.color;
-            if (!worldOn) GUI.color = new Color(1f, 1f, 1f, 0.5f);
+            // Widgets.IntRange sets GUI.color to white, so the dim is put back after each one
+            Color worldColor = worldOn ? beforeWorld : new Color(1f, 1f, 1f, 0.5f);
+            GUI.color = worldColor;
             list.Gap();
 
             Section(list, "EF_Settings_Carriers");
@@ -648,6 +653,7 @@ namespace EntadFramework
                 EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;
                 list.Label("EF_Settings_TraderCount".Translate(EntadSettings.TraderEntadCount.min, EntadSettings.TraderEntadCount.max));
                 Widgets.IntRange(list.GetRect(28f), 0x45465754, ref EntadSettings.TraderEntadCount, 1, 5);
+                GUI.color = worldColor;
                 list.Label("EF_Settings_Trader_Desc".Translate());
             }
             bool rewards = WorldSwitch(list, EntadWorldFeature.Rewards, "EF_Settings_RewardsEnabled", ref EntadSettings.RewardsEnabled);
@@ -704,6 +710,7 @@ namespace EntadFramework
             list.Gap();
             list.Label("EF_Settings_AppraiserMax".Translate(EntadSettings.AppraiserMax.min, EntadSettings.AppraiserMax.max));
             Widgets.IntRange(list.GetRect(28f), 0x45465041, ref EntadSettings.AppraiserMax, 1, 20);
+            GUI.color = worldColor;
             list.Label("EF_Settings_AppraiserDailyMin".Translate(EntadSettings.AppraiserDailyMin));
             EntadSettings.AppraiserDailyMin = Mathf.RoundToInt(list.Slider(EntadSettings.AppraiserDailyMin, 1f, 20f));
             list.Label("EF_Settings_AppraiserDaily_Desc".Translate());
