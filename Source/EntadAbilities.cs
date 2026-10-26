@@ -383,7 +383,8 @@ namespace EntadFramework
                 var external = trait.def.externalAbilities;
                 if (external == null) continue;
                 bool hidden = !trait.IsRevealed(EntadEffectKind.Ability);
-                for (int j = 0; j < external.Count; j++) Note(text, EntadCompat.ExternalAbilityLabel(external[j]), hidden, ref names);
+                for (int j = 0; j < external.Count; j++)
+                    if (EntadCompat.KnowsExternalAbility(external[j])) Note(text, EntadCompat.ExternalAbilityLabel(external[j]), hidden, ref names);
             }
         }
 

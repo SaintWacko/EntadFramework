@@ -547,6 +547,8 @@ namespace EntadFramework.VPECompat
         {
             "VanillaPsycastsExpanded.Technomancer.Ability_Mend:GetPowerForPawn",
             "VanillaPsycastsExpanded.Wildspeaker.Ability_Animal:GetSuccessChanceOn",
+            // VPE's own copy of VEF's helper, which its berserk and other mental state psycasts use
+            "VanillaPsycastsExpanded.AbilityExtension_GiveMentalState:TryGiveMentalStateWithDuration",
         };
 
         private static readonly MethodInfo GetStatValue = AccessTools.Method(typeof(StatExtension), nameof(StatExtension.GetStatValue),
@@ -611,14 +613,15 @@ namespace EntadFramework.VPECompat
         }
     }
 
-    // Aiming a hidden ability: the cursor carries the def's icon (Ability.MouseAttachment, on the map and, for
-    // Farskip, the world map). Read only while the player aims.
-    [HarmonyPatch(typeof(Ability), nameof(Ability.UIIcon), MethodType.Getter)]
-    public static class Patch_VEFAbility_UIIcon
+    // Aiming a hidden ability: the cursor carries the def's icon, on the map and, for Farskip, the world map. On
+    // MouseAttachment rather than the UIIcon getter it reads, which is small enough for the JIT to inline into it.
+    // Read only while the player aims.
+    [HarmonyPatch(typeof(Ability), "MouseAttachment", new[] { typeof(GlobalTargetInfo) })]
+    public static class Patch_VEFAbility_MouseAttachment
     {
         public static void Postfix(Ability __instance, ref Texture2D __result)
         {
-            if (EntadVEFAbilities.IsHidden(__instance)) __result = TexButton.Info;
+            if (__result != TexCommand.CannotShoot && EntadVEFAbilities.IsHidden(__instance)) __result = TexButton.Info;
         }
     }
 
