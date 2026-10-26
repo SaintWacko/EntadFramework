@@ -695,8 +695,8 @@ namespace EntadFramework
             if (!worldOn)
             {
                 Rect dimTo = list.GetRect(0f);
-                Widgets.DrawBoxSolid(new Rect(dimFrom.x, dimFrom.y, dimFrom.width, dimTo.y - dimFrom.y), new Color(Widgets.WindowBGFillColor.r,
-                    Widgets.WindowBGFillColor.g, Widgets.WindowBGFillColor.b, 0.6f));
+                Widgets.DrawBoxSolid(new Rect(dimFrom.x, dimFrom.y, dimFrom.width, dimTo.y - dimFrom.y), new Color(Widgets.MenuSectionBGFillColor.r,
+                    Widgets.MenuSectionBGFillColor.g, Widgets.MenuSectionBGFillColor.b, 0.6f));
             }
         }
 
