@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using Verse;
 
@@ -8,6 +9,10 @@ namespace EntadFramework
     // Hooks for compat assemblies (Mods/<Mod>/, loaded by LoadFolders.xml only while that mod is active). The code that
     // names another mod's types lives there, so this assembly loads without them; a module tells the framework about
     // its traits through these and never the other way round.
+    //
+    // Abilities from another mod's ability system go in EntadTraitDef.externalAbilities by name: the module registers
+    // each name it can grant, draws the gizmos (RegisterGizmos) and keeps its per-item state in the item's save
+    // (Exposing). Charges and cooldowns live on the trait, as for vanilla abilities.
     //
     // A module's traits are plain stats (rolled, scaled and shown like any other) or customEffects keys with their own
     // card lines. Both need a registered check saying which buildings they can go on: a stat nobody registered falls
@@ -30,8 +35,117 @@ namespace EntadFramework
         // Current.Game may not point at the new game yet, so a handler should only clear.
         public static event Action GameStarted;
 
+        // Raised from CompEntad.PostExposeData in every pass, after the traits have loaded: a module saves what it keeps
+        // per item under node names of its own. Nothing of a module's own type goes in the save, so once the module is
+        // gone its nodes are never read and the save loads clean.
+        public static event Action<CompEntad> Exposing;
+
         // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
         private static System.WeakReference<Game> startedFor;
+
+        private static readonly Dictionary<string, Func<string>> externalAbilities = new Dictionary<string, Func<string>>();
+        private static readonly List<Func<CompEntad, IEnumerable<Gizmo>>> gizmoProviders = new List<Func<CompEntad, IEnumerable<Gizmo>>>();
+        private static readonly List<Func<EntadTraitDef, float>> weights = new List<Func<EntadTraitDef, float>>();
+        private static readonly List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>> settings = new List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>>();
+
+        // A name traits can list in externalAbilities, with its label for the card and the settings list
+        public static void RegisterExternalAbility(string name, Func<string> label)
+        {
+            if (name.NullOrEmpty() || label == null) throw new ArgumentNullException(name.NullOrEmpty() ? nameof(name) : nameof(label));
+            externalAbilities[name] = label;
+        }
+
+        // Gizmos for the holder of a worn or wielded entad, asked each time the holder's gizmos are drawn. Return null
+        // or nothing when the item has nothing of the module's.
+        public static void RegisterGizmos(Func<CompEntad, IEnumerable<Gizmo>> provider)
+        {
+            if (provider == null) throw new ArgumentNullException(nameof(provider));
+            gizmoProviders.Add(provider);
+        }
+
+        // A multiplier on a trait's weight when picking traits (1 = unchanged, 0 = never picked). Several multiply.
+        public static void RegisterWeight(Func<EntadTraitDef, float> weight)
+        {
+            if (weight == null) throw new ArgumentNullException(nameof(weight));
+            weights.Add(weight);
+        }
+
+        // Drawn at the bottom of a settings tab. Keep values with EntadSettings.ModuleValue / SetModuleValue.
+        public static void RegisterSettings(EntadSettingsTab tab, Action<Listing_Standard> draw)
+        {
+            if (draw == null) throw new ArgumentNullException(nameof(draw));
+            settings.Add(new KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>(tab, draw));
+        }
+
+        internal static bool KnowsExternalAbility(string name) => name != null && externalAbilities.ContainsKey(name);
+
+        internal static string ExternalAbilityLabel(string name)
+        {
+            if (name == null || !externalAbilities.TryGetValue(name, out var label)) return name;
+            try { return label() ?? name; }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] label of external ability {name} failed: {e}", name.GetHashCode());
+                return name;
+            }
+        }
+
+        internal static bool HasGizmoProviders => gizmoProviders.Count > 0;
+
+        // Materialised per provider, so one that throws partway loses only its own gizmos
+        internal static List<Gizmo> GizmosFor(CompEntad comp)
+        {
+            List<Gizmo> all = null;
+            for (int i = 0; i < gizmoProviders.Count; i++)
+            {
+                var provider = gizmoProviders[i];
+                try
+                {
+                    var gizmos = provider(comp);
+                    if (gizmos == null) continue;
+                    if (all == null) all = new List<Gizmo>();
+                    all.AddRange(gizmos);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce($"[Entad Framework] {provider.Method.DeclaringType}.{provider.Method.Name} failed on {comp.parent}: {e}", provider.Method.GetHashCode());
+                }
+            }
+            return all;
+        }
+
+        internal static bool HasWeights => weights.Count > 0;
+
+        internal static float WeightOf(EntadTraitDef def)
+        {
+            float w = 1f;
+            for (int i = 0; i < weights.Count; i++)
+            {
+                try { w *= Math.Max(0f, weights[i](def)); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {weights[i].Method.DeclaringType}.{weights[i].Method.Name} failed on {def}: {e}", weights[i].Method.GetHashCode()); }
+            }
+            return w;
+        }
+
+        internal static void DrawSettings(EntadSettingsTab tab, Listing_Standard list)
+        {
+            foreach (var s in settings.Where(s => s.Key == tab))
+            {
+                list.Gap();
+                try { s.Value(list); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {s.Value.Method.DeclaringType}.{s.Value.Method.Name} failed: {e}", s.Value.Method.GetHashCode()); }
+            }
+        }
+
+        internal static void RaiseExposing(CompEntad comp)
+        {
+            if (Exposing == null) return;
+            foreach (Action<CompEntad> handler in Exposing.GetInvocationList())
+            {
+                try { handler(comp); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed on {comp.parent} ({Scribe.mode}): {e}", handler.Method.GetHashCode()); }
+            }
+        }
 
         public static void RegisterStat(StatDef stat, Func<ThingDef, bool> appliesTo)
         {

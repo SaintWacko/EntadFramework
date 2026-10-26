@@ -753,6 +753,7 @@ namespace EntadFramework
                 EntadAuras.Refresh(this);
                 EntadFurnitureEffects.Refresh(this);
             }
+            EntadCompat.RaiseExposing(this);
         }
 
         // The pawn currently wearing/wielding this item, if any
@@ -812,12 +813,17 @@ namespace EntadFramework
         private static string AbilityLimitLine(AbilityDef ability, bool chargesApply)
         {
             if (ability == null) return null;
-            int cooldown = UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average);
+            return AbilityLimitLine(ability.LabelCap, chargesApply ? ability.charges : 1,
+                UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average), ability.cooldownPerCharge);
+        }
+
+        private static string AbilityLimitLine(string label, int charges, int cooldown, bool perCharge)
+        {
             if (cooldown <= 0) return null;
             string period = cooldown.ToStringTicksToPeriod();
-            if (chargesApply && ability.charges > 1)
-                return (ability.cooldownPerCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(ability.LabelCap, ability.charges, period);
-            return "EF_Card_AbilityCooldown".Translate(ability.LabelCap, period);
+            if (charges > 1)
+                return (perCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(label, charges, period);
+            return "EF_Card_AbilityCooldown".Translate(label, period);
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -921,6 +927,18 @@ namespace EntadFramework
                     if (trait.def.IsReloadable)
                         foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == trait))
                             infoString.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
+                }
+                if (!trait.def.externalAbilities.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Ability))
+                {
+                    var labels = trait.def.externalAbilities.Select(a => EntadCompat.ExternalAbilityLabel(a).CapitalizeFirst()).ToList();
+                    infoString.AppendLine(" - " + "EF_Card_GrantsAbility".Translate(string.Join(", ", labels)));
+                    // The module's copy uses the trait's cooldown; without one it keeps the ability's own, which only
+                    // the module knows, so no line
+                    foreach (string l in labels)
+                    {
+                        string limit = AbilityLimitLine(l, trait.def.abilityCharges, trait.def.abilityCooldownTicks, true);
+                        if (limit != null) infoString.AppendLine("   " + limit);
+                    }
                 }
                 if (trait.def.HasMealEffect && trait.IsRevealed(EntadEffectKind.Meal))
                 {

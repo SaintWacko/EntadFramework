@@ -602,6 +602,15 @@ namespace EntadFramework
         // counting it would only put "0 / 1" on the gizmo; reloadable traits count even one, since reloading adds charges.
         public bool UsesAbilityCharges => abilityCharges > 1 || IsReloadable;
 
+        // Abilities from another mod's ability system (Vanilla Expanded Framework's, say), by that system's defName. A
+        // compat module that registered the name (EntadCompat.RegisterExternalAbility) grants it while the item is worn
+        // or wielded; a name nobody registered never rolls. abilityCharges, abilityCooldownTicks and abilityCastTicks
+        // apply as above, with charges coming back one per cooldown. Weapons and apparel only.
+        public List<string> externalAbilities;
+
+        // Where external ability j keeps its charges in AppliedEntadTrait's ability lists, after the abilities above
+        public int ExternalAbilitySlot(int j) => (abilities?.Count ?? 0) + j;
+
         // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadTraitDef> exclusiveWith;
 
@@ -633,6 +642,7 @@ namespace EntadFramework
             if (!buildingFactors.NullOrEmpty() && !other.buildingFactors.NullOrEmpty()
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
+            if (!externalAbilities.NullOrEmpty() && !other.externalAbilities.NullOrEmpty() && externalAbilities.Any(other.externalAbilities.Contains)) return true;
             if (thought != null && thought == other.thought) return true;
             if (HasPortableSpace && other.HasPortableSpace) return true;
             if (!customEffects.NullOrEmpty() && !other.customEffects.NullOrEmpty() && customEffects.Any(other.customEffects.Contains)) return true;
@@ -702,7 +712,7 @@ namespace EntadFramework
                 if (HasDamageEffect || HasWeaponEffect) kinds |= EntadEffectKind.Damage;
                 if (!triggers.NullOrEmpty()) kinds |= EntadEffectKind.Trigger;
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
-                if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
+                if (!abilities.NullOrEmpty() || !externalAbilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 if (HasPortableSpace) kinds |= EntadEffectKind.Space;
                 if (aura != null) kinds |= EntadEffectKind.Aura;
@@ -775,6 +785,8 @@ namespace EntadFramework
             if (!customEffects.NullOrEmpty() && customCardLines.NullOrEmpty())
                 yield return $"{defName}: customEffects need customCardLines, or the card shows the trait with nothing it does";
             if (customCardLines != null && customCardLines.Any(l => l.NullOrEmpty())) yield return $"{defName}: customCardLines contains an empty line";
+            if (externalAbilities != null && externalAbilities.Any(a => a.NullOrEmpty())) yield return $"{defName}: externalAbilities contains an empty name";
+            if (!externalAbilities.NullOrEmpty() && abilityCharges < 0) yield return $"{defName}: abilityCharges can't be negative";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -830,6 +842,12 @@ namespace EntadFramework
             if (!customEffects.NullOrEmpty())
                 for (int i = 0; i < customEffects.Count; i++)
                     if (!EntadCompat.EffectAppliesTo(customEffects[i], td)) return false;
+            if (!externalAbilities.NullOrEmpty())
+            {
+                if (!td.IsWeapon && !td.IsApparel) return false;
+                for (int i = 0; i < externalAbilities.Count; i++)
+                    if (!EntadCompat.KnowsExternalAbility(externalAbilities[i])) return false;
+            }
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())

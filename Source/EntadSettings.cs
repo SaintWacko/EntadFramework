@@ -165,6 +165,12 @@ namespace EntadFramework
 
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
+
+        // Compat modules' settings (EntadCompat.RegisterSettings), by key. Plain numbers, so a module that is gone
+        // leaves nothing that can't be read back.
+        private static Dictionary<string, float> moduleValues = new Dictionary<string, float>();
+        public static float ModuleValue(string key, float defaultValue) => moduleValues.TryGetValue(key, out float v) ? v : defaultValue;
+        public static void SetModuleValue(string key, float value) => moduleValues[key] = value;
         public static bool IsDisabled(EntadTraitDef def) => DisabledTraits.Contains(def.defName);
 
         // Selection weight of weapon-specific traits relative to general ones when picking for a weapon
@@ -219,6 +225,7 @@ namespace EntadFramework
             DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
             ItemPointVariance = DefaultItemPointVariance;
             VerityReadout = true;
+            moduleValues.Clear();
             ResetRarityWeights();
         }
 
@@ -235,6 +242,8 @@ namespace EntadFramework
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
+            Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
+            if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
@@ -338,6 +347,9 @@ namespace EntadFramework
         }
     }
 
+    // The settings tabs a compat module can add a section to (the Traits tab is a list, not a listing)
+    public enum EntadSettingsTab { General, Generation, World, Rarity }
+
     public class EntadMod : Mod
     {
         public EntadMod(ModContentPack content) : base(content)
@@ -397,10 +409,10 @@ namespace EntadFramework
                 list.Begin(view);
                 switch (tab)
                 {
-                    case Tab.General: DoGeneral(list); break;
-                    case Tab.Generation: DoGeneration(list); break;
-                    case Tab.World: DoWorld(list); break;
-                    default: DoRarity(list); break;
+                    case Tab.General: DoGeneral(list); EntadCompat.DrawSettings(EntadSettingsTab.General, list); break;
+                    case Tab.Generation: DoGeneration(list); EntadCompat.DrawSettings(EntadSettingsTab.Generation, list); break;
+                    case Tab.World: DoWorld(list); EntadCompat.DrawSettings(EntadSettingsTab.World, list); break;
+                    default: DoRarity(list); EntadCompat.DrawSettings(EntadSettingsTab.Rarity, list); break;
                 }
                 listingHeight = list.CurHeight + 20f;
                 list.End();
@@ -445,7 +457,7 @@ namespace EntadFramework
             return returnGameValue ? shown : shown || value;
         }
 
-        private static void Hint(Listing_Standard list, string text)
+        public static void Hint(Listing_Standard list, string text)
         {
             Text.Font = GameFont.Tiny;
             Color before = GUI.color;
@@ -456,7 +468,7 @@ namespace EntadFramework
             list.Gap(4f);
         }
 
-        private static void Section(Listing_Standard list, string key)
+        public static void Section(Listing_Standard list, string key)
         {
             Text.Font = GameFont.Medium;
             list.Label(key.Translate());
@@ -472,6 +484,7 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
+            if (d.externalAbilities != null) foreach (var a in d.externalAbilities) sb.Append(' ').Append(EntadCompat.ExternalAbilityLabel(a)).Append(' ').Append(a);
             if (d.AllFuelTypes != null) foreach (var f in d.AllFuelTypes) sb.Append(' ').Append(f.label);
             if (d.changeDamageType != null) sb.Append(' ').Append(d.changeDamageType.label);
             if (d.weaponProperties != null) foreach (var w in d.weaponProperties) sb.Append(' ').Append(w.Label);
@@ -541,6 +554,7 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) parts.Add(r.stat.LabelCap);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
+            if (d.externalAbilities != null) foreach (var a in d.externalAbilities) parts.Add(EntadCompat.ExternalAbilityLabel(a).CapitalizeFirst());
             if (d.HasDamageEffect) parts.Add("EF_Summary_Damage".Translate());
             if (d.weaponProperties != null) foreach (var w in d.weaponProperties) parts.Add(w.Label);
             if (d.ignoreAccuracyMaluses) parts.Add("EF_Summary_Weapon".Translate());
