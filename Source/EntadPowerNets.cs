@@ -307,7 +307,8 @@ namespace EntadFramework
                 // The network's power readout shows Conserving and Leaky the moment they act, so they are known then
                 // rather than after the usual notice time; anything else would leave the readout giving them away
                 if (c.powerFactor < 1f && AnyConsumerOn(net)) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerFactor);
-                if (c.leakWatts > 0f && live) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerLeak);
+                // hasPowerSource, as the leak itself: a net of flat batteries or idle generators still leaks
+                if (c.leakWatts > 0f && net.hasPowerSource) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerLeak);
                 if (c.comp.TicksSinceSpawned >= NoticeTicks) Notice(c, net, live, now);
             }
         }
