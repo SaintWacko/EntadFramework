@@ -402,13 +402,16 @@ namespace EntadFramework
         {
             if (Current.Game == null) return false;
             var parts = new List<string>();
-            bool anyOff = false;
+            // Greyed only when the whole section is off: World off, or every feature it covers off (with Traders off,
+            // rewards and loot still read these sliders)
+            bool worldOff = false;
+            int off = 0;
             void Add(EntadWorldFeature f)
             {
                 bool? v = EntadWorld.GetForGame(f);
-                // World is always on in the settings, so an override to on changes nothing
-                if (!v.HasValue || (f == EntadWorldFeature.World && v.Value)) return;
-                anyOff |= !v.Value;
+                // World and Appraisers have no switch here (always on in the settings), so an override to on changes nothing
+                if (!v.HasValue || (v.Value && (f == EntadWorldFeature.World || f == EntadWorldFeature.Appraisers))) return;
+                if (!v.Value) { if (f == EntadWorldFeature.World) worldOff = true; else off++; }
                 string label = ("EF_Settings_OverrideFeature_" + f).Translate();
                 string state = (v.Value ? "EF_Settings_OverrideOn" : "EF_Settings_OverrideOff").Translate(label);
                 parts.Add("EF_Settings_OverridePart".Translate(state, SourceLabel(EntadWorld.SourceForGame(f))));
@@ -416,6 +419,7 @@ namespace EntadFramework
             Add(EntadWorldFeature.World);
             foreach (var f in features) Add(f);
             if (parts.Count == 0) return false;
+            bool anyOff = worldOff || off == features.Length;
             GUI.color = anyOff ? ColorLibrary.RedReadable : Color.yellow;
             list.Label((anyOff ? "EF_Settings_OverriddenOff" : "EF_Settings_OverriddenOn").Translate(string.Join("; ", parts)));
             GUI.color = Color.white;
@@ -426,7 +430,7 @@ namespace EntadFramework
         private static string SourceLabel(string source)
         {
             if (source.NullOrEmpty()) return "EF_Settings_OverrideSourceUnknown".Translate();
-            return source.CanTranslate() ? source.Translate().Resolve() : source;
+            return source.CanTranslate() || LanguageDatabase.defaultLanguage.HaveTextForKey(source) ? source.Translate().Resolve() : source;
         }
 
         private static void Section(Listing_Standard list, string key)
@@ -667,7 +671,6 @@ namespace EntadFramework
             EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
             EntadSettings.SettlementAppraiserChance = Mathf.Round(list.Slider(EntadSettings.SettlementAppraiserChance, 0f, 1f) * 20f) / 20f;
-            GUI.color = Color.white;
             list.Label("EF_Settings_Appraiser_Desc".Translate());
             list.Gap();
             list.Label("EF_Settings_IdentifyMinPrice".Translate(((float)EntadSettings.IdentifyMinPrice).ToStringMoney()));
@@ -681,6 +684,7 @@ namespace EntadFramework
             list.Label("EF_Settings_AppraiserDailyMin".Translate(EntadSettings.AppraiserDailyMin));
             EntadSettings.AppraiserDailyMin = Mathf.RoundToInt(list.Slider(EntadSettings.AppraiserDailyMin, 1f, 20f));
             list.Label("EF_Settings_AppraiserDaily_Desc".Translate());
+            GUI.color = Color.white;
         }
 
         private static void DoRarity(Listing_Standard list)

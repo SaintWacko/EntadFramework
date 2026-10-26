@@ -61,13 +61,13 @@ namespace EntadFramework
             return game != null && game.overrides.TryGetValue(feature, out bool v) ? v : (bool?)null;
         }
 
+        /// <summary>SetForGame with no source. Kept so mods compiled against it still bind.</summary>
+        public static void SetForGame(EntadWorldFeature feature, bool? enabled) => SetForGame(feature, enabled, null);
+
         /// <summary>Overrides a feature for the current game only (null goes back to the settings). Call it once the
         /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. While
         /// Appraisers is off no new ones turn up and existing ones (settlement or caravan) are hidden; they are
         /// remembered and come back when it is turned on again.</summary>
-        /// <summary>Two-argument form kept so mods compiled against it still bind.</summary>
-        public static void SetForGame(EntadWorldFeature feature, bool? enabled) => SetForGame(feature, enabled, null);
-
         /// <param name="source">Where the player changes it, shown in Entad's settings while the override stands.
         /// Best passed as a translation key (shown translated in the player's language), else plain text, e.g.
         /// "Dungeon Madness's world configurator". Saved with the game.</param>
