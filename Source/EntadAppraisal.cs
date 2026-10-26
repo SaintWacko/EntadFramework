@@ -180,6 +180,7 @@ namespace EntadFramework
         {
             hediff = null;
             if (appraisers.Count == 0 || p == null || !appraisers.Contains(p)) return false;
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers)) return false;
             if (!p.Spawned || p.Dead || p.Downed || p.InMentalState || p.Faction == null || p.Faction.IsPlayer || p.Faction.HostileTo(Faction.OfPlayer)) return false;
             var lord = p.GetLord();
             if (!(lord?.LordJob is LordJob_TradeWithColony)) return false;

@@ -62,8 +62,9 @@ namespace EntadFramework
         }
 
         /// <summary>Overrides a feature for the current game only (null goes back to the settings). Call it once the
-        /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. Turning
-        /// Appraisers off stops new ones turning up; a settlement already known to have one keeps it.</summary>
+        /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. While
+        /// Appraisers is off no new ones turn up and existing ones (settlement or caravan) are hidden; they are
+        /// remembered and come back when it is turned on again.</summary>
         public static void SetForGame(EntadWorldFeature feature, bool? enabled)
         {
             var game = EntadWorldGame.Instance;
