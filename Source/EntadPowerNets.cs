@@ -303,16 +303,19 @@ namespace EntadFramework
                         continue;
                     }
                 }
-                if (c.comp.HasHidden && c.comp.TicksSinceSpawned >= NoticeTicks) Notice(c, net, live, now);
+                if (!c.comp.HasHidden) continue;
+                // The network's power readout shows Conserving and Leaky the moment they act, so they are known then
+                // rather than after the usual notice time; anything else would leave the readout giving them away
+                if (c.powerFactor < 1f && AnyConsumerOn(net)) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerFactor);
+                if (c.leakWatts > 0f && live) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerLeak);
+                if (c.comp.TicksSinceSpawned >= NoticeTicks) Notice(c, net, live, now);
             }
         }
 
-        // Effects the colony can only see as numbers: the network's power readout (Conserving, Leaky) and its
-        // batteries' charge (Capacitive). Grounded is noticed after a day of nothing going wrong.
+        // Effects the colony only sees over time: its batteries' charge (Capacitive). Grounded is noticed after a day
+        // of nothing going wrong.
         private static void Notice(Carrier c, PowerNet net, bool live, int now)
         {
-            if (c.powerFactor < 1f && AnyConsumerOn(net)) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerFactor);
-            if (c.leakWatts > 0f && live) c.comp.RevealStat(EntadStatDefOf.Entad_NetPowerLeak);
             if (c.lossFactor < 1f && live && net.batteryComps.Count > 0) c.comp.RevealStat(EntadStatDefOf.Entad_NetBatteryLossFactor);
             if (c.grounded && live)
             {
