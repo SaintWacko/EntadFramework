@@ -107,14 +107,16 @@ namespace EntadFramework
         private List<int> keys;
         private List<AppraiserState> values;
 
+        private static readonly AppraiserState NoAppraiser = new AppraiserState();
+
         public EntadAppraisalWorld(World world) : base(world) { }
 
         public AppraiserState For(Settlement s)
         {
-            // Not remembered while appraisers are off for this game, so turning them back on still lets it roll
-            if (!settlements.TryGetValue(s.ID, out var state) && !EntadWorld.Enabled(EntadWorldFeature.Appraisers))
-                return new AppraiserState();
-            if (state == null)
+            // While appraisers are off for this game every settlement reads as having none, and nothing is rolled or
+            // forgotten, so turning them back on brings back the ones already known and lets the rest roll
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers)) return NoAppraiser;
+            if (!settlements.TryGetValue(s.ID, out var state))
                 settlements[s.ID] = state = AppraiserState.Roll(EntadAppraisal.SettlementChance(s.Faction));
             return state;
         }
