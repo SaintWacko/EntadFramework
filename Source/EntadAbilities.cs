@@ -363,15 +363,35 @@ namespace EntadFramework
 
         private static void Collect(string text, Pawn pawn, ref Dictionary<string, bool> names)
         {
-            if (pawn.abilities == null) return;
-            foreach (Ability a in pawn.abilities.abilities)
+            if (pawn.abilities != null)
+                foreach (Ability a in pawn.abilities.abilities)
+                    Note(text, a.def.label, Patch_Ability_GetGizmos_Hide.IsHidden(a), ref names);
+            // Another system's abilities (a module's externalAbilities) never reach pawn.abilities: read them off the gear
+            if (!EntadCompat.HasExternalAbilities) return;
+            var worn = pawn.apparel?.WornApparel;
+            if (worn != null) for (int i = 0; i < worn.Count; i++) CollectExternal(text, worn[i], pawn, ref names);
+            var held = pawn.equipment?.AllEquipmentListForReading;
+            if (held != null) for (int i = 0; i < held.Count; i++) CollectExternal(text, held[i], pawn, ref names);
+        }
+
+        private static void CollectExternal(string text, ThingWithComps item, Pawn pawn, ref Dictionary<string, bool> names)
+        {
+            var comp = item.GetComp<CompEntad>();
+            if (comp == null || !comp.ActiveFor(pawn)) return;
+            foreach (var trait in comp.activeTraits)
             {
-                string label = a.def.label;
-                if (label.NullOrEmpty() || text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (names == null) names = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-                bool hidden = Patch_Ability_GetGizmos_Hide.IsHidden(a);
-                names[label] = hidden || (names.TryGetValue(label, out bool before) && before);
+                var external = trait.def.externalAbilities;
+                if (external == null) continue;
+                bool hidden = !trait.IsRevealed(EntadEffectKind.Ability);
+                for (int j = 0; j < external.Count; j++) Note(text, EntadCompat.ExternalAbilityLabel(external[j]), hidden, ref names);
             }
+        }
+
+        private static void Note(string text, string label, bool hidden, ref Dictionary<string, bool> names)
+        {
+            if (label.NullOrEmpty() || text.IndexOf(label, System.StringComparison.OrdinalIgnoreCase) < 0) return;
+            if (names == null) names = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+            names[label] = hidden || (names.TryGetValue(label, out bool before) && before);
         }
     }
 

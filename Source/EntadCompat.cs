@@ -48,6 +48,16 @@ namespace EntadFramework
         private static readonly List<Func<CompEntad, IEnumerable<Gizmo>>> gizmoProviders = new List<Func<CompEntad, IEnumerable<Gizmo>>>();
         private static readonly List<Func<EntadTraitDef, float>> weights = new List<Func<EntadTraitDef, float>>();
         private static readonly List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>> settings = new List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>>();
+        private static readonly List<HeldAbilitySource> heldSources = new List<HeldAbilitySource>();
+
+        public delegate bool HeldAbilityCheck(Pawn pawn, object ability, out bool hidden);
+
+        private class HeldAbilitySource
+        {
+            public Func<Pawn, bool> hasAny;
+            public Action<Pawn, List<object>> collect;
+            public HeldAbilityCheck grants;
+        }
 
         // A name traits can list in externalAbilities, with its label for the card and the settings list
         public static void RegisterExternalAbility(string name, Func<string> label)
@@ -77,6 +87,53 @@ namespace EntadFramework
             if (draw == null) throw new ArgumentNullException(nameof(draw));
             settings.Add(new KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>(tab, draw));
         }
+
+        // Abilities a module keeps on the items that grant them rather than in the pawn's own tracker, so an AI mod
+        // (Ability AI, through Mods/AbilityAI) can find them. hasAny is asked on idle think checks: keep it cheap.
+        // collect appends the ability objects of the module's own system the pawn can cast from what it holds, each
+        // already pointed at that pawn as its caster. grants says whether one of them is the item's and still hidden.
+        public static void RegisterHeldAbilities(Func<Pawn, bool> hasAny, Action<Pawn, List<object>> collect, HeldAbilityCheck grants)
+        {
+            if (hasAny == null || collect == null || grants == null)
+                throw new ArgumentNullException(hasAny == null ? nameof(hasAny) : collect == null ? nameof(collect) : nameof(grants));
+            heldSources.Add(new HeldAbilitySource { hasAny = hasAny, collect = collect, grants = grants });
+        }
+
+        public static bool HasHeldAbilities(Pawn pawn)
+        {
+            for (int i = 0; i < heldSources.Count; i++)
+            {
+                var source = heldSources[i];
+                try { if (source.hasAny(pawn)) return true; }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {source.hasAny.Method.DeclaringType}.{source.hasAny.Method.Name} failed on {pawn}: {e}", source.hasAny.Method.GetHashCode()); }
+            }
+            return false;
+        }
+
+        public static void CollectHeldAbilities(Pawn pawn, List<object> into)
+        {
+            for (int i = 0; i < heldSources.Count; i++)
+            {
+                var source = heldSources[i];
+                try { source.collect(pawn, into); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {source.collect.Method.DeclaringType}.{source.collect.Method.Name} failed on {pawn}: {e}", source.collect.Method.GetHashCode()); }
+            }
+        }
+
+        public static bool HeldAbilityGrants(Pawn pawn, object ability, out bool hidden)
+        {
+            hidden = false;
+            for (int i = 0; i < heldSources.Count; i++)
+            {
+                var source = heldSources[i];
+                try { if (source.grants(pawn, ability, out hidden)) return true; }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {source.grants.Method.DeclaringType}.{source.grants.Method.Name} failed on {pawn}: {e}", source.grants.Method.GetHashCode()); }
+            }
+            hidden = false;
+            return false;
+        }
+
+        internal static bool HasExternalAbilities => externalAbilities.Count > 0;
 
         internal static bool KnowsExternalAbility(string name) => name != null && externalAbilities.ContainsKey(name);
 

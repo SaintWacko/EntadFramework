@@ -2,8 +2,10 @@
 <Defs>
   <!-- Vanilla Psycasts Expanded psycasts as gear abilities (Mods/VanillaPsycastsExpanded/Source/EntadVEFAbilities.cs),
        loaded only while VPE is active. Anyone holding the item can cast them: no psylink, psyfocus or neural heat, with
-       the trait's charges and cooldown instead (a charge comes back after each cooldown). Effects that VPE scales by
-       psychic sensitivity (range, duration, Word of Animals' odds) still do.
+       the trait's charges and cooldown instead (a charge comes back after each cooldown). Where VPE scales an effect by
+       the caster's psychic sensitivity (range, duration, Word of Animals' odds, Mend's repair), the holder counts as
+       100%, or as the casterSensitivity of an EntadFramework.VPECompat.EntadVEFTraitExtension on the trait. A target's
+       own sensitivity still counts, and a psychically deaf pawn can't be targeted by the psychic ones.
        Only psycasts that need a deliberate choice of target are here; the reactive ones are planned as triggered
        traits. Rarity follows the psycast's level: 1-2 Uncommon, 3 Rare, 4 Epic, 5 Legendary. -->
 
@@ -183,6 +185,24 @@
     <externalAbilities><li>VPE_MindBreak</li></externalAbilities>
     <abilityCharges>1</abilityCharges>
     <abilityCooldownTicks>600000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Technomancer: VPE's Mend repairs (sensitivity - 1) x 100 hit points, nothing at 100%, so this one casts at 150%:
+       50 hit points shared over a pawn's damaged gear, an item or a building, or 50 points of a mech's injuries -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Mend</defName>
+    <label>Mend</label>
+    <description>Scratches fade from whatever it rests against, and torn seams knit themselves shut overnight.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_Mend</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+    <modExtensions>
+      <li Class="EntadFramework.VPECompat.EntadVEFTraitExtension">
+        <casterSensitivity>1.5</casterSensitivity>
+      </li>
+    </modExtensions>
   </EntadFramework.EntadTraitDef>
 
   <!-- Chronopath: VPE ages the caster a year with each of these, and the copies keep that -->
