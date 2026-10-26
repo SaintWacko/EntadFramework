@@ -65,9 +65,13 @@ namespace EntadFramework
         /// game exists: from a new-colony window, after Current.Game is set, or at any point in play. While
         /// Appraisers is off no new ones turn up and existing ones (settlement or caravan) are hidden; they are
         /// remembered and come back when it is turned on again.</summary>
-        /// <param name="source">Where the player changes it, shown in Entad's settings while the override stands,
-        /// e.g. "Dungeon Madness's world configurator". Saved with the game.</param>
-        public static void SetForGame(EntadWorldFeature feature, bool? enabled, string source = null)
+        /// <summary>Two-argument form kept so mods compiled against it still bind.</summary>
+        public static void SetForGame(EntadWorldFeature feature, bool? enabled) => SetForGame(feature, enabled, null);
+
+        /// <param name="source">Where the player changes it, shown in Entad's settings while the override stands.
+        /// Best passed as a translation key (shown translated in the player's language), else plain text, e.g.
+        /// "Dungeon Madness's world configurator". Saved with the game.</param>
+        public static void SetForGame(EntadWorldFeature feature, bool? enabled, string source)
         {
             var game = EntadWorldGame.Instance;
             if (game == null)

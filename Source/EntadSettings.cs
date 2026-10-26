@@ -396,26 +396,37 @@ namespace EntadFramework
         // A per-game override (EntadWorld.SetForGame) beats these settings in the game that's loaded, so say so where
         // the player would otherwise change a setting and see nothing happen. The settings stay editable: they are
         // still the defaults for every other game.
+        // Returns true when the section is off in this game, so its controls are greyed. An override to on only
+        // replaces the switch: the chances and curves below are still read from here, so they stay live.
         private static bool WorldOverrideNotice(Listing_Standard list, params EntadWorldFeature[] features)
         {
             if (Current.Game == null) return false;
             var parts = new List<string>();
-            string source = null;
-            void Add(EntadWorldFeature f, string label)
+            bool anyOff = false;
+            void Add(EntadWorldFeature f)
             {
                 bool? v = EntadWorld.GetForGame(f);
-                if (!v.HasValue) return;
-                parts.Add((v.Value ? "EF_Settings_OverrideOn" : "EF_Settings_OverrideOff").Translate(label).Resolve());
-                source = source ?? EntadWorld.SourceForGame(f);
+                // World is always on in the settings, so an override to on changes nothing
+                if (!v.HasValue || (f == EntadWorldFeature.World && v.Value)) return;
+                anyOff |= !v.Value;
+                string label = ("EF_Settings_OverrideFeature_" + f).Translate();
+                string state = (v.Value ? "EF_Settings_OverrideOn" : "EF_Settings_OverrideOff").Translate(label);
+                parts.Add("EF_Settings_OverridePart".Translate(state, SourceLabel(EntadWorld.SourceForGame(f))));
             }
-            Add(EntadWorldFeature.World, "EF_Settings_OverrideFeature_World".Translate());
-            foreach (var f in features) Add(f, ("EF_Settings_OverrideFeature_" + f).Translate());
+            Add(EntadWorldFeature.World);
+            foreach (var f in features) Add(f);
             if (parts.Count == 0) return false;
-            string where = source.NullOrEmpty() ? "EF_Settings_OverrideSourceUnknown".Translate().Resolve() : source;
-            GUI.color = ColorLibrary.RedReadable;
-            list.Label("EF_Settings_Overridden".Translate(parts.ToCommaList(), where));
+            GUI.color = anyOff ? ColorLibrary.RedReadable : Color.yellow;
+            list.Label((anyOff ? "EF_Settings_OverriddenOff" : "EF_Settings_OverriddenOn").Translate(string.Join("; ", parts)));
             GUI.color = Color.white;
-            return true;
+            return anyOff;
+        }
+
+        // A caller may pass a translation key so the text follows the player's language after a save is moved
+        private static string SourceLabel(string source)
+        {
+            if (source.NullOrEmpty()) return "EF_Settings_OverrideSourceUnknown".Translate();
+            return source.CanTranslate() ? source.Translate().Resolve() : source;
         }
 
         private static void Section(Listing_Standard list, string key)
@@ -582,7 +593,7 @@ namespace EntadFramework
             bool overridden = WorldOverrideNotice(list, EntadWorldFeature.Carriers);
             if (overridden) GUI.color = Color.gray;
             list.CheckboxLabeled("EF_Settings_CarriersEnabled".Translate(), ref EntadSettings.CarriersEnabled, "EF_Settings_CarriersEnabled_Tip".Translate());
-            if (EntadSettings.CarriersEnabled)
+            if (EntadSettings.CarriersEnabled || (Current.Game != null && EntadWorld.Enabled(EntadWorldFeature.Carriers)))
             {
                 list.Label("EF_Settings_CarrierChance".Translate(EntadSettings.CarrierGroupChance.ToStringPercent()));
                 EntadSettings.CarrierGroupChance = Mathf.Round(list.Slider(EntadSettings.CarrierGroupChance, 0f, 1f) * 20f) / 20f;
@@ -615,7 +626,8 @@ namespace EntadFramework
             overridden = WorldOverrideNotice(list, EntadWorldFeature.Traders, EntadWorldFeature.Rewards, EntadWorldFeature.Loot);
             if (overridden) GUI.color = Color.gray;
             list.CheckboxLabeled("EF_Settings_WorldItemsEnabled".Translate(), ref EntadSettings.WorldItemsEnabled, "EF_Settings_WorldItemsEnabled_Tip".Translate());
-            if (EntadSettings.WorldItemsEnabled)
+            if (EntadSettings.WorldItemsEnabled || (Current.Game != null && (EntadWorld.Enabled(EntadWorldFeature.Traders)
+                || EntadWorld.Enabled(EntadWorldFeature.Rewards) || EntadWorld.Enabled(EntadWorldFeature.Loot))))
             {
                 list.Label("EF_Settings_TraderChance".Translate(EntadSettings.TraderStockChance.ToStringPercent()));
                 EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;

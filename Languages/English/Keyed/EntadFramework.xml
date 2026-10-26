@@ -249,7 +249,9 @@
   <EF_Settings_CarrierBound_Desc>A bound entad's traits work only for its carrier and their descendants, so looting one gives the colony an ordinary item worth little more than usual. To make up for that, bound entads are stronger for their carrier. Factions from other mods may set their own chances and strength.</EF_Settings_CarrierBound_Desc>
   <EF_Settings_WorldItems>Entads in trade and loot</EF_Settings_WorldItems>
   <EF_Settings_WorldItemsEnabled>Traders, rewards and loot hold entads</EF_Settings_WorldItemsEnabled>
-  <EF_Settings_Overridden>In this game: {0}. These settings don't apply to it; change it from {1}. They are still used for other games.</EF_Settings_Overridden>
+  <EF_Settings_OverriddenOff>In this game: {0}. These settings don't apply to this game, but are still used for other games.</EF_Settings_OverriddenOff>
+  <EF_Settings_OverriddenOn>In this game: {0}. The switch here doesn't apply to this game; the values below do.</EF_Settings_OverriddenOn>
+  <EF_Settings_OverridePart>{0} (change it from {1})</EF_Settings_OverridePart>
   <EF_Settings_OverrideOn>{0} on</EF_Settings_OverrideOn>
   <EF_Settings_OverrideOff>{0} off</EF_Settings_OverrideOff>
   <EF_Settings_OverrideSourceUnknown>the mod that set it</EF_Settings_OverrideSourceUnknown>
