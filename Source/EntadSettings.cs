@@ -419,7 +419,7 @@ namespace EntadFramework
             Add(EntadWorldFeature.World);
             foreach (var f in features) Add(f);
             if (parts.Count == 0) return false;
-            bool anyOff = worldOff || off == features.Length;
+            bool anyOff = worldOff || off == features.Length || features.All(f => !EntadWorld.Enabled(f));
             GUI.color = anyOff ? ColorLibrary.RedReadable : Color.yellow;
             list.Label((anyOff ? "EF_Settings_OverriddenOff" : "EF_Settings_OverriddenOn").Translate(string.Join("; ", parts)));
             GUI.color = Color.white;
