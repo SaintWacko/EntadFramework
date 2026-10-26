@@ -74,10 +74,11 @@ namespace EntadFramework.VPECompat
 
         static EntadVEFAbilities()
         {
-            // Patches and the field lookup first: a target lost in a VEF update throws here, and the traits are then
-            // never registered, so they never roll, rather than rolling and doing nothing
-            new Harmony("SaintWacko.EntadFramework.VanillaPsycastsExpanded").PatchAll(typeof(EntadVEFAbilities).Assembly);
+            // The field lookup, then the patches, before anything registers: either one lost in a VEF update throws
+            // here and the traits never roll, rather than rolling and doing nothing. The lookup goes first so a missing
+            // field leaves no tick patch live on a class that failed to initialise.
             CachedComp = AccessTools.FieldRefAccess<Ability, CompAbilities>("comp");
+            new Harmony("SaintWacko.EntadFramework.VanillaPsycastsExpanded").PatchAll(typeof(EntadVEFAbilities).Assembly);
 
             MethodInfo clone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var trait in DefDatabase<EntadTraitDef>.AllDefsListForReading)
@@ -306,14 +307,9 @@ namespace EntadFramework.VPECompat
                 held.Remove(comp);
                 held.Add(comp, list);
             }
-            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _))
-            {
-                // The ticking list was cleared with the old game: a maintained effect saved mid-cast carries on
-                var abilities = Sync(comp);
-                Pawn holder = comp.Holder;
-                if (holder != null && comp.ActiveFor(holder))
-                    foreach (var ability in abilities) Hold(ability, holder);
-            }
+            // Ticking isn't restored: VEF doesn't save an ability's maintained effecters, which are all it ticks for.
+            // The holder's gizmos register it again.
+            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _)) Sync(comp);
         }
 
         private static float Weight(EntadTraitDef def)
