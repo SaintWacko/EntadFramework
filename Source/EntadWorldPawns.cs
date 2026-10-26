@@ -44,7 +44,7 @@ namespace EntadFramework
 
         public static void TryGiveEntads(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> pawns)
         {
-            if (!EntadSettings.CarriersEnabled || parms?.faction == null || parms.faction.IsPlayer || pawns.NullOrEmpty()) return;
+            if (!EntadWorld.Enabled(EntadWorldFeature.Carriers) || parms?.faction == null || parms.faction.IsPlayer || pawns.NullOrEmpty()) return;
             if (!Rand.Chance(GroupChance(parms.faction))) return;
 
             // Members only. A trade caravan's slaves for sale carry the caravan's faction with no guest status, and

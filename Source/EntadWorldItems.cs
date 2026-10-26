@@ -89,7 +89,7 @@ namespace EntadFramework
 
         public static void Begin(ThingSetMaker maker)
         {
-            if (active != null || !EntadSettings.WorldItemsEnabled || ExtensionFor(maker) == null) return;
+            if (active != null || !AnyItemsEnabled() || ExtensionFor(maker) == null) return;
             active = maker;
         }
 
@@ -103,6 +103,13 @@ namespace EntadFramework
             catch (System.Exception e) { Log.ErrorOnce("[Entad Framework] Could not add entads to a generated thing set: " + e, 0x45465749); }
             finally { CompEntad.quietReveals = wasQuiet; }
         }
+
+        private static bool AnyItemsEnabled() => EntadWorld.Enabled(EntadWorldFeature.Traders)
+            || EntadWorld.Enabled(EntadWorldFeature.Rewards) || EntadWorld.Enabled(EntadWorldFeature.Loot);
+
+        private static EntadWorldFeature FeatureFor(EntadThingSetKind kind)
+            => kind == EntadThingSetKind.Trader ? EntadWorldFeature.Traders
+            : kind == EntadThingSetKind.Reward ? EntadWorldFeature.Rewards : EntadWorldFeature.Loot;
 
         public static void Clear(ThingSetMaker maker)
         {
@@ -132,6 +139,7 @@ namespace EntadFramework
             if (candidates.Count == 0) return;
 
             EntadThingSetKind kind = FoundAsLoot ? EntadThingSetKind.Loot : ext.kind;
+            if (!EntadWorld.Enabled(FeatureFor(kind))) return;
             // VE Events' cargo chunk makes a whole trader stock and keeps a few hundred silver of it; points from
             // the whole stock would give that handful the strength of a rich trader's goods
             if (FoundAsLoot && ext.kind == EntadThingSetKind.Trader) setValue = Mathf.Min(setValue, EntadSettings.ItemCurveValues[0]);

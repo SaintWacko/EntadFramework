@@ -111,7 +111,10 @@ namespace EntadFramework
 
         public AppraiserState For(Settlement s)
         {
-            if (!settlements.TryGetValue(s.ID, out var state))
+            // Not remembered while appraisers are off for this game, so turning them back on still lets it roll
+            if (!settlements.TryGetValue(s.ID, out var state) && !EntadWorld.Enabled(EntadWorldFeature.Appraisers))
+                return new AppraiserState();
+            if (state == null)
                 settlements[s.ID] = state = AppraiserState.Roll(EntadAppraisal.SettlementChance(s.Faction));
             return state;
         }
@@ -447,7 +450,7 @@ namespace EntadFramework
         public static void Postfix(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> outPawns)
         {
             if (parms?.faction == null || parms.faction.IsPlayer || outPawns.NullOrEmpty()) return;
-            if (!Rand.Chance(EntadAppraisal.CaravanChance(parms.faction))) return;
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers) || !Rand.Chance(EntadAppraisal.CaravanChance(parms.faction))) return;
             bool Eligible(Pawn p) => p.RaceProps.Humanlike && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave && !p.Dead;
             // GetTraderCaravanRole, not TraderKind == null: slaves for sale are in outPawns too, with the caravan's
             // faction and no guest status. The role check classes PawnKindDefOf.Slave as Chattel, but a trader kind
