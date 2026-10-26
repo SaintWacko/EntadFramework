@@ -70,13 +70,14 @@ namespace EntadFramework.VPECompat
 
         // Ability caches its holder's CompAbilities on first use: after the item changes hands the copy would read the
         // old holder's casting targets
-        private static readonly AccessTools.FieldRef<Ability, CompAbilities> CachedComp = AccessTools.FieldRefAccess<Ability, CompAbilities>("comp");
+        private static AccessTools.FieldRef<Ability, CompAbilities> CachedComp;
 
         static EntadVEFAbilities()
         {
-            // Patches first: a target lost in a VEF update throws here, and the traits are then never registered, so
-            // they never roll, rather than rolling and doing nothing
+            // Patches and the field lookup first: a target lost in a VEF update throws here, and the traits are then
+            // never registered, so they never roll, rather than rolling and doing nothing
             new Harmony("SaintWacko.EntadFramework.VanillaPsycastsExpanded").PatchAll(typeof(EntadVEFAbilities).Assembly);
+            CachedComp = AccessTools.FieldRefAccess<Ability, CompAbilities>("comp");
 
             MethodInfo clone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var trait in DefDatabase<EntadTraitDef>.AllDefsListForReading)
@@ -118,6 +119,7 @@ namespace EntadFramework.VPECompat
         {
             var copy = (AbilityDef)clone.Invoke(source, null);
             copy.defName = "Entad_" + trait.defName + (j == 0 ? "" : "_" + j);
+            copy.ResolveDefNameHash();
             copy.modExtensions = source.modExtensions?.Where(e => e.GetType().FullName != PsycastExtension).ToList() ?? new List<DefModExtension>();
             copy.requiredHediff = null;
             copy.requiredTrait = null;
@@ -194,7 +196,8 @@ namespace EntadFramework.VPECompat
             return list;
         }
 
-        // The holder is the caster, and the pawn whose CompAbilities ticks it
+        // The holder is the caster, and the pawn whose CompAbilities ticks it. A previous holder keeps ticking it until
+        // someone else holds it, which only lets a maintained effect it started play out.
         private static void Hold(Ability ability, Pawn pawn)
         {
             if (ability.pawn != pawn)
@@ -240,8 +243,9 @@ namespace EntadFramework.VPECompat
         {
             if (!HasCopies(comp)) return null;
             Pawn pawn = comp.Holder;
-            // Casting runs through the pawn's CompAbilities (VEF gives one to every humanlike race)
-            if (pawn == null || !comp.ActiveFor(pawn) || pawn.GetComp<CompAbilities>() == null) return null;
+            // Only the player casts these (VEF's ShowGizmoOnPawn says the same): selecting a raider mustn't make the
+            // raider the ability's caster. Casting runs through the pawn's CompAbilities (every humanlike race has one).
+            if (pawn == null || !pawn.IsColonistPlayerControlled || !comp.ActiveFor(pawn) || pawn.GetComp<CompAbilities>() == null) return null;
             List<Gizmo> gizmos = null;
             foreach (var ability in Sync(comp))
             {
@@ -262,7 +266,8 @@ namespace EntadFramework.VPECompat
             for (int p = 0; p < pawns.Count; p++)
             {
                 Pawn pawn = pawns[p];
-                if (pawn.GetComp<CompAbilities>() == null) continue;
+                // Prisoners and guests travel in caravans too, wearing their own gear
+                if (!pawn.IsColonist || pawn.IsPrisoner || pawn.GetComp<CompAbilities>() == null) continue;
                 var items = new List<Thing>();
                 if (pawn.apparel != null) items.AddRange(pawn.apparel.WornApparel);
                 if (pawn.equipment != null) items.AddRange(pawn.equipment.AllEquipmentListForReading);
@@ -301,7 +306,14 @@ namespace EntadFramework.VPECompat
                 held.Remove(comp);
                 held.Add(comp, list);
             }
-            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _)) Sync(comp);
+            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _))
+            {
+                // The ticking list was cleared with the old game: a maintained effect saved mid-cast carries on
+                var abilities = Sync(comp);
+                Pawn holder = comp.Holder;
+                if (holder != null && comp.ActiveFor(holder))
+                    foreach (var ability in abilities) Hold(ability, holder);
+            }
         }
 
         private static float Weight(EntadTraitDef def)

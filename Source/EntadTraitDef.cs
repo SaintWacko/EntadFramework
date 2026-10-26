@@ -787,6 +787,10 @@ namespace EntadFramework
             if (customCardLines != null && customCardLines.Any(l => l.NullOrEmpty())) yield return $"{defName}: customCardLines contains an empty line";
             if (externalAbilities != null && externalAbilities.Any(a => a.NullOrEmpty())) yield return $"{defName}: externalAbilities contains an empty name";
             if (!externalAbilities.NullOrEmpty() && abilityCharges < 0) yield return $"{defName}: abilityCharges can't be negative";
+            if (!externalAbilities.NullOrEmpty() && abilityCooldownTicks <= 0)
+                yield return $"{defName}: externalAbilities need abilityCooldownTicks: the charges come back one per cooldown, and the other system's own cooldown may be 0";
+            if (!externalAbilities.NullOrEmpty() && abilityAmmo != null)
+                yield return $"{defName}: abilityAmmo doesn't apply to externalAbilities; their charges come back one per cooldown";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item

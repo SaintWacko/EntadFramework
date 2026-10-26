@@ -36,8 +36,9 @@ namespace EntadFramework
         public static event Action GameStarted;
 
         // Raised from CompEntad.PostExposeData in every pass, after the traits have loaded: a module saves what it keeps
-        // per item under node names of its own. Nothing of a module's own type goes in the save, so once the module is
-        // gone its nodes are never read and the save loads clean.
+        // per item under node names of its own. Only the module reads those nodes, so once it is gone they are skipped
+        // and the save loads clean; that holds as long as no class of the module's own is saved where something else
+        // reads it, and nothing outside the module keeps a reference into what it saved.
         public static event Action<CompEntad> Exposing;
 
         // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
@@ -121,7 +122,11 @@ namespace EntadFramework
             float w = 1f;
             for (int i = 0; i < weights.Count; i++)
             {
-                try { w *= Math.Max(0f, weights[i](def)); }
+                try
+                {
+                    float f = weights[i](def);
+                    w *= float.IsNaN(f) ? 1f : Math.Max(0f, f);
+                }
                 catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {weights[i].Method.DeclaringType}.{weights[i].Method.Name} failed on {def}: {e}", weights[i].Method.GetHashCode()); }
             }
             return w;
