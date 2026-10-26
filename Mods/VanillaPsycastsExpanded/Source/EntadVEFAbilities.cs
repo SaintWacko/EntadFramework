@@ -78,7 +78,15 @@ namespace EntadFramework.VPECompat
             // here and the traits never roll, rather than rolling and doing nothing. The lookup goes first so a missing
             // field leaves no tick patch live on a class that failed to initialise.
             CachedComp = AccessTools.FieldRefAccess<Ability, CompAbilities>("comp");
-            new Harmony("SaintWacko.EntadFramework.VanillaPsycastsExpanded").PatchAll(typeof(EntadVEFAbilities).Assembly);
+            var harmony = new Harmony("SaintWacko.EntadFramework.VanillaPsycastsExpanded");
+            try { harmony.PatchAll(typeof(EntadVEFAbilities).Assembly); }
+            catch
+            {
+                // PatchAll keeps the patches it applied before the one that failed, and those would call into this
+                // class, which never finished initialising, on every tick and every cast
+                harmony.UnpatchAll(harmony.Id);
+                throw;
+            }
 
             MethodInfo clone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var trait in DefDatabase<EntadTraitDef>.AllDefsListForReading)
@@ -307,8 +315,10 @@ namespace EntadFramework.VPECompat
                 held.Remove(comp);
                 held.Add(comp, list);
             }
-            // Ticking isn't restored: VEF doesn't save an ability's maintained effecters, which are all it ticks for.
-            // The holder's gizmos register it again.
+            // Ticking isn't restored here: base Ability only ticks maintained effecters, which VEF doesn't save. The
+            // holder's gizmos register it again. Classes that tick saved state of their own (VPE's Killskip, Season
+            // Timeskip) would pause after a load until then: none of the cast traits uses one, but a triggered Killskip
+            // has to register its ticking on load.
             else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _)) Sync(comp);
         }
 
