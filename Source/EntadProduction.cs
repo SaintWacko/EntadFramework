@@ -139,8 +139,11 @@ namespace EntadFramework
             int placed = 0;
             for (int i = 0; i < refunds.Count; i++)
             {
-                if (GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c))) placed++;
-                else if (!refunds[i].Destroyed) refunds[i].Destroy();
+                // Near can merge part of a stack into a neighbour and still return false for the rest
+                int before = refunds[i].stackCount;
+                bool whole = GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c));
+                if (whole || refunds[i].Destroyed || refunds[i].stackCount < before) placed++;
+                if (!whole && !refunds[i].Destroyed && !refunds[i].Spawned) refunds[i].Destroy();
             }
             if (placed == 0) yield break;
             Reveal(comp, EntadStatDefOf.Entad_IngredientRefundChance);

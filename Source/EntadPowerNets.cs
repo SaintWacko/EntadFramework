@@ -178,12 +178,14 @@ namespace EntadFramework
 
         // Conserving on one consumer's draw, for vanilla's 'can this one switch on' checks (PowerNetTick, CanPowerNow).
         // GainRate already counts running consumers at the lower draw; without this a consumer that only fits at the
-        // lower draw would never come on. Producers are left alone.
+        // lower draw would never come on. Producers are left alone. PowerNetTick's flare shutdown also reads this, to
+        // pick consumers (output < 0), which holds only while Entad_NetPowerFactor's minValue stays above 0.
         internal static float ConservedOutput(CompPowerTrader trader)
         {
             float output = trader.EnergyOutputPerTick;
             if (gainCount == 0 || output >= 0f) return output;
             PowerNet net = trader.PowerNet;
+            if (net == null) return output;
             float factor = 1f;
             for (int i = 0; i < carriers.Count; i++)
                 if (carriers[i].powerFactor < factor && carriers[i].power.PowerNet == net) factor = carriers[i].powerFactor;
