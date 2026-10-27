@@ -29,7 +29,8 @@ namespace EntadFramework
     {
         public EntadProcAbility(Pawn pawn, AbilityDef def) : base(pawn, def) { }
 
-        private bool IsPsycast => def.abilityClass != null && typeof(Psycast).IsAssignableFrom(def.abilityClass);
+        // The pulse sounds and fleck are Royalty's: null without it
+        private bool IsPsycast => ModsConfig.RoyaltyActive && def.abilityClass != null && typeof(Psycast).IsAssignableFrom(def.abilityClass);
 
         public bool CanAffect(LocalTargetInfo target)
         {
@@ -180,10 +181,12 @@ namespace EntadFramework
                 var ability = new EntadProcAbility(ctx.caster, def);
                 // EffectComps first: Ability.CanApplyOn reads the comp list that getter fills
                 var comps = ability.EffectComps;
-                if (!ability.CanApplyOn(target) || !ability.CanAffect(target)) return false;
+                if (!ability.CanApplyOn(target)) return false;
+                // An area psycast still goes off around an immune centre (a deaf attacker): immunity is per pawn caught
+                if (!(def.HasAreaOfEffect && def.canUseAoeToGetTargets) && !ability.CanAffect(target)) return false;
                 if (comps != null)
                     for (int i = 0; i < comps.Count; i++)
-                        if (!comps[i].CanApplyOn(target, LocalTargetInfo.Invalid) || !comps[i].Valid(target, false)) return false;
+                        if (!comps[i].Valid(target, false)) return false;
                 ctx.target = target;
                 ctx.vanilla = ability;
                 return true;
