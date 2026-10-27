@@ -183,7 +183,8 @@ namespace EntadFramework
                 var comps = ability.EffectComps;
                 if (!ability.CanApplyOn(target)) return false;
                 // An area psycast still goes off around an immune centre (a deaf attacker): immunity is per pawn caught
-                if (!(def.HasAreaOfEffect && def.canUseAoeToGetTargets) && !ability.CanAffect(target)) return false;
+                if (def.HasAreaOfEffect && def.canUseAoeToGetTargets) return true;
+                if (!ability.CanAffect(target)) return false;
                 if (comps != null)
                     for (int i = 0; i < comps.Count; i++)
                         if (!comps[i].Valid(target, false)) return false;
