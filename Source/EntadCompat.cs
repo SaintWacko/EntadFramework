@@ -74,8 +74,9 @@ namespace EntadFramework
         }
 
         // A name trigger casts can list as externalAbility (register its label with RegisterExternalAbility too).
-        // canCast is asked first, for every cast of the trigger, and must not change anything; cast follows on the same
-        // tick only when every cast of the trigger said yes. Range and line of sight are the trigger's business, not the
+        // canCast is asked first, for every cast of the trigger, and must change nothing the game would notice (pointing
+        // the module's own ability object at the caster is fine); cast follows on the same tick only when every cast of
+        // the trigger that isn't optional said yes. Range and line of sight are the trigger's business, not the
         // ability's: canCast should check only what the ability needs of its target.
         public static void RegisterExternalProc(string name, Func<EntadProcContext, bool> canCast, Action<EntadProcContext> cast)
         {
@@ -89,7 +90,8 @@ namespace EntadFramework
         // A throwing check counts as "can't cast": the trigger is skipped and keeps its cooldown
         internal static bool CanCastExternal(EntadProcContext ctx)
         {
-            if (!externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return false;
+            // A cast whose AbilityDef cross-reference failed (gone in an update) reads as external with no name
+            if (ctx.cast.externalAbility == null || !externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return false;
             try { return proc.canCast(ctx); }
             catch (Exception e)
             {
@@ -100,7 +102,7 @@ namespace EntadFramework
 
         internal static void CastExternal(EntadProcContext ctx)
         {
-            if (!externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return;
+            if (ctx.cast.externalAbility == null || !externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return;
             try { proc.cast(ctx); }
             catch (Exception e) { Log.ErrorOnce($"[Entad Framework] casting {ctx.cast.externalAbility} for {ctx.item?.parent} failed: {e}", proc.cast.Method.GetHashCode() ^ ctx.cast.externalAbility.GetHashCode()); }
         }

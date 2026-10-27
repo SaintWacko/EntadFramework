@@ -291,7 +291,7 @@ namespace EntadFramework.VPECompat
         {
             Pawn pawn = ctx.caster;
             if (pawn.GetComp<CompAbilities>() == null || !TryGetProc(ctx, out var ability)) return false;
-            Hold(ability, pawn);
+            SetCaster(ability, pawn);
             var def = ability.def;
             Map map = pawn.Map;
             LocalTargetInfo target = ctx.target;
@@ -324,6 +324,14 @@ namespace EntadFramework.VPECompat
             finally { AoETargeting(ability) = false; }
             foreach (var ext in ability.AbilityModExtensions)
                 if (!ext.Valid(targets, ability, false)) return false;
+            // VEF validates the targets as picked, then widens an area ability's to everything in its radius as the job
+            // starts (ModifyTargets), and casts at those
+            ability.firstTarget = target;
+            if (def.hasAoE)
+            {
+                ability.ModifyTargets(ref targets);
+                if (targets.Length == 0) return false;
+            }
             ctx.state = targets;
             return true;
         }
@@ -333,13 +341,11 @@ namespace EntadFramework.VPECompat
         private static void Proc(EntadProcContext ctx)
         {
             if (!(ctx.state is GlobalTargetInfo[] targets) || !TryGetProc(ctx, out var ability)) return;
-            if (targets[0].HasThing && !targets[0].Thing.Spawned) return;
+            if (!ability.def.hasAoE && targets[0].HasThing && !targets[0].Thing.Spawned) return;
             Hold(ability, ctx.caster);
             var comp = ability.Comp;
             var casting = comp.currentlyCasting;
             var castingTargets = comp.currentlyCastingTargets;
-            ability.firstTarget = targets[0].HasThing ? new LocalTargetInfo(targets[0].Thing) : new LocalTargetInfo(targets[0].Cell);
-            if (ability.def.hasAoE) ability.ModifyTargets(ref targets);
             comp.currentlyCasting = ability;
             comp.currentlyCastingTargets = targets;
             try { ability.Cast(targets); }
@@ -464,18 +470,21 @@ namespace EntadFramework.VPECompat
         // someone else holds it, which only lets a maintained effect it started play out.
         private static void Hold(Ability ability, Pawn pawn)
         {
-            if (ability.pawn != pawn)
-            {
-                ability.pawn = pawn;
-                CachedComp(ability) = null;
-                ability.Init();
-            }
+            SetCaster(ability, pawn);
             if (!slots.TryGetValue(ability, out var slot) || slot.tickingFor == pawn) return;
             if (!ability.def.needsTicking && !ability.def.needsTickingInterval) return;
             Untick(ability, slot);
             if (!ticking.TryGetValue(pawn, out var list)) ticking[pawn] = list = new List<Ability>();
             list.Add(ability);
             slot.tickingFor = pawn;
+        }
+
+        private static void SetCaster(Ability ability, Pawn pawn)
+        {
+            if (ability.pawn == pawn) return;
+            ability.pawn = pawn;
+            CachedComp(ability) = null;
+            ability.Init();
         }
 
         private static void Untick(Ability ability, Slot slot)

@@ -49,13 +49,15 @@ namespace EntadFramework
     // One ability cast by a trigger: a vanilla or mod AbilityDef ('ability'), or one a compat module registered by name
     // ('externalAbility', e.g. a Vanilla Psycasts Expanded psycast). It is cast at once, with no warmup, job or cost,
     // and ignores the ability's range and line of sight. Everything else the ability checks (what it can target, a
-    // psychically deaf pawn, an occupied cell) still counts; when any cast of a trigger can't go off, the whole trigger
-    // is skipped and its cooldown isn't spent.
+    // psychically deaf pawn, an occupied cell) still counts; when a cast of a trigger can't go off, the whole trigger
+    // is skipped and its cooldown isn't spent, unless the cast is optional: then only that cast is left out (the
+    // trigger still needs one cast that goes off).
     public class EntadTriggerCast
     {
         public AbilityDef ability;
         public string externalAbility;
         public EntadCastTarget target = EntadCastTarget.Self;
+        public bool optional;
 
         public bool IsExternal => ability == null;
 
@@ -63,9 +65,10 @@ namespace EntadFramework
 
         public string Label(EntadTriggerEvent on)
         {
-            if (target == EntadCastTarget.Between)
-                return (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerCast_BetweenAttacker" : "EF_TriggerCast_BetweenVictim").Translate(AbilityLabel);
-            return ("EF_TriggerCast_" + target).Translate(AbilityLabel);
+            string label = target == EntadCastTarget.Between
+                ? (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerCast_BetweenAttacker" : "EF_TriggerCast_BetweenVictim").Translate(AbilityLabel)
+                : ("EF_TriggerCast_" + target).Translate(AbilityLabel);
+            return optional ? "EF_TriggerCast_Optional".Translate(label) : label;
         }
 
         public IEnumerable<string> ConfigErrors(string owner, EntadTriggerEvent on)
@@ -129,6 +132,7 @@ namespace EntadFramework
         public EntadAttackKind attack = EntadAttackKind.Any;    // Hit and TakeDamage
         public bool fromEnemy;                        // TakeDamage only: dealt by something hostile to the holder
         public float healthBelow;                     // TakeDamage only: the holder's health after the hit is under this (0.3 = 30%); 0 = any
+        public float minDistance;                     // TakeDamage, Hit, Kill: the other pawn is at least this many tiles from the holder
         public float chance = 1f;
         public float cooldownHours;                   // per item: shared by everyone who uses it
 
@@ -197,16 +201,18 @@ namespace EntadFramework
                             if ((use & k) != 0) kinds.Add(("EF_UseKind_" + k).Translate());
                         return "EF_Trigger_UseKinds".Translate(string.Join(", ", kinds));
                     case EntadTriggerEvent.Kill:
-                        return victims == EntadKillVictims.Any ? "EF_Trigger_Kill".Translate() : ("EF_Trigger_Kill" + victims).Translate();
+                        return WithDistance(victims == EntadKillVictims.Any ? "EF_Trigger_Kill".Translate() : ("EF_Trigger_Kill" + victims).Translate());
                     case EntadTriggerEvent.Hit:
                     {
                         string label = ("EF_Trigger_Hit" + (attack == EntadAttackKind.Any ? "" : attack.ToString())).Translate();
-                        return victims == EntadKillVictims.Any ? label : label + " " + ("EF_TriggerQual_Victims" + victims).Translate();
+                        if (victims != EntadKillVictims.Any) label += " " + ("EF_TriggerQual_Victims" + victims).Translate();
+                        return WithDistance(label);
                     }
                     case EntadTriggerEvent.TakeDamage:
                     {
                         string label = ("EF_Trigger_TakeDamage" + (attack == EntadAttackKind.Any ? "" : attack.ToString())).Translate();
                         if (fromEnemy) label += " " + "EF_TriggerQual_FromEnemy".Translate();
+                        label = WithDistance(label);
                         if (healthBelow > 0f) label += " " + "EF_TriggerQual_HealthBelow".Translate(healthBelow.ToStringPercent());
                         return label;
                     }
@@ -215,6 +221,9 @@ namespace EntadFramework
                 }
             }
         }
+
+        private string WithDistance(string label) =>
+            minDistance > 0f ? label + " " + "EF_TriggerQual_MinDistance".Translate(minDistance.ToString("0.#")) : label;
 
         // "heals 32 HP, restores 20% rest", with this item's rolls (values null: the def's ranges, for the settings list)
         public string EffectsLabel(System.Func<int, float> value)
@@ -274,6 +283,9 @@ namespace EntadFramework
             if (on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.TakeDamage && attack != EntadAttackKind.Any) yield return $"{owner}: 'attack' only applies to Hit and TakeDamage triggers";
             if (on != EntadTriggerEvent.TakeDamage && (fromEnemy || healthBelow != 0f)) yield return $"{owner}: fromEnemy and healthBelow only apply to TakeDamage triggers";
             if (healthBelow < 0f || healthBelow > 1f) yield return $"{owner}: healthBelow is a fraction of health (above 0, at most 1)";
+            if (minDistance < 0f) yield return $"{owner}: minDistance can't be negative";
+            if (minDistance > 0f && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill)
+                yield return $"{owner}: minDistance only applies to TakeDamage, Hit and Kill triggers";
             if (casts != null)
             {
                 if (casts.Any(c => c == null)) yield return $"{owner}: casts contains an empty entry";
@@ -438,6 +450,8 @@ namespace EntadFramework
                             if (t.healthBelow > 0f && pawn.health.summaryHealth.SummaryHealthPercent >= t.healthBelow) continue;
                             break;
                     }
+                    if (t.minDistance > 0f && (ctx.other == null || !ctx.other.PositionHeld.IsValid
+                        || ctx.other.PositionHeld.DistanceToSquared(pawn.PositionHeld) < t.minDistance * t.minDistance)) continue;
                     // Cells now: by the next tick the corpse may have been moved or destroyed, and the holder moved on
                     IntVec3 otherCell = ctx.other != null ? ctx.other.PositionHeld : IntVec3.Invalid;
                     TryQueue(pawn, m, i, null, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell);

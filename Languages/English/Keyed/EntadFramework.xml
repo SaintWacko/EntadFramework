@@ -90,6 +90,7 @@
   <EF_TriggerQual_VictimsFight>against an enemy or wild creature</EF_TriggerQual_VictimsFight>
   <EF_TriggerQual_FromEnemy>from an enemy</EF_TriggerQual_FromEnemy>
   <EF_TriggerQual_HealthBelow>while under {0} health</EF_TriggerQual_HealthBelow>
+  <EF_TriggerQual_MinDistance>at least {0} tiles away</EF_TriggerQual_MinDistance>
   <EF_Trigger_Downed>On being downed</EF_Trigger_Downed>
   <EF_Trigger_Eat>On eating</EF_Trigger_Eat>
   <EF_Trigger_Use>After using it</EF_Trigger_Use>
@@ -116,6 +117,7 @@
   <EF_TriggerCast_BetweenAttacker>casts {0} halfway to the attacker</EF_TriggerCast_BetweenAttacker>
   <EF_TriggerCast_BetweenVictim>casts {0} halfway to the target</EF_TriggerCast_BetweenVictim>
   <EF_TriggerCast_Origin>casts {0} where the user stood</EF_TriggerCast_Origin>
+  <EF_TriggerCast_Optional>{0} (when it can)</EF_TriggerCast_Optional>
   <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
   <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
   <EF_TriggerArea_Victim>{0}, to {1} within {2} tiles of the victim</EF_TriggerArea_Victim>

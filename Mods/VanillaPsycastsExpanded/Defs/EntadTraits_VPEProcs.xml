@@ -12,12 +12,13 @@
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <weaponType>Ranged</weaponType>
     <rarity>Uncommon</rarity>
-    <!-- Ranged hits only: the flameball's 3-tile blast at a melee target would catch the holder -->
+    <!-- Ranged hits 6+ tiles out: the flameball bursts 3 tiles wide and can land up to 1.9 tiles off its mark -->
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
+        <minDistance>6</minDistance>
         <chance>0.1</chance>
         <cooldownHours>4</cooldownHours>
         <casts>
@@ -46,7 +47,8 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Ranged damage only: a ring of ice 5 tiles out around a melee attacker would wall the holder in with it -->
+  <!-- Ranged damage from 8+ tiles: the ring of ice is 5 to 5.9 tiles out from the attacker, and a nearer holder
+       would be walled in with it -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_VPE_Proc_IceWall</defName>
     <label>Frostward</label>
@@ -58,6 +60,7 @@
         <on>TakeDamage</on>
         <attack>Ranged</attack>
         <fromEnemy>true</fromEnemy>
+        <minDistance>8</minDistance>
         <chance>0.2</chance>
         <cooldownHours>24</cooldownHours>
         <casts>
@@ -68,7 +71,9 @@
   </EntadFramework.EntadTraitDef>
 
   <!-- A decoy where the holder stood, then a chaos skip away. Royalty's chaos skip, since VPE's draws its skip
-       flashes during the casting job a trigger doesn't run. The landing spot is random, near enemies or not. -->
+       flashes during the casting job a trigger doesn't run. The landing spot is random, near enemies or not, and
+       the skip stuns for 1-2 seconds on arrival, as the psycast does. The decoy is optional: VPE won't put one on a
+       building's cell (a conduit, a door), and that mustn't stop the skip. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_VPE_Proc_Escape</defName>
     <label>Escape Artist</label>
@@ -82,7 +87,7 @@
         <healthBelow>0.3</healthBelow>
         <cooldownHours>120</cooldownHours>
         <casts>
-          <li><externalAbility>VPE_Decoy</externalAbility><target>Origin</target></li>
+          <li><externalAbility>VPE_Decoy</externalAbility><target>Origin</target><optional>true</optional></li>
           <li><ability>ChaosSkip</ability><target>Self</target></li>
         </casts>
       </li>

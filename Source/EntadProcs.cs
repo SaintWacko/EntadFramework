@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using System.Linq;
 using RimWorld;
 using Verse;
+using Verse.Sound;
 
 namespace EntadFramework
 {
@@ -16,13 +18,59 @@ namespace EntadFramework
         public LocalTargetInfo target;
         public object state;   // a module's own: what its canCast worked out, for its cast
 
-        internal Ability vanilla;
+        internal EntadProcAbility vanilla;
     }
 
-    // Abilities cast by triggers ("procs"). A vanilla or mod AbilityDef is cast through a throwaway Ability of the base
-    // class made for the holder and never added to their tracker: a psycast loses its Psycast class with it, so no
-    // psylink, psyfocus or neural heat is asked for, and the holder's own abilities and cooldowns are untouched.
-    // Ability.Activate applies the effect comps at once, as the end of a cast would, with no job, warmup or range check.
+    // The throwaway ability a vanilla or mod AbilityDef is cast through. A psycast loses its Psycast class with it, so
+    // no psylink, psyfocus or neural heat is asked for; what Psycast does besides that is kept: a psychically deaf pawn,
+    // or a mechanoid where an effect isn't for mechs, is immune to a psychic effect (each target of an area one), and a
+    // psycast plays its psychic pulse.
+    public class EntadProcAbility : Ability
+    {
+        public EntadProcAbility(Pawn pawn, AbilityDef def) : base(pawn, def) { }
+
+        private bool IsPsycast => def.abilityClass != null && typeof(Psycast).IsAssignableFrom(def.abilityClass);
+
+        public bool CanAffect(LocalTargetInfo target)
+        {
+            var comps = EffectComps;
+            if (comps == null || !comps.Any(c => c.Props.psychic)) return true;
+            Pawn p = target.Pawn;
+            if (p == null) return true;
+            if (p.GetStatValue(StatDefOf.PsychicSensitivity) < float.Epsilon) return false;
+            return p.Faction == null || p.Faction != Faction.OfMechanoids || comps.All(c => c.Props.applicableToMechs);
+        }
+
+        public override bool Activate(LocalTargetInfo target, LocalTargetInfo dest)
+        {
+            if (IsPsycast && def.showPsycastEffects && EffectComps != null)
+            {
+                if (EffectComps.Any(c => c.Props.psychic))
+                {
+                    if (def.HasAreaOfEffect)
+                    {
+                        FleckMaker.Static(target.Cell, pawn.Map, FleckDefOf.PsycastAreaEffect, def.EffectRadius);
+                        SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+                    }
+                    else SoundDefOf.PsycastPsychicEffect.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+                }
+                else if (def.HasAreaOfEffect && def.canUseAoeToGetTargets)
+                    SoundDefOf.Psycast_Skip_Pulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
+            }
+            return base.Activate(target, dest);
+        }
+
+        protected override void ApplyEffects(IEnumerable<CompAbilityEffect> effects, LocalTargetInfo target, LocalTargetInfo dest)
+        {
+            if (CanAffect(target)) base.ApplyEffects(effects, target, dest);
+            else MoteMaker.ThrowText(target.CenterVector3, pawn.Map, "TextMote_Immune".Translate());
+        }
+    }
+
+    // Abilities cast by triggers ("procs"). A vanilla or mod AbilityDef is cast through an EntadProcAbility made for the
+    // holder and never added to their tracker, so the holder's own abilities and cooldowns are untouched (an ability in a
+    // cooldown group would put the group's on cooldown: EntadTriggerCast.ConfigErrors flags those). Ability.Activate
+    // applies the effect comps at once, as the end of a cast would, with no job, warmup or range check.
     public static class EntadProcs
     {
         // Ability keeps the effecters it maintains (a skip's entry and exit flashes) in a private list that only its own
@@ -54,11 +102,13 @@ namespace EntadFramework
             for (int i = 0; i < t.casts.Count; i++)
             {
                 var cast = t.casts[i];
-                if (!TryTarget(cast, p, out var target)) return false;
-                var ctx = new EntadProcContext { caster = caster, item = p.trait.owner, trait = p.trait, cast = cast, target = target };
-                if (cast.IsExternal ? !EntadCompat.CanCastExternal(ctx) : !CanCastVanilla(ctx)) return false;
-                list.Add(ctx);
+                var ctx = new EntadProcContext { caster = caster, item = p.trait.owner, trait = p.trait, cast = cast };
+                bool ok = TryTarget(cast, p, out ctx.target)
+                    && (cast.IsExternal ? EntadCompat.CanCastExternal(ctx) : CanCastVanilla(ctx));
+                if (ok) list.Add(ctx);
+                else if (!cast.optional) return false;
             }
+            if (list.Count == 0) return false;
             prepared = list;
             return true;
         }
@@ -124,15 +174,25 @@ namespace EntadFramework
                 }
                 else if (!target.HasThing && !tp.canTargetLocations) return false;
             }
-            var ability = new Ability(ctx.caster, def);
-            if (!ability.CanApplyOn(target)) return false;
-            var comps = ability.EffectComps;
-            if (comps != null)
-                for (int i = 0; i < comps.Count; i++)
-                    if (!comps[i].Valid(target, false)) return false;
-            ctx.target = target;
-            ctx.vanilla = ability;
-            return true;
+            // A mod's ability whose comps throw here would otherwise throw on every event once its cooldown is back
+            try
+            {
+                var ability = new EntadProcAbility(ctx.caster, def);
+                // EffectComps first: Ability.CanApplyOn reads the comp list that getter fills
+                var comps = ability.EffectComps;
+                if (!ability.CanApplyOn(target) || !ability.CanAffect(target)) return false;
+                if (comps != null)
+                    for (int i = 0; i < comps.Count; i++)
+                        if (!comps[i].CanApplyOn(target, LocalTargetInfo.Invalid) || !comps[i].Valid(target, false)) return false;
+                ctx.target = target;
+                ctx.vanilla = ability;
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] checking {def.defName} for {ctx.item?.parent} failed: {e}", def.shortHash ^ 0x5eec);
+                return false;
+            }
         }
 
         private static void CastVanilla(EntadProcContext ctx)

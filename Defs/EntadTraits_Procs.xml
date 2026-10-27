@@ -62,7 +62,7 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Ranged damage only: the pulse's 3.9-tile radius around a melee attacker would blind the wearer too -->
+  <!-- Ranged damage from 5+ tiles: the pulse blinds everyone within 3.9 tiles of the attacker, the wearer included -->
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_BlindingPulse</defName>
     <label>Dazzling</label>
@@ -74,6 +74,7 @@
         <on>TakeDamage</on>
         <attack>Ranged</attack>
         <fromEnemy>true</fromEnemy>
+        <minDistance>5</minDistance>
         <chance>0.25</chance>
         <cooldownHours>12</cooldownHours>
         <casts>
