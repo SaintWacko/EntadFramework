@@ -9,7 +9,7 @@
     <defName>Entad_VPE_Proc_Flameball</defName>
     <label>Flaring</label>
     <description>Every so often a shot from it arrives with company.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Weapon</li></categories>
     <weaponType>Ranged</weaponType>
     <rarity>Uncommon</rarity>
     <!-- Ranged hits 6+ tiles out: the flameball bursts 3 tiles wide and can land up to 1.9 tiles off its mark -->
@@ -32,7 +32,7 @@
     <defName>Entad_VPE_Proc_Overshield</defName>
     <label>Aegis</label>
     <description>Strike its owner and the air around them hardens.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>
@@ -53,7 +53,7 @@
     <defName>Entad_VPE_Proc_IceWall</defName>
     <label>Frostward</label>
     <description>Those who shoot at its owner sometimes find themselves walled in by ice.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <triggers>
       <li>
@@ -78,7 +78,7 @@
     <defName>Entad_VPE_Proc_Escape</defName>
     <label>Escape Artist</label>
     <description>Its owners have a way of not being there when the killing blow lands.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Legendary</rarity>
     <triggers>
       <li>

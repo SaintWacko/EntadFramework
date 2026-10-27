@@ -9,7 +9,7 @@
     <defName>Entad_Proc_Burden</defName>
     <label>Burdening</label>
     <description>Those it strikes feel the weight of every step afterwards.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <triggers>
       <li>
@@ -28,7 +28,7 @@
     <defName>Entad_Proc_Stun</defName>
     <label>Staggering</label>
     <description>Now and then a blow from it lands harder in the mind than on the body.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>
@@ -47,7 +47,7 @@
     <defName>Entad_Proc_Berserk</defName>
     <label>Maddening</label>
     <description>Some it wounds forget which side they were on.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
     <triggers>
       <li>
@@ -67,7 +67,7 @@
     <defName>Entad_Proc_BlindingPulse</defName>
     <label>Dazzling</label>
     <description>Whoever takes aim at its owner sometimes finds the world gone white.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>
@@ -88,7 +88,7 @@
     <defName>Entad_Proc_ChaosSkip</defName>
     <label>Elusive</label>
     <description>Grab for its owner and you may find your hands empty.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>
@@ -108,7 +108,7 @@
     <defName>Entad_Proc_Invisibility</defName>
     <label>Fading</label>
     <description>When its owner is badly hurt, the eye slides off them.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <triggers>
       <li>

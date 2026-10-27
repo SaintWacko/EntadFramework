@@ -215,9 +215,32 @@ namespace EntadFramework
         [DebugAction(category = "Entad Framework", name = "Reveal all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void RevealAllEntad()
         {
-            CompEntad comp = EntadAtMouse(out Thing thing);
-            if (comp == null) return;
-            foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+            foreach (var comp in EntadsAtMouse())
+                foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+        }
+
+        // A loose entad on the cell wins; otherwise every entad a pawn there wields or wears
+        private static List<CompEntad> EntadsAtMouse()
+        {
+            var comps = new List<CompEntad>();
+            Map map = Find.CurrentMap;
+            IntVec3 cell = UI.MouseCell();
+            if (map == null || !cell.InBounds(map)) return comps;
+            var things = cell.GetThingList(map);
+            var loose = things.Find(t => !(t is Pawn) && t.TryGetComp<CompEntad>() != null);
+            if (loose != null) comps.Add(loose.TryGetComp<CompEntad>());
+            else
+                foreach (var pawn in things.OfType<Pawn>())
+                {
+                    if (pawn.equipment != null)
+                        foreach (var eq in pawn.equipment.AllEquipmentListForReading)
+                            if (eq.TryGetComp<CompEntad>() is CompEntad c) comps.Add(c);
+                    if (pawn.apparel != null)
+                        foreach (var ap in pawn.apparel.WornApparel)
+                            if (ap.TryGetComp<CompEntad>() is CompEntad c) comps.Add(c);
+                }
+            if (comps.Count == 0) Messages.Message("No entad item or pawn with entad gear at clicked cell.", MessageTypeDefOf.RejectInput, false);
+            return comps;
         }
 
         [DebugAction(category = "Entad Framework", name = "Bind Entad to pawn", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -250,9 +273,8 @@ namespace EntadFramework
         [DebugAction(category = "Entad Framework", name = "Hide all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void HideAllEntad()
         {
-            CompEntad comp = EntadAtMouse(out Thing thing);
-            if (comp == null) return;
-            foreach (var m in comp.activeTraits.ToList()) m.Hide();
+            foreach (var comp in EntadsAtMouse())
+                foreach (var m in comp.activeTraits.ToList()) m.Hide();
         }
 
         // Testing appraisers without waiting on the caravan chance. The pawn still needs to be in a trade caravan
