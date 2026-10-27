@@ -117,7 +117,7 @@ namespace EntadFramework
             {
                 var d = pair.def;
                 bool ok = pair.ok;
-                string label = d.defName + (ok ? "" : " (not applicable)");
+                string label = MenuLabel(d) + (ok ? "" : " (not applicable)");
                 // A trait that scales picks its rarity in a second list, like Titan Framework's dev action
                 var rarities = ((EntadRarity[])Enum.GetValues(typeof(EntadRarity))).Where(d.CanAppearAt).ToList();
                 if (rarities.Count > 1)
@@ -155,7 +155,7 @@ namespace EntadFramework
                     .Where(d => d.CanApplyTo(item))
                     .OrderByDescending(d => !d.abilities.NullOrEmpty())
                     .ThenBy(d => d.defName, StringComparer.OrdinalIgnoreCase)
-                    .Select(d => new DebugMenuOption(d.defName + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
+                    .Select(d => new DebugMenuOption(MenuLabel(d) + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
                     {
                         AddAt(comp, item, d, null);
                         EntadAbilities.Grant(pawn, comp);
@@ -164,6 +164,9 @@ namespace EntadFramework
             })).ToList();
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
+
+        // defNames are named after what a trait does (Entad_Proc_Burden), the card after its label (Burdening)
+        private static string MenuLabel(EntadTraitDef d) => d.label.NullOrEmpty() ? d.defName : $"{d.defName} ({d.LabelCap})";
 
         private static void AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
         {
@@ -190,7 +193,7 @@ namespace EntadFramework
             foreach (var applied in comp.activeTraits.ToList())
             {
                 var a = applied;
-                options.Add(new DebugMenuOption(a.def.defName, DebugMenuOptionMode.Action, () =>
+                options.Add(new DebugMenuOption(MenuLabel(a.def), DebugMenuOptionMode.Action, () =>
                 {
                     comp.RemoveTrait(a);
                     Messages.Message($"Removed '{a.def.LabelCap}' from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
