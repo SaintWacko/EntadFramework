@@ -487,11 +487,11 @@ namespace EntadFramework.VPECompat
 
         public override string TopRightLabel => chargesLabel ?? base.TopRightLabel;
 
-        // VPE's Farskip draws its arrival radius around the caster's map position, which on the world map is a
-        // pawn in a caravan whose Position is wherever it left its last map: a ring of map cells over the planet.
+        // VEF's mouseover rings (range, and Farskip's arrival radius) are drawn around the caster's Position. For a
+        // pawn in a caravan that is wherever it left its last map, so they land as map cells over the planet.
         public override void GizmoUpdateOnMouseover()
         {
-            if (WorldRendererUtility.WorldSelected) return;
+            if (!pawn.Spawned) return;
             base.GizmoUpdateOnMouseover();
         }
     }
