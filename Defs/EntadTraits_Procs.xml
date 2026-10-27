@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Royalty psycasts cast by triggers (EntadProcs.cs): at once, no psylink, psyfocus or heat, ignoring the psycast's
+       range and line of sight. A psycast that can't go off (a psychically deaf target, nowhere to skip to) skips the
+       trigger and keeps its cooldown. Durations still scale with the target's psychic sensitivity, as the psycast's do.
+       Vanilla Psycasts Expanded's copies of these psycasts aren't used: VPE needs Royalty, so these cover it. -->
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_Burden</defName>
+    <label>Burdening</label>
+    <description>Those it strikes feel the weight of every step afterwards.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <victims>Hostile</victims>
+        <chance>0.15</chance>
+        <cooldownHours>2</cooldownHours>
+        <casts>
+          <li><ability>Burden</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_Stun</defName>
+    <label>Staggering</label>
+    <description>Now and then a blow from it lands harder in the mind than on the body.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <victims>Hostile</victims>
+        <chance>0.1</chance>
+        <cooldownHours>6</cooldownHours>
+        <casts>
+          <li><ability>Stun</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_Berserk</defName>
+    <label>Maddening</label>
+    <description>Some it wounds forget which side they were on.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <victims>Hostile</victims>
+        <chance>0.05</chance>
+        <cooldownHours>48</cooldownHours>
+        <casts>
+          <li><ability>Berserk</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Ranged damage only: the pulse's 3.9-tile radius around a melee attacker would blind the wearer too -->
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_BlindingPulse</defName>
+    <label>Dazzling</label>
+    <description>Whoever takes aim at its owner sometimes finds the world gone white.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Ranged</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.25</chance>
+        <cooldownHours>12</cooldownHours>
+        <casts>
+          <li><ability>BlindingPulse</ability><target>Attacker</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_ChaosSkip</defName>
+    <label>Elusive</label>
+    <description>Grab for its owner and you may find your hands empty.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.2</chance>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><ability>ChaosSkip</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_Invisibility</defName>
+    <label>Fading</label>
+    <description>When its owner is badly hurt, the eye slides off them.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <fromEnemy>true</fromEnemy>
+        <healthBelow>0.5</healthBelow>
+        <cooldownHours>72</cooldownHours>
+        <casts>
+          <li><ability>Invisibility</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+</Defs>

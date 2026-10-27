@@ -852,6 +852,12 @@ namespace EntadFramework
                 for (int i = 0; i < externalAbilities.Count; i++)
                     if (!EntadCompat.KnowsExternalAbility(externalAbilities[i])) return false;
             }
+            // A cast nobody can carry out (its module's mod off, or the ability gone in an update) would never fire
+            if (triggers != null)
+                for (int i = 0; i < triggers.Count; i++)
+                    if (triggers[i].casts != null)
+                        foreach (var c in triggers[i].casts)
+                            if (c.IsExternal && !EntadCompat.KnowsExternalProc(c.externalAbility)) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())

@@ -560,7 +560,12 @@ namespace EntadFramework
             if (d.ignoreAccuracyMaluses) parts.Add("EF_Summary_Weapon".Translate());
             if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) parts.Add(h.LabelCap);
             if (d.aura?.hediff != null) parts.Add("EF_Summary_Aura".Translate(d.aura.hediff.label));
-            if (d.triggers != null) foreach (var t in d.triggers) parts.Add(t.EventLabel);
+            if (d.triggers != null)
+                foreach (var t in d.triggers)
+                {
+                    parts.Add(t.EventLabel);
+                    if (t.casts != null) foreach (var c in t.casts) parts.Add(c.AbilityLabel.CapitalizeFirst());
+                }
             if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("EF_Summary_Fuel".Translate());
             // Descriptions are flavour text, so the row's summary is where the rules show in the settings list
             if (d.HasMood) parts.Add("EF_Summary_Mood".Translate());

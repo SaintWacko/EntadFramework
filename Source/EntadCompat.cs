@@ -49,6 +49,13 @@ namespace EntadFramework
         private static readonly List<Func<EntadTraitDef, float>> weights = new List<Func<EntadTraitDef, float>>();
         private static readonly List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>> settings = new List<KeyValuePair<EntadSettingsTab, Action<Listing_Standard>>>();
         private static readonly List<HeldAbilitySource> heldSources = new List<HeldAbilitySource>();
+        private static readonly Dictionary<string, ExternalProc> externalProcs = new Dictionary<string, ExternalProc>();
+
+        private class ExternalProc
+        {
+            public Func<EntadProcContext, bool> canCast;
+            public Action<EntadProcContext> cast;
+        }
 
         public delegate bool HeldAbilityCheck(Pawn pawn, object ability, out bool hidden);
 
@@ -64,6 +71,38 @@ namespace EntadFramework
         {
             if (name.NullOrEmpty() || label == null) throw new ArgumentNullException(name.NullOrEmpty() ? nameof(name) : nameof(label));
             externalAbilities[name] = label;
+        }
+
+        // A name trigger casts can list as externalAbility (register its label with RegisterExternalAbility too).
+        // canCast is asked first, for every cast of the trigger, and must not change anything; cast follows on the same
+        // tick only when every cast of the trigger said yes. Range and line of sight are the trigger's business, not the
+        // ability's: canCast should check only what the ability needs of its target.
+        public static void RegisterExternalProc(string name, Func<EntadProcContext, bool> canCast, Action<EntadProcContext> cast)
+        {
+            if (name.NullOrEmpty() || canCast == null || cast == null)
+                throw new ArgumentNullException(name.NullOrEmpty() ? nameof(name) : canCast == null ? nameof(canCast) : nameof(cast));
+            externalProcs[name] = new ExternalProc { canCast = canCast, cast = cast };
+        }
+
+        internal static bool KnowsExternalProc(string name) => name != null && externalProcs.ContainsKey(name);
+
+        // A throwing check counts as "can't cast": the trigger is skipped and keeps its cooldown
+        internal static bool CanCastExternal(EntadProcContext ctx)
+        {
+            if (!externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return false;
+            try { return proc.canCast(ctx); }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] checking {ctx.cast.externalAbility} for {ctx.item?.parent} failed: {e}", proc.canCast.Method.GetHashCode() ^ ctx.cast.externalAbility.GetHashCode());
+                return false;
+            }
+        }
+
+        internal static void CastExternal(EntadProcContext ctx)
+        {
+            if (!externalProcs.TryGetValue(ctx.cast.externalAbility, out var proc)) return;
+            try { proc.cast(ctx); }
+            catch (Exception e) { Log.ErrorOnce($"[Entad Framework] casting {ctx.cast.externalAbility} for {ctx.item?.parent} failed: {e}", proc.cast.Method.GetHashCode() ^ ctx.cast.externalAbility.GetHashCode()); }
         }
 
         // Gizmos for the holder of a worn or wielded entad, asked each time the holder's gizmos are drawn. Return null

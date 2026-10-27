@@ -80,6 +80,16 @@
   <EF_Trigger_BillDone>On finishing a bill</EF_Trigger_BillDone>
   <EF_Trigger_JobDone>On finishing {0}</EF_Trigger_JobDone>
   <EF_Trigger_TakeDamage>On taking damage</EF_Trigger_TakeDamage>
+  <EF_Trigger_TakeDamageMelee>On taking melee damage</EF_Trigger_TakeDamageMelee>
+  <EF_Trigger_TakeDamageRanged>On taking ranged damage</EF_Trigger_TakeDamageRanged>
+  <EF_Trigger_Hit>On a hit</EF_Trigger_Hit>
+  <EF_Trigger_HitMelee>On a melee hit</EF_Trigger_HitMelee>
+  <EF_Trigger_HitRanged>On a ranged hit</EF_Trigger_HitRanged>
+  <EF_TriggerQual_VictimsHostile>against an enemy</EF_TriggerQual_VictimsHostile>
+  <EF_TriggerQual_VictimsHumanlike>against a person</EF_TriggerQual_VictimsHumanlike>
+  <EF_TriggerQual_VictimsFight>against an enemy or wild creature</EF_TriggerQual_VictimsFight>
+  <EF_TriggerQual_FromEnemy>from an enemy</EF_TriggerQual_FromEnemy>
+  <EF_TriggerQual_HealthBelow>while under {0} health</EF_TriggerQual_HealthBelow>
   <EF_Trigger_Downed>On being downed</EF_Trigger_Downed>
   <EF_Trigger_Eat>On eating</EF_Trigger_Eat>
   <EF_Trigger_Use>After using it</EF_Trigger_Use>
@@ -99,6 +109,13 @@
   <EF_TriggerEffect_Stun>stuns for {0} seconds</EF_TriggerEffect_Stun>
   <EF_TriggerEffect_Inspiration>inspires: {0}</EF_TriggerEffect_Inspiration>
   <EF_TriggerEffect_RandomInspiration>gives a random inspiration</EF_TriggerEffect_RandomInspiration>
+  <EF_TriggerCast_Self>casts {0} on the user</EF_TriggerCast_Self>
+  <EF_TriggerCast_Attacker>casts {0} at the attacker</EF_TriggerCast_Attacker>
+  <EF_TriggerCast_Victim>casts {0} at the target</EF_TriggerCast_Victim>
+  <EF_TriggerCast_VictimCell>casts {0} where the target stood</EF_TriggerCast_VictimCell>
+  <EF_TriggerCast_BetweenAttacker>casts {0} halfway to the attacker</EF_TriggerCast_BetweenAttacker>
+  <EF_TriggerCast_BetweenVictim>casts {0} halfway to the target</EF_TriggerCast_BetweenVictim>
+  <EF_TriggerCast_Origin>casts {0} where the user stood</EF_TriggerCast_Origin>
   <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
   <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
   <EF_TriggerArea_Victim>{0}, to {1} within {2} tiles of the victim</EF_TriggerArea_Victim>

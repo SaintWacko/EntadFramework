@@ -552,10 +552,10 @@ namespace EntadFramework
         }
 
         // Which per-hit stats any trait has, worked out on first use after the trait list changes: the melee
-        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn.
-        // -1 unknown. Not saved; a loaded item starts unknown.
+        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn, and
+        // the Hit trigger on every hit its holder lands. -1 unknown. Not saved; a loaded item starts unknown.
         private int hitStatFlags = -1;
-        private const int FlagMeleePenetration = 1, FlagMerciless = 2;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4;
 
         private int HitStatFlags
         {
@@ -566,6 +566,9 @@ namespace EntadFramework
                     int flags = 0;
                     for (int t = 0; t < activeTraits.Count; t++)
                     {
+                        var triggers = activeTraits[t].def.triggers;
+                        for (int i = 0; triggers != null && i < triggers.Count; i++)
+                            if (triggers[i].on == EntadTriggerEvent.Hit) flags |= FlagHitTrigger;
                         var factors = activeTraits[t].def.statFactors;
                         for (int i = 0; factors != null && i < factors.Count; i++)
                         {
@@ -581,6 +584,7 @@ namespace EntadFramework
 
         internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
+        internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
 
         private void TraitsChanged()
         {
