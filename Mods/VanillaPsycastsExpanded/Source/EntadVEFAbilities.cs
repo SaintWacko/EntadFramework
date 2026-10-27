@@ -486,6 +486,14 @@ namespace EntadFramework.VPECompat
         }
 
         public override string TopRightLabel => chargesLabel ?? base.TopRightLabel;
+
+        // VPE's Farskip draws its arrival radius around the caster's map position, which on the world map is a
+        // pawn in a caravan whose Position is wherever it left its last map: a ring of map cells over the planet.
+        public override void GizmoUpdateOnMouseover()
+        {
+            if (WorldRendererUtility.WorldSelected) return;
+            base.GizmoUpdateOnMouseover();
+        }
     }
 
     // Base Ability.Cast runs once per cast, at the end of every override (each VPE class calls it): spend the charge
