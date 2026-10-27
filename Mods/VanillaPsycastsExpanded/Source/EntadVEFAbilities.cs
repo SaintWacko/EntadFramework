@@ -35,6 +35,12 @@ namespace EntadFramework.VPECompat
     // The holder's own psychic sensitivity doesn't count: wherever VEF or VPE reads the caster's for one of the copies,
     // it reads the trait's casterSensitivity (1 unless the trait says otherwise; Patch_CasterSensitivity). A target's
     // own sensitivity still counts, as for any psycast.
+    //
+    // Trigger casts (a trigger's externalAbility, EntadProcs in the main assembly) get copies of their own, held on the
+    // item the same way so a projectile or a decoy that refers back to its ability still finds it after a load. No
+    // gizmo, no charges: the trigger's cooldown is the limit. They are cast directly, as the end of VEF's casting job
+    // would, without the job: no warmup, and none of what an ability class does in WarmupToil (VPE's Ability_Teleport
+    // draws its skip flashes there, so it isn't used for procs).
     [StaticConstructorOnStartup]
     public static class EntadVEFAbilities
     {
@@ -53,6 +59,7 @@ namespace EntadFramework.VPECompat
             public int cooldown;
             public Pawn tickingFor;
             public CompEntad comp;
+            public bool proc;
 
             public int Charges => trait.ChargesLeft(index, maxCharges, cooldown);
         }
@@ -64,6 +71,7 @@ namespace EntadFramework.VPECompat
         }
 
         private static readonly Dictionary<EntadTraitDef, AbilityDef[]> copies = new Dictionary<EntadTraitDef, AbilityDef[]>();
+        private static readonly Dictionary<EntadTraitDef, Dictionary<string, AbilityDef>> procCopies = new Dictionary<EntadTraitDef, Dictionary<string, AbilityDef>>();
         private static readonly Dictionary<AbilityDef, Owner> ownerOf = new Dictionary<AbilityDef, Owner>();
         private static readonly HashSet<EntadTraitDef> vanillaPsycastTraits = new HashSet<EntadTraitDef>();
         private static readonly Dictionary<AbilityDef, float> sensitivityOf = new Dictionary<AbilityDef, float>();
@@ -82,6 +90,12 @@ namespace EntadFramework.VPECompat
         // Ability caches its holder's CompAbilities on first use: after the item changes hands the copy would read the
         // old holder's casting targets
         private static AccessTools.FieldRef<Ability, CompAbilities> CachedComp;
+
+        // VEF's own switch for casting at AoE targets, under which CanHitTarget skips the range and sight checks, and
+        // its picker of random second targets (Random target mode). Without either, procs aren't offered.
+        private static readonly FieldInfo AoETargetingField = AccessTools.Field(typeof(Ability), "currentAoETargeting");
+        private static readonly MethodInfo TargetsAround = AccessTools.Method(typeof(Ability), "GetTargetsAround");
+        private static AccessTools.FieldRef<Ability, bool> AoETargeting;
 
         static EntadVEFAbilities()
         {
@@ -114,11 +128,49 @@ namespace EntadFramework.VPECompat
                         continue;
                     }
                     if (made == null) made = new AbilityDef[trait.externalAbilities.Count];
-                    made[j] = Copy(source, trait, j, clone);
+                    made[j] = Copy(source, trait, "Entad_" + trait.defName + (j == 0 ? "" : "_" + j), clone, false);
                     ownerOf[made[j]] = new Owner { trait = trait, index = j };
                     EntadCompat.RegisterExternalAbility(name, () => source.label);
                 }
                 if (made != null) copies[trait] = made;
+            }
+            if (AoETargetingField != null && AoETargetingField.FieldType == typeof(bool) && TargetsAround != null)
+                AoETargeting = AccessTools.FieldRefAccess<Ability, bool>(AoETargetingField);
+            foreach (var trait in DefDatabase<EntadTraitDef>.AllDefsListForReading)
+            {
+                if (trait.triggers == null) continue;
+                foreach (var trigger in trait.triggers)
+                {
+                    if (trigger.casts == null) continue;
+                    foreach (var cast in trigger.casts)
+                    {
+                        if (!cast.IsExternal) continue;
+                        string name = cast.externalAbility;
+                        if (procCopies.TryGetValue(trait, out var byName) && byName.ContainsKey(name)) continue;
+                        var source = DefDatabase<AbilityDef>.GetNamedSilentFail(name);
+                        if (source == null)
+                        {
+                            Log.Warning($"[Entad Framework] {trait.defName}: {name} is not a Vanilla Expanded Framework ability, so the trait never rolls.");
+                            continue;
+                        }
+                        if (AoETargeting == null)
+                        {
+                            Log.Warning($"[Entad Framework] {trait.defName}: Vanilla Expanded Framework's Ability has changed, so abilities cast by triggers are off and the trait never rolls.");
+                            continue;
+                        }
+                        if (!ProcCanTarget(source))
+                        {
+                            Log.Warning($"[Entad Framework] {trait.defName}: {name} needs a second target a trigger can't pick, so the trait never rolls.");
+                            continue;
+                        }
+                        if (byName == null) procCopies[trait] = byName = new Dictionary<string, AbilityDef>();
+                        var copy = Copy(source, trait, "Entad_" + trait.defName + "_Proc_" + name, clone, true);
+                        byName[name] = copy;
+                        ownerOf[copy] = new Owner { trait = trait, index = -1 };
+                        EntadCompat.RegisterExternalAbility(name, () => source.label);
+                        EntadCompat.RegisterExternalProc(name, CanProc, Proc);
+                    }
+                }
             }
             foreach (string name in VanillaPsycastTraits)
             {
@@ -142,10 +194,10 @@ namespace EntadFramework.VPECompat
         }
 
         // Registered in the database under the trait's name, so the abilities the items save find their def again
-        private static AbilityDef Copy(AbilityDef source, EntadTraitDef trait, int j, MethodInfo clone)
+        private static AbilityDef Copy(AbilityDef source, EntadTraitDef trait, string defName, MethodInfo clone, bool proc)
         {
             var copy = (AbilityDef)clone.Invoke(source, null);
-            copy.defName = "Entad_" + trait.defName + (j == 0 ? "" : "_" + j);
+            copy.defName = defName;
             copy.ResolveDefNameHash();
             var psycast = source.modExtensions?.FirstOrDefault(e => e.GetType().FullName == PsycastExtension);
             copy.modExtensions = source.modExtensions?.Where(e => e != psycast).ToList() ?? new List<DefModExtension>();
@@ -157,13 +209,19 @@ namespace EntadFramework.VPECompat
             copy.gizmoClass = typeof(Command_EntadAbility);
             copy.chance = 0f;
             copy.autocastPlayerDefault = false;
-            if (trait.abilityCooldownTicks > 0)
+            if (proc)
+            {
+                copy.cooldownTime = 0;
+                copy.cooldownTimeStatFactors = new List<StatModifier>();
+                copy.cooldownTimeStatOffsets = new List<StatModifier>();
+            }
+            else if (trait.abilityCooldownTicks > 0)
             {
                 copy.cooldownTime = trait.abilityCooldownTicks;
                 copy.cooldownTimeStatFactors = new List<StatModifier>();
                 copy.cooldownTimeStatOffsets = new List<StatModifier>();
             }
-            if (trait.abilityCastTicks > 0)
+            if (!proc && trait.abilityCastTicks > 0)
             {
                 copy.castTime = trait.abilityCastTicks;
                 copy.castTimeStatFactors = new List<StatModifier>();
@@ -204,6 +262,94 @@ namespace EntadFramework.VPECompat
             }
         }
 
+        // Only a second target VEF picks itself (the caster, or a random cell around the first) can be filled in
+        private static bool ProcCanTarget(AbilityDef def)
+        {
+            for (int i = 1; i < def.targetCount; i++)
+            {
+                var mode = i < def.targetModes.Count ? def.targetModes[i] : AbilityTargetingMode.None;
+                if (mode != AbilityTargetingMode.Self && mode != AbilityTargetingMode.Random) return false;
+            }
+            return true;
+        }
+
+        private static bool TryGetProc(EntadProcContext ctx, out Ability ability)
+        {
+            ability = null;
+            if (ctx.item == null || !procCopies.TryGetValue(ctx.trait.def, out var byName) || !byName.TryGetValue(ctx.cast.externalAbility, out var def))
+                return false;
+            foreach (var a in Abilities(ctx.item))
+                if (a.def == def) { ability = a; return true; }
+            return false;
+        }
+
+        // What the ability would refuse, without its range and line of sight (the trigger's business): the kinds of
+        // thing its first target can be (a pawn it can't target falls back to the pawn's cell when it can target cells),
+        // its own ValidateTarget (an occupied cell for a spawn) and each extension's check of the whole target list.
+        // A Self mode ability is aimed at the trigger's target all the same: Ice Wall rings whoever the trigger names.
+        private static bool CanProc(EntadProcContext ctx)
+        {
+            Pawn pawn = ctx.caster;
+            if (pawn.GetComp<CompAbilities>() == null || !TryGetProc(ctx, out var ability)) return false;
+            Hold(ability, pawn);
+            var def = ability.def;
+            Map map = pawn.Map;
+            LocalTargetInfo target = ctx.target;
+            if (def.targetModes[0] != AbilityTargetingMode.Self)
+            {
+                var tp = def.targetingParametersList[0];
+                if (target.HasThing && !tp.CanTarget(target.Thing))
+                {
+                    if (!tp.canTargetLocations) return false;
+                    target = target.Cell;
+                }
+                else if (!target.HasThing && !tp.canTargetLocations) return false;
+            }
+            var targets = new GlobalTargetInfo[Math.Max(1, def.targetCount)];
+            targets[0] = target.HasThing ? new GlobalTargetInfo(target.Thing) : new GlobalTargetInfo(target.Cell, map);
+            AoETargeting(ability) = true;
+            try
+            {
+                if (!ability.ValidateTarget(target, false)) return false;
+                for (int i = 1; i < targets.Length; i++)
+                {
+                    if (def.targetModes[i] == AbilityTargetingMode.Self) targets[i] = pawn;
+                    else
+                    {
+                        var around = (IEnumerable<GlobalTargetInfo>)TargetsAround.Invoke(ability, new object[] { targets[i - 1].Cell, def.targetingParametersList[i], true });
+                        if (!around.TryRandomElement(out targets[i])) return false;
+                    }
+                }
+            }
+            finally { AoETargeting(ability) = false; }
+            foreach (var ext in ability.AbilityModExtensions)
+                if (!ext.Valid(targets, ability, false)) return false;
+            ctx.state = targets;
+            return true;
+        }
+
+        // VEF's casting job, from its last toil: the pawn's casting state points at the ability while it casts, since
+        // some classes read their targets from there, and goes back to whatever the pawn was casting itself
+        private static void Proc(EntadProcContext ctx)
+        {
+            if (!(ctx.state is GlobalTargetInfo[] targets) || !TryGetProc(ctx, out var ability)) return;
+            if (targets[0].HasThing && !targets[0].Thing.Spawned) return;
+            Hold(ability, ctx.caster);
+            var comp = ability.Comp;
+            var casting = comp.currentlyCasting;
+            var castingTargets = comp.currentlyCastingTargets;
+            ability.firstTarget = targets[0].HasThing ? new LocalTargetInfo(targets[0].Thing) : new LocalTargetInfo(targets[0].Cell);
+            if (ability.def.hasAoE) ability.ModifyTargets(ref targets);
+            comp.currentlyCasting = ability;
+            comp.currentlyCastingTargets = targets;
+            try { ability.Cast(targets); }
+            finally
+            {
+                comp.currentlyCasting = casting;
+                comp.currentlyCastingTargets = castingTargets;
+            }
+        }
+
         private static void Refreshed(CompEntad comp)
         {
             if (HasCopies(comp) && !comp.parent.Destroyed) carriers.Add(comp);
@@ -230,7 +376,7 @@ namespace EntadFramework.VPECompat
                 if (comp.Holder != pawn || !comp.ActiveFor(pawn)) continue;
                 foreach (var ability in Abilities(comp))
                 {
-                    if (!slots.TryGetValue(ability, out var slot)) continue;
+                    if (!slots.TryGetValue(ability, out var slot) || slot.proc) continue;
                     Hold(ability, pawn);
                     RefreshCooldown(ability, slot);
                     into.Add(ability);
@@ -241,12 +387,13 @@ namespace EntadFramework.VPECompat
         private static bool HeldGrants(Pawn pawn, object o, out bool hidden)
         {
             hidden = false;
-            if (!(o is Ability ability) || !IsOurs(ability) || !slots.TryGetValue(ability, out var slot)) return false;
+            if (!(o is Ability ability) || !IsOurs(ability) || !slots.TryGetValue(ability, out var slot) || slot.proc) return false;
             if (slot.comp == null || slot.comp.Holder != pawn || !slot.comp.ActiveFor(pawn)) return false;
             hidden = !slot.trait.IsRevealed(EntadEffectKind.Ability);
             return true;
         }
 
+        // Gizmo abilities only: the AI and the gizmos ask about these, never about procs
         private static bool HasCopies(CompEntad comp)
         {
             var traits = comp.activeTraits;
@@ -270,23 +417,25 @@ namespace EntadFramework.VPECompat
             }
             for (int t = 0; t < traits.Count; t++)
             {
+                if (!procCopies.TryGetValue(traits[t].def, out var byName)) continue;
+                foreach (var def in byName.Values)
+                {
+                    var ability = Held(comp, list, def);
+                    var slot = slots.GetValue(ability, _ => new Slot());
+                    slot.comp = comp;
+                    slot.trait = traits[t];
+                    slot.index = -1;
+                    slot.proc = true;
+                }
+            }
+            for (int t = 0; t < traits.Count; t++)
+            {
                 if (!copies.TryGetValue(traits[t].def, out var made)) continue;
                 for (int j = 0; j < made.Length; j++)
                 {
                     var def = made[j];
                     if (def == null) continue;
-                    Ability ability = null;
-                    for (int k = 0; k < list.Count; k++)
-                        if (list[k].def == def) { ability = list[k]; break; }
-                    if (ability == null)
-                    {
-                        ability = (Ability)Activator.CreateInstance(def.abilityClass);
-                        ability.def = def;
-                        ability.holder = comp.parent;
-                        ability.pawn = comp.Holder;
-                        ability.Init();
-                        list.Add(ability);
-                    }
+                    var ability = Held(comp, list, def);
                     var slot = slots.GetValue(ability, _ => new Slot());
                     slot.comp = comp;
                     slot.trait = traits[t];
@@ -296,6 +445,19 @@ namespace EntadFramework.VPECompat
                 }
             }
             return list;
+        }
+
+        private static Ability Held(CompEntad comp, List<Ability> list, AbilityDef def)
+        {
+            for (int k = 0; k < list.Count; k++)
+                if (list[k].def == def) return list[k];
+            var ability = (Ability)Activator.CreateInstance(def.abilityClass);
+            ability.def = def;
+            ability.holder = comp.parent;
+            ability.pawn = comp.Holder;
+            ability.Init();
+            list.Add(ability);
+            return ability;
         }
 
         // The holder is the caster, and the pawn whose CompAbilities ticks it. A previous holder keeps ticking it until
@@ -335,7 +497,7 @@ namespace EntadFramework.VPECompat
 
         internal static void Cast(Ability ability)
         {
-            if (!slots.TryGetValue(ability, out var slot)) return;
+            if (!slots.TryGetValue(ability, out var slot) || slot.proc) return;
             slot.trait.UseCharge(slot.index, slot.maxCharges, slot.cooldown);
             RefreshCooldown(ability, slot);
             slot.trait.Reveal(EntadEffectKind.Ability);
@@ -351,8 +513,9 @@ namespace EntadFramework.VPECompat
             List<Gizmo> gizmos = null;
             foreach (var ability in Abilities(comp))
             {
+                if (!slots.TryGetValue(ability, out var slot) || slot.proc) continue;
                 Hold(ability, pawn);
-                if (!ability.ShowGizmoOnPawn() || !slots.TryGetValue(ability, out var slot)) continue;
+                if (!ability.ShowGizmoOnPawn()) continue;
                 RefreshCooldown(ability, slot);
                 if (gizmos == null) gizmos = new List<Gizmo>();
                 gizmos.Add(ability.GetGizmo());
@@ -379,9 +542,9 @@ namespace EntadFramework.VPECompat
                     if (comp == null || !HasCopies(comp) || !comp.ActiveFor(pawn)) continue;
                     foreach (var ability in Abilities(comp))
                     {
-                        if (!ability.def.showGizmoOnWorldView) continue;
+                        if (!ability.def.showGizmoOnWorldView || !slots.TryGetValue(ability, out var slot) || slot.proc) continue;
                         Hold(ability, pawn);
-                        if (!ability.ShowGizmoOnPawn() || !slots.TryGetValue(ability, out var slot)) continue;
+                        if (!ability.ShowGizmoOnPawn()) continue;
                         RefreshCooldown(ability, slot);
                         yield return ability.GetGizmo();
                     }
@@ -417,7 +580,7 @@ namespace EntadFramework.VPECompat
 
         private static float Weight(EntadTraitDef def)
         {
-            if (copies.ContainsKey(def)) return EntadSettings.ModuleValue(WeightKey, 1f);
+            if (copies.ContainsKey(def) || procCopies.ContainsKey(def)) return EntadSettings.ModuleValue(WeightKey, 1f);
             if (vanillaPsycastTraits.Contains(def)) return EntadSettings.ModuleValue(KeepVanillaKey, 0f) > 0.5f ? 1f : 0f;
             return 1f;
         }

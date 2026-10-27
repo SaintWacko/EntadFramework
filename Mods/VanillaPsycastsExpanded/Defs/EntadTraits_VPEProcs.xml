@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Vanilla Psycasts Expanded psycasts cast by triggers (EntadProcs.cs in the main assembly, CanProc/Proc in
+       EntadVEFAbilities.cs): at once, no psyfocus, heat or psylink, ignoring the psycast's range and line of sight. The
+       holder counts as 100% psychic sensitivity, as for the psycast traits. Royalty's own psycasts are cast by vanilla
+       ability (EntadTraits_Procs.xml): VPE needs Royalty, so those cover VPE's copies of them. -->
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Flameball</defName>
+    <label>Flaring</label>
+    <description>Every so often a shot from it arrives with company.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Uncommon</rarity>
+    <!-- Ranged hits only: the flameball's 3-tile blast at a melee target would catch the holder -->
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <chance>0.1</chance>
+        <cooldownHours>4</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Flameball</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Overshield</defName>
+    <label>Aegis</label>
+    <description>Strike its owner and the air around them hardens.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.3</chance>
+        <cooldownHours>12</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Overshield</externalAbility><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Ranged damage only: a ring of ice 5 tiles out around a melee attacker would wall the holder in with it -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_IceWall</defName>
+    <label>Frostward</label>
+    <description>Those who shoot at its owner sometimes find themselves walled in by ice.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Ranged</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.2</chance>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_IceWall</externalAbility><target>Attacker</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- A decoy where the holder stood, then a chaos skip away. Royalty's chaos skip, since VPE's draws its skip
+       flashes during the casting job a trigger doesn't run. The landing spot is random, near enemies or not. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Escape</defName>
+    <label>Escape Artist</label>
+    <description>Its owners have a way of not being there when the killing blow lands.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Legendary</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <fromEnemy>true</fromEnemy>
+        <healthBelow>0.3</healthBelow>
+        <cooldownHours>120</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Decoy</externalAbility><target>Origin</target></li>
+          <li><ability>ChaosSkip</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+</Defs>

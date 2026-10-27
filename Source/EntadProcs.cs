@@ -14,6 +14,7 @@ namespace EntadFramework
         public AppliedEntadTrait trait;
         public EntadTriggerCast cast;
         public LocalTargetInfo target;
+        public object state;   // a module's own: what its canCast worked out, for its cast
 
         internal Ability vanilla;
     }
