@@ -423,6 +423,7 @@ namespace EntadFramework
                 ctx.other = hurt;
                 FromGear(attacker, EntadTriggerEvent.Hit, null, ctx);
             }
+            if (killedPawn == hurt) killedPawn = killedBy = null;
         }
 
         private static bool AttackMatches(EntadAttackKind attack, bool melee) =>
@@ -434,15 +435,36 @@ namespace EntadFramework
         {
             switch (victims)
             {
-                case EntadKillVictims.Hostile: return victim != null && victim.HostileTo(killer);
+                case EntadKillVictims.Hostile: return victim != null && Hostile(victim, killer);
                 case EntadKillVictims.Humanlike: return victim?.RaceProps?.Humanlike == true;
-                case EntadKillVictims.HostileMechanoid: return victim != null && victim.RaceProps.IsMechanoid && victim.HostileTo(killer);
+                case EntadKillVictims.HostileMechanoid: return victim != null && victim.RaceProps.IsMechanoid && Hostile(victim, killer);
                 case EntadKillVictims.Fight:
                     // Only animals and wild men count as wild: a downed refugee can also have no faction
-                    return victim != null && (victim.HostileTo(killer)
+                    return victim != null && (Hostile(victim, killer)
                         || ((victim.RaceProps.Animal || victim.IsWildMan()) && victim.Faction == null && victim.HostFaction == null));
                 default: return true;
             }
+        }
+
+        // A killing blow reaches Hit after Pawn.Kill has destroyed the victim, and HostileTo is false for anything
+        // destroyed (its mental state is cleared too), so every hostile-only Hit trait skipped the hit that killed.
+        // Notify_PawnKilled runs before the destroy and notes the answer for the PostApplyDamage that follows.
+        [System.ThreadStatic] private static Pawn killedPawn;
+        [System.ThreadStatic] private static Pawn killedBy;
+        [System.ThreadStatic] private static bool killedHostile;
+
+        internal static void NoteKill(Pawn killed, Pawn killer)
+        {
+            if (!Any(EntadTriggerEvent.Hit)) return;
+            killedPawn = killed;
+            killedBy = killer;
+            killedHostile = killed.HostileTo(killer);
+        }
+
+        private static bool Hostile(Pawn victim, Pawn holder)
+        {
+            if (victim.Destroyed) return victim == killedPawn && holder == killedBy && killedHostile;
+            return victim.HostileTo(holder);
         }
 
         private static void FromItem(Pawn pawn, Thing item, EntadTriggerEvent ev, JobDef job, DamageContext ctx)
@@ -512,15 +534,15 @@ namespace EntadFramework
             int readyTick = m.TriggerReadyTick(i);
             if (readyTick > now)
             {
-                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: on cooldown");
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: on cooldown", other);
                 return;
             }
             if (t.chance < 1f && !Rand.Chance(t.chance))
             {
-                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {t.chance.ToStringPercent()} roll");
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {t.chance.ToStringPercent()} roll", other);
                 return;
             }
-            if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: fired");
+            if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: fired", other);
             if (t.cooldownHours > 0f) m.SetTriggerReadyTick(i, now + Mathf.RoundToInt(t.cooldownHours * GenDate.TicksPerHour));
             EntadTriggerQueue.pending.Add(new EntadTriggerQueue.Pending
             {
@@ -741,7 +763,11 @@ namespace EntadFramework
     [HarmonyPatch(typeof(RecordsUtility), nameof(RecordsUtility.Notify_PawnKilled))]
     public static class Patch_RecordsUtility_PawnKilled_EntadTrigger
     {
-        public static void Postfix(Pawn killed, Pawn killer) => EntadTriggers.FromGear(killer, EntadTriggerEvent.Kill, other: killed);
+        public static void Postfix(Pawn killed, Pawn killer)
+        {
+            EntadTriggers.NoteKill(killed, killer);
+            EntadTriggers.FromGear(killer, EntadTriggerEvent.Kill, other: killed);
+        }
     }
 
     // TakeDamage for the pawn hurt and Hit for whoever hurt it. Vanilla calls this after the damage is applied, also

@@ -98,8 +98,10 @@ namespace EntadFramework
         internal static bool LogTriggers => logTriggers && Prefs.DevMode;
         internal static string refusal;
 
-        internal static void LogTrigger(Pawn pawn, AppliedEntadTrait m, string what) =>
-            Log.Message($"[Entad Framework] {m.def.defName} on {m.owner?.parent?.LabelShort} ({pawn?.LabelShort}): {what}");
+        // The tick and the other pawn keep two events apart: the log window folds identical consecutive lines into one
+        internal static void LogTrigger(Pawn pawn, AppliedEntadTrait m, string what, Thing other = null) =>
+            Log.Message($"[Entad Framework] tick {Find.TickManager.TicksGame}: {m.def.defName} on {m.owner?.parent?.LabelShort} ({pawn?.LabelShort}): {what}"
+                + (other != null ? $" ({other.LabelShort})" : ""));
 
         internal static bool TryPrepare(EntadTrigger t, EntadTriggerQueue.Pending p, out List<EntadProcContext> prepared)
         {
