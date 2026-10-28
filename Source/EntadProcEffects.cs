@@ -99,14 +99,11 @@ namespace EntadFramework
             if (!CanDisarm(victim)) return;
             Map map = victim.Map;
             IntVec3 pos = victim.Position;
-            if (!victim.equipment.TryDropEquipment(victim.equipment.Primary, out var dropped, pos)) return;
             // Away from their feet, so getting it back costs them a few seconds of the fight
-            if (dropped != null && dropped.Spawned && CellFinder.TryFindRandomCellNear(pos, map, Mathf.CeilToInt(Props.throwDistance),
+            if (!CellFinder.TryFindRandomCellNear(pos, map, Mathf.CeilToInt(Props.throwDistance),
                     c => c.DistanceTo(pos) >= 2f && c.Standable(map) && GenSight.LineOfSight(pos, c, map), out IntVec3 cell))
-            {
-                dropped.DeSpawn();
-                GenPlace.TryPlaceThing(dropped, cell, map, ThingPlaceMode.Near);
-            }
+                cell = pos;
+            if (!victim.equipment.TryDropEquipment(victim.equipment.Primary, out _, cell)) return;
             MoteMaker.ThrowText(victim.DrawPos, map, "EF_Disarmed".Translate());
         }
     }
@@ -191,7 +188,7 @@ namespace EntadFramework
             for (float d = Props.distance; d >= 1f; d -= 1f)
             {
                 IntVec3 c = (start + dir * d).ToIntVec3();
-                if (c == p.Position || !c.InBounds(map) || !c.Standable(map) || taken.Contains(c) || c.GetFirstPawn(map) != null) continue;
+                if (c == p.Position || !c.InBounds(map) || c.Fogged(map) || !c.Standable(map) || taken.Contains(c) || c.GetFirstPawn(map) != null) continue;
                 if (!GenSight.LineOfSight(p.Position, c, map, skipFirstCell: true)) continue;
                 landing = c;
                 return true;
@@ -279,9 +276,10 @@ namespace EntadFramework
         }
     }
 
-    // A blast that spares the caster's side: every pawn not hostile to the caster, and every thing the caster's
-    // faction owns, is left out of it (GenExplosion's ignoredThings). No weapon is named, so the blast doesn't count
-    // as a hit with the caster's weapon for its other triggers.
+    // A blast that only hurts the caster's enemies: pawns hostile to the caster and things a hostile faction owns.
+    // Everything else in reach (the caster's side, neutrals, loose items, corpses, plants) goes into GenExplosion's
+    // ignoredThings. The list is made as the blast starts, so a friend walking into the spreading blast can still be
+    // hit. No weapon is named, so the blast doesn't count as a hit with the caster's weapon for its other triggers.
     public class CompProperties_AbilityEntadVolatile : CompProperties_AbilityEffect
     {
         public float radius = 2.9f;
@@ -314,8 +312,7 @@ namespace EntadFramework
             var spared = new List<Thing>();
             foreach (Thing t in GenRadial.RadialDistinctThingsAround(center, map, Props.radius, true))
             {
-                bool spare = t is Pawn p ? !p.HostileTo(caster) : caster.Faction != null && t.Faction == caster.Faction;
-                if (spare) spared.Add(t);
+                if (!t.HostileTo(caster)) spared.Add(t);
             }
             GenExplosion.DoExplosion(center, map, Props.radius, Props.damageDef, caster, Props.damageAmount, Props.armorPenetration,
                 Props.explosionSound, ignoredThings: spared);

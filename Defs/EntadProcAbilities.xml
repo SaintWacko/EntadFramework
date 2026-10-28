@@ -8,7 +8,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Ricochet</defName>
     <label>ricochet</label>
-    <description>A second shot from the user's weapon flies from where the first one landed to the nearest other enemy within 8 tiles in sight of that spot. It deals the weapon's own damage and only hits that enemy.</description>
+    <description>A second shot from the user's weapon flies from where the first one landed to the nearest other enemy within 8 tiles in sight of that spot. It deals the weapon's own damage and flies past anyone else in the way. An explosive shot still bursts where it lands.</description>
     <iconPath>UI/Abilities/Entad/Ricochet</iconPath>
     <hostile>true</hostile>
     <verbProperties>
@@ -91,7 +91,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Volatile</defName>
     <label>volatile burst</label>
-    <description>An explosion 2.9 tiles wide that hurts only the user's enemies: the user's side, neutrals and the user's own buildings are spared.</description>
+    <description>An explosion with a 2.9-tile radius that hurts only the user's enemies and their buildings. Everyone and everything else in it is spared.</description>
     <iconPath>UI/Abilities/Entad/Volatile</iconPath>
     <hostile>true</hostile>
     <verbProperties>
@@ -116,6 +116,7 @@
     <label>chilled</label>
     <description>Frost clings to this creature's limbs, slowing every movement.</description>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <isBad>true</isBad>
     <comps>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>1200~1200</disappearsAfterTicks>
@@ -135,7 +136,7 @@
   <AbilityDef ParentName="EntadSelfAbilityBase">
     <defName>Entad_Frostburst</defName>
     <label>frostburst</label>
-    <description>Every enemy within 2 tiles of the user is chilled for 20 seconds: half speed, and melee attacks 30% slower.</description>
+    <description>Every enemy next to the user is chilled for 20 seconds: half speed, and melee attacks 30% slower.</description>
     <iconPath>UI/Abilities/Entad/Frostburst</iconPath>
     <hostile>true</hostile>
     <comps>
