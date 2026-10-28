@@ -140,6 +140,8 @@ namespace EntadFramework
                 Pawn p = all[i];
                 if (p == caster || p.Dead || p.Downed || (p.Position - center).LengthHorizontalSquared > r2) continue;
                 if (p.BodySize > Props.maxBodySize || p.carryTracker?.CarriedThing != null || !p.HostileTo(caster)) continue;
+                // The blast is felt, not seen, but it doesn't go through walls
+                if (p.Position.Fogged(map) || !GenSight.LineOfSight(center, p.Position, map, skipFirstCell: true)) continue;
                 thrown.Add(p);
             }
         }
