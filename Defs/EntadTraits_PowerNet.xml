@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Network traits (EntadPowerNets.cs): on any furniture with a power comp (batteries, generators, switches, powered
+       benches), acting on the whole power network the building is on. Conduits never become entads, so the effect
+       moves with the building, not the wiring. Conserving and Capacitive are plain stats; Grounded and Stormcaught use
+       the powerNet block. The drawbacks Leaky and Sparking are in EntadTraits_Drawbacks.xml. -->
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Grounded</defName>
+    <label>Grounded</label>
+    <description>Sparks that leap toward it vanish without a sound.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <exclusiveWith><li>Entad_Stormcaught</li><li>Entad_Sparking</li></exclusiveWith>
+    <powerNet>
+      <grounded>true</grounded>
+    </powerNet>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Strongest one on a network counts; several don't stack -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Conserving</defName>
+    <label>Conserving</label>
+    <description>Everything wired to it runs just as well on less, and nobody can say why.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusiveWith><li>Entad_Leaky</li></exclusiveWith>
+    <statFactors>
+      <li><stat>Entad_NetPowerFactor</stat><min>0.8</min><max>0.9</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Vanilla batteries keep 50% of what goes in: x0.3-0.6 of that loss is 70-85%. Also stops the 5 W self-discharge
+       on every battery on the network (EF_Card_NetNoSelfDischarge on the card). -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Capacitive</defName>
+    <label>Capacitive</label>
+    <description>Batteries wired to it hold their charge as if they were afraid to let go of it.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors>
+      <li><stat>Entad_NetBatteryLossFactor</stat><min>0.3</min><max>0.6</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Rides out solar flares, and pays for it with an arc at the building every 20-40 days of live network -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stormcaught</defName>
+    <label>Stormcaught</label>
+    <description>It hums with lightning it caught long ago, and now and then some of it gets loose.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Legendary</rarity>
+    <points>8</points>
+    <exclusiveWith><li>Entad_Sparking</li></exclusiveWith>
+    <powerNet>
+      <flareProof>true</flareProof>
+      <arcIntervalDays>20~40</arcIntervalDays>
+    </powerNet>
+  </EntadFramework.EntadTraitDef>
+</Defs>

@@ -117,7 +117,7 @@ namespace EntadFramework
             {
                 var d = pair.def;
                 bool ok = pair.ok;
-                string label = d.defName + (ok ? "" : " (not applicable)");
+                string label = MenuLabel(d) + (ok ? "" : " (not applicable)");
                 // A trait that scales picks its rarity in a second list, like Titan Framework's dev action
                 var rarities = ((EntadRarity[])Enum.GetValues(typeof(EntadRarity))).Where(d.CanAppearAt).ToList();
                 if (rarities.Count > 1)
@@ -155,7 +155,7 @@ namespace EntadFramework
                     .Where(d => d.CanApplyTo(item))
                     .OrderByDescending(d => !d.abilities.NullOrEmpty())
                     .ThenBy(d => d.defName, StringComparer.OrdinalIgnoreCase)
-                    .Select(d => new DebugMenuOption(d.defName + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
+                    .Select(d => new DebugMenuOption(MenuLabel(d) + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
                     {
                         AddAt(comp, item, d, null);
                         EntadAbilities.Grant(pawn, comp);
@@ -164,6 +164,9 @@ namespace EntadFramework
             })).ToList();
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
+
+        // defNames are named after what a trait does (Entad_Proc_Burden), the card after its label (Burdening)
+        private static string MenuLabel(EntadTraitDef d) => d.label.NullOrEmpty() ? d.defName : $"{d.defName} ({d.LabelCap})";
 
         private static void AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
         {
@@ -190,13 +193,22 @@ namespace EntadFramework
             foreach (var applied in comp.activeTraits.ToList())
             {
                 var a = applied;
-                options.Add(new DebugMenuOption(a.def.defName, DebugMenuOptionMode.Action, () =>
+                options.Add(new DebugMenuOption(MenuLabel(a.def), DebugMenuOptionMode.Action, () =>
                 {
                     comp.RemoveTrait(a);
                     Messages.Message($"Removed '{a.def.LabelCap}' from {thing.Label}.", MessageTypeDefOf.NeutralEvent, false);
                 }));
             }
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        // Every trigger event an entad hears goes to the log with what came of it: cooldown, missed roll, fired, or the
+        // cast that refused its target
+        [DebugAction(category = "Entad Framework", name = "Log Entad triggers (toggle)", allowedGameStates = AllowedGameStates.Playing)]
+        private static void ToggleTriggerLog()
+        {
+            EntadProcs.logTriggers = !EntadProcs.logTriggers;
+            Messages.Message($"Entad trigger logging {(EntadProcs.logTriggers ? "on" : "off")}.", MessageTypeDefOf.NeutralEvent, false);
         }
 
         [DebugAction(category = "Entad Framework", name = "Remove all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -212,9 +224,32 @@ namespace EntadFramework
         [DebugAction(category = "Entad Framework", name = "Reveal all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void RevealAllEntad()
         {
-            CompEntad comp = EntadAtMouse(out Thing thing);
-            if (comp == null) return;
-            foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+            foreach (var comp in EntadsAtMouse())
+                foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+        }
+
+        // A loose entad on the cell wins; otherwise every entad a pawn there wields or wears
+        private static List<CompEntad> EntadsAtMouse()
+        {
+            var comps = new List<CompEntad>();
+            Map map = Find.CurrentMap;
+            IntVec3 cell = UI.MouseCell();
+            if (map == null || !cell.InBounds(map)) return comps;
+            var things = cell.GetThingList(map);
+            var loose = things.Find(t => !(t is Pawn) && t.TryGetComp<CompEntad>() != null);
+            if (loose != null) comps.Add(loose.TryGetComp<CompEntad>());
+            else
+                foreach (var pawn in things.OfType<Pawn>())
+                {
+                    if (pawn.equipment != null)
+                        foreach (var eq in pawn.equipment.AllEquipmentListForReading)
+                            if (eq.TryGetComp<CompEntad>() is CompEntad c) comps.Add(c);
+                    if (pawn.apparel != null)
+                        foreach (var ap in pawn.apparel.WornApparel)
+                            if (ap.TryGetComp<CompEntad>() is CompEntad c) comps.Add(c);
+                }
+            if (comps.Count == 0) Messages.Message("No entad item or pawn with entad gear at clicked cell.", MessageTypeDefOf.RejectInput, false);
+            return comps;
         }
 
         [DebugAction(category = "Entad Framework", name = "Bind Entad to pawn", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -247,9 +282,8 @@ namespace EntadFramework
         [DebugAction(category = "Entad Framework", name = "Hide all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void HideAllEntad()
         {
-            CompEntad comp = EntadAtMouse(out Thing thing);
-            if (comp == null) return;
-            foreach (var m in comp.activeTraits.ToList()) m.Hide();
+            foreach (var comp in EntadsAtMouse())
+                foreach (var m in comp.activeTraits.ToList()) m.Hide();
         }
 
         // Testing appraisers without waiting on the caravan chance. The pawn still needs to be in a trade caravan

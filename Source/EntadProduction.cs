@@ -5,8 +5,8 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Masterwork and Abundant: workbench traits that change what a bill makes. Both are plain stat traits on the
-    // bench (Entad_ProductQualityChance, Entad_ProductDoubleChance), so they roll, scale, show on the card and reveal
+    // Masterwork, Abundant and Sparing: workbench traits that change what a bill makes. All are plain stat traits on
+    // the bench (Entad_ProductQualityChance, Entad_ProductDoubleChance, Entad_IngredientRefundChance), so they roll, scale, show on the card and reveal
     // like any furniture stat (a bill at the bench is a use). They only work for a crafter the bench is active for.
     //
     // The hook is a postfix on GenRecipe.MakeRecipeProducts, which every production bill goes through (with or
@@ -16,19 +16,60 @@ namespace EntadFramework
     [HarmonyPatch(typeof(GenRecipe), nameof(GenRecipe.MakeRecipeProducts))]
     public static class Patch_GenRecipe_MakeRecipeProducts_Entad
     {
-        public static IEnumerable<Thing> Postfix(IEnumerable<Thing> __result, Pawn worker, IBillGiver billGiver)
+        public static IEnumerable<Thing> Postfix(IEnumerable<Thing> __result, RecipeDef recipeDef, Pawn worker, List<Thing> ingredients, IBillGiver billGiver)
         {
             if (!(billGiver is Thing bench) || worker == null || !EntadCompInjector.MayHaveComp(bench.def)) return __result;
             var comp = bench.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.Count == 0 || !comp.ActiveFor(worker)) return __result;
             float quality = bench.GetStatValue(EntadStatDefOf.Entad_ProductQualityChance);
             float doubled = bench.GetStatValue(EntadStatDefOf.Entad_ProductDoubleChance);
-            if (quality <= 0f && doubled <= 0f) return __result;
+            float refund = bench.GetStatValue(EntadStatDefOf.Entad_IngredientRefundChance);
+            if (quality <= 0f && doubled <= 0f && refund <= 0f) return __result;
             // One roll per bill for doubling, so a butchered animal gives double meat and double leather or neither
-            return Wrap(__result, worker, bench, comp, quality, doubled > 0f && Rand.Chance(doubled));
+            return Wrap(__result, worker, bench, comp, quality, doubled > 0f && Rand.Chance(doubled),
+                ingredients != null && MakesSomething(recipeDef) && refund > 0f && Rand.Chance(refund) ? ingredients : null);
         }
 
-        private static IEnumerable<Thing> Wrap(IEnumerable<Thing> products, Pawn worker, Thing bench, CompEntad comp, float qualityChance, bool doubled)
+        // Sparing gives back half of each stackable ingredient, rounded at random, as more products. The ingredients
+        // still exist here: vanilla consumes them after it has the product list. A refund keeps the ingredient's rot,
+        // so spoiling meat doesn't come back fresh.
+        private static List<Thing> Refunds(List<Thing> ingredients)
+        {
+            var refunds = new List<Thing>();
+            for (int i = 0; i < ingredients.Count; i++)
+            {
+                var ing = ingredients[i];
+                if (ing == null || ing.def.stackLimit <= 1 || ing is MinifiedThing || ing.TryGetComp<CompQuality>() != null) continue;
+                int count = GenMath.RoundRandom(ing.stackCount * 0.5f);
+                var rot = ing.TryGetComp<CompRottable>();
+                var ingIngredients = ing.TryGetComp<CompIngredients>();
+                var poison = ing.TryGetComp<CompFoodPoisonable>();
+                while (count > 0)
+                {
+                    var t = ThingMaker.MakeThing(ing.def, ing.Stuff);
+                    t.stackCount = System.Math.Min(count, ing.def.stackLimit);
+                    var tRot = t.TryGetComp<CompRottable>();
+                    if (rot != null && tRot != null) tRot.RotProgress = rot.RotProgress;
+                    // A modded recipe taking meals: the refund keeps what they were made of, for food precepts
+                    var tIngredients = t.TryGetComp<CompIngredients>();
+                    if (ingIngredients != null && tIngredients != null)
+                        foreach (var def in ingIngredients.ingredients) tIngredients.RegisterIngredient(def);
+                    // A poisoned meal mustn't come back clean. PostSplitOff copies the share and cause to the piece,
+                    // the only public way to set a share below 100%.
+                    if (poison != null && poison.PoisonPercent > 0f && t.TryGetComp<CompFoodPoisonable>() != null) poison.PostSplitOff(t);
+                    // Damaged cloth or leather mustn't come back mended
+                    if (ing.def.useHitPoints) t.HitPoints = UnityEngine.Mathf.CeilToInt(t.MaxHitPoints * (float)ing.HitPoints / ing.MaxHitPoints);
+                    count -= t.stackCount;
+                    refunds.Add(t);
+                }
+            }
+            return refunds;
+        }
+
+        // A bill that only destroys (the crematorium burning drugs) would hand half of them back
+        private static bool MakesSomething(RecipeDef recipe) => recipe == null || !recipe.products.NullOrEmpty() || !recipe.specialProducts.NullOrEmpty();
+
+        private static IEnumerable<Thing> Wrap(IEnumerable<Thing> products, Pawn worker, Thing bench, CompEntad comp, float qualityChance, bool doubled, List<Thing> refundFrom)
         {
             bool anyDoubled = false;
             Thing firstDoubled = null;
@@ -84,17 +125,33 @@ namespace EntadFramework
                 Messages.Message("EF_ProductDoubled".Translate(worker.LabelShort, bench.LabelShort, firstDoubled.def.label),
                     new LookTargets(bench), MessageTypeDefOf.PositiveEvent);
             }
+            if (refundFrom == null) yield break;
+            var refunds = Refunds(refundFrom);
+            if (refunds.Count == 0) yield break;
+            // Dropped beside the crafter rather than added to the product list: vanilla counts everything in that list
+            // toward the crafter's records (ThingsCrafted, MealsCooked) and 'produce X' quests, and hauls the first entry
+            // as the product, which a refund would become on a bill whose real products all came out empty
+            // At the bench, not the worker: Vanilla Psycasts Expanded's Finish ability passes a worker who may be on
+            // another map or in a caravan. Never onto a cell holding an ingredient, which vanilla consumes right after
+            // and would take a merged refund with it.
+            var map = bench.Map;
+            var at = bench.def.hasInteractionCell ? bench.InteractionCell : bench.Position;
+            int placed = 0;
+            for (int i = 0; i < refunds.Count; i++)
+            {
+                // Near can merge part of a stack into a neighbour and still return false for the rest
+                int before = refunds[i].stackCount;
+                bool whole = GenPlace.TryPlaceThing(refunds[i], at, map, ThingPlaceMode.Near, null, c => !refundFrom.Any(x => x.Spawned && x.Position == c));
+                if (whole || refunds[i].Destroyed || refunds[i].stackCount < before) placed++;
+                if (!whole && !refunds[i].Destroyed && !refunds[i].Spawned) refunds[i].Destroy();
+            }
+            if (placed == 0) yield break;
+            Reveal(comp, EntadStatDefOf.Entad_IngredientRefundChance);
+            Messages.Message("EF_IngredientsSpared".Translate(worker.LabelShort, bench.LabelShort),
+                new LookTargets(bench), MessageTypeDefOf.PositiveEvent);
         }
 
         // The trait that did it is now known, whether or not anyone had worked at the bench long enough before
-        private static void Reveal(CompEntad comp, StatDef stat)
-        {
-            comp.RevealWhere(EntadEffectKind.Stat, m =>
-            {
-                var offsets = m.def.statOffsets;
-                for (int i = 0; offsets != null && i < offsets.Count; i++) if (offsets[i].stat == stat) return true;
-                return false;
-            });
-        }
+        private static void Reveal(CompEntad comp, StatDef stat) => comp.RevealStat(stat);
     }
 }

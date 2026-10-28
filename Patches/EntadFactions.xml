@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- The Empire's soldiers carry stronger entads, and every one is bound to its carrier: looted, it is an ordinary
+       item. Same carrier chance as everyone else. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Royalty</li>
+    </mods>
+    <match Class="PatchOperationAddModExtension">
+      <xpath>Defs/FactionDef[defName="Empire"]</xpath>
+      <value>
+        <li Class="EntadFramework.EntadFactionExtension">
+          <carrierBoundChance>1</carrierBoundChance>
+          <carrierPointFactor>1.5</carrierPointFactor>
+        </li>
+      </value>
+    </match>
+  </Operation>
+</Patch>

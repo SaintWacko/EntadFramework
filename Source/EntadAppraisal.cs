@@ -16,12 +16,17 @@ namespace EntadFramework
     // has a daily maximum (rolled once) and a number for today (rolled at local midnight, between the settings'
     // minimum and their maximum). Nothing ticks: today's number is rerolled the first time it's asked for on a new day.
 
-    // Per-faction override of the settings' chances, for content mods (a temple faction that always has one).
-    // A negative value (the default) means "use the settings".
+    // Per-faction override of the settings, for content mods (a temple faction that always has an appraiser).
+    // A negative chance (the default) means "use the settings".
     public class EntadFactionExtension : DefModExtension
     {
         public float appraiserCaravanChance = -1f;
         public float appraiserSettlementChance = -1f;
+        // Entads carried by this faction's groups (EntadWorldPawns.cs): the chance a group has any carriers, the
+        // share of carried entads bound to their carrier, and a multiplier on their points
+        public float carrierChance = -1f;
+        public float carrierBoundChance = -1f;
+        public float carrierPointFactor = 1f;
     }
 
     public class AppraiserState : IExposable
@@ -102,10 +107,15 @@ namespace EntadFramework
         private List<int> keys;
         private List<AppraiserState> values;
 
+        private static readonly AppraiserState NoAppraiser = new AppraiserState();
+
         public EntadAppraisalWorld(World world) : base(world) { }
 
         public AppraiserState For(Settlement s)
         {
+            // While appraisers are off for this game every settlement reads as having none, and nothing is rolled or
+            // forgotten, so turning them back on brings back the ones already known and lets the rest roll
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers)) return NoAppraiser;
             if (!settlements.TryGetValue(s.ID, out var state))
                 settlements[s.ID] = state = AppraiserState.Roll(EntadAppraisal.SettlementChance(s.Faction));
             return state;
@@ -170,6 +180,7 @@ namespace EntadFramework
         {
             hediff = null;
             if (appraisers.Count == 0 || p == null || !appraisers.Contains(p)) return false;
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers)) return false;
             if (!p.Spawned || p.Dead || p.Downed || p.InMentalState || p.Faction == null || p.Faction.IsPlayer || p.Faction.HostileTo(Faction.OfPlayer)) return false;
             var lord = p.GetLord();
             if (!(lord?.LordJob is LordJob_TradeWithColony)) return false;
@@ -442,7 +453,7 @@ namespace EntadFramework
         public static void Postfix(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, List<Pawn> outPawns)
         {
             if (parms?.faction == null || parms.faction.IsPlayer || outPawns.NullOrEmpty()) return;
-            if (!Rand.Chance(EntadAppraisal.CaravanChance(parms.faction))) return;
+            if (!EntadWorld.Enabled(EntadWorldFeature.Appraisers) || !Rand.Chance(EntadAppraisal.CaravanChance(parms.faction))) return;
             bool Eligible(Pawn p) => p.RaceProps.Humanlike && p.Faction == parms.faction && !p.IsPrisoner && !p.IsSlave && !p.Dead;
             // GetTraderCaravanRole, not TraderKind == null: slaves for sale are in outPawns too, with the caravan's
             // faction and no guest status. The role check classes PawnKindDefOf.Slave as Chattel, but a trader kind

@@ -66,4 +66,146 @@
     <hideAtValue>0</hideAtValue>
     <toStringStyle>PercentZero</toStringStyle>
   </StatDef>
+
+  <StatDef>
+    <defName>Entad_IngredientRefundChance</defName>
+    <label>chance to spare ingredients</label>
+    <description>The chance that a bill finished here gives back half of each ingredient that stacks.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <!-- Furniture acting on its surroundings (EntadFurnitureEffects.cs) -->
+  <StatDef>
+    <defName>Entad_GlowRadius</defName>
+    <label>light radius</label>
+    <description>How far the light this gives off reaches, in tiles. It needs no power or fuel.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>20</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatOne</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_RoomHeating</defName>
+    <label>room warming</label>
+    <description>Heat this gives off into its room, until the room reaches the temperature its trait names. A torch gives about 3.5, a campfire about 21.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatOne</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_RoomCooling</defName>
+    <label>room cooling</label>
+    <description>Heat this draws out of its room, until the room is down to the temperature its trait names. On the same scale as a heat source: a torch gives about 3.5.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatOne</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_StoredRotFactor</defName>
+    <label>rot rate of stored items</label>
+    <description>How fast food and other things that rot spoil while stored here, compared to normal.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>4</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_ColonyWealthFactor</defName>
+    <label>counted in colony wealth</label>
+    <description>How much of this item's value counts toward the colony's wealth, which sets how large raids are. Its market value for trade is unchanged.</description>
+    <category>BasicsNonPawn</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_FertilityOffset</defName>
+    <label>soil fertility</label>
+    <description>Added to the fertility of the soil this holds, so plants grow faster in it.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+    <toStringNumberSense>Offset</toStringNumberSense>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_PlantGrowthFactor</defName>
+    <label>plant growth</label>
+    <description>How fast plants grow in this, before light and temperature. Fertility is unchanged, so anything that can be sown here still can be.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0.1</minValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_FilthPerDay</defName>
+    <label>filth shed per day</label>
+    <description>How much filth this leaves around it each day: around a building, or wherever its wearer or carrier goes.</description>
+    <category>BasicsNonPawn</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>FloatOne</toStringStyle>
+  </StatDef>
+
+  <!-- Network traits (EntadPowerNets.cs): read from a power building, they act on its whole power network -->
+  <StatDef>
+    <defName>Entad_NetPowerFactor</defName>
+    <label>power drawn on its network</label>
+    <description>How much power everything on this building's power network draws, compared to normal. Generators are unaffected. Several of these on one network don't stack: the strongest counts.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0.05</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_NetPowerLeak</defName>
+    <label>power leaked from its network</label>
+    <description>Power this building's network loses all the time, as if it ran one more consumer that nobody can switch off.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>Integer</toStringStyle>
+    <formatString>{0} W</formatString>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_NetBatteryLossFactor</defName>
+    <label>battery charging loss on its network</label>
+    <description>How much of the power lost while charging the batteries on this building's network is still lost, compared to normal. A vanilla battery loses half of what goes into it.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
 </Defs>

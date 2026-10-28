@@ -6,8 +6,8 @@
        ability, and its gizmo tooltip shows this text.
 
        NPC casting. With the Ability AI mod active, Mods/AbilityAI/Patches/EntadAbilityAI.xml gives each ability its
-       rules, and Ability AI stands vanilla's own AI down for them. Without it, aiCanUse hands the ability to vanilla's
-       fight AI (JobGiver_AIFightEnemy.GetAbilityJob, NPCs only, never colonists). That AI only knows one move: while
+       rules, and Ability AI stands vanilla's own AI down for them (unless its vanilla stand-down setting is off). Without it, aiCanUse hands the ability to vanilla's
+       fight AI (JobGiver_AIFightEnemy.GetAbilityJob, skipped for colonists and colony subhumans). That AI only knows one move: while
        fighting, cast the ability at the current enemy when the verb can reach it, otherwise on the caster when it can
        target itself, as soon as it is ready. ai_IsOffensive is true by default, which is what puts an ability in that
        list. Vanilla's Verb_CastAbility counts a range-0 ability as reaching any enemy, and the cast then fails

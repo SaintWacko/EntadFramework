@@ -244,7 +244,9 @@ namespace EntadFramework
         Bond = 512,      // persona bond effects (EntadPersona): the persona tells its wielder everything when it bonds
         Space = 1024,    // portable space (EntadPortableSpace): revealed the first time its gizmo is used
         Aura = 2048,     // auras (EntadAuras): revealed the first time the aura affects someone in view
-        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura
+        Network = 4096,  // power network effects (EntadPowerNets): revealed when one acts (a flare ridden out, an arc) or after a day
+        Custom = 8192,   // customEffects, implemented by a compat assembly (EntadCompat), which reveals them when they act
+        All = Stat | Mood | Meal | Ability | Building | Fuel | Damage | Hediff | Trigger | Bond | Space | Aura | Network | Custom
     }
 
     public class EntadTraitDef : Def
@@ -436,6 +438,33 @@ namespace EntadFramework
         // A hediff given to pawns around the carrier (worn or wielded gear) or around the furniture (EntadAuras.cs)
         public EntadAura aura;
 
+        // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
+        public EntadPowerNetEffect powerNet;
+
+        // On/off effects a compat assembly implements (Mods/<Mod>/), by key: the module registers each key with
+        // EntadCompat.RegisterEffect, saying which buildings it can go on, and reads it with CompEntad.HasCustomEffect.
+        // A key nothing registered (its mod isn't loaded) never rolls. customCardLines say on the card what the
+        // effects do once revealed; translators inject them like the description (customCardLines.0, ...).
+        public List<string> customEffects;
+        [MustTranslate] public List<string> customCardLines;
+
+        // The colour of the light a trait with Entad_GlowRadius gives off (EntadFurnitureEffects); a lamp's by default
+        public static readonly ColorInt LampGlowColor = new ColorInt(217, 217, 208, 0);
+        public ColorInt glowColor = LampGlowColor;
+
+        // The room temperature a trait with Entad_RoomHeating heats up to, or with Entad_RoomCooling cools down to
+        // (EntadFurnitureEffects). Not clamped to comfort: a trait can set 40 and make its item one to keep outside.
+        public float targetTemperature = float.NaN;
+        public const float DefaultWarmTarget = 22f;
+        public const float DefaultCoolTarget = 18f;
+
+        public bool ChangesRoomTemperature => AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_RoomHeating || r.stat == EntadStatDefOf.Entad_RoomCooling);
+
+        public float TargetTemperature(bool heating) => !float.IsNaN(targetTemperature) ? targetTemperature : heating ? DefaultWarmTarget : DefaultCoolTarget;
+
+        // The filth a trait with Entad_FilthPerDay leaves (EntadFurnitureEffects); dirt when unset
+        public ThingDef filth;
+
         // Weapons: a memory the wielder gets on each kill. Shorthand for a Kill trigger giving that thought: it is
         // turned into one in ResolveReferences. Weapon-only on purpose (it's the weapon doing the killing, as with
         // vanilla's kill thoughts); write a Kill trigger out in full to put it on apparel.
@@ -573,6 +602,15 @@ namespace EntadFramework
         // counting it would only put "0 / 1" on the gizmo; reloadable traits count even one, since reloading adds charges.
         public bool UsesAbilityCharges => abilityCharges > 1 || IsReloadable;
 
+        // Abilities from another mod's ability system (Vanilla Expanded Framework's, say), by that system's defName. A
+        // compat module that registered the name (EntadCompat.RegisterExternalAbility) grants it while the item is worn
+        // or wielded; a name nobody registered never rolls. abilityCharges, abilityCooldownTicks and abilityCastTicks
+        // apply as above, with charges coming back one per cooldown. Weapons and apparel only.
+        public List<string> externalAbilities;
+
+        // Where external ability j keeps its charges in AppliedEntadTrait's ability lists, after the abilities above
+        public int ExternalAbilitySlot(int j) => (abilities?.Count ?? 0) + j;
+
         // Traits that can never share an item with this one (symmetric: listing it on either def is enough)
         public List<EntadTraitDef> exclusiveWith;
 
@@ -591,6 +629,9 @@ namespace EntadFramework
             if (exclusiveWith != null && exclusiveWith.Contains(other)) return true;
             if (other.exclusiveWith != null && other.exclusiveWith.Contains(this)) return true;
             if (exclusivityTags != null && other.exclusivityTags != null && exclusivityTags.Any(t => other.exclusivityTags.Contains(t))) return true;
+            // One aura per item (gear included), whatever allowOverlap says: three overlapping fields on one thing
+            // read as noise rather than as one strange object
+            if (aura != null && other.aura != null) return true;
             if (allowOverlap || other.allowOverlap) return false;
 
             if (mealNutritionFactor.min != 1f || mealNutritionFactor.max != 1f)
@@ -601,8 +642,10 @@ namespace EntadFramework
             if (!buildingFactors.NullOrEmpty() && !other.buildingFactors.NullOrEmpty()
                 && buildingFactors.Any(a => other.buildingFactors.Any(b => a.property == b.property))) return true;
             if (!abilities.NullOrEmpty() && !other.abilities.NullOrEmpty() && abilities.Any(a => other.abilities.Contains(a))) return true;
+            if (!externalAbilities.NullOrEmpty() && !other.externalAbilities.NullOrEmpty() && externalAbilities.Any(other.externalAbilities.Contains)) return true;
             if (thought != null && thought == other.thought) return true;
             if (HasPortableSpace && other.HasPortableSpace) return true;
+            if (!customEffects.NullOrEmpty() && !other.customEffects.NullOrEmpty() && customEffects.Any(other.customEffects.Contains)) return true;
 
             foreach (var a in AllRanges())
             {
@@ -669,10 +712,12 @@ namespace EntadFramework
                 if (HasDamageEffect || HasWeaponEffect) kinds |= EntadEffectKind.Damage;
                 if (!triggers.NullOrEmpty()) kinds |= EntadEffectKind.Trigger;
                 if (!equippedHediffs.NullOrEmpty()) kinds |= EntadEffectKind.Hediff;
-                if (!abilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
+                if (!abilities.NullOrEmpty() || !externalAbilities.NullOrEmpty()) kinds |= EntadEffectKind.Ability;
                 if (persona || neverBond || secretive || HasBondEffect) kinds |= EntadEffectKind.Bond;
                 if (HasPortableSpace) kinds |= EntadEffectKind.Space;
                 if (aura != null) kinds |= EntadEffectKind.Aura;
+                if (powerNet != null) kinds |= EntadEffectKind.Network;
+                if (!customEffects.NullOrEmpty()) kinds |= EntadEffectKind.Custom;
                 return kinds;
             }
         }
@@ -723,9 +768,29 @@ namespace EntadFramework
             if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
+            if (powerNet != null)
+                foreach (var e in powerNet.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
             if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
                 yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
+            if (!float.IsNaN(targetTemperature) && !ChangesRoomTemperature)
+                yield return $"{defName}: targetTemperature only applies to traits with Entad_RoomHeating or Entad_RoomCooling";
+            if (filth != null && !AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))
+                yield return $"{defName}: filth only applies to traits with Entad_FilthPerDay";
+            if (filth != null && filth.filth == null)
+                yield return $"{defName}: filth {filth.defName} is not a filth def";
+            if (!customCardLines.NullOrEmpty() && customEffects.NullOrEmpty())
+                yield return $"{defName}: customCardLines only show for a trait with customEffects";
+            if (customEffects != null && customEffects.Any(k => k.NullOrEmpty())) yield return $"{defName}: customEffects contains an empty key";
+            if (!customEffects.NullOrEmpty() && customCardLines.NullOrEmpty())
+                yield return $"{defName}: customEffects need customCardLines, or the card shows the trait with nothing it does";
+            if (customCardLines != null && customCardLines.Any(l => l.NullOrEmpty())) yield return $"{defName}: customCardLines contains an empty line";
+            if (externalAbilities != null && externalAbilities.Any(a => a.NullOrEmpty())) yield return $"{defName}: externalAbilities contains an empty name";
+            if (!externalAbilities.NullOrEmpty() && abilityCharges < 0) yield return $"{defName}: abilityCharges can't be negative";
+            if (!externalAbilities.NullOrEmpty() && abilityCooldownTicks <= 0)
+                yield return $"{defName}: externalAbilities need abilityCooldownTicks: the charges come back one per cooldown, and the other system's own cooldown may be 0";
+            if (!externalAbilities.NullOrEmpty() && abilityAmmo != null)
+                yield return $"{defName}: abilityAmmo doesn't apply to externalAbilities; their charges come back one per cooldown";
         }
 
         // Categories restrict by item type; stats must additionally be meaningful for the item
@@ -760,6 +825,8 @@ namespace EntadFramework
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             // Artillery fires the weapon's own projectile: no melee weapons, beams, sprays or one-use launchers
             if (!abilities.NullOrEmpty() && abilities.Any(EntadArtillery.IsArtillery) && !EntadArtillery.Fits(td)) return false;
+            // Ricochet fires the weapon's own projectile again, so the same weapons
+            if (HasGearTrigger && triggers.Any(t => t.casts != null && t.casts.Any(c => EntadArtillery.IsRicochet(c?.ability))) && !EntadArtillery.Fits(td)) return false;
             if (killThought != null && !td.IsWeapon) return false;
             if (HasGearTrigger && !td.IsWeapon && !td.IsApparel) return false;
             if (HasUseTrigger && (td.building == null || !EntadUtility.IsPawnUsable(td)
@@ -777,6 +844,22 @@ namespace EntadFramework
                 else if (!td.IsApparel && !td.IsWeapon) return false;
             }
             if (!buildingFactors.NullOrEmpty() && buildingFactors.Any(b => !b.AppliesTo(td))) return false;
+            if (powerNet != null && !EntadPowerNets.IsCarrier(td)) return false;
+            if (!customEffects.NullOrEmpty())
+                for (int i = 0; i < customEffects.Count; i++)
+                    if (!EntadCompat.EffectAppliesTo(customEffects[i], td)) return false;
+            if (!externalAbilities.NullOrEmpty())
+            {
+                if (!td.IsWeapon && !td.IsApparel) return false;
+                for (int i = 0; i < externalAbilities.Count; i++)
+                    if (!EntadCompat.KnowsExternalAbility(externalAbilities[i])) return false;
+            }
+            // A cast nobody can carry out (its module's mod off, or the ability gone in an update) would never fire
+            if (triggers != null)
+                for (int i = 0; i < triggers.Count; i++)
+                    if (triggers[i].casts != null)
+                        foreach (var c in triggers[i].casts)
+                            if (c.IsExternal && !EntadCompat.KnowsExternalProc(c.externalAbility)) return false;
             if (!AllFuelTypes.NullOrEmpty() && !(td.comps != null && td.comps.Any(c => c is CompProperties_Refuelable))) return false;
 
             if (!categories.NullOrEmpty())
@@ -837,6 +920,8 @@ namespace EntadFramework
                 if (IsRangedOnlyStat(stat) && !td.IsRangedWeapon) return false;
                 if (IsMeleeOnlyStat(stat) && !td.IsMeleeWeapon) return false;
             }
+            // A compat module's own stats (EntadCompat), read by its own hooks
+            if (EntadCompat.TryStatAppliesTo(stat, td, out bool registered)) return registered;
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
             // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
@@ -847,6 +932,21 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_MercilessDamageFactor) return td.IsWeapon && !HasNoDamageHook(td);
             if (stat == EntadStatDefOf.Entad_ProductQualityChance) return td.building != null && MakesAny(td, p => p.HasComp(typeof(CompQuality)), false);
             if (stat == EntadStatDefOf.Entad_ProductDoubleChance) return td.building != null && MakesAny(td, p => p.stackLimit > 1, true);
+            if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && Cached(stackableIngredients, td, UsesStackableIngredients);
+            // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
+            // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
+            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.building != null && td.GetCompProperties<CompProperties_Glower>() == null;
+            if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
+                return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
+            if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && Cached(storesRottables, td, StoresRottables);
+            // Furniture while built, anything else wherever the colony's wealth counts it (stored, worn, carried)
+            if (stat == EntadStatDefOf.Entad_ColonyWealthFactor) return true;
+            // Fertility 0 marks a building that kills what grows under it (walls, fleshmass), not a planter
+            if (stat == EntadStatDefOf.Entad_FertilityOffset || stat == EntadStatDefOf.Entad_PlantGrowthFactor) return td.building != null && td.fertility > 0f;
+            if (stat == EntadStatDefOf.Entad_FilthPerDay) return td.building != null || td.IsWeapon || td.IsApparel;
+            // Network traits (EntadPowerNets.cs): any building on a power network, the battery or generator itself included
+            if (stat == EntadStatDefOf.Entad_NetPowerFactor || stat == EntadStatDefOf.Entad_NetPowerLeak || stat == EntadStatDefOf.Entad_NetBatteryLossFactor)
+                return EntadPowerNets.IsCarrier(td);
             // Weapon multipliers (e.g. RangedWeapon_DamageMultiplier) have a default value and are never listed in
             // a weapon's statBases, but the game reads them from the weapon, so allow them on the matching weapon type
             if (IsWearerStat(stat) && (td.IsWeapon || td.IsApparel)) return true;
@@ -864,6 +964,39 @@ namespace EntadFramework
             if (stat.defName.StartsWith("RangedWeapon_")) return td.IsRangedWeapon;
             if (stat.defName.StartsWith("MeleeWeapon_")) return td.IsMeleeWeapon;
             return stat.showIfUndefined && stat.Worker.ShouldShowFor(StatRequest.For(thing)) && !stat.Worker.IsDisabledFor(thing) && StatDefHasEquippedOrBase(stat, td);
+        }
+
+        // Both checks below walk every recipe's or filter's allowed defs, and the card asks them per partialStats
+        // trait while it builds, so each answer is kept per def
+        private static readonly Dictionary<ThingDef, bool> stackableIngredients = new Dictionary<ThingDef, bool>();
+        private static readonly Dictionary<ThingDef, bool> storesRottables = new Dictionary<ThingDef, bool>();
+
+        private static bool Cached(Dictionary<ThingDef, bool> cache, ThingDef td, System.Func<ThingDef, bool> check)
+        {
+            if (!cache.TryGetValue(td, out bool result)) cache[td] = result = check(td);
+            return result;
+        }
+
+        // Sparing only gives back stackable ingredients: a smelted rifle or a butchered corpse can't come back in half
+        private static bool UsesStackableIngredients(ThingDef td)
+        {
+            var recipes = td.AllRecipes;
+            for (int i = 0; recipes != null && i < recipes.Count; i++)
+            {
+                var ingredients = recipes[i].ingredients;
+                for (int j = 0; ingredients != null && j < ingredients.Count; j++)
+                    if (ingredients[j].filter != null && ingredients[j].filter.AllowedThingDefs.Any(d => d.stackLimit > 1)) return true;
+            }
+            return false;
+        }
+
+        // Storage that can hold something that rots: a shelf, not a weapon rack. Read only when traits are rolled.
+        private static bool StoresRottables(ThingDef td)
+        {
+            if (td.thingClass == null || !typeof(Building_Storage).IsAssignableFrom(td.thingClass)) return false;
+            var filter = td.building.fixedStorageSettings?.filter;
+            if (filter == null) return true;
+            return filter.AllowedThingDefs.Any(d => d.GetCompProperties<CompProperties_Rottable>() != null);
         }
 
         // Whether any bill done at this building makes a product that passes the check. Butchering, smelting and

@@ -1,0 +1,10 @@
+<Project>
+  <!-- Where Dubs Bad Hygiene is installed: the folder holding its 1.6/ and 1.7/ folders. Shared by both compat projects
+       and the build entry (Source/EntadFramework.Build.csproj). Pass /p:DBHDir=... (with a trailing slash) for any
+       other install, such as a copy in RimWorld's own Mods folder. -->
+  <PropertyGroup>
+    <DBHDir Condition="'$(DBHDir)' == '' And Exists('$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/836308268/')">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/836308268/</DBHDir>
+    <DBHDir Condition="'$(DBHDir)' == '' And Exists('$(HOME)/.steam/steam/steamapps/workshop/content/294100/836308268/')">$(HOME)/.steam/steam/steamapps/workshop/content/294100/836308268/</DBHDir>
+    <DBHDir Condition="'$(DBHDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\836308268\</DBHDir>
+  </PropertyGroup>
+</Project>

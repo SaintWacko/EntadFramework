@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Drawbacks the player can work around rather than flat penalties: each has a counter (a cooler, a heater,
+       storing something that doesn't rot, a cleaner, the right season) or a place where it does no harm. Negative
+       points: generation takes one only on an item allowed drawbacks, and spends the points it gives back on more
+       traits. Each shares its stat with the matching good trait (Warm, Cool, Preserving) or names it in exclusiveWith
+       (Fertile), so the two can never meet on one item. The furniture ones are read in EntadFurnitureEffects.cs. -->
+
+  <!-- A cooler (21 at full power, less when venting into hot air) mostly outpaces it, a second one always does, and
+       outdoors or in an unroofed room it does nothing -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sweltering</defName>
+    <label>Sweltering</label>
+    <description>It gives off heat like a forge, and never cools down.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <exclusiveWith><li>Entad_Cool</li><li>Entad_Frigid</li></exclusiveWith>
+    <targetTemperature>40</targetTemperature>
+    <statOffsets>
+      <li><stat>Entad_RoomHeating</stat><min>10</min><max>15</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Sweltering's mirror: a heater (21) counters it, and in a freezer it helps hold below zero -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Frigid</defName>
+    <label>Frigid</label>
+    <description>Frost forms on it even in summer, and the air around it bites.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <exclusiveWith><li>Entad_Warm</li></exclusiveWith>
+    <targetTemperature>-5</targetTemperature>
+    <statOffsets>
+      <li><stat>Entad_RoomCooling</stat><min>10</min><max>15</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Only on storage that can hold something that rots; store something else on it -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Spoiling</defName>
+    <label>Spoiling</label>
+    <description>Bread left on it goes stale by lunchtime.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statFactors>
+      <li><stat>Entad_StoredRotFactor</stat><min>1.5</min><max>2</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Only on buildings plants grow in; grow something with a long harvest window, or use it for decoration.
+       Slows growth rather than lowering fertility, which would stop most crops being sown in a plant pot at all. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Barren</defName>
+    <label>Barren</label>
+    <description>Seeds sown in it come up slowly, as if they'd rather not.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <exclusiveWith><li>Entad_Fertile</li></exclusiveWith>
+    <statFactors>
+      <li><stat>Entad_PlantGrowthFactor</stat><min>0.6</min><max>0.8</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Anywhere: a cleaner keeps up with it -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Shedding</defName>
+    <label>Shedding</label>
+    <description>A fine grey dust gathers wherever it is kept, however often it's swept.</description>
+    <categories><li>Weapon</li><li>Apparel</li><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <filth>Filth_Ash</filth>
+    <statOffsets>
+      <li><stat>Entad_FilthPerDay</stat><min>6</min><max>12</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Matters only by season, and not at all in a room kept at a comfortable temperature -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stifling</defName>
+    <label>Stifling</label>
+    <description>Whoever wears it is always a little too warm.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <exclusiveWith><li>Entad_Draughty</li></exclusiveWith>
+    <statOffsets>
+      <li><stat>ComfyTemperatureMax</stat><min>-12</min><max>-6</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Draughty</defName>
+    <label>Draughty</label>
+    <description>A chill gets in under it that no amount of layering keeps out.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>ComfyTemperatureMin</stat><min>6</min><max>12</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Keep it out of bedrooms. Takes the item's one aura slot. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_NoisyAura</defName>
+    <label>Noisy</label>
+    <description>It creaks, ticks and hums all night, and nobody nearby sleeps well.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <aura>
+      <radius>4.9</radius>
+      <hediff>Entad_Hediff_AuraNoisy</hediff>
+      <affectsAllies>true</affectsAllies>
+      <affectsNeutrals>true</affectsNeutrals>
+      <affectsAnimals>false</affectsAnimals>
+      <ringColor>(0.75, 0.6, 0.5, 1)</ringColor>
+    </aura>
+  </EntadFramework.EntadTraitDef>
+  <!-- Network drawbacks (EntadPowerNets.cs). Leaky only leaks from a network with a power source: wire it to a
+       network of its own, or leave it unconnected. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Leaky</defName>
+    <label>Leaky</label>
+    <description>The wires around it are always warm, and the batteries never seem quite as full as they should be.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-1</points>
+    <statOffsets>
+      <li><stat>Entad_NetPowerLeak</stat><min>75</min><max>150</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Stormcaught's arcs alone. A network without power never arcs, a Grounded entad on the network takes the arc,
+       and with no stored power an arc is only a small fire, so a stone room or a firefoam popper beside it helps. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Sparking</defName>
+    <label>Sparking</label>
+    <description>Blue sparks crawl over it on dry days, and every so often one gets away.</description>
+    <categories><li>Furniture</li></categories>
+    <rarity>Common</rarity>
+    <points>-2</points>
+    <powerNet>
+      <arcIntervalDays>15~30</arcIntervalDays>
+    </powerNet>
+  </EntadFramework.EntadTraitDef>
+
+  <HediffDef ParentName="EntadAuraHediffBase">
+    <defName>Entad_Hediff_AuraNoisy</defName>
+    <label>kept awake</label>
+    <description>A nearby entad's noise keeps this person from resting properly. It fades soon after leaving its range.</description>
+    <defaultLabelColor>(0.75, 0.6, 0.5)</defaultLabelColor>
+    <isBad>true</isBad>
+    <stages>
+      <li>
+        <statFactors>
+          <RestRateMultiplier>0.75</RestRateMultiplier>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+</Defs>

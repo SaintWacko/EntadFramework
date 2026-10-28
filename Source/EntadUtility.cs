@@ -50,6 +50,9 @@ namespace EntadFramework
         {
             if (def.building == null || def.designationCategory == null) return false;
             if (IsSingleUse(def)) return false;
+            // Power conduits sit in the Power tab but are wiring, not furniture: often hidden under walls and floors.
+            // The conduit layer catches modded pipes too (Dubs Bad Hygiene's air ducts are in the Temperature tab).
+            if (def.building.isPowerConduit || def.altitudeLayer == AltitudeLayer.Conduits) return false;
             // Quality is not required: workbenches, lights, heaters etc. count too. Storage counts whatever its build
             // menu tab (storage mods often add their own, such as Adaptive Storage's).
             return FurnitureCategories.Contains(def.designationCategory.defName)
@@ -70,7 +73,9 @@ namespace EntadFramework
 
         private static readonly HashSet<string> FurnitureCategories = new HashSet<string>
         {
-            "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship"
+            "Furniture", "Production", "Power", "Temperature", "Joy", "Misc", "Security", "Ship",
+            // Dubs Bad Hygiene's toilets, baths, tanks and pumps (its pipes are left out by the conduit layer)
+            "Hygiene"
         };
 
         // Buildings pawns actually use: seats, beds, eating surfaces, and anything with an interaction cell (workbenches etc.)

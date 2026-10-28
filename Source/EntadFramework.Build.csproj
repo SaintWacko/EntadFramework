@@ -4,7 +4,11 @@
     published). Circinus's build looks for a .csproj in Source/; the real projects are 1.6/Source and 1.7/Source,
     and both compile the shared .cs files in this folder. Referencing them here builds both, plus the Ability AI
     compat assembly for each version (Mods/AbilityAI/1.6|1.7/Source, shared C# in Mods/AbilityAI/Source), which
-    needs Ability AI's own DLLs built in its workspace folder (4b7a8f666d21).
+    needs Ability AI's own DLLs built in its workspace folder (4b7a8f666d21), and the Dubs Bad Hygiene compat
+    assembly for each version (Mods/DubsBadHygiene/1.6|1.7/Source, shared C# in Mods/DubsBadHygiene/Source), which
+    needs DBH installed (Mods/DubsBadHygiene/Source/DBHDir.props says where), and the Vanilla Psycasts Expanded compat
+    assembly for each version (Mods/VanillaPsycastsExpanded/1.6|1.7/Source, shared C# in
+    Mods/VanillaPsycastsExpanded/Source), which needs Vanilla Expanded Framework installed (VEFDir.props there).
 
     Open this project in an IDE to get both. It has to be the only project file directly in Source/, or
     `dotnet build` there stops and asks which one to build.
@@ -19,6 +23,20 @@
     <HasAbilityAI16 Condition="Exists('$(AbilityAIDir)1.6\Assemblies\AbilityAI.dll')">true</HasAbilityAI16>
     <HasAbilityAI17>false</HasAbilityAI17>
     <HasAbilityAI17 Condition="Exists('$(AbilityAIDir)1.7\Assemblies\AbilityAI.dll')">true</HasAbilityAI17>
+  </PropertyGroup>
+  <Import Project="..\Mods\DubsBadHygiene\Source\DBHDir.props" />
+  <PropertyGroup>
+    <HasDBH16>false</HasDBH16>
+    <HasDBH16 Condition="Exists('$(DBHDir)1.6/Assemblies/BadHygiene.dll')">true</HasDBH16>
+    <HasDBH17>false</HasDBH17>
+    <HasDBH17 Condition="Exists('$(DBHDir)1.7/Assemblies/BadHygiene.dll')">true</HasDBH17>
+  </PropertyGroup>
+  <Import Project="..\Mods\VanillaPsycastsExpanded\Source\VEFDir.props" />
+  <PropertyGroup>
+    <HasVEF16>false</HasVEF16>
+    <HasVEF16 Condition="Exists('$(VEFDir)1.6/Assemblies/VEF.dll')">true</HasVEF16>
+    <HasVEF17>false</HasVEF17>
+    <HasVEF17 Condition="Exists('$(VEFDir)1.7/Assemblies/VEF.dll')">true</HasVEF17>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
@@ -38,8 +56,28 @@
     <ProjectReference Include="..\Mods\AbilityAI\1.7\Source\EntadFramework.AbilityAICompat.csproj" Condition="'$(HasAbilityAI17)' == 'true'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <!-- Likewise skipped without a DBH install: the compat DLLs under Mods/DubsBadHygiene are then left as they were -->
+    <ProjectReference Include="..\Mods\DubsBadHygiene\1.6\Source\EntadFramework.HygieneCompat.csproj" Condition="'$(HasDBH16)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\DubsBadHygiene\1.7\Source\EntadFramework.HygieneCompat.csproj" Condition="'$(HasDBH17)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <!-- Likewise skipped without a VEF install: the compat DLLs under Mods/VanillaPsycastsExpanded are then left as they were -->
+    <ProjectReference Include="..\Mods\VanillaPsycastsExpanded\1.6\Source\EntadFramework.VPECompat.csproj" Condition="'$(HasVEF16)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\VanillaPsycastsExpanded\1.7\Source\EntadFramework.VPECompat.csproj" Condition="'$(HasVEF17)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Target Name="WarnNoAbilityAI" BeforeTargets="Build" Condition="'$(HasAbilityAI16)' != 'true' Or '$(HasAbilityAI17)' != 'true'">
     <Warning Text="Ability AI's DLLs were not found under $(AbilityAIDir) (1.6 and 1.7 Assemblies): the Ability AI compat assemblies were not rebuilt." />
+  </Target>
+  <Target Name="WarnNoVEF" BeforeTargets="Build" Condition="'$(HasVEF16)' != 'true' Or '$(HasVEF17)' != 'true'">
+    <Warning Text="Vanilla Expanded Framework's VEF.dll was not found under $(VEFDir) (1.6 and 1.7 Assemblies): the Vanilla Psycasts Expanded compat assemblies were not rebuilt. Pass /p:VEFDir=... to point at an install." />
+  </Target>
+  <Target Name="WarnNoDBH" BeforeTargets="Build" Condition="'$(HasDBH16)' != 'true' Or '$(HasDBH17)' != 'true'">
+    <Warning Text="Dubs Bad Hygiene's DLLs were not found under $(DBHDir) (1.6 and 1.7 Assemblies): the DBH compat assemblies were not rebuilt. Pass /p:DBHDir=... to point at an install." />
   </Target>
 </Project>
