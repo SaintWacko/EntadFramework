@@ -161,8 +161,8 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Up to 3 mechanoids or turrets within 2.9 tiles of the mech hit go haywire for 40 seconds. Haywire only targets
-       cells, so CanProc aims it at the mech's cell. -->
+  <!-- Up to 3 mechanoids or turrets within 2.9 tiles of the enemy mech hit go haywire for 40 seconds, whoever owns
+       them. Haywire only targets cells, so CanProc aims it at the mech's cell. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_VPE_Proc_Haywire</defName>
     <label>Subverting</label>
@@ -172,7 +172,7 @@
     <triggers>
       <li>
         <on>Hit</on>
-        <victims>Mechanoid</victims>
+        <victims>HostileMechanoid</victims>
         <chance>0.15</chance>
         <cooldownHours>24</cooldownHours>
         <casts>

@@ -252,6 +252,9 @@ namespace EntadFramework
         public static bool IsArtillery(AbilityDef ability) =>
             ability?.comps != null && ability.comps.Any(c => c is CompProperties_AbilityEntadArtillery);
 
+        public static bool IsRicochet(AbilityDef ability) =>
+            ability?.comps != null && ability.comps.Any(c => c is CompProperties_AbilityEntadRicochet);
+
         public static bool IsExplosive(ThingDef projectile) =>
             projectile != null && (projectile.projectile?.explosionRadius > 0f || typeof(Projectile_Explosive).IsAssignableFrom(projectile.thingClass));
 

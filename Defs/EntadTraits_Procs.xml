@@ -122,4 +122,130 @@
       </li>
     </triggers>
   </EntadFramework.EntadTraitDef>
+
+  <!-- The framework's own proc abilities (EntadProcAbilities.xml): no DLC. Weapons proc on what they hit or kill,
+       apparel on being hurt. -->
+
+  <!-- Only on weapons whose primary verb fires a projectile (as Artillery). The bounce starts where the target
+       stood, so it also goes off on a killing shot. An explosive projectile bounces too, and its blast spares nobody. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Ricochet</defName>
+    <label>Ricochet</label>
+    <description>Its shots rarely stop at the first body they find.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <chance>0.2</chance>
+        <cooldownHours>0.5</cooldownHours>
+        <casts>
+          <li><ability>Entad_Ricochet</ability><target>VictimCell</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- People only: an animal has no weapon, and a mech's gun can't be dropped. A hit on either spends no cooldown. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Disarm</defName>
+    <label>Disarming</label>
+    <description>It has a way of finding the hand that holds the weapon.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Melee</weaponType>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Melee</attack>
+        <victims>Hostile</victims>
+        <chance>0.1</chance>
+        <cooldownHours>4</cooldownHours>
+        <casts>
+          <li><ability>Entad_Disarm</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Harrow</defName>
+    <label>Harrowing</label>
+    <description>Those who see what it does to one of them lose the stomach for the rest.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <victims>Hostile</victims>
+        <chance>0.25</chance>
+        <cooldownHours>12</cooldownHours>
+        <casts>
+          <li><ability>Entad_Harrow</ability><target>VictimCell</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Volatile</defName>
+    <label>Volatile</label>
+    <description>What it kills sometimes goes off like a grenade, though never in its owner's face.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <victims>Hostile</victims>
+        <chance>0.2</chance>
+        <cooldownHours>4</cooldownHours>
+        <casts>
+          <li><ability>Entad_Volatile</ability><target>VictimCell</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Shockwave</defName>
+    <label>Shockwave</label>
+    <description>Crowd its owner, and the air itself shoves back.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.25</chance>
+        <cooldownHours>6</cooldownHours>
+        <casts>
+          <li><ability>Entad_Shockwave</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Frostburst</defName>
+    <label>Frostburst</label>
+    <description>Those who strike its owner up close come away with frost in their joints.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.3</chance>
+        <cooldownHours>4</cooldownHours>
+        <casts>
+          <li><ability>Entad_Frostburst</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
 </Defs>

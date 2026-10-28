@@ -156,7 +156,9 @@ namespace EntadFramework
                     break;
                 case EntadCastTarget.NearestEnemy:
                 {
-                    Pawn enemy = NearestEnemy(caster, other);
+                    // The pawn hit or killed is the one to move on from; an attacker is as good a target as any
+                    var on = p.trait.def.triggers[p.index].on;
+                    Pawn enemy = NearestEnemy(caster, on == EntadTriggerEvent.Hit || on == EntadTriggerEvent.Kill ? other : null);
                     if (enemy != null) target = enemy;
                     break;
                 }
@@ -213,11 +215,13 @@ namespace EntadFramework
                 var comps = ability.EffectComps;
                 if (!ability.CanApplyOn(target)) return false;
                 // An area psycast still goes off around an immune centre (a deaf attacker): immunity is per pawn caught
-                if (def.HasAreaOfEffect && def.canUseAoeToGetTargets) return true;
-                if (!ability.CanAffect(target)) return false;
-                if (comps != null)
-                    for (int i = 0; i < comps.Count; i++)
-                        if (!comps[i].Valid(target, false)) return false;
+                if (!(def.HasAreaOfEffect && def.canUseAoeToGetTargets))
+                {
+                    if (!ability.CanAffect(target)) return false;
+                    if (comps != null)
+                        for (int i = 0; i < comps.Count; i++)
+                            if (!comps[i].Valid(target, false)) return false;
+                }
                 ctx.target = target;
                 ctx.vanilla = ability;
                 return true;

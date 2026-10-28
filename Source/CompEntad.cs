@@ -992,10 +992,15 @@ namespace EntadFramework
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
-            // The card names a granted ability; its hyperlink opens the ability's own description
-            var abilityLinks = activeTraits
+            // The card names a granted ability, or one a trigger casts; its hyperlink opens the ability's own description
+            var granted = activeTraits
                 .Where(m => !m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
-                .SelectMany(m => m.def.abilities).Where(a => a != null).Distinct()
+                .SelectMany(m => m.def.abilities);
+            var cast = activeTraits
+                .Where(m => m.def.triggers != null && m.IsRevealed(EntadEffectKind.Trigger))
+                .SelectMany(m => m.def.triggers).Where(t => t.casts != null)
+                .SelectMany(t => t.casts).Select(c => c?.ability);
+            var abilityLinks = granted.Concat(cast).Where(a => a != null).Distinct()
                 .Select(a => new Dialog_InfoCard.Hyperlink(a)).ToList();
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, infoString.ToString().TrimEnd(), 4000,
                 hyperlinks: abilityLinks.Count > 0 ? abilityLinks : null);

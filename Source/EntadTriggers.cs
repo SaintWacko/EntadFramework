@@ -44,7 +44,7 @@ namespace EntadFramework
         VictimCell,  // Hit, Kill: the cell the pawn stood on when it was hit or died
         Between,     // TakeDamage, Hit, Kill: halfway between the holder and the other pawn
         Origin,      // the cell the holder stood on when the event happened
-        NearestEnemy // the nearest standing enemy the holder can see, anywhere on the map, other than the pawn hit or killed
+        NearestEnemy // the nearest standing enemy the holder can see, anywhere on the map: on Hit and Kill, not the pawn hit or killed
     }
 
     // One ability cast by a trigger: a vanilla or mod AbilityDef ('ability'), or one a compat module registered by name
@@ -99,7 +99,7 @@ namespace EntadFramework
         Fight,       // Hostile, plus wild animals and wild men: no faction and nobody's prisoner or slave. Hunting and a drafted
                      // shot at a wild animal count; slaughtering livestock, executing a prisoner or killing a slave
                      // doesn't, because those have a faction or a host faction
-        Mechanoid    // any mechanoid, whose side it is on included
+        HostileMechanoid // a mechanoid hostile to the holder
     }
 
     // Furniture use, as the job-end hook tells it apart
@@ -436,7 +436,7 @@ namespace EntadFramework
             {
                 case EntadKillVictims.Hostile: return victim != null && victim.HostileTo(killer);
                 case EntadKillVictims.Humanlike: return victim?.RaceProps?.Humanlike == true;
-                case EntadKillVictims.Mechanoid: return victim?.RaceProps?.IsMechanoid == true;
+                case EntadKillVictims.HostileMechanoid: return victim != null && victim.RaceProps.IsMechanoid && victim.HostileTo(killer);
                 case EntadKillVictims.Fight:
                     // Only animals and wild men count as wild: a downed refugee can also have no faction
                     return victim != null && (victim.HostileTo(killer)
