@@ -84,11 +84,204 @@
       <li>
         <on>TakeDamage</on>
         <fromEnemy>true</fromEnemy>
-        <healthBelow>0.3</healthBelow>
+        <healthBelow>0.5</healthBelow>
         <cooldownHours>120</cooldownHours>
         <casts>
           <li><externalAbility>VPE_Decoy</externalAbility><target>Origin</target><optional>true</optional></li>
           <li><ability>ChaosSkip</ability><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- The bolt can land up to 1.9 tiles off its mark, as the psycast does -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Bolt</defName>
+    <label>Crackling</label>
+    <description>The air around its barrel tastes of copper before a storm.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <minDistance>5</minDistance>
+        <chance>0.1</chance>
+        <cooldownHours>4</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Bolt</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- 3 bounces at 100% sensitivity (Patch_CasterSensitivity covers the count), only ever onto enemies -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_ChainBolt</defName>
+    <label>Arcing</label>
+    <description>Whatever it hits, lightning goes looking for the next one.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <chance>0.1</chance>
+        <cooldownHours>8</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_ChainBolt</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Both effects last a day, so a shorter cooldown would only top them up -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_StealVitality</defName>
+    <label>Siphoning</label>
+    <description>A cut from it leaves the victim pale and its wielder flushed.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Melee</weaponType>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Melee</attack>
+        <victims>Hostile</victims>
+        <chance>0.1</chance>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_StealVitality</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Up to 3 mechanoids or turrets within 2.9 tiles of the mech hit go haywire for 40 seconds. Haywire only targets
+       cells, so CanProc aims it at the mech's cell. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Haywire</defName>
+    <label>Subverting</label>
+    <description>Machines it strikes sometimes forget whose side they are on.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Epic</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <victims>Mechanoid</victims>
+        <chance>0.15</chance>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Haywire</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- A 7 tile fire blast where the enemy died, which spares nobody: 10+ tiles keeps the holder out of it, not
+       allies fighting next to the victim -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Explosion</defName>
+    <label>Detonating</label>
+    <description>Now and then, what it kills does not stay quiet.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Epic</rarity>
+    <triggers>
+      <li>
+        <on>Kill</on>
+        <victims>Hostile</victims>
+        <minDistance>10</minDistance>
+        <chance>0.25</chance>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Explosion</externalAbility><target>VictimCell</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- A melee hit that downs or kills a standing enemy: skips to the nearest enemy in sight anywhere on the map,
+       strikes twice, and keeps going for as long as each jump kills (VPE's own chain, no range limit, by choice) -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Killskip</defName>
+    <label>Relentless</label>
+    <description>When it takes a life, it is already looking for the next.</description>
+    <categories><li>Weapon</li></categories>
+    <weaponType>Melee</weaponType>
+    <rarity>Legendary</rarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Melee</attack>
+        <victims>Hostile</victims>
+        <finishing>true</finishing>
+        <chance>0.3</chance>
+        <cooldownHours>72</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Killskip</externalAbility><target>NearestEnemy</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_IceSpike</defName>
+    <label>Rimeguard</label>
+    <description>Hurt its owner, and a shard of ice answers.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.25</chance>
+        <cooldownHours>6</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_IceSpike</externalAbility><target>Attacker</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- 20 seconds of a shield that sets melee attackers alight -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_FireShield</defName>
+    <label>Smoldering</label>
+    <description>Those who get close enough to strike its owner tend to leave singed.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.3</chance>
+        <cooldownHours>6</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_FireShield</externalAbility><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Stops bleeding for 2.4 hours, enough for a rescuer to get there -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Stabilize</defName>
+    <label>Lifeline</label>
+    <description>Its owners have a habit of not bleeding out.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <triggers>
+      <li>
+        <on>Downed</on>
+        <cooldownHours>24</cooldownHours>
+        <casts>
+          <li><externalAbility>VPE_Stabilize</externalAbility><target>Self</target></li>
         </casts>
       </li>
     </triggers>

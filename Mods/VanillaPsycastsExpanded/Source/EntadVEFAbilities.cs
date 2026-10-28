@@ -580,11 +580,17 @@ namespace EntadFramework.VPECompat
                 held.Remove(comp);
                 held.Add(comp, list);
             }
-            // Ticking isn't restored here: base Ability only ticks maintained effecters, which VEF doesn't save. The
-            // holder's gizmos register it again. Classes that tick saved state of their own (VPE's Killskip, Season
-            // Timeskip) would pause after a load until then: none of the cast traits uses one, but a triggered Killskip
-            // has to register its ticking on load.
-            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _)) Sync(comp);
+            // Gizmo abilities register their ticking again from the holder's gizmos: base Ability only ticks maintained
+            // effecters, which VEF doesn't save. A proc has no gizmo, and Killskip's chain (its next jump, saved) runs
+            // from its tick, so procs that tick are held by the holder again here.
+            else if (Scribe.mode == LoadSaveMode.PostLoadInit && held.TryGetValue(comp, out _))
+            {
+                Pawn holder = comp.Holder;
+                foreach (var ability in Sync(comp))
+                    if (holder != null && slots.TryGetValue(ability, out var slot) && slot.proc
+                        && (ability.def.needsTicking || ability.def.needsTickingInterval))
+                        Hold(ability, holder);
+            }
         }
 
         private static float Weight(EntadTraitDef def)
@@ -726,6 +732,8 @@ namespace EntadFramework.VPECompat
         private static readonly string[] VpeMethods =
         {
             "VanillaPsycastsExpanded.Technomancer.Ability_Mend:GetPowerForPawn",
+            // Chain Bolt's bounce count
+            "VanillaPsycastsExpanded.Staticlord.Ability_ChainBolt:GetPowerForPawn",
             "VanillaPsycastsExpanded.Wildspeaker.Ability_Animal:GetSuccessChanceOn",
             // VPE's own copy of VEF's helper, which its berserk and other mental state psycasts use
             "VanillaPsycastsExpanded.AbilityExtension_GiveMentalState:TryGiveMentalStateWithDuration",

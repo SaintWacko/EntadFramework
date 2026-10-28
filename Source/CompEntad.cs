@@ -809,7 +809,24 @@ namespace EntadFramework
             if (bond != null) inspectString += "\n" + bond;
             string dismantle = EntadDismantle.InspectLine(this);
             if (dismantle != null) inspectString += "\n" + dismantle;
+            foreach (var trait in activeTraits)
+            {
+                if (!trait.IsRevealed(EntadEffectKind.Trigger) || trait.def.triggers == null) continue;
+                for (int i = 0; i < trait.def.triggers.Count; i++)
+                {
+                    string ready = TriggerReadyIn(trait, i);
+                    if (ready != null) inspectString += "\n" + "EF_InspectTriggerReady".Translate(trait.NameHidden ? unknown : trait.def.LabelCap.ToString(), ready);
+                }
+            }
             return inspectString;
+        }
+
+        // How long until a trigger on cooldown can fire again; null when it is ready
+        private static string TriggerReadyIn(AppliedEntadTrait trait, int triggerIndex)
+        {
+            if (Current.Game == null || trait.def.triggers[triggerIndex].cooldownHours <= 0f) return null;
+            int left = trait.TriggerReadyTick(triggerIndex) - Find.TickManager.TicksGame;
+            return left > 0 ? left.ToStringTicksToPeriod() : null;
         }
 
         // Charges and cooldown of a granted ability, read from the def EntadAbilityPrep made for the trait, which
@@ -895,7 +912,10 @@ namespace EntadFramework
                 {
                     int triggerIndex = i;
                     var trigger = trait.def.triggers[i];
-                    infoString.AppendLine(" - " + trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue));
+                    string ready = TriggerReadyIn(trait, i);
+                    if (ready != null) triggerLine += " " + "EF_Card_TriggerReadyIn".Translate(ready);
+                    infoString.AppendLine(" - " + triggerLine);
                     // (the trigger line already names the hediff, so only a hediff vanilla can describe gets a line)
                     string hediffEffects = EntadUtility.HediffEffects(trigger.hediff);
                     if (hediffEffects != null)

@@ -154,9 +154,39 @@ namespace EntadFramework
                 case EntadCastTarget.Origin:
                     target = p.origin;
                     break;
+                case EntadCastTarget.NearestEnemy:
+                {
+                    Pawn enemy = NearestEnemy(caster, other);
+                    if (enemy != null) target = enemy;
+                    break;
+                }
             }
             return target.IsValid && target.Cell.InBounds(map);
         }
+
+        // Closest first, sight checked only until one passes: once per firing, never per tick. The same rules VPE's
+        // Killskip uses for its next target (a threat, not downed, not invisible), and like it no range limit.
+        internal static Pawn NearestEnemy(Pawn caster, Thing exclude)
+        {
+            Map map = caster.Map;
+            var potential = map.attackTargetsCache.GetPotentialTargetsFor(caster);
+            nearest.Clear();
+            for (int i = 0; i < potential.Count; i++)
+            {
+                if (!(potential[i].Thing is Pawn p) || p == exclude || p.Dead || p.Downed || !p.Spawned) continue;
+                if (potential[i].ThreatDisabled(caster) || p.IsPsychologicallyInvisible() || !p.HostileTo(caster)) continue;
+                nearest.Add(p);
+            }
+            IntVec3 from = caster.Position;
+            nearest.SortBy(p => p.Position.DistanceToSquared(from));
+            Pawn found = null;
+            for (int i = 0; i < nearest.Count && found == null; i++)
+                if (GenSight.LineOfSightToThing(from, nearest[i], map)) found = nearest[i];
+            nearest.Clear();
+            return found;
+        }
+
+        private static readonly List<Pawn> nearest = new List<Pawn>();
 
         // What the ability itself would refuse, without its range and line of sight: the kinds of thing it can target
         // (a pawn it can't target falls back to the pawn's cell when it can target cells), and every effect comp's own

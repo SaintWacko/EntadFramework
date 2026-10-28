@@ -72,10 +72,13 @@
   <EF_Persona_EquipWarning>{0} has a persona. Once it bonds to a wielder, it will refuse to be wielded by anyone else.</EF_Persona_EquipWarning>
   <EF_Persona_EquipConfirm>Are you sure you want to equip it?</EF_Persona_EquipConfirm>
   <EF_Card_TriggerLimited>{0}: {1} ({2})</EF_Card_TriggerLimited>
+  <EF_Card_TriggerReadyIn>(ready in {0})</EF_Card_TriggerReadyIn>
+  <EF_InspectTriggerReady>{0}: ready in {1}</EF_InspectTriggerReady>
   <EF_Trigger_Kill>On a kill</EF_Trigger_Kill>
   <EF_Trigger_KillHostile>On killing an enemy</EF_Trigger_KillHostile>
   <EF_Trigger_KillHumanlike>On killing a person</EF_Trigger_KillHumanlike>
   <EF_Trigger_KillFight>On killing an enemy or wild creature</EF_Trigger_KillFight>
+  <EF_Trigger_KillMechanoid>On killing a mechanoid</EF_Trigger_KillMechanoid>
   <EF_Trigger_WakeUp>On waking up</EF_Trigger_WakeUp>
   <EF_Trigger_BillDone>On finishing a bill</EF_Trigger_BillDone>
   <EF_Trigger_JobDone>On finishing {0}</EF_Trigger_JobDone>
@@ -88,6 +91,8 @@
   <EF_TriggerQual_VictimsHostile>against an enemy</EF_TriggerQual_VictimsHostile>
   <EF_TriggerQual_VictimsHumanlike>against a person</EF_TriggerQual_VictimsHumanlike>
   <EF_TriggerQual_VictimsFight>against an enemy or wild creature</EF_TriggerQual_VictimsFight>
+  <EF_TriggerQual_VictimsMechanoid>against a mechanoid</EF_TriggerQual_VictimsMechanoid>
+  <EF_TriggerQual_Finishing>that downs or kills them</EF_TriggerQual_Finishing>
   <EF_TriggerQual_FromEnemy>from an enemy</EF_TriggerQual_FromEnemy>
   <EF_TriggerQual_HealthBelow>while under {0} health</EF_TriggerQual_HealthBelow>
   <EF_TriggerQual_MinDistance>at least {0} tiles away</EF_TriggerQual_MinDistance>
@@ -117,6 +122,7 @@
   <EF_TriggerCast_BetweenAttacker>casts {0} halfway to the attacker</EF_TriggerCast_BetweenAttacker>
   <EF_TriggerCast_BetweenVictim>casts {0} halfway to the target</EF_TriggerCast_BetweenVictim>
   <EF_TriggerCast_Origin>casts {0} where the user stood</EF_TriggerCast_Origin>
+  <EF_TriggerCast_NearestEnemy>casts {0} at the nearest enemy in sight</EF_TriggerCast_NearestEnemy>
   <EF_TriggerCast_Optional>{0} (when it can)</EF_TriggerCast_Optional>
   <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
   <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>

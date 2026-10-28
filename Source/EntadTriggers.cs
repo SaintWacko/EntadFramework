@@ -43,7 +43,8 @@ namespace EntadFramework
         Victim,      // Hit, Kill: the pawn hit, where it is now (nothing to aim at once it is dead)
         VictimCell,  // Hit, Kill: the cell the pawn stood on when it was hit or died
         Between,     // TakeDamage, Hit, Kill: halfway between the holder and the other pawn
-        Origin       // the cell the holder stood on when the event happened
+        Origin,      // the cell the holder stood on when the event happened
+        NearestEnemy // the nearest standing enemy the holder can see, anywhere on the map, other than the pawn hit or killed
     }
 
     // One ability cast by a trigger: a vanilla or mod AbilityDef ('ability'), or one a compat module registered by name
@@ -95,9 +96,10 @@ namespace EntadFramework
                      // downed and then finished off is a plain wild animal again; and a berserk killer is hostile to
                      // everyone, so its colony mates count.
         Humanlike,   // people, whatever their side
-        Fight        // Hostile, plus wild animals and wild men: no faction and nobody's prisoner or slave. Hunting and a drafted
+        Fight,       // Hostile, plus wild animals and wild men: no faction and nobody's prisoner or slave. Hunting and a drafted
                      // shot at a wild animal count; slaughtering livestock, executing a prisoner or killing a slave
                      // doesn't, because those have a faction or a host faction
+        Mechanoid    // any mechanoid, whose side it is on included
     }
 
     // Furniture use, as the job-end hook tells it apart
@@ -133,6 +135,7 @@ namespace EntadFramework
         public bool fromEnemy;                        // TakeDamage only: dealt by something hostile to the holder
         public float healthBelow;                     // TakeDamage only: the holder's health after the hit is under this (0.3 = 30%); 0 = any
         public float minDistance;                     // TakeDamage, Hit, Kill: the other pawn is at least this many tiles from the holder
+        public bool finishing;                        // Hit only: the hit downed or killed a pawn that was standing before it
         public float chance = 1f;
         public float cooldownHours;                   // per item: shared by everyone who uses it
 
@@ -206,6 +209,7 @@ namespace EntadFramework
                     {
                         string label = ("EF_Trigger_Hit" + (attack == EntadAttackKind.Any ? "" : attack.ToString())).Translate();
                         if (victims != EntadKillVictims.Any) label += " " + ("EF_TriggerQual_Victims" + victims).Translate();
+                        if (finishing) label += " " + "EF_TriggerQual_Finishing".Translate();
                         return WithDistance(label);
                     }
                     case EntadTriggerEvent.TakeDamage:
@@ -282,6 +286,7 @@ namespace EntadFramework
             if (on != EntadTriggerEvent.Kill && on != EntadTriggerEvent.Hit && victims != EntadKillVictims.Any) yield return $"{owner}: 'victims' only applies to Kill and Hit triggers";
             if (on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.TakeDamage && attack != EntadAttackKind.Any) yield return $"{owner}: 'attack' only applies to Hit and TakeDamage triggers";
             if (on != EntadTriggerEvent.TakeDamage && (fromEnemy || healthBelow != 0f)) yield return $"{owner}: fromEnemy and healthBelow only apply to TakeDamage triggers";
+            if (finishing && on != EntadTriggerEvent.Hit) yield return $"{owner}: finishing only applies to Hit triggers";
             if (healthBelow < 0f || healthBelow > 1f) yield return $"{owner}: healthBelow is a fraction of health (above 0, at most 1)";
             if (minDistance < 0f) yield return $"{owner}: minDistance can't be negative";
             if (minDistance > 0f && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill)
@@ -330,18 +335,41 @@ namespace EntadFramework
         // Def data: which events any loaded trait listens for. Every hook checks its event here first, so with no
         // trait using an event its hook is one array read.
         private static bool[] anyEvent;
+        private static bool anyFinishing;
+
+        private static void ReadEvents()
+        {
+            var a = new bool[System.Enum.GetValues(typeof(EntadTriggerEvent)).Length];
+            foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
+                if (d.triggers != null)
+                    foreach (var t in d.triggers)
+                    {
+                        a[(int)t.on] = true;
+                        if (t.finishing) anyFinishing = true;
+                    }
+            anyEvent = a;
+        }
 
         public static bool Any(EntadTriggerEvent ev)
         {
-            if (anyEvent == null)
-            {
-                var a = new bool[System.Enum.GetValues(typeof(EntadTriggerEvent)).Length];
-                foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
-                    if (d.triggers != null) foreach (var t in d.triggers) a[(int)t.on] = true;
-                anyEvent = a;
-            }
+            if (anyEvent == null) ReadEvents();
             return anyEvent[(int)ev];
         }
+
+        internal static bool AnyFinishing
+        {
+            get
+            {
+                if (anyEvent == null) ReadEvents();
+                return anyFinishing;
+            }
+        }
+
+        // The pawn about to be damaged and whether it was standing, from Pawn.PreApplyDamage, for 'finishing' Hit
+        // triggers: by PostApplyDamage the hit has already downed or killed it. Damage dealt to another pawn in between
+        // (from inside this one) overwrites it, and then the hit just doesn't count as finishing.
+        [System.ThreadStatic] internal static Pawn damagedPawn;
+        [System.ThreadStatic] internal static bool damagedWasStanding;
 
         public static bool AnyJobEvent => Any(EntadTriggerEvent.WakeUp) || Any(EntadTriggerEvent.Eat) || Any(EntadTriggerEvent.JobDone);
 
@@ -355,6 +383,7 @@ namespace EntadFramework
             public Thing other;
             public bool melee;
             public ThingDef weapon;
+            public bool finishing;
         }
 
         // Gear events: every worn or wielded entad that works for this pawn, checked now so a weapon dropped by the
@@ -381,7 +410,9 @@ namespace EntadFramework
             Pawn attacker = dinfo.Instigator as Pawn;
             bool hit = attacker != null && attacker != hurt && Any(EntadTriggerEvent.Hit);
             if (!takeDamage && !hit) return;
-            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = dinfo.Weapon };
+            bool wasStanding = damagedPawn == hurt && damagedWasStanding;
+            damagedPawn = null;
+            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = dinfo.Weapon, finishing = wasStanding && (hurt.Dead || hurt.Downed) };
             if (takeDamage)
             {
                 ctx.other = dinfo.Instigator;
@@ -405,6 +436,7 @@ namespace EntadFramework
             {
                 case EntadKillVictims.Hostile: return victim != null && victim.HostileTo(killer);
                 case EntadKillVictims.Humanlike: return victim?.RaceProps?.Humanlike == true;
+                case EntadKillVictims.Mechanoid: return victim?.RaceProps?.IsMechanoid == true;
                 case EntadKillVictims.Fight:
                     // Only animals and wild men count as wild: a downed refugee can also have no faction
                     return victim != null && (victim.HostileTo(killer)
@@ -442,7 +474,7 @@ namespace EntadFramework
                             if (!VictimMatches(t.victims, victim, pawn)) continue;
                             break;
                         case EntadTriggerEvent.Hit:
-                            if (!AttackMatches(t.attack, ctx.melee) || !VictimMatches(t.victims, victim, pawn)) continue;
+                            if (!AttackMatches(t.attack, ctx.melee) || !VictimMatches(t.victims, victim, pawn) || (t.finishing && !ctx.finishing)) continue;
                             break;
                         case EntadTriggerEvent.TakeDamage:
                             if (!AttackMatches(t.attack, ctx.melee)) continue;
@@ -711,6 +743,17 @@ namespace EntadFramework
         {
             if (totalDamageDealt <= 0f) return;
             EntadTriggers.FromDamage(__instance, dinfo);
+        }
+    }
+
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
+    public static class Patch_Pawn_PreApplyDamage_EntadTrigger
+    {
+        public static void Prefix(Pawn __instance)
+        {
+            if (!EntadTriggers.AnyFinishing) return;
+            EntadTriggers.damagedPawn = __instance;
+            EntadTriggers.damagedWasStanding = !__instance.Downed;
         }
     }
 
