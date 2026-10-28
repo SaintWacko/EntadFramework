@@ -423,7 +423,6 @@ namespace EntadFramework
                 ctx.other = hurt;
                 FromGear(attacker, EntadTriggerEvent.Hit, null, ctx);
             }
-            if (killedPawn == hurt) killedPawn = killedBy = null;
         }
 
         private static bool AttackMatches(EntadAttackKind attack, bool melee) =>
@@ -459,6 +458,11 @@ namespace EntadFramework
             killedPawn = killed;
             killedBy = killer;
             killedHostile = killed.HostileTo(killer);
+        }
+
+        internal static void ForgetKill(Pawn hurt)
+        {
+            if (killedPawn == hurt) killedPawn = killedBy = null;
         }
 
         private static bool Hostile(Pawn victim, Pawn holder)
@@ -777,8 +781,8 @@ namespace EntadFramework
     {
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
-            if (totalDamageDealt <= 0f) return;
-            EntadTriggers.FromDamage(__instance, dinfo);
+            if (totalDamageDealt > 0f) EntadTriggers.FromDamage(__instance, dinfo);
+            EntadTriggers.ForgetKill(__instance);
         }
     }
 
