@@ -202,6 +202,15 @@ namespace EntadFramework
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
 
+        // Every trigger event an entad hears goes to the log with what came of it: cooldown, missed roll, fired, or the
+        // cast that refused its target
+        [DebugAction(category = "Entad Framework", name = "Log Entad triggers (toggle)", allowedGameStates = AllowedGameStates.Playing)]
+        private static void ToggleTriggerLog()
+        {
+            EntadProcs.logTriggers = !EntadProcs.logTriggers;
+            Messages.Message($"Entad trigger logging {(EntadProcs.logTriggers ? "on" : "off")}.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(category = "Entad Framework", name = "Remove all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void RemoveAllEntad()
         {

@@ -510,8 +510,17 @@ namespace EntadFramework
             var t = m.def.triggers[i];
             int now = Find.TickManager.TicksGame;
             int readyTick = m.TriggerReadyTick(i);
-            if (readyTick > now) return;
-            if (t.chance < 1f && !Rand.Chance(t.chance)) return;
+            if (readyTick > now)
+            {
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: on cooldown");
+                return;
+            }
+            if (t.chance < 1f && !Rand.Chance(t.chance))
+            {
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {t.chance.ToStringPercent()} roll");
+                return;
+            }
+            if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: fired");
             if (t.cooldownHours > 0f) m.SetTriggerReadyTick(i, now + Mathf.RoundToInt(t.cooldownHours * GenDate.TicksPerHour));
             EntadTriggerQueue.pending.Add(new EntadTriggerQueue.Pending
             {
@@ -534,6 +543,7 @@ namespace EntadFramework
             List<EntadProcContext> casts = null;
             if (t.HasCasts && !EntadProcs.TryPrepare(t, p, out casts))
             {
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"cast skipped, cooldown kept: {EntadProcs.refusal}");
                 if (t.cooldownHours > 0f) m.SetTriggerReadyTick(p.index, p.readyTickBefore);
                 return;
             }

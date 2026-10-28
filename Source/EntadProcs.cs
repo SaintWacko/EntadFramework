@@ -93,19 +93,42 @@ namespace EntadFramework
             maintainUntil.Clear();
         }
 
+        // Dev mode only, from the debug action 'Log Entad triggers': why a trait did or didn't go off. Not saved.
+        internal static bool logTriggers;
+        internal static bool LogTriggers => logTriggers && Prefs.DevMode;
+        internal static string refusal;
+
+        internal static void LogTrigger(Pawn pawn, AppliedEntadTrait m, string what) =>
+            Log.Message($"[Entad Framework] {m.def.defName} on {m.owner?.parent?.LabelShort} ({pawn?.LabelShort}): {what}");
+
         internal static bool TryPrepare(EntadTrigger t, EntadTriggerQueue.Pending p, out List<EntadProcContext> prepared)
         {
             prepared = null;
+            refusal = null;
             Pawn caster = p.pawn;
             // Carried, in a caravan or a transporter: nowhere on a map to cast from
-            if (!caster.Spawned) return false;
+            if (!caster.Spawned)
+            {
+                refusal = "holder not spawned";
+                return false;
+            }
             var list = new List<EntadProcContext>(t.casts.Count);
             for (int i = 0; i < t.casts.Count; i++)
             {
                 var cast = t.casts[i];
                 var ctx = new EntadProcContext { caster = caster, item = p.trait.owner, trait = p.trait, cast = cast };
-                bool ok = TryTarget(cast, p, out ctx.target)
-                    && (cast.IsExternal ? EntadCompat.CanCastExternal(ctx) : CanCastVanilla(ctx));
+                string name = cast.IsExternal ? cast.externalAbility : cast.ability?.defName;
+                bool ok;
+                if (!TryTarget(cast, p, out ctx.target))
+                {
+                    ok = false;
+                    if (LogTriggers) refusal = $"{name}: no {cast.target} target";
+                }
+                else
+                {
+                    ok = cast.IsExternal ? EntadCompat.CanCastExternal(ctx) : CanCastVanilla(ctx);
+                    if (!ok && LogTriggers) refusal = $"{name} refused {ctx.target}";
+                }
                 if (ok) list.Add(ctx);
                 else if (!cast.optional) return false;
             }

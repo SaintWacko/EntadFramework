@@ -108,12 +108,12 @@ namespace EntadFramework
         }
     }
 
-    // Throws every enemy next to the caster a few tiles straight back, with vanilla's stunning flyer (the one
+    // Throws every enemy around the caster a few tiles straight back, with vanilla's stunning flyer (the one
     // fleshbeasts burst out with): airborne for a moment, then stunned 1 to 3 seconds where they land. Downed pawns,
     // pawns carrying someone and anything too big stay put.
     public class CompProperties_AbilityEntadShockwave : CompProperties_AbilityEffect
     {
-        public float radius = 1.9f;
+        public float radius = 3.9f;
         public float distance = 3f;
         public float maxBodySize = 2f;
         public FleckDef fleck;
@@ -161,6 +161,8 @@ namespace EntadFramework
             Map map = caster.Map;
             IntVec3 center = caster.Position;
             CollectTargets(center, map);
+            // Farthest first: a nearer pawn thrown first could find its line blocked by one still standing behind it
+            thrown.SortByDescending(p => (p.Position - center).LengthHorizontalSquared);
             var targets = thrown.ToArray();
             thrown.Clear();
             taken.Clear();
