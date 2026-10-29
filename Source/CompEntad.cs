@@ -83,7 +83,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             Scribe_Collections.Look(ref abilityCharges, "abilityCharges", LookMode.Value);
             // A trait saved under a removed name: its stored rolls came from the old trait's range, which can be far
-            // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Steady Hands rolls 1-4).
+            // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Keen Eye, then called Steady Hands, rolls 1-4).
             // Re-roll the values at the saved rarity so the item behaves like any other copy of the replacement.
             // Also when the def has gained or lost a range since the save (Frostbite moved from a damage type to
             // extra damage, so old copies had no roll for it and dealt +0): the stored lists no longer line up.

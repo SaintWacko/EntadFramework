@@ -53,6 +53,7 @@ The framework adds its comp to every weapon, apparel and furniture def on its ow
 | `rarity` | `Common` | `Common`, `Uncommon`, `Rare`, `Epic`, `Legendary`. Shown on the card, and sets the default cost. |
 | `scalesWithRarity` | false | The trait can also roll at higher rarities, with its values scaled up (see below). |
 | `points` | from rarity | Generation cost at the trait's own rarity. Unset uses the settings table: Common 1, Uncommon 2, Rare 3, Epic 5, Legendary 8. Negative makes a drawback. 0 is an error. |
+| `bodyPartGroups` | any | Apparel only: the garment must cover at least one of these `BodyPartGroupDef`s. For pawn stats tied to a body part, so a hat doesn't make you run faster. The built-in traits use `Legs`+`Feet`, `Arms`+`Hands`, `UpperHead`+`FullHead`+`Eyes` and `Torso`+`Waist`. Weapons ignore it. Needs `Apparel` in categories (or no categories). Make sure vanilla apparel covers the groups you pick: nothing in Core or the DLCs covers only `Feet` or `Hands`. |
 | `partialStats` | false | Lets the trait roll where only some of its stats mean anything (see Stats). |
 | `bindOnFirstUse` | false | The item binds to the first pawn who equips or uses it; from then on its traits only work for that pawn and their descendants. |
 | `neverRandom` | false | Random generation never picks it. It can still be added by name (API, dev tools). |
@@ -81,7 +82,7 @@ Where a stat ends up depends on the stat:
 - Item stats (accuracy, `RangedWeapon_*`, `MeleeWeapon_*`, mass, hit points, deterioration, apparel armor and insulation, a bench's work speed, a bed's comfort) change the item itself.
 - Pawn stats (any stat in the pawn categories: move speed, work speed, shooting accuracy, healing rate, psychic sensitivity and so on) go on weapons and apparel as equipped offsets, so they follow whoever wields or wears the item and show in that pawn's stat breakdown. Use `statOffsets` for these. A `statFactors` entry on a pawn stat only rolls on items that list the stat in their own `statBases`, which in practice means weapon multipliers.
 
-A trait only rolls on an item where every one of its stats means something. The framework checks, in order: melee-only stats stay off guns and ranged-only stats off melee weapons; the stat is in the item's `statBases`; it is a pawn stat and the item is a weapon or apparel; it is a `RangedWeapon_`/`MeleeWeapon_` stat on that kind of weapon; vanilla would show the stat for that item. A bed's Comfort or a bench's `WorkTableWorkSpeedFactor` passes because those defs list them. If a stat fails, the trait doesn't roll there. With `partialStats`, the trait rolls when at least one stat applies, and the card hides the ones that don't (Sharpshooter uses this to carry both a damage and an accuracy stat).
+A trait only rolls on an item where every one of its stats means something. The framework checks, in order: melee-only stats stay off guns and ranged-only stats off melee weapons; the stat is in the item's `statBases`; it is a pawn stat and the item is a weapon or apparel; it is a `RangedWeapon_`/`MeleeWeapon_` stat on that kind of weapon; vanilla would show the stat for that item. A bed's Comfort or a bench's `WorkTableWorkSpeedFactor` passes because those defs list them. If a stat fails, the trait doesn't roll there. With `partialStats`, the trait rolls when at least one stat applies, and the card hides the ones that don't (Piercing uses this to carry one armor penetration stat for each kind of weapon).
 
 Two traits that touch the same stat never share an item. Set `allowOverlap` to true on either to allow it.
 
@@ -230,7 +231,7 @@ Any AbilityDef works: vanilla, a DLC's or your own. `Defs/EntadAbilities.xml` ha
 </aura>
 ```
 
-Every second (`intervalTicks` 60) the holder of the gear, or the furniture, gives the hediff to pawns in range and in sight, and refreshes it on those who have it. Make the hediff a child of `EntadAuraHediffBase`, which fades it 400 ticks after the last refresh. A hediff with a shorter Disappears time than `intervalTicks` + 15 is an error.
+Every second (`intervalTicks` 60) the holder of the gear, or the furniture, gives the hediff to pawns in range and in sight, and refreshes it on those who have it. Make the hediff a child of `EntadAuraHediffBase`, which fades it 400 ticks after the last refresh. A hediff whose Disappears time is no longer than `intervalTicks` + 15 is an error.
 
 Who: `affectsSelf` (gear only), `affectsAllies`, `affectsNeutrals`, `affectsEnemies`; `affectsHumanlikes` and `affectsAnimals` (both on by default), `affectsMechanoids`, `affectsEntities`. When, for gear: `whileDowned` (off), `whileAsleep` (on), `onlyInCombat`. `blockedByWalls` is on by default. With `severityPerDay` above 0 the hediff builds up instead, like toxic fallout, reduced by each of `resistStats`. A scaling aura's radius grows with the square root of the rarity multiplier. Furniture auras need power when the building uses it, and can't use `onlyInCombat` or `affectsSelf`. An item carries one aura at most.
 

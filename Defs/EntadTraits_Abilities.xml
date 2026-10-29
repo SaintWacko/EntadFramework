@@ -84,6 +84,7 @@
     <label>Sprint</label>
     <description>It makes the ground feel shorter than it is.</description>
     <categories><li>Apparel</li></categories>
+    <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <abilities><li>Entad_Sprint</li></abilities>
     <abilityCharges>1</abilityCharges>

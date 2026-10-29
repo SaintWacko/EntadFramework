@@ -108,6 +108,7 @@
     <label>Psychic Ward</label>
     <description>A soft hum at the back of the mind drowns out other voices.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>

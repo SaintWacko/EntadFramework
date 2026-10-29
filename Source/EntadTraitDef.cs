@@ -518,6 +518,10 @@ namespace EntadFramework
         // default: a trait normally needs every one of its stats to apply.
         public bool partialStats;
 
+        // Apparel only: the garment must cover at least one of these groups. For pawn stats tied to a body part
+        // (a hat that makes you run faster reads wrong). Weapons ignore it.
+        public List<BodyPartGroupDef> bodyPartGroups;
+
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
         // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
         public List<ThingDef> fuelTypes;
@@ -764,6 +768,8 @@ namespace EntadFramework
                 foreach (string c in categories)
                     if (EntadUtility.ParseKind(c) == EntadItemKind.None)
                         yield return $"{defName}: unknown category '{c}' (Weapon, WeaponMelee, WeaponRanged, Apparel or Furniture)";
+            if (!bodyPartGroups.NullOrEmpty() && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
+                yield return $"{defName}: bodyPartGroups only applies to apparel, and the trait's categories don't include Apparel";
             if (!float.IsNaN(targetTemperature) && !ChangesRoomTemperature)
                 yield return $"{defName}: targetTemperature only applies to traits with Entad_RoomHeating or Entad_RoomCooling";
             if (filth != null && !AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))
@@ -861,6 +867,8 @@ namespace EntadFramework
                 }
                 if (!match) return false;
             }
+            if (td.IsApparel && !bodyPartGroups.NullOrEmpty()
+                && (td.apparel.bodyPartGroups == null || !td.apparel.bodyPartGroups.Any(bodyPartGroups.Contains))) return false;
 
             foreach (var r in Ranges(statFactors))
                 if (r.stat != null && IsWearerStat(r.stat) && !(td.statBases?.Any(m => m.stat == r.stat) ?? false)) return false;

@@ -94,6 +94,7 @@
     <label>Swiftness</label>
     <description>The wearer's steps feel lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <!-- Move speed helps in every fight and every job -->
     <points>3</points>
@@ -107,6 +108,7 @@
     <label>Industriousness</label>
     <description>Work seems to go faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -114,10 +116,11 @@
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_SteadyHands</defName>
-    <label>Steady Hands</label>
-    <description>The world holds still while you take aim.</description>
+    <defName>Entad_KeenEye</defName>
+    <label>Keen Eye</label>
+    <description>Distant targets look close enough to touch.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -129,6 +132,7 @@
     <label>Duelist</label>
     <description>Strikes find their mark more often.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -140,6 +144,7 @@
     <label>Evasion</label>
     <description>The wearer is hard to hit in melee.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -151,6 +156,7 @@
     <label>Attunement</label>
     <description>Heightened sensitivity to the psychic.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <!-- Only helps psycasters, and makes psychic drones worse for everyone else -->
     <points>2</points>
@@ -164,6 +170,7 @@
     <label>Composure</label>
     <description>Stress rolls off the wearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -186,6 +193,7 @@
     <label>Healer's Touch</label>
     <description>Treatment is more effective.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -197,6 +205,7 @@
     <label>Steady Surgeon</label>
     <description>Surgery is less likely to go wrong.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -208,6 +217,7 @@
     <label>Porter</label>
     <description>The load feels lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Torso</li><li>Waist</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -219,6 +229,7 @@
     <label>Delver</label>
     <description>Stone yields to the wearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -230,6 +241,7 @@
     <label>Builder</label>
     <description>Construction goes faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -241,6 +253,7 @@
     <label>Green Thumb</label>
     <description>Plants thrive under careful hands.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -253,6 +266,7 @@
     <label>Scholar</label>
     <description>Ideas arrive faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -264,6 +278,7 @@
     <label>Quick Study</label>
     <description>Skills are learned faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
