@@ -32,8 +32,17 @@ namespace EntadFramework.CECompat
             AddPart(CE_StatDefOf.TicksBetweenBurstShots, EntadWeaponProperty.BurstShotSpeed);
 
             // Last, unlike the other modules: everything above only keeps traits off that CE can never use, or works
-            // without a patch, so a CE update that breaks one patch target shouldn't take those with it
-            new Harmony("SaintWacko.EntadFramework.CombatExtended").PatchAll(typeof(EntadCombatExtended).Assembly);
+            // without a patch, so a CE update that breaks one patch target shouldn't take those with it. Not rethrown
+            // either: a failed static constructor would make the weight and stat checks above throw on every roll.
+            // PatchAll keeps the patches applied before the one that failed, so those come off too, leaving the CE
+            // traits as they were before this module existed rather than half hooked.
+            var harmony = new Harmony("SaintWacko.EntadFramework.CombatExtended");
+            try { harmony.PatchAll(typeof(EntadCombatExtended).Assembly); }
+            catch (System.Exception e)
+            {
+                harmony.UnpatchAll(harmony.Id);
+                Log.Error("[Entad Framework] Combat Extended patches failed, so entad weapon effects won't reach CE's bullets and melee: " + e);
+            }
         }
 
         private static bool HasProperty(EntadTraitDef def, EntadWeaponProperty property) =>
@@ -183,8 +192,8 @@ namespace EntadFramework.CECompat
         public static void Prefix(ProjectileCE __instance, Thing hitThing)
         {
             // The same test ProjectileCE.Impact makes before it detonates
-            bool blast = __instance.def.projectile.explosionRadius > 0f || (__instance.traitExplosion?.radius ?? 0f) > 0f
-                || __instance.TryGetComp<CompExplosiveCE>() != null;
+            float radius = (__instance.traitExplosion?.radius ?? 0f) > 0f ? __instance.traitExplosion.radius : __instance.def.projectile.explosionRadius;
+            bool blast = (radius > 0f && __instance.DamageDef != null) || __instance.TryGetComp<CompExplosiveCE>() != null;
             if (blast) EntadExplosionDamage.BeginProjectileBlast(__instance.equipment, __instance.launcher);
             else if (hitThing != null) EntadWeaponReveal.Hit(__instance.launcher as Pawn, false);
         }
