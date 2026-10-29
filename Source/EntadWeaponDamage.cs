@@ -93,7 +93,9 @@ namespace EntadFramework
                         // Skip only our extras; vanilla's own later infos still come through as they would without us
                         if (victim != null && victim.Dead) continue;
                         var extra = new DamageInfo(original);
-                        extra.Def = m.def.extraDamage[i].damageType;
+                        DamageDef type = m.def.extraDamage[i].damageType;
+                        if (retype != null && type != extra.Def) extra = retype(extra, type);
+                        else extra.Def = type;
                         extra.SetAmount(m.ExtraDamageFor(i));
                         yield return extra;
                     }

@@ -379,7 +379,13 @@ namespace EntadFramework
         // For a melee verb that overrides TryCastShot without calling it (Combat Extended's Verb_MeleeAttackCE), from
         // its own prefix and finalizer
         public static void BeginMeleeAttack() => meleeDepth++;
-        public static void EndMeleeAttack() => meleeDepth--;
+
+        // Guarded: Harmony runs a finalizer even when another mod's prefix threw before ours, and a counter left below
+        // zero would make every later melee hit count as ranged until the game restarts
+        public static void EndMeleeAttack()
+        {
+            if (meleeDepth > 0) meleeDepth--;
+        }
 
         // What a damage event adds to a gear event: the other pawn (attacker, pawn hit, pawn killed), whether it was
         // melee, and the weapon the damage came from
@@ -806,9 +812,9 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     public static class Patch_VerbMeleeAttack_TryCastShot
     {
-        public static void Prefix() => EntadTriggers.meleeDepth++;
+        public static void Prefix() => EntadTriggers.BeginMeleeAttack();
 
-        public static void Finalizer() => EntadTriggers.meleeDepth--;
+        public static void Finalizer() => EntadTriggers.EndMeleeAttack();
     }
 
     // A prefix: MakeDowned drops the pawn's weapon, so the gear has to be read before it runs.

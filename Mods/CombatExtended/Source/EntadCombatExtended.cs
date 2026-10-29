@@ -19,9 +19,6 @@ namespace EntadFramework.CECompat
     {
         static EntadCombatExtended()
         {
-            // First: if a CE update removed a target this throws, and nothing below registers
-            new Harmony("SaintWacko.EntadFramework.CombatExtended").PatchAll(typeof(EntadCombatExtended).Assembly);
-
             // CE has no stopping power (projectiles carry none and the card row is culled), so those traits never roll
             EntadCompat.RegisterWeight(def => HasProperty(def, EntadWeaponProperty.StoppingPower) ? 0f : 1f);
             // CE aims with its own stats (sights efficiency, sway, spread) and strips vanilla's accuracy-by-range
@@ -33,6 +30,10 @@ namespace EntadFramework.CECompat
             // TryCastNextBurstShot transpiler), not Verb.BurstShotCount / TicksBetweenBurstShots
             AddPart(CE_StatDefOf.BurstShotCount, EntadWeaponProperty.BurstShotCount);
             AddPart(CE_StatDefOf.TicksBetweenBurstShots, EntadWeaponProperty.BurstShotSpeed);
+
+            // Last, unlike the other modules: everything above only keeps traits off that CE can never use, or works
+            // without a patch, so a CE update that breaks one patch target shouldn't take those with it
+            new Harmony("SaintWacko.EntadFramework.CombatExtended").PatchAll(typeof(EntadCombatExtended).Assembly);
         }
 
         private static bool HasProperty(EntadTraitDef def, EntadWeaponProperty property) =>
@@ -181,7 +182,9 @@ namespace EntadFramework.CECompat
     {
         public static void Prefix(ProjectileCE __instance, Thing hitThing)
         {
-            bool blast = __instance.def.projectile.explosionRadius > 0f || (__instance.traitExplosion?.radius ?? 0f) > 0f;
+            // The same test ProjectileCE.Impact makes before it detonates
+            bool blast = __instance.def.projectile.explosionRadius > 0f || (__instance.traitExplosion?.radius ?? 0f) > 0f
+                || __instance.TryGetComp<CompExplosiveCE>() != null;
             if (blast) EntadExplosionDamage.BeginProjectileBlast(__instance.equipment, __instance.launcher);
             else if (hitThing != null) EntadWeaponReveal.Hit(__instance.launcher as Pawn, false);
         }
@@ -199,16 +202,22 @@ namespace EntadFramework.CECompat
     }
 
     // CE's melee damage infos: the main blow, the tool's extra damages, then a critical stun. The type change goes on
-    // the main blow only; when it crosses between sharp and anything else, the penetration is re-read the way CE's
-    // own melee damage override picks it (sharp penetration for a sharp type, doubled on a crit, else blunt).
+    // the main blow only; when it, or one of our extras, differs from the blow's type between sharp and anything else,
+    // the penetration is re-read the way CE's own melee damage override picks it (sharp penetration for a sharp type,
+    // doubled on a crit, else blunt).
+    // CE also asks for these infos when a defender parries (DoParry hands them to the parrying weapon or shield), so
+    // only the call inside ApplyMeleeDamageToTarget, the real hit, gets the traits.
     [HarmonyPatch(typeof(Verb_MeleeAttackCE), "DamageInfosToApply")]
     public static class Patch_MeleeAttackCE_DamageInfos
     {
         private static readonly AccessTools.StructFieldRef<DamageInfo, float> Penetration =
             AccessTools.StructFieldRefAccess<DamageInfo, float>("armorPenetrationInt");
 
+        [System.ThreadStatic] internal static int hitDepth;
+
         public static void Postfix(Verb_MeleeAttackCE __instance, LocalTargetInfo target, bool isCrit, ref IEnumerable<DamageInfo> __result)
         {
+            if (hitDepth <= 0) return;
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
             __result = EntadWeaponDamage.ModifyMelee(__result, comp, target.Thing as Pawn, (info, def) => Retype(__instance, info, def, isCrit));
@@ -229,8 +238,15 @@ namespace EntadFramework.CECompat
     }
 
     [HarmonyPatch(typeof(Verb_MeleeAttackCE), nameof(Verb_MeleeAttackCE.ApplyMeleeDamageToTarget))]
-    public static class Patch_MeleeAttackCE_Reveal
+    public static class Patch_MeleeAttackCE_ApplyDamage
     {
+        public static void Prefix() => Patch_MeleeAttackCE_DamageInfos.hitDepth++;
+
+        public static void Finalizer()
+        {
+            if (Patch_MeleeAttackCE_DamageInfos.hitDepth > 0) Patch_MeleeAttackCE_DamageInfos.hitDepth--;
+        }
+
         public static void Postfix(Verb_MeleeAttackCE __instance, LocalTargetInfo target, DamageWorker.DamageResult __result) =>
             EntadWeaponReveal.MeleeHit(__instance.CasterPawn, target, __result);
     }
