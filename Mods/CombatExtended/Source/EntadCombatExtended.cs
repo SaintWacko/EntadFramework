@@ -22,9 +22,14 @@ namespace EntadFramework.CECompat
             // CE has no stopping power (projectiles carry none and the card row is culled), so those traits never roll
             EntadCompat.RegisterWeight(def => HasProperty(def, EntadWeaponProperty.StoppingPower) ? 0f : 1f);
             // CE aims with its own stats (sights efficiency, sway, spread) and strips vanilla's accuracy-by-range
-            // stats from guns, so a trait on them would show a number nothing reads
+            // stats from guns, so a trait on them would show a number nothing reads. Our own accuracy traits are moved
+            // onto CE's stats by Patches/EntadTraits_CE.xml; this keeps other mods' traits on the old ones from rolling.
             foreach (var stat in new[] { StatDefOf.AccuracyTouch, StatDefOf.AccuracyShort, StatDefOf.AccuracyMedium, StatDefOf.AccuracyLong })
                 EntadCompat.RegisterStat(stat, td => false);
+            // A hidden stat no gun lists, so the statBases fallback would reject it. CE multiplies only the verb's own
+            // recoil by it (Verb_LaunchProjectileCE.RecoilAmount), so a gun with none has nothing to reduce.
+            EntadCompat.RegisterStat(CE_StatDefOf.CE_RangedWeapon_RecoilMultiplier,
+                td => td.IsRangedWeapon && td.Verbs.Any(v => v is VerbPropertiesCE ce && ce.recoilAmount > 0f));
 
             // CE fires the burst its own equipment stats say (Verb_LaunchProjectileCE.ShotsPerBurst and its
             // TryCastNextBurstShot transpiler), not Verb.BurstShotCount / TicksBetweenBurstShots

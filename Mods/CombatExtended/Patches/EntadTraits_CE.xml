@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The accuracy traits on Combat Extended's aiming stats. CE strips vanilla's accuracy-by-range stats from guns and
+     aims with the weapon's sights efficiency (range and lead error, higher is better), sway (wobble while aiming,
+     lower is better), spread (random cone, lower is better) and recoil (lower is better; CE reads the recoil
+     multiplier stat, as its own conversion of Odyssey's Custom Grip does). The defNames stay the same, so items keep
+     the trait when CE is added or removed; the value lists change length, so their rolls are re-rolled on load
+     (CompEntad.RerollMismatchedLists). Loaded only with CE on 1.6 (LoadFolders.xml).
+     Ranges are at each trait's own rarity; the rarity multipliers (Common 1 to Legendary 3 by default) scale them. -->
+<Patch>
+  <!-- Vanilla: AccuracyMedium +3-8%, AccuracyLong +5-12%. Sights efficiency 1 is iron sights, quality moves it
+       0.7-1.25 and a scope sits around 2.2. -->
+  <Operation Class="PatchOperationReplace">
+    <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_LongSight"]/statOffsets</xpath>
+    <value>
+      <statFactors>
+        <li><stat>SightsEfficiency</stat><min>1.08</min><max>1.15</max></li>
+      </statFactors>
+    </value>
+  </Operation>
+
+  <!-- Vanilla: AccuracyShort and AccuracyMedium +2-6%. Partial so a gun with no recoil (a bolt-action, a launcher)
+       can still take the sway half. -->
+  <Operation Class="PatchOperationReplace">
+    <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_SteadyBarrel"]/statOffsets</xpath>
+    <value>
+      <statFactors>
+        <li><stat>CE_RangedWeapon_RecoilMultiplier</stat><min>0.8</min><max>0.9</max></li>
+        <li><stat>SwayFactor</stat><min>0.88</min><max>0.95</max></li>
+      </statFactors>
+      <partialStats>true</partialStats>
+    </value>
+  </Operation>
+
+  <!-- Vanilla: Short, Medium and Long accuracy +6-14% with damage x1.2-1.5. The damage factor stays (CE's projectiles
+       read RangedWeapon_DamageMultiplier) and keeps the first slot. -->
+  <Operation Class="PatchOperationRemove">
+    <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_Sharpshooter"]/statOffsets</xpath>
+  </Operation>
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_Sharpshooter"]/statFactors</xpath>
+    <value>
+      <li><stat>ShotSpread</stat><min>0.6</min><max>0.75</max></li>
+      <li><stat>SightsEfficiency</stat><min>1.1</min><max>1.2</max></li>
+    </value>
+  </Operation>
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_Sharpshooter"]</xpath>
+    <value>
+      <partialStats>true</partialStats>
+    </value>
+  </Operation>
+</Patch>
