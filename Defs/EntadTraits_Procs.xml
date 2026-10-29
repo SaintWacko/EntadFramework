@@ -132,8 +132,7 @@
     <defName>Entad_Proc_Ricochet</defName>
     <label>Ricochet</label>
     <description>Its shots rarely stop at the first body they find.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>
@@ -154,8 +153,7 @@
     <defName>Entad_Proc_Disarm</defName>
     <label>Disarming</label>
     <description>It has a way of finding the hand that holds the weapon.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Melee</weaponType>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Rare</rarity>
     <triggers>
       <li>

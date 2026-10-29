@@ -138,8 +138,7 @@
     <defName>Entad_Artillery</defName>
     <label>Artillery</label>
     <description>Its shots don't so much land as arrive, in numbers.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Epic</rarity>
     <abilities><li>Entad_Artillery</li></abilities>
     <abilityCharges>2</abilityCharges>

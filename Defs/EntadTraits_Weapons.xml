@@ -23,8 +23,7 @@
     <defName>Entad_Quickdraw</defName>
     <label>Quickdraw</label>
     <description>It comes to bear on a target almost before you've chosen one.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>AimingDelayFactor</stat><min>-0.3</min><max>-0.1</max></li></statOffsets>
@@ -33,8 +32,7 @@
     <defName>Entad_HuntersHush</defName>
     <label>Hunter's Hush</label>
     <description>Prey never quite hears it coming.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>HuntingStealth</stat><min>0.1</min><max>0.3</max></li></statOffsets>
@@ -101,8 +99,7 @@
     <defName>Entad_FarReaching</defName>
     <label>Far-Reaching</label>
     <description>Its shots carry further than they have any right to.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <!-- Projectile weapons only (StatAppliesTo). Odyssey's unique weapon traits give +15% to +30%. The total is
@@ -148,8 +145,7 @@
     <defName>Entad_Bloodthirst</defName>
     <label>Bloodthirst</label>
     <description>Every kill only makes it hungrier.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Melee</weaponType>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Uncommon</rarity>
     <triggers>
       <li>

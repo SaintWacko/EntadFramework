@@ -158,14 +158,6 @@ namespace EntadFramework
         }
     }
 
-    // Which kind of weapon a trait can roll on (EntadTraitDef.weaponType)
-    public enum EntadWeaponType
-    {
-        Any,
-        Melee,
-        Ranged
-    }
-
     // Ranged weapon properties that aren't stats (they live on the verb or the projectile)
     public enum EntadWeaponProperty
     {
@@ -251,6 +243,9 @@ namespace EntadFramework
 
     public class EntadTraitDef : Def
     {
+        // Weapon, WeaponMelee, WeaponRanged, Apparel, Furniture. Weapon stats already sort themselves out
+        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
+        // through any held item, so a gun trait made of one needs WeaponRanged or it also rolls on swords.
         public List<string> categories = new List<string>();
 
         // Optional flavour text for a melee or a ranged weapon, where 'description' fits only one of them ("leaves
@@ -424,12 +419,6 @@ namespace EntadFramework
         public bool ignoreAccuracyMaluses;
 
         public bool HasWeaponEffect => !weaponProperties.NullOrEmpty() || ignoreAccuracyMaluses;
-
-        // Weapons only: the kind of weapon the trait can roll on. Weapon stats already sort themselves out
-        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
-        // through any held item, so a gun trait made of one would also roll on swords where it does nothing.
-        // Apparel ignores it.
-        public EntadWeaponType weaponType = EntadWeaponType.Any;
 
         // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
         // equippedHediffs and removed on unequip unless other active gear also gives them
@@ -771,8 +760,10 @@ namespace EntadFramework
             if (powerNet != null)
                 foreach (var e in powerNet.ConfigErrors(defName)) yield return e;
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
-            if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
-                yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
+            if (categories != null)
+                foreach (string c in categories)
+                    if (EntadUtility.ParseKind(c) == EntadItemKind.None)
+                        yield return $"{defName}: unknown category '{c}' (Weapon, WeaponMelee, WeaponRanged, Apparel or Furniture)";
             if (!float.IsNaN(targetTemperature) && !ChangesRoomTemperature)
                 yield return $"{defName}: targetTemperature only applies to traits with Entad_RoomHeating or Entad_RoomCooling";
             if (filth != null && !AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))
@@ -820,8 +811,6 @@ namespace EntadFramework
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || HasNoDamageHook(td))) return false;
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
-            if (td.IsWeapon && weaponType != EntadWeaponType.Any
-                && !(weaponType == EntadWeaponType.Ranged ? td.IsRangedWeapon : td.IsMeleeWeapon)) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             // Artillery fires the weapon's own projectile: no melee weapons, beams, sprays or one-use launchers
             if (!abilities.NullOrEmpty() && abilities.Any(EntadArtillery.IsArtillery) && !EntadArtillery.Fits(td)) return false;
@@ -1039,7 +1028,7 @@ namespace EntadFramework
                 if (weaponSpecific < 0)
                 {
                     bool result = HasDamageEffect || HasWeaponEffect || killThought != null || persona || neverBond || secretive || HasBondEffect
-                        || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
+                        || (!categories.NullOrEmpty() && categories.All(c => { var k = EntadUtility.ParseKind(c); return k != EntadItemKind.None && (k & ~EntadUtility.AnyWeapon) == 0; }))
                         || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
                     weaponSpecific = result ? 1 : 0;
                 }

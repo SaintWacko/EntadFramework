@@ -60,8 +60,7 @@
     <defName>Entad_VPE_FiringFocus</defName>
     <label>Firing Focus</label>
     <description>Holding it, the world narrows down to the next target.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <externalAbilities><li>VPE_FiringFocus</li></externalAbilities>
     <abilityCharges>2</abilityCharges>
@@ -72,8 +71,7 @@
     <defName>Entad_VPE_BladeFocus</defName>
     <label>Blade Focus</label>
     <description>In a close fight, its bearer seems to move a beat ahead of everyone else.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
-    <weaponType>Melee</weaponType>
+    <categories><li>WeaponMelee</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <externalAbilities><li>VPE_BladeFocus</li></externalAbilities>
     <abilityCharges>2</abilityCharges>

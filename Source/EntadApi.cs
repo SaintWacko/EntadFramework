@@ -17,7 +17,8 @@ namespace EntadFramework
         public HashSet<EntadTraitDef> defBlacklist = new HashSet<EntadTraitDef>();
         // Allowed rarities (all when empty)
         public HashSet<EntadRarity> rarities = new HashSet<EntadRarity>();
-        // Only traits declaring one of these categories (all when empty)
+        // Only traits whose categories overlap one of these (all when empty): Weapon takes WeaponMelee and WeaponRanged
+        // traits, and WeaponMelee takes Weapon traits, since those roll on melee weapons too
         public HashSet<string> categories = new HashSet<string>();
         // Trait must have at least one of these kinds of effect (all when None)
         public EntadEffectKind effectKinds = EntadEffectKind.None;
@@ -31,7 +32,7 @@ namespace EntadFramework
             if (Has(defWhitelist) && !defWhitelist.Contains(def)) return false;
             if (Has(defBlacklist) && defBlacklist.Contains(def)) return false;
             if (Has(rarities) && !rarities.Any(def.CanAppearAt)) return false;
-            if (Has(categories) && (def.categories == null || !def.categories.Any(categories.Contains))) return false;
+            if (Has(categories) && !CategoriesOverlap(def)) return false;
 
             if (effectKinds != EntadEffectKind.None && (def.EffectKinds & effectKinds) == EntadEffectKind.None) return false;
 
@@ -43,6 +44,16 @@ namespace EntadFramework
             }
 
             return predicate == null || predicate(def);
+        }
+
+        private bool CategoriesOverlap(EntadTraitDef def)
+        {
+            if (def.categories == null) return false;
+            EntadItemKind wanted = EntadItemKind.None;
+            foreach (string c in categories) wanted |= EntadUtility.ParseKind(c);
+            foreach (string c in def.categories)
+                if ((EntadUtility.ParseKind(c) & wanted) != EntadItemKind.None) return true;
+            return false;
         }
 
         internal static bool Has<T>(HashSet<T> set) => set != null && set.Count > 0;
