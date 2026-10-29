@@ -32,7 +32,8 @@
   </Operation>
 
   <!-- Vanilla: Short, Medium and Long accuracy +6-14% with damage x1.2-1.5. The damage factor stays (CE's projectiles
-       read RangedWeapon_DamageMultiplier) and keeps the first slot. -->
+       read RangedWeapon_DamageMultiplier). The list still changes length, so an existing Sharpshooter re-rolls its
+       damage too when CE is added or removed. -->
   <Operation Class="PatchOperationRemove">
     <xpath>Defs/EntadFramework.EntadTraitDef[defName="Entad_Sharpshooter"]/statOffsets</xpath>
   </Operation>

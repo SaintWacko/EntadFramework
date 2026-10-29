@@ -28,8 +28,9 @@ namespace EntadFramework.CECompat
                 EntadCompat.RegisterStat(stat, td => false);
             // A hidden stat no gun lists, so the statBases fallback would reject it. CE multiplies only the verb's own
             // recoil by it (Verb_LaunchProjectileCE.RecoilAmount), so a gun with none has nothing to reduce.
-            EntadCompat.RegisterStat(CE_StatDefOf.CE_RangedWeapon_RecoilMultiplier,
-                td => td.IsRangedWeapon && td.Verbs.Any(v => v is VerbPropertiesCE ce && ce.recoilAmount > 0f));
+            if (CE_StatDefOf.CE_RangedWeapon_RecoilMultiplier != null)
+                EntadCompat.RegisterStat(CE_StatDefOf.CE_RangedWeapon_RecoilMultiplier,
+                    td => td.IsRangedWeapon && td.Verbs.Any(v => v is VerbPropertiesCE ce && ce.recoilAmount > 0f));
 
             // CE fires the burst its own equipment stats say (Verb_LaunchProjectileCE.ShotsPerBurst and its
             // TryCastNextBurstShot transpiler), not Verb.BurstShotCount / TicksBetweenBurstShots
