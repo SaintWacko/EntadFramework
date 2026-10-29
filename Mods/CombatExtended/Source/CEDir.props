@@ -1,0 +1,10 @@
+<Project>
+  <!-- Where Combat Extended is installed: the folder holding its Assemblies/ (CE keeps one DLL at its root, not per
+       version). Shared by the compat project and the build entry (Source/EntadFramework.Build.csproj). Pass
+       /p:CEDir=... (with a trailing slash) for any other install, such as a copy from CE's GitHub releases. -->
+  <PropertyGroup>
+    <CEDir Condition="'$(CEDir)' == '' And Exists('$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2890901044/')">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2890901044/</CEDir>
+    <CEDir Condition="'$(CEDir)' == '' And Exists('$(HOME)/.steam/steam/steamapps/workshop/content/294100/2890901044/')">$(HOME)/.steam/steam/steamapps/workshop/content/294100/2890901044/</CEDir>
+    <CEDir Condition="'$(CEDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2890901044\</CEDir>
+  </PropertyGroup>
+</Project>

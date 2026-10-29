@@ -582,7 +582,7 @@ namespace EntadFramework
             }
         }
 
-        internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
+        public bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
         internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
 

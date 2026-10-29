@@ -84,6 +84,9 @@ namespace EntadFramework
         // actually has hidden traits, so ordinary items cost nothing.
         [System.ThreadStatic] internal static Thing infoCardThing;
 
+        // For a module's own stat part: whether this item's card is drawing, so its unrevealed traits stay out
+        public static bool OnOwnInfoCard(Thing thing) => thing != null && infoCardThing == thing;
+
         public static bool HidingFor(Thing gear) => displayExcludesHidden || (gearCardThing != null && gearCardThing == gear);
 
         public static IEnumerable<T> WithGearCard<T>(IEnumerable<T> source, Thing gear)

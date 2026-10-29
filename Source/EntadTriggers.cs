@@ -376,6 +376,11 @@ namespace EntadFramework
         // Above 0 while a melee attack is being made (Patch_VerbMeleeAttack_TryCastShot): damage dealt inside one is melee
         [System.ThreadStatic] internal static int meleeDepth;
 
+        // For a melee verb that overrides TryCastShot without calling it (Combat Extended's Verb_MeleeAttackCE), from
+        // its own prefix and finalizer
+        public static void BeginMeleeAttack() => meleeDepth++;
+        public static void EndMeleeAttack() => meleeDepth--;
+
         // What a damage event adds to a gear event: the other pawn (attacker, pawn hit, pawn killed), whether it was
         // melee, and the weapon the damage came from
         private struct DamageContext
@@ -412,7 +417,7 @@ namespace EntadFramework
             if (!takeDamage && !hit) return;
             bool wasStanding = damagedPawn == hurt && damagedWasStanding;
             damagedPawn = null;
-            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = dinfo.Weapon, finishing = wasStanding && (hurt.Dead || hurt.Downed) };
+            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = EntadDamageSource.WeaponOf(dinfo), finishing = wasStanding && (hurt.Dead || hurt.Downed) };
             if (takeDamage)
             {
                 ctx.other = dinfo.Instigator;

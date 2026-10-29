@@ -214,16 +214,20 @@ namespace EntadFramework
             }
             EntadStatReveal.Fire(pawn, melee ? EntadStatTrigger.MeleeAttack : EntadStatTrigger.Shoot);
         }
+
+        // After a melee verb's ApplyMeleeDamageToTarget (vanilla's, or Combat Extended's override)
+        public static void MeleeHit(Pawn caster, LocalTargetInfo target, DamageWorker.DamageResult result)
+        {
+            if (target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
+            if (result != null && result.totalDamageDealt > 0f) Hit(caster, true);
+        }
     }
 
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
     public static class Patch_MeleeHit_Reveal
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, DamageWorker.DamageResult __result)
-        {
-            if (target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
-            if (__result != null && __result.totalDamageDealt > 0f) EntadWeaponReveal.Hit(__instance.CasterPawn, true);
-        }
+        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, DamageWorker.DamageResult __result) =>
+            EntadWeaponReveal.MeleeHit(__instance.CasterPawn, target, __result);
     }
 
     [HarmonyPatch(typeof(Projectile), "Impact")]

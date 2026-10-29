@@ -6,7 +6,9 @@
        compat assembly that registers Entad's hook), loaded only when Ability AI is active. Mods/DubsBadHygiene holds
        the plumbing traits and their compat assembly, loaded only when Dubs Bad Hygiene is active.
        Mods/VanillaPsycastsExpanded holds the psycast traits and the compat assembly that grants Vanilla Expanded
-       Framework abilities, loaded only when Vanilla Psycasts Expanded is active. -->
+       Framework abilities, loaded only when Vanilla Psycasts Expanded is active. Mods/CombatExtended holds the hooks
+       that carry weapon traits over to Combat Extended's own bullets and melee verb, loaded only when CE is active and
+       only on 1.6 (CE has no 1.7 build yet). -->
   <v1.6>
     <li>/</li>
     <li>1.6</li>
@@ -16,6 +18,7 @@
     <li IfModActive="Dubwise.DubsBadHygiene">Mods/DubsBadHygiene/1.6</li>
     <li IfModActive="VanillaExpanded.VPsycastsE">Mods/VanillaPsycastsExpanded</li>
     <li IfModActive="VanillaExpanded.VPsycastsE">Mods/VanillaPsycastsExpanded/1.6</li>
+    <li IfModActive="CETeam.CombatExtended">Mods/CombatExtended/1.6</li>
   </v1.6>
   <v1.7>
     <li>/</li>
