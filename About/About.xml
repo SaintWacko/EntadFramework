@@ -16,7 +16,7 @@
     <li>VanillaExpanded.VPsycastsE</li>
     <li>CETeam.CombatExtended</li>
   </loadAfter>
-  <description>Adds entads: weapons, apparel and furniture with randomly rolled traits. Traits start hidden and reveal themselves as they're noticed, with a unique pawn binding system. Entads turn up on raiders, with traders, and in quest rewards and loot. No DLC required.</description>
+  <description>Adds entads: weapons, apparel and furniture with randomly rolled hidden traits. Experiment with them to discover their unique effects and interactions. Based on the works of Alexander Wales.</description>
   <modDependencies>
     <li>
       <packageId>brrainz.harmony</packageId>
