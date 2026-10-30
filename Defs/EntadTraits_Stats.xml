@@ -5,7 +5,7 @@
     <defName>Entad_LongSight</defName>
     <label>Long Sight</label>
     <description>Distant targets feel closer.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -17,7 +17,7 @@
     <defName>Entad_QuickStrikes</defName>
     <label>Quick Strikes</label>
     <description>The weapon is eager to strike again.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors>
@@ -92,7 +92,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Swiftness</defName>
     <label>Swiftness</label>
-    <description>The wearer's steps feel lighter.</description>
+    <description>Its bearer's steps feel lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
@@ -142,7 +142,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Evasion</defName>
     <label>Evasion</label>
-    <description>The wearer is hard to hit in melee.</description>
+    <description>Its bearer is hard to hit in melee.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
@@ -168,7 +168,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Composure</defName>
     <label>Composure</label>
-    <description>Stress rolls off the wearer.</description>
+    <description>Stress rolls off its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
@@ -227,7 +227,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Delver</defName>
     <label>Delver</label>
-    <description>Stone yields to the wearer.</description>
+    <description>Stone yields to its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
@@ -311,7 +311,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_AnimalFriend</defName>
     <label>Animal Friend</label>
-    <description>Animals take to the wearer.</description>
+    <description>Animals take to its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -334,7 +334,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Allure</defName>
     <label>Allure</label>
-    <description>The wearer is striking to behold.</description>
+    <description>Its bearer is striking to behold.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <!-- +2 beauty is vanilla's whole Beautiful trait -->

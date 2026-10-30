@@ -27,7 +27,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_Stun</defName>
     <label>Staggering</label>
-    <description>Now and then a blow from it lands harder in the mind than on the body.</description>
+    <description>Now and then a hit from it lands harder in the mind than on the body.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <triggers>
