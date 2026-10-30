@@ -119,7 +119,7 @@
     <defName>Entad_KeenEye</defName>
     <label>Keen Eye</label>
     <description>Distant targets look close enough to touch.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <categories><li>WeaponRanged</li><li>Apparel</li></categories>
     <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
