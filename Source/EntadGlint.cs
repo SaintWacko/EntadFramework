@@ -77,7 +77,7 @@ namespace EntadFramework
                 if (u >= 1f) continue;
                 if (EntadSettings.GlintHideIdentified && !comp.HasHidden) continue;
                 Thing anchor = Anchor(comp.parent);
-                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position)) continue;
+                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor.Position.Fogged(map)) continue;
                 try { Draw(anchor, map, Gen.HashCombineInt(seed, cycle), u, size); }
                 catch (System.Exception e)
                 {
