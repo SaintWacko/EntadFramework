@@ -163,6 +163,11 @@ namespace EntadFramework
         // Pulse flecks don't need Ideology and aren't affected.
         public static bool AuraEffects = true;
 
+        // The glint on entads in view (EntadGlint), on gear in use too, and whether a fully identified one stops
+        public static bool Glint = true;
+        public static bool GlintOnGear = true;
+        public static bool GlintHideIdentified = false;
+
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
 
@@ -186,6 +191,9 @@ namespace EntadFramework
         {
             HideTraits = true;
             AuraEffects = true;
+            Glint = true;
+            GlintOnGear = true;
+            GlintHideIdentified = false;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -242,6 +250,9 @@ namespace EntadFramework
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
+            Scribe_Values.Look(ref Glint, "glint", true);
+            Scribe_Values.Look(ref GlintOnGear, "glintOnGear", true);
+            Scribe_Values.Look(ref GlintHideIdentified, "glintHideIdentified", false);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
@@ -594,6 +605,12 @@ namespace EntadFramework
             Section(list, "EF_Settings_Visuals");
             list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
             list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_Glint".Translate(), ref EntadSettings.Glint, "EF_Settings_Glint_Tip".Translate());
+            if (EntadSettings.Glint)
+            {
+                list.CheckboxLabeled("  " + "EF_Settings_GlintOnGear".Translate(), ref EntadSettings.GlintOnGear, "EF_Settings_GlintOnGear_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_GlintHideIdentified".Translate(), ref EntadSettings.GlintHideIdentified, "EF_Settings_GlintHideIdentified_Tip".Translate());
+            }
             list.Gap();
 
             Section(list, "EF_Settings_MarketValue");

@@ -49,6 +49,7 @@ namespace EntadFramework
             sources.Clear();
             humbleItems.Clear();
             sheddingItems.Clear();
+            EntadGlint.Clear();
             EntadCompat.RaiseGameStarted(game);
         }
 

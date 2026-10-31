@@ -397,6 +397,7 @@ namespace EntadFramework
             RevealWhere(EntadEffectKind.Custom, m => m.def.customEffects?.Contains(key) == true);
         }
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
+        internal bool glintRegistered;
 
         public bool HasHidden
         {
@@ -597,6 +598,7 @@ namespace EntadFramework
             // the game's stat caches for the item and its holder from serving a pre-change value.
             ClearStatCaches();
             EntadAuras.Refresh(this);
+            EntadGlint.Register(this);
             EntadStorage.Refresh(this, parent.Spawned);
             EntadFurnitureEffects.Refresh(this);
             if (!parent.Spawned) return;
@@ -756,6 +758,7 @@ namespace EntadFramework
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
                 EntadAuras.Refresh(this);
+                EntadGlint.Register(this);
                 EntadFurnitureEffects.Refresh(this);
             }
             EntadCompat.RaiseExposing(this);

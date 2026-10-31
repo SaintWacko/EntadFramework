@@ -238,6 +238,12 @@
   <EF_Settings_AuraEffects>Aura glow and links</EF_Settings_AuraEffects>
   <EF_Settings_AuraEffects_Tip>With Ideology, an active aura you know about lights the ground it covers and draws a line to each pawn it affects. Without Ideology, or with this off, selecting the carrier or furniture outlines the aura's range instead.</EF_Settings_AuraEffects_Tip>
   <EF_Settings_VerityReadout>Show verity with the resources</EF_Settings_VerityReadout>
+  <EF_Settings_Glint>Entads glint</EF_Settings_Glint>
+  <EF_Settings_Glint_Tip>Entads on the map give off a short gold glint every few seconds, so they stand out from ordinary things. Shows on loose and minified items, installed furniture and gear on corpses, never under fog, and keeps going while the game is paused.</EF_Settings_Glint_Tip>
+  <EF_Settings_GlintOnGear>Glint on gear in use</EF_Settings_GlintOnGear>
+  <EF_Settings_GlintOnGear_Tip>Entads a pawn is wearing, wielding or carrying in hand glint too. Items in a pawn's inventory never do.</EF_Settings_GlintOnGear_Tip>
+  <EF_Settings_GlintHideIdentified>Stop glinting once identified</EF_Settings_GlintHideIdentified>
+  <EF_Settings_GlintHideIdentified_Tip>An entad whose traits are all identified stops glinting. With trait hiding off in the discovery settings, nothing glints.</EF_Settings_GlintHideIdentified_Tip>
   <EF_Settings_VerityReadout_Tip>Adds the colony's entad verity as a row under the resource list in the top left, once the colony has any. Research benches show it either way.</EF_Settings_VerityReadout_Tip>
   <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
   <EF_Settings_Generation>Generation</EF_Settings_Generation>
