@@ -32,13 +32,28 @@ namespace EntadFramework
         private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
         private static readonly List<System.WeakReference<CompEntad>> items = new List<System.WeakReference<CompEntad>>();
 
-        public static void Clear() => items.Clear();
+        // The draw loop prunes as it goes, but it doesn't run with the glint off or on the world view, while world
+        // pawn gear keeps registering, so registering prunes too once the list has doubled
+        private static int pruneAt = 256;
+
+        public static void Clear() { items.Clear(); pruneAt = 256; }
 
         public static void Register(CompEntad comp)
         {
             if (comp.glintRegistered || comp.activeTraits.Count == 0) return;
             comp.glintRegistered = true;
             items.Add(new System.WeakReference<CompEntad>(comp));
+            if (items.Count < pruneAt) return;
+            for (int i = items.Count - 1; i >= 0; i--)
+                if (Dead(i, out _)) items.RemoveAt(i);
+            pruneAt = Mathf.Max(256, items.Count * 2);
+        }
+
+        private static bool Dead(int i, out CompEntad comp)
+        {
+            if (items[i].TryGetTarget(out comp) && !comp.parent.Destroyed && comp.activeTraits.Count > 0) return false;
+            if (comp != null) comp.glintRegistered = false;
+            return true;
         }
 
         public static void Postfix()
@@ -46,27 +61,24 @@ namespace EntadFramework
             if (!EntadSettings.Glint || items.Count == 0) return;
             Map map = Find.CurrentMap;
             if (map == null || !WorldRendererUtility.DrawingMap) return;
-            float now = Time.realtimeSinceStartup;
+            // Double: a float clock this far into a session would round to steps near a frame long
+            double now = Time.realtimeSinceStartupAsDouble;
             CellRect view = Find.CameraDriver.CurrentViewRect.ExpandedBy(2);
             float size = Mathf.Clamp(MinPixels / Find.CameraDriver.CellSizePixels, MinCells, MaxCells);
             for (int i = items.Count - 1; i >= 0; i--)
             {
-                if (!items[i].TryGetTarget(out var comp) || comp.parent.Destroyed || comp.activeTraits.Count == 0)
-                {
-                    if (comp != null) comp.glintRegistered = false;
-                    items.RemoveAt(i);
-                    continue;
-                }
+                if (Dead(i, out var comp)) { items.RemoveAt(i); continue; }
                 int seed = Gen.HashCombineInt(comp.parent.thingIDNumber, 0x5E1C);
-                float period = MinPeriod + PeriodSpread * ((seed & 0xFF) / 255f);
-                float t = now + period * (((seed >> 8) & 0xFFFF) / 65535f);
-                int cycle = Mathf.FloorToInt(t / period);
-                float u = (t - cycle * period) / GlintSeconds;
+                double period = MinPeriod + PeriodSpread * ((seed & 0xFF) / 255f);
+                double t = now + period * (((seed >> 8) & 0xFFFF) / 65535f);
+                double cycles = System.Math.Floor(t / period);
+                int cycle = (int)(long)cycles;
+                float u = (float)((t - cycles * period) / GlintSeconds);
                 if (u >= 1f) continue;
                 if (EntadSettings.GlintHideIdentified && !comp.HasHidden) continue;
                 Thing anchor = Anchor(comp.parent);
-                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor.Position.Fogged(map)) continue;
-                try { Draw(anchor, Gen.HashCombineInt(seed, cycle), u, size); }
+                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position)) continue;
+                try { Draw(anchor, map, Gen.HashCombineInt(seed, cycle), u, size); }
                 catch (System.Exception e)
                 {
                     Log.ErrorOnce($"[Entad Framework] entad glint failed on {comp.parent}: {e}", 0x5E1C0000 ^ comp.parent.thingIDNumber);
@@ -100,7 +112,7 @@ namespace EntadFramework
             return pawn.ParentHolder is Corpse corpse && corpse.Spawned ? corpse : null;
         }
 
-        private static void Draw(Thing anchor, int cycleSeed, float u, float size)
+        private static void Draw(Thing anchor, Map map, int cycleSeed, float u, float size)
         {
             // A new spot on the thing each time it glints, inside its footprint
             Vector2 extent = anchor.def.building != null ? new Vector2(anchor.RotatedSize.x, anchor.RotatedSize.z) * 0.5f - new Vector2(0.25f, 0.25f) : new Vector2(0.3f, 0.3f);
@@ -110,6 +122,8 @@ namespace EntadFramework
             Vector3 pos = anchor.DrawPos;
             pos.x += rx * extent.x;
             pos.z += rz * extent.y;
+            // The spot's own cell: a large building on the edge of the fog would otherwise glint from its fogged part
+            if (pos.ToIntVec3().Fogged(map)) return;
             pos.y = AltitudeLayer.MetaOverlays.AltitudeFor();
             float strength = Mathf.Sin(u * Mathf.PI);
             float scale = size * strength;
