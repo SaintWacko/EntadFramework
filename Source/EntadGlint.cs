@@ -77,7 +77,9 @@ namespace EntadFramework
                 if (u >= 1f) continue;
                 if (EntadSettings.GlintHideIdentified && !comp.HasHidden) continue;
                 Thing anchor = Anchor(comp.parent);
-                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor.Position.Fogged(map)) continue;
+                // A walking pawn's draw position trails its cell, so the spot check in Draw could pass for a frame
+                // while it steps into fog
+                if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor is Pawn && anchor.Position.Fogged(map)) continue;
                 try { Draw(anchor, map, Gen.HashCombineInt(seed, cycle), u, size); }
                 catch (System.Exception e)
                 {
