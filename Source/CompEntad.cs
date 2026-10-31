@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 using RimWorld;
+using UnityEngine;
 
 namespace EntadFramework
 {
@@ -1010,6 +1011,40 @@ namespace EntadFramework
     public class Dialog_RenameEntad : Dialog_Rename<CompEntad>
     {
         public Dialog_RenameEntad(CompEntad comp) : base(comp) { }
+    }
+
+    // The rename gizmo only shows while the item itself is selected, so worn and equipped entads get the bio tab's
+    // rename button beside the title of their info card instead. Same audience as the gizmo plus the player's own
+    // carriers: an entad on a trader, a visitor or a raider is not the player's to name (god mode excepted).
+    [HarmonyLib.HarmonyPatch(typeof(Dialog_InfoCard), nameof(Dialog_InfoCard.DoWindowContents))]
+    public static class Patch_InfoCard_RenameEntad
+    {
+        public static void Postfix(Rect inRect, Thing ___thing, Precept_ThingStyle ___precept)
+        {
+            // A relic's card titles it with the precept's name, which this name would not change
+            if (___precept != null) return;
+            var comp = (___thing as ThingWithComps)?.GetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.NullOrEmpty() || !CanRename(___thing)) return;
+
+            // Mirrors the card's own title rect, so the button sits just after the name
+            Text.Font = GameFont.Medium;
+            float titleWidth = Text.CalcSize(___thing.LabelCapNoCount).x;
+            Text.Font = GameFont.Small;
+            float x = inRect.x + 18f + 34f + titleWidth + 8f;
+            var button = new Rect(Mathf.Min(x, inRect.xMax - 90f), inRect.y + 20f, 30f, 30f);
+            TooltipHandler.TipRegion(button, "EF_RenameDesc".Translate());
+            if (Widgets.ButtonImage(button, TexButton.Rename))
+                Find.WindowStack.Add(new Dialog_RenameEntad(comp));
+        }
+
+        private static bool CanRename(Thing thing)
+        {
+            if (DebugSettings.godMode || thing.Spawned) return true;
+            Pawn holder = (thing.ParentHolder as Pawn_EquipmentTracker)?.pawn
+                ?? (thing.ParentHolder as Pawn_ApparelTracker)?.pawn
+                ?? (thing.ParentHolder as Pawn_InventoryTracker)?.pawn;
+            return holder != null && holder.Faction == Faction.OfPlayer;
+        }
     }
 
     public partial class CompEntad
