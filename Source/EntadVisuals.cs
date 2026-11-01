@@ -116,7 +116,10 @@ namespace EntadFramework
             }
             Vector2 size = graphic.drawSize;
             if (thing.MultipleItemsPerCellDrawn()) size *= 0.8f;
-            Vector3 pos = thing.DrawPos + graphic.DrawOffset(thing.Rotation);
+            // The random-rotation wrapper has no graphic data of its own, so its DrawOffset is always zero; vanilla's
+            // Print gets the offset through the sub-graphic
+            Graphic placed = (graphic as Graphic_RandomRotated)?.SubGraphic ?? graphic;
+            Vector3 pos = thing.DrawPos + placed.DrawOffset(thing.Rotation);
             float altitude = AltitudeLayer.Item.AltitudeFor() + 0.01f;
             Run(set, thing, map, Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(size.x, 1f, size.y)), false, graphic.MatSingleFor(thing), size, altitude);
         }
