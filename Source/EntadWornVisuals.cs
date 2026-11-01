@@ -74,7 +74,7 @@ namespace EntadFramework
                 if (!Rand.Chance(chance)) continue;
                 Vector3 pos = d.Spot(this, Rand.Value, Rand.Value);
                 if (!pos.ShouldSpawnMotesAt(d.map)) continue;
-                var data = FleckMaker.GetDataStatic(pos, d.map, fleck, scale.RandomInRange);
+                var data = FleckMaker.GetDataStatic(pos, d.map, fleck, scale.RandomInRange * d.scale);
                 data.velocityAngle = angle.RandomInRange;
                 data.velocitySpeed = speed.RandomInRange;
                 data.rotationRate = rotationRate.RandomInRange;
@@ -148,12 +148,13 @@ namespace EntadFramework
             if ((seed & 0xFFFF) / 65536f >= chance) return;
             Vector3 a = SpotFor(d, seed);
             Vector3 b = a;
+            float min = minLength * d.scale;
             for (int k = 1; k <= 6; k++)
             {
                 b = SpotFor(d, Gen.HashCombineInt(seed, k));
-                if ((b - a).MagnitudeHorizontalSquared() >= minLength * minLength) break;
+                if ((b - a).MagnitudeHorizontalSquared() >= min * min) break;
             }
-            EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width * d.scale, minLength, d.drawNow);
+            EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width * d.scale, min, d.drawNow);
         }
 
         private Vector3 SpotFor(EntadWornDraw d, int hash)
@@ -295,7 +296,8 @@ namespace EntadFramework
             d.item = item;
             d.map = pawn.Map;
             d.matrix = matrix;
-            d.scale = matrix.lossyScale.x;
+            Vector3 lossy = matrix.lossyScale;
+            d.scale = (lossy.x + lossy.z) * 0.5f;
             d.width = node.width;
             d.height = node.height;
             d.narrow = pawn.RaceProps.Humanlike ? parms.facing.IsHorizontal : !parms.facing.IsHorizontal;
