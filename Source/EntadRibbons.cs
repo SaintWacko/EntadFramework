@@ -133,7 +133,9 @@ namespace EntadFramework
             for (int i = ribbons.Count - 1; i >= 0; i--)
             {
                 var r = ribbons[i];
-                if (r.map != map) continue;
+                // Play only adds ribbons on the map in view, and one lasts under a second, so one for another map is
+                // left over from a map switch and would otherwise replay on return or hold a removed map
+                if (r.map != map) { ribbons.RemoveAt(i); continue; }
                 r.age += dt;
                 Follow(r.fromThing, map, ref r.fromPos);
                 Follow(r.toThing, map, ref r.toPos);
