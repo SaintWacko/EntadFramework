@@ -238,8 +238,22 @@ namespace EntadFramework
     [HarmonyPatch(typeof(PawnRenderTree), "SetupDynamicNodes")]
     public static class Patch_PawnRenderTree_WornVisuals
     {
-        private static readonly System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode> addChild =
-            AccessTools.MethodDelegate<System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode>>(AccessTools.Method(typeof(PawnRenderTree), "AddChild"));
+        private static System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode> addChild;
+
+        // Without the private AddChild (a game update renamed it) the patch stays off and worn visuals don't draw,
+        // rather than every pawn's tree build throwing
+        public static bool Prepare()
+        {
+            if (addChild != null) return true;
+            var method = AccessTools.Method(typeof(PawnRenderTree), "AddChild", new[] { typeof(PawnRenderNode), typeof(PawnRenderNode) });
+            if (method == null)
+            {
+                Log.Warning("[Entad Framework] PawnRenderTree.AddChild not found: trait visuals on worn apparel are off");
+                return false;
+            }
+            addChild = AccessTools.MethodDelegate<System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode>>(method);
+            return true;
+        }
 
         public static void Postfix(PawnRenderTree __instance)
         {
