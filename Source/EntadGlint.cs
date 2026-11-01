@@ -80,7 +80,7 @@ namespace EntadFramework
                 // A walking pawn's draw position trails its cell, so the spot check in Draw could pass for a frame
                 // while it steps into fog
                 if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor is Pawn && anchor.Position.Fogged(map)) continue;
-                try { Draw(anchor, map, Gen.HashCombineInt(seed, cycle), u, size); }
+                try { Draw(anchor, map, Mix(seed ^ cycle * 0x2C1B3C6D), u, size); }
                 catch (System.Exception e)
                 {
                     Log.ErrorOnce($"[Entad Framework] entad glint failed on {comp.parent}: {e}", 0x5E1C0000 ^ comp.parent.thingIDNumber);
@@ -112,6 +112,19 @@ namespace EntadFramework
         {
             if (pawn.Spawned) return EntadSettings.GlintOnGear && !pawn.IsHiddenFromPlayer() ? pawn : null;
             return pawn.ParentHolder is Corpse corpse && corpse.Spawned ? corpse : null;
+        }
+
+        // Murmur3's finaliser. Gen.HashCombineInt only adds the value in, so consecutive cycles changed the low bits
+        // by about one and the spot stayed put
+        private static int Mix(int h)
+        {
+            uint x = (uint)h;
+            x ^= x >> 16;
+            x *= 0x85EBCA6B;
+            x ^= x >> 13;
+            x *= 0xC2B2AE35;
+            x ^= x >> 16;
+            return (int)x;
         }
 
         private static void Draw(Thing anchor, Map map, int cycleSeed, float u, float size)
