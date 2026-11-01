@@ -247,7 +247,7 @@ namespace EntadFramework
                 var pawns = things.OfType<Pawn>().ToList();
                 if (pawns.Count == 0)
                 {
-                    Vector3 mouse = UI.MouseMapPosition();
+                    UnityEngine.Vector3 mouse = UI.MouseMapPosition();
                     pawns.AddRange(map.mapPawns.AllPawnsSpawned.Where(p => (p.DrawPos - mouse).MagnitudeHorizontalSquared() < 0.36f));
                 }
                 foreach (var pawn in pawns)
