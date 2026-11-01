@@ -24,7 +24,10 @@ namespace EntadFramework
         public EntadWeaponVisual[] weapon = new EntadWeaponVisual[0];
         public EntadVisual_ProjectileTrail[] trails = new EntadVisual_ProjectileTrail[0];
         public EntadWornVisual[] worn = new EntadWornVisual[0];
-        public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0;
+        public EntadEventVisual[] events = new EntadEventVisual[0];
+        // EntadEventVisual.Bit of every event the set plays on
+        public int eventMask;
+        public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0 || events.Length > 0;
 
         // Bumped when a setting changes which entries play, so every item's cached set is rebuilt on its next draw
         // without walking the items
@@ -38,6 +41,7 @@ namespace EntadFramework
             List<EntadWeaponVisual> weapon = null;
             List<EntadVisual_ProjectileTrail> trails = null;
             List<EntadWornVisual> worn = null;
+            List<EntadEventVisual> events = null;
             var traits = comp.activeTraits;
             for (int i = 0; i < traits.Count; i++)
             {
@@ -50,13 +54,19 @@ namespace EntadFramework
                     if (v is EntadWeaponVisual w) (weapon ?? (weapon = new List<EntadWeaponVisual>())).Add(w);
                     else if (v is EntadVisual_ProjectileTrail p) (trails ?? (trails = new List<EntadVisual_ProjectileTrail>())).Add(p);
                     else if (v is EntadWornVisual o) (worn ?? (worn = new List<EntadWornVisual>())).Add(o);
+                    else if (v is EntadEventVisual e) (events ?? (events = new List<EntadEventVisual>())).Add(e);
                 }
             }
-            if (weapon == null && trails == null && worn == null) return new EntadVisualSet { builtVersion = version };
+            if (weapon == null && trails == null && worn == null && events == null) return new EntadVisualSet { builtVersion = version };
             var set = new EntadVisualSet { builtVersion = version };
             if (weapon != null) set.weapon = weapon.ToArray();
             if (trails != null) set.trails = trails.ToArray();
             if (worn != null) set.worn = worn.ToArray();
+            if (events != null)
+            {
+                set.events = events.ToArray();
+                foreach (var e in events) set.eventMask |= EntadEventVisual.Bit(e.on);
+            }
             return set;
         }
     }
@@ -80,6 +90,9 @@ namespace EntadFramework
             lastFleckTick.Clear();
             trails.Clear();
             zaps.Clear();
+            lastEventTick.Clear();
+            blastHits.Clear();
+            EntadAfterimages.Clear();
         }
 
         // Game ticks since the item last spawned flecks, capped, and 1 the first time it's seen

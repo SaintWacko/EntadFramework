@@ -140,6 +140,8 @@ namespace EntadFramework
         {
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
+            // Vanilla asks for these only inside ApplyMeleeDamageToTarget, so this is the blow landing
+            EntadVisuals.WeaponHit(comp, __instance.CasterPawn, target.Thing);
             __result = EntadWeaponDamage.ModifyMelee(__result, comp, target.Thing as Pawn);
         }
     }
@@ -211,7 +213,7 @@ namespace EntadFramework
         {
             EntadWeaponReveal.Hit(launcher as Pawn, false);
             var comp = EntadWeaponDamage.CompOf(equipment, launcher);
-            pending = comp != null && EntadWeaponDamage.HasExtra(comp) ? comp : null;
+            pending = comp != null && (EntadWeaponDamage.HasExtra(comp) || EntadVisuals.HasHitVisuals(comp)) ? comp : null;
         }
 
         public static void EndProjectileBlast() => pending = null;
@@ -233,7 +235,9 @@ namespace EntadFramework
             {
                 Thing t = damaged[k];
                 // damagedThings also holds ignored things and fires a bomb put out; neither took the blast
-                if (t == null || t.Destroyed || t is Fire || (ignored != null && ignored.Contains(t))) continue;
+                if (t == null || t is Fire || (ignored != null && ignored.Contains(t))) continue;
+                EntadVisuals.BlastHit(explosion, comp, t, cell);
+                if (t.Destroyed) continue;
                 float angle = t.Position == explosion.Position ? Rand.RangeInclusive(0, 359) : (t.Position - explosion.Position).AngleFlat;
                 var template = new DamageInfo(explosion.damType, 0f, ap, angle, explosion.instigator, null, explosion.weapon,
                     DamageInfo.SourceCategory.ThingOrUnknown, explosion.intendedTarget);
@@ -331,7 +335,9 @@ namespace EntadFramework
             var props = __instance.verbProps;
             if (thing == null || thing.Destroyed || props.beamDamageDef == null) return;
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.caster);
-            if (comp == null || !EntadWeaponDamage.HasExtra(comp)) return;
+            if (comp == null) return;
+            EntadVisuals.WeaponHit(comp, __instance.caster, thing);
+            if (!EntadWeaponDamage.HasExtra(comp)) return;
             // Each burst shot hits once, like a bullet. A beam with beamTotalDamage shares that total over its path
             // cells, so the extra is shared the same way and a whole burst deals it about once.
             float factor = damageFactor;

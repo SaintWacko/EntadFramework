@@ -585,6 +585,7 @@ namespace EntadFramework
                 return;
             }
 
+            IList<Pawn> affected = null;
             if (!t.IsArea) ApplyTo(pawn, pawn, t, p);
             else
             {
@@ -593,6 +594,7 @@ namespace EntadFramework
                 {
                     // In a caravan or a transporter: nobody around, so only the pawn itself, if it is a target
                     if ((t.targets & EntadTriggerTargets.Self) != 0) ApplyTo(pawn, pawn, t, p);
+                    affected = System.Array.Empty<Pawn>();
                 }
                 else
                 {
@@ -621,8 +623,11 @@ namespace EntadFramework
                     var hit = areaTargets.ToArray();
                     areaTargets.Clear();
                     for (int i = 0; i < hit.Length; i++) ApplyTo(hit[i], pawn, t, p);
+                    affected = hit;
                 }
             }
+            // Before the casts: a skip moves the holder, and a stream to it should start where the trigger happened
+            EntadVisuals.Triggered(p, affected);
             if (casts != null) EntadProcs.Fire(casts);
             m.Reveal(EntadEffectKind.Trigger);
         }

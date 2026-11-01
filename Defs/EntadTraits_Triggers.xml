@@ -19,6 +19,10 @@
         <cooldownHours>24</cooldownHours>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Holder</at><fleck>Entad_Fleck_HealPulse</fleck><scale>1.5~1.7</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Holder</at><fleck>Entad_Fleck_HealMote</fleck><count>5~7</count><scale>0.12~0.2</scale><angle>-25~25</angle><speed>0.3~0.6</speed><spread>0.3</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -37,6 +41,10 @@
         <heal>6~10</heal>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Affected</at><fleck>Entad_Fleck_HealPulse</fleck><scale>1~1.2</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Affected</at><fleck>Entad_Fleck_HealMote</fleck><count>2~3</count><scale>0.12~0.2</scale><angle>-25~25</angle><speed>0.3~0.6</speed><spread>0.3</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -59,6 +67,9 @@
         <sound>Thunder_OnMap</sound>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventArcs"><on>Trigger</on><at>Other</at><to>Affected</to><segments>4</segments><jag>0.35</jag><width>0.24</width><arcTicks>10</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -76,6 +87,9 @@
         <randomInspiration>true</randomInspiration>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><fleck>Entad_Fleck_GoldGlint</fleck><count>4~6</count><scale>0.3~0.45</scale><angle>-40~40</angle><speed>0.1~0.3</speed><spread>0.35</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -97,5 +111,9 @@
         <targets>Self, Allies</targets>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Affected</at><fleck>Entad_Fleck_HealPulse</fleck><scale>1~1.2</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Affected</at><fleck>Entad_Fleck_HealMote</fleck><count>2~3</count><scale>0.12~0.2</scale><angle>-25~25</angle><speed>0.3~0.6</speed><spread>0.3</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 </Defs>

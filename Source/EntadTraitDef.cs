@@ -437,9 +437,16 @@ namespace EntadFramework
         // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost
         // one field read in a game whose traits have none
         private static bool? anyWeaponVisuals, anyTrailVisuals, anyWornVisuals;
+        private static int eventVisualMask = -1;
         public static bool AnyWeaponVisuals => anyWeaponVisuals ?? ReadVisuals().Item1;
         public static bool AnyTrailVisuals => anyTrailVisuals ?? ReadVisuals().Item2;
         public static bool AnyWornVisuals => anyWornVisuals ?? ReadVisuals().Item3;
+        // One bit per EntadVisualEvent some trait plays a visual on, so each event's hook is one int test otherwise
+        public static bool AnyEventVisuals(EntadVisualEvent ev)
+        {
+            if (eventVisualMask < 0) ReadVisuals();
+            return (eventVisualMask & EntadEventVisual.Bit(ev)) != 0;
+        }
 
         // Whether the trait has a visual drawn on the wearer, which puts a node in the wearer's render tree
         [Unsaved] private bool? hasWornVisuals;
@@ -448,6 +455,7 @@ namespace EntadFramework
         private static (bool, bool, bool) ReadVisuals()
         {
             bool weapon = false, trail = false, worn = false;
+            int events = 0;
             foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 if (d.visuals != null)
                     foreach (var v in d.visuals)
@@ -455,7 +463,9 @@ namespace EntadFramework
                         weapon |= v is EntadWeaponVisual;
                         trail |= v is EntadVisual_ProjectileTrail;
                         worn |= v is EntadWornVisual;
+                        if (v is EntadEventVisual e) events |= EntadEventVisual.Bit(e.on);
                     }
+            eventVisualMask = events;
             anyWeaponVisuals = weapon;
             anyTrailVisuals = trail;
             anyWornVisuals = worn;
@@ -807,6 +817,10 @@ namespace EntadFramework
                 }
             if (HasWornVisuals && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
                 yield return $"{defName}: worn visuals only play on apparel, and the trait's categories don't include Apparel";
+            if (visuals != null)
+                foreach (var v in visuals)
+                    if (v is EntadEventVisual e && e.on == EntadVisualEvent.Trigger && e.trigger >= (triggers?.Count ?? 0))
+                        yield return $"{defName}: a trigger visual names trigger {e.trigger}, and the trait has {triggers?.Count ?? 0}";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
             if (categories != null)
                 foreach (string c in categories)

@@ -174,7 +174,9 @@ namespace EntadFramework.CECompat
             __state.source = EntadDamageSource.BeginImpact(__instance.def, __instance.equipmentDef);
             if (hitThing == null) return;
             var comp = EntadWeaponDamage.CompOf(__instance.equipment, __instance.launcher);
-            if (comp == null || !EntadWeaponDamage.HasExtra(comp)) return;
+            if (comp == null) return;
+            EntadVisuals.WeaponHit(comp, __instance.launcher, hitThing);
+            if (!EntadWeaponDamage.HasExtra(comp)) return;
             __state.comp = comp;
             __state.template = new DamageInfo(__instance.DamageDef, 0f, __instance.PenetrationAmount, __instance.ExactRotation.eulerAngles.y,
                 __instance.launcher, null, __instance.equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, __instance.intendedTarget.Thing);
@@ -235,6 +237,7 @@ namespace EntadFramework.CECompat
             if (hitDepth <= 0) return;
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
+            EntadVisuals.WeaponHit(comp, __instance.CasterPawn, target.Thing);
             __result = EntadWeaponDamage.ModifyMelee(__result, comp, target.Thing as Pawn, (info, def) => Retype(__instance, info, def, isCrit));
         }
 

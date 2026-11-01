@@ -66,6 +66,9 @@
     <statOffsets>
       <li><stat>IncomingDamageFactor</stat><min>-0.15</min><max>-0.05</max></li>
     </statOffsets>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventEffecter"><on>Struck</on><effecter>Deflect_Metal</effecter><minIntervalTicks>20</minIntervalTicks></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Winterproof</defName>
@@ -150,6 +153,9 @@
     <statOffsets>
       <li><stat>MeleeDodgeChance</stat><min>2</min><max>8</max></li>
     </statOffsets>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventAfterimage"><on>Dodge</on></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Attunement</defName>

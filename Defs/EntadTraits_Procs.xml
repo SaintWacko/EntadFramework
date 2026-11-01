@@ -22,6 +22,9 @@
         </casts>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_BurdenWisp</fleck><from>Holder</from><to>Other</to><count>6~8</count></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
@@ -41,6 +44,9 @@
         </casts>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_StunWisp</fleck><from>Holder</from><to>Other</to><count>6~8</count></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
@@ -60,6 +66,9 @@
         </casts>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_MadnessWisp</fleck><from>Holder</from><to>Other</to><count>8~11</count></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <!-- Ranged damage from 5+ tiles: the pulse blinds everyone within 3.9 tiles of the attacker, the wearer included -->
@@ -186,6 +195,9 @@
         </casts>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>Entad_Fleck_DreadWisp</fleck><count>6~8</count><scale>0.5~0.8</scale><speed>0.6~1.2</speed><spread>0.3</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>

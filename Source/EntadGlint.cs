@@ -67,6 +67,15 @@ namespace EntadFramework
                     Log.ErrorOnce($"[Entad Framework] drawing shot zaps failed: {e}", 0x7A11CAFE);
                 }
             }
+            // Afterimages come from hediffs and dodges, not from the entad list, so they don't wait on it either
+            if (EntadAfterimages.Any && Find.CurrentMap != null && WorldRendererUtility.DrawingMap)
+            {
+                try { EntadAfterimages.Draw(Find.CurrentMap); }
+                catch (System.Exception e)
+                {
+                    Log.ErrorOnce($"[Entad Framework] drawing afterimages failed: {e}", 0x7A11AF7E);
+                }
+            }
             if (items.Count == 0) return;
             bool glint = EntadSettings.Glint;
             // Weapons lying on the map show their trait visuals from this pass too: it already walks every entad, and

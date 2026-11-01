@@ -172,6 +172,8 @@ namespace EntadFramework
         public static bool Visuals = true;
         public static bool VisualsGear = true;
         public static bool VisualsProjectiles = true;
+        // One-off visuals on hits, dodges, heals and triggers (EntadEventVisuals.cs), and the Sprint afterimages
+        public static bool VisualsEvents = true;
         // Visuals play before their trait is identified, as a hint that something is there; an entry's
         // beforeIdentified overrides it
         public static bool VisualsUnidentified = true;
@@ -205,6 +207,7 @@ namespace EntadFramework
             Visuals = true;
             VisualsGear = true;
             VisualsProjectiles = true;
+            VisualsEvents = true;
             VisualsUnidentified = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
@@ -268,6 +271,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref Visuals, "visuals", true);
             Scribe_Values.Look(ref VisualsGear, "visualsGear", true);
             Scribe_Values.Look(ref VisualsProjectiles, "visualsProjectiles", true);
+            Scribe_Values.Look(ref VisualsEvents, "visualsEvents", true);
             Scribe_Values.Look(ref VisualsUnidentified, "visualsUnidentified", true);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
@@ -638,6 +642,7 @@ namespace EntadFramework
             {
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsProjectiles".Translate(), ref EntadSettings.VisualsProjectiles, "EF_Settings_VisualsProjectiles_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsEvents".Translate(), ref EntadSettings.VisualsEvents, "EF_Settings_VisualsEvents_Tip".Translate());
                 bool unidentified = EntadSettings.VisualsUnidentified;
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsUnidentified".Translate(), ref EntadSettings.VisualsUnidentified, "EF_Settings_VisualsUnidentified_Tip".Translate());
                 if (unidentified != EntadSettings.VisualsUnidentified) EntadVisualSet.Invalidate();
