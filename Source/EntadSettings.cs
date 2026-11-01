@@ -634,7 +634,9 @@ namespace EntadFramework
             {
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsProjectiles".Translate(), ref EntadSettings.VisualsProjectiles, "EF_Settings_VisualsProjectiles_Tip".Translate());
+                bool unidentified = EntadSettings.VisualsUnidentified;
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsUnidentified".Translate(), ref EntadSettings.VisualsUnidentified, "EF_Settings_VisualsUnidentified_Tip".Translate());
+                if (unidentified != EntadSettings.VisualsUnidentified) EntadVisualSet.Invalidate();
             }
             list.Gap();
 
