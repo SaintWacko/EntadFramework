@@ -226,22 +226,23 @@ namespace EntadFramework
     public class EntadVisual_ProjectileTrail : EntadVisual
     {
         public FleckDef fleck;
-        // Flecks per game tick of flight; fractions are a chance
-        public float perTick = 1f;
+        // Flecks per tile of flight, spread along the path the shot covered since the last tick. Per tile and not per
+        // tick because a bullet crosses about a tile a tick, so a per-tick count left sparse dots a tile apart.
+        public float perCell = 3f;
         public FloatRange scale = new FloatRange(0.15f, 0.25f);
         public FloatRange speed = new FloatRange(0f, 0.2f);
         public FloatRange rotationRate = FloatRange.Zero;
         public float jitter = 0.05f;
         public Color color = Color.white;
 
-        public void Spawn(Vector3 pos, Map map)
+        public void Spawn(Vector3 from, Vector3 to, Map map)
         {
-            float n = perTick;
+            float n = perCell * Mathf.Max(0.3f, Vector3.Distance(from, to));
             while (n > 0f)
             {
                 if (n < 1f && !Rand.Chance(n)) break;
                 n -= 1f;
-                Vector3 p = pos + new Vector3(Rand.Range(-jitter, jitter), 0f, Rand.Range(-jitter, jitter));
+                Vector3 p = Vector3.Lerp(from, to, Rand.Value) + new Vector3(Rand.Range(-jitter, jitter), 0f, Rand.Range(-jitter, jitter));
                 var data = FleckMaker.GetDataStatic(p, map, fleck, scale.RandomInRange);
                 data.velocityAngle = Rand.Range(0f, 360f);
                 data.velocitySpeed = speed.RandomInRange;
@@ -255,7 +256,7 @@ namespace EntadFramework
         public override IEnumerable<string> ConfigErrors(string defName)
         {
             if (fleck == null) yield return $"{defName}: projectile trail visual needs a fleck";
-            if (perTick <= 0f) yield return $"{defName}: projectile trail perTick must be above 0";
+            if (perCell <= 0f) yield return $"{defName}: projectile trail perCell must be above 0";
         }
     }
 
@@ -409,6 +410,8 @@ namespace EntadFramework
         private class Trail
         {
             public Projectile projectile;
+            public Vector3 last;
+            public bool hasLast;
             public EntadVisual_ProjectileTrail[] visuals;
         }
         private static readonly List<Trail> trails = new List<Trail>();
@@ -534,10 +537,12 @@ namespace EntadFramework
                 if (projectile.Destroyed || !projectile.Spawned) { trails.RemoveAt(i); continue; }
                 if (projectile.Map != current) continue;
                 Vector3 pos = projectile.DrawPos;
-                IntVec3 cell = pos.ToIntVec3();
-                if (!view.Contains(cell) || !pos.ShouldSpawnMotesAt(current)) continue;
                 pos.y = AltitudeLayer.MoteLow.AltitudeFor();
-                for (int k = 0; k < trail.visuals.Length; k++) trail.visuals[k].Spawn(pos, current);
+                Vector3 from = trail.hasLast ? trail.last : pos;
+                trail.last = pos;
+                trail.hasLast = true;
+                if (!view.Contains(pos.ToIntVec3()) || !pos.ShouldSpawnMotesAt(current)) continue;
+                for (int k = 0; k < trail.visuals.Length; k++) trail.visuals[k].Spawn(from, pos, current);
             }
         }
 
