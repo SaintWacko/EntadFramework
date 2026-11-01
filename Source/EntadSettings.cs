@@ -623,7 +623,7 @@ namespace EntadFramework
                 list.CheckboxLabeled("  " + "EF_Settings_GlintOnGear".Translate(), ref EntadSettings.GlintOnGear, "EF_Settings_GlintOnGear_Tip".Translate());
                 list.CheckboxLabeled("  " + "EF_Settings_GlintHideIdentified".Translate(), ref EntadSettings.GlintHideIdentified, "EF_Settings_GlintHideIdentified_Tip".Translate());
             }
-            list.CheckboxLabeled("EF_Settings_Visuals".Translate(), ref EntadSettings.Visuals, "EF_Settings_Visuals_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_TraitVisuals".Translate(), ref EntadSettings.Visuals, "EF_Settings_TraitVisuals_Tip".Translate());
             if (EntadSettings.Visuals)
             {
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
