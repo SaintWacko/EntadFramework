@@ -272,6 +272,8 @@ namespace EntadFramework
         public float width = 0.18f;
         // Short, because the near end follows the shot: a bullet flies about a tile a tick, so each tick stretches it
         public int arcTicks = 2;
+        // Spread of zap directions, centred on the shot's heading (360 = any direction)
+        public float arcAngle = 180f;
 
         [Unsaved] private List<Material> materials;
 
@@ -302,7 +304,11 @@ namespace EntadFramework
                 if (n < 1f && !Rand.Chance(n)) break;
                 n -= 1f;
                 Vector3 a = Vector3.Lerp(from, to, Rand.Value);
-                Vector3 b = a + Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * new Vector3(reach.RandomInRange, 0f, 0f);
+                // Only ahead of the shot (within arcAngle/2 of its heading), so the zaps lead the bullet instead of trailing it
+                Vector3 heading = to - from;
+                float headingDeg = heading.MagnitudeHorizontalSquared() > 0.0001f ? -Mathf.Atan2(heading.z, heading.x) * Mathf.Rad2Deg : Rand.Range(0f, 360f);
+                float half = arcAngle * 0.5f;
+                Vector3 b = a + Quaternion.AngleAxis(headingDeg + Rand.Range(-half, half), Vector3.up) * new Vector3(reach.RandomInRange, 0f, 0f);
                 EntadVisuals.AddZap(map, a, b, mats.RandomElement(), width, arcTicks);
                 if (fleck != null)
                 {
