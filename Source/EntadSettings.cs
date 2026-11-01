@@ -448,7 +448,11 @@ namespace EntadFramework
             }
 
             var reset = new Rect(inRect.x, inRect.yMax - 32f, 200f, 32f);
-            if (Widgets.ButtonText(reset, "EF_Settings_Reset".Translate())) EntadSettings.ResetToDefaults();
+            if (Widgets.ButtonText(reset, "EF_Settings_Reset".Translate()))
+            {
+                EntadSettings.ResetToDefaults();
+                EntadVisualSet.Invalidate();
+            }
             TooltipHandler.TipRegion(reset, "EF_Settings_Reset_Tip".Translate());
         }
 
