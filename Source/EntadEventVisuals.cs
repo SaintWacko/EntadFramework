@@ -109,13 +109,13 @@ namespace EntadFramework
                 yield return $"{defName}: visual spot {at} only exists on Trigger events";
         }
 
-        protected static void Throw(FleckDef fleck, Vector3 pos, Map map, float scale, float angle, float speed, float rotationRate, Color color)
+        protected static void Throw(FleckDef fleck, Vector3 pos, Map map, float scale, float angle, float speed, float rotationRate, Color color, float? rotation = null)
         {
             var data = FleckMaker.GetDataStatic(pos, map, fleck, scale);
             data.velocityAngle = angle;
             data.velocitySpeed = speed;
             data.rotationRate = rotationRate;
-            data.rotation = Rand.Range(0f, 360f);
+            data.rotation = rotation ?? Rand.Range(0f, 360f);
             if (color != Color.white) data.instanceColor = color;
             map.flecks.CreateFleck(data);
         }
@@ -131,6 +131,8 @@ namespace EntadFramework
         public FloatRange angle = new FloatRange(0f, 360f);
         public FloatRange speed = FloatRange.Zero;
         public FloatRange rotationRate = FloatRange.Zero;
+        // Starting rotation; narrow it for a sprite with an up, like a flame
+        public FloatRange rotation = new FloatRange(0f, 360f);
         // Radius around the spot the flecks start in
         public float spread;
         public Color color = Color.white;
@@ -144,7 +146,7 @@ namespace EntadFramework
                 for (int i = 0; i < n; i++)
                 {
                     Vector3 p = spread > 0f ? pos + Rand.InsideUnitCircleVec3 * spread : pos;
-                    Throw(fleck, p, ctx.map, scale.RandomInRange, angle.RandomInRange, speed.RandomInRange, rotationRate.RandomInRange, color);
+                    Throw(fleck, p, ctx.map, scale.RandomInRange, angle.RandomInRange, speed.RandomInRange, rotationRate.RandomInRange, color, rotation.RandomInRange);
                 }
             }
         }
@@ -267,13 +269,14 @@ namespace EntadFramework
         public FleckDef fleck;
         public EntadVisualSpot from = EntadVisualSpot.Other;
         public EntadVisualSpot to = EntadVisualSpot.Holder;
-        public IntRange count = new IntRange(6, 9);
-        public FloatRange scale = new FloatRange(0.2f, 0.32f);
+        public IntRange count = new IntRange(10, 14);
+        // FireGlow's bright core is a small part of the sprite: much under 0.4 and a wisp flying a tile is lost
+        public FloatRange scale = new FloatRange(0.45f, 0.65f);
         public Color color = Color.white;
         // How far along the path the flecks start (0 = all at the source), so they arrive one after another
-        public float lead = 0.35f;
+        public float lead = 0.5f;
         // Start spots scattered this far around the line
-        public float spread = 0.25f;
+        public float spread = 0.2f;
         // When each arrives, as a fraction of its fleck's fade-in plus solid time; the rest of its life it fades out
         // at the far end
         public FloatRange arrive = new FloatRange(0.6f, 1f);
@@ -310,14 +313,17 @@ namespace EntadFramework
     }
 
     // Faded copies of the pawn sliding off it (EntadAfterimages.cs): a dodge that leaves the blow hitting an image.
-    // Plays on the pawn at the spot; sideways from the other spot when there is one, else in a random direction.
+    // Plays on the pawn at the spot, moving away from the other spot.
     public class EntadVisual_EventAfterimage : EntadEventVisual
     {
-        public int count = 2;
-        public FloatRange distance = new FloatRange(0.35f, 0.6f);
+        public int count = 3;
+        public FloatRange distance = new FloatRange(0.8f, 1.1f);
         public int lifeTicks = 30;
         public Color color = new Color(0.8f, 0.88f, 1f, 0.55f);
-        // Off to one side of the line from the other spot, as a dodge would; false = straight away from it
+        // East or west only, away from the other spot when it is to one side, else either: a copy sliding north or
+        // south is drawn over or under the pawn and barely shows
+        public bool horizontal = true;
+        // Without horizontal: off to one side of the line from the other spot, as a dodge would; false = straight away
         public bool sideways = true;
 
         public override void Play(EntadVisualContext ctx)
@@ -330,8 +336,13 @@ namespace EntadFramework
                 if (!(target.Thing is Pawn pawn)) continue;
                 Vector3 dir = spotsB.Count > 0 ? pos - spotsB[0].pos : Vector3.zero;
                 dir.y = 0f;
-                dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward;
-                if (sideways) dir = new Vector3(-dir.z, 0f, dir.x) * (Rand.Bool ? 1f : -1f);
+                if (horizontal)
+                    dir = new Vector3(dir.x > 0.3f ? 1f : dir.x < -0.3f ? -1f : Rand.Bool ? 1f : -1f, 0f, 0f);
+                else
+                {
+                    dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward;
+                    if (sideways) dir = new Vector3(-dir.z, 0f, dir.x) * (Rand.Bool ? 1f : -1f);
+                }
                 float d = distance.RandomInRange;
                 for (int i = 0; i < count; i++)
                 {
@@ -457,7 +468,11 @@ namespace EntadFramework
                 Rand.PushState(Gen.HashCombineInt((int)key, now));
                 try
                 {
-                    if (v.chance >= 1f || Rand.Chance(v.chance)) v.Play(ctx);
+                    if (v.chance >= 1f || Rand.Chance(v.chance))
+                    {
+                        v.Play(ctx);
+                        if (EntadProcs.LogTriggers && ev == EntadVisualEvent.Trigger) LogPlayed(v, ctx);
+                    }
                 }
                 catch (System.Exception e)
                 {
@@ -465,6 +480,17 @@ namespace EntadFramework
                 }
                 finally { Rand.PopState(); }
             }
+        }
+
+        // With 'Log Entad triggers' on: where a trigger visual found its spots, for one that fired and showed nothing
+        private static void LogPlayed(EntadEventVisual v, EntadVisualContext ctx)
+        {
+            var spots = new List<(Vector3 pos, TargetInfo target)>();
+            ctx.Spots(EntadVisualSpot.Holder, spots);
+            int holder = spots.Count;
+            ctx.Spots(EntadVisualSpot.Other, spots);
+            Log.Message($"[Entad Framework] {Find.TickManager.TicksGame}: trigger visual {v.GetType().Name} played for {ctx.holder?.LabelShort}: "
+                + $"holder spots {holder}, other spots {spots.Count} (other {ctx.other?.LabelShort ?? "none"}, cell {ctx.otherCell})");
         }
     }
 

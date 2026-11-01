@@ -88,7 +88,7 @@
     <graphicData>
       <texPath>Things/Mote/EntadGlint</texPath>
       <shaderType>MoteGlow</shaderType>
-      <color>(0.75, 0.9, 1)</color>
+      <color>(0.4, 0.68, 1)</color>
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.15</fadeInTime>
@@ -103,13 +103,27 @@
     <graphicData>
       <texPath>Things/Mote/FireGlow</texPath>
       <shaderType>MoteGlow</shaderType>
-      <color>(1, 0.5, 0.15)</color>
+      <color>(1, 0.7, 0.3)</color>
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.03</fadeInTime>
     <solidTime>0.06</solidTime>
     <fadeOutTime>0.35</fadeOutTime>
     <growthRate>1.2</growthRate>
+  </FleckDef>
+
+  <!-- A tongue of vanilla's fire rising off a burn hit. Drawn as it is rather than added like a glow, which on its
+       own reads as a red blot over the pawn. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_FlameLick</defName>
+    <graphicData>
+      <texPath>Things/Special/Fire/FireA</texPath>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.05</fadeInTime>
+    <solidTime>0.15</solidTime>
+    <fadeOutTime>0.3</fadeOutTime>
+    <growthRate>-0.3</growthRate>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
@@ -134,7 +148,7 @@
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.45</solidTime>
+    <solidTime>0.6</solidTime>
     <fadeOutTime>0.25</fadeOutTime>
   </FleckDef>
 
@@ -147,7 +161,7 @@
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.4</solidTime>
+    <solidTime>0.6</solidTime>
     <fadeOutTime>0.25</fadeOutTime>
   </FleckDef>
 
@@ -160,7 +174,7 @@
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.4</solidTime>
+    <solidTime>0.6</solidTime>
     <fadeOutTime>0.25</fadeOutTime>
   </FleckDef>
 
@@ -173,7 +187,7 @@
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.08</fadeInTime>
-    <solidTime>0.3</solidTime>
+    <solidTime>0.45</solidTime>
     <fadeOutTime>0.2</fadeOutTime>
   </FleckDef>
 

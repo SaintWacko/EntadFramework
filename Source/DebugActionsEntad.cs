@@ -224,11 +224,15 @@ namespace EntadFramework
         [DebugAction(category = "Entad Framework", name = "Reveal all Entad traits", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void RevealAllEntad()
         {
-            foreach (var comp in EntadsAtMouse())
+            var comps = EntadsAtMouse();
+            foreach (var comp in comps)
                 foreach (var m in comp.activeTraits.ToList()) m.Reveal(EntadEffectKind.All);
+            if (comps.Count > 0) Messages.Message($"Revealed every trait on {comps.Count} entad(s).", MessageTypeDefOf.NeutralEvent, false);
         }
 
-        // A loose entad on the cell wins; otherwise every entad a pawn there wields or wears
+        // A loose entad on the cell wins; otherwise every entad a pawn there wields or wears. Only things with traits:
+        // every item and building carries the comp, so a plain one under the pawn used to win and nothing happened.
+        // A walking pawn is drawn between cells, so one drawn under the mouse counts when none stands in the cell.
         private static List<CompEntad> EntadsAtMouse()
         {
             var comps = new List<CompEntad>();
@@ -236,10 +240,17 @@ namespace EntadFramework
             IntVec3 cell = UI.MouseCell();
             if (map == null || !cell.InBounds(map)) return comps;
             var things = cell.GetThingList(map);
-            var loose = things.Find(t => !(t is Pawn) && t.TryGetComp<CompEntad>() != null);
+            var loose = things.Find(t => !(t is Pawn) && t.TryGetComp<CompEntad>() is CompEntad lc && lc.activeTraits.Count > 0);
             if (loose != null) comps.Add(loose.TryGetComp<CompEntad>());
             else
-                foreach (var pawn in things.OfType<Pawn>())
+            {
+                var pawns = things.OfType<Pawn>().ToList();
+                if (pawns.Count == 0)
+                {
+                    Vector3 mouse = UI.MouseMapPosition();
+                    pawns.AddRange(map.mapPawns.AllPawnsSpawned.Where(p => (p.DrawPos - mouse).MagnitudeHorizontalSquared() < 0.36f));
+                }
+                foreach (var pawn in pawns)
                 {
                     if (pawn.equipment != null)
                         foreach (var eq in pawn.equipment.AllEquipmentListForReading)
@@ -248,6 +259,7 @@ namespace EntadFramework
                         foreach (var ap in pawn.apparel.WornApparel)
                             if (ap.TryGetComp<CompEntad>() is CompEntad c) comps.Add(c);
                 }
+            }
             if (comps.Count == 0) Messages.Message("No entad item or pawn with entad gear at clicked cell.", MessageTypeDefOf.RejectInput, false);
             return comps;
         }

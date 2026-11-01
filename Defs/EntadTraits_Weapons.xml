@@ -218,7 +218,8 @@
         <perCell>3</perCell>
         <scale>0.18~0.28</scale>
       </li>
-      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.45~0.6</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.3~0.4</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>1~2</count><scale>0.25~0.35</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
@@ -231,7 +232,8 @@
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>Burn</damageType><min>1</min><max>4</max></li></extraDamage>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.7~0.9</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.45~0.55</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>2~3</count><scale>0.35~0.5</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Ember</fleck><count>3~5</count><scale>0.08~0.14</scale><speed>0.4~1</speed><spread>0.2</spread></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
@@ -329,7 +331,9 @@
         <perCell>4</perCell>
         <scale>0.18~0.32</scale>
       </li>
-      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>1~1.2</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.6~0.75</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>3~4</count><scale>0.45~0.6</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_CinderSmoke</fleck><scale>0.6~0.8</scale><angle>-15~15</angle><speed>0.2~0.4</speed></li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Ember</fleck><count>5~7</count><scale>0.1~0.16</scale><speed>0.5~1.2</speed><spread>0.25</spread></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
