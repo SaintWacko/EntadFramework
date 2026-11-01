@@ -277,7 +277,7 @@ namespace EntadFramework
         public float lead = 0.5f;
         // Start spots scattered this far around the line
         public float spread = 0.2f;
-        // Tiles per second, the same at any distance. Each fleck's life ends where the target stood when it was
+        // Tiles per second, the same at any distance past a tile or two (slower over a shorter hop, see below). Each fleck's life ends where the target stood when it was
         // thrown, its fade-out spanning the last stretch: a thrown fleck whose air time runs out skids on by up to a
         // couple of tiles (vanilla rolls the skid per fleck), which read as the stream flying past the pawn. Flecks
         // don't follow a moving pawn; at this speed one rarely gets far before they land.
@@ -298,6 +298,7 @@ namespace EntadFramework
                         Vector3 start = Vector3.Lerp(a, b, Rand.Range(0f, lead)) + Rand.InsideUnitCircleVec3 * spread;
                         Vector3 path = b - start;
                         float dist = Mathf.Sqrt(path.MagnitudeHorizontalSquared());
+                        if (dist < 0.05f) continue;
                         // Slower over a short hop, so the shortest life the fleck has still ends at the target
                         float v = Mathf.Min(speed.RandomInRange, dist / Mathf.Max(0.05f, fleck.fadeInTime + fleck.fadeOutTime));
                         var data = FleckMaker.GetDataStatic(start, ctx.map, fleck, scale.RandomInRange);
