@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -170,15 +171,15 @@ namespace EntadFramework
         public CompEntad comp;
         public float width = 1f, height = 1f;
 
-        private static PawnRenderNodeProperties props;
+        private static PawnRenderNodeProperties nodeProps;
 
-        public static PawnRenderNodeProperties Props
+        public static PawnRenderNodeProperties NodeProps
         {
             get
             {
-                if (props == null)
+                if (nodeProps == null)
                 {
-                    props = new PawnRenderNodeProperties
+                    nodeProps = new PawnRenderNodeProperties
                     {
                         debugLabel = "Entad worn visuals",
                         nodeClass = typeof(PawnRenderNode_EntadWorn),
@@ -191,9 +192,9 @@ namespace EntadFramework
                         // 80): flames and arcs show in front of the clothes
                         baseLayer = 90f,
                     };
-                    props.EnsureInitialized();
+                    nodeProps.EnsureInitialized();
                 }
-                return props;
+                return nodeProps;
             }
         }
 
@@ -231,24 +232,28 @@ namespace EntadFramework
         }
     }
 
-    // PawnRenderTree makes one of every DynamicPawnRenderNodeSetup subclass and asks it for nodes whenever a pawn's
-    // tree is built (spawning, apparel changes, SetAllGraphicsDirty), so this needs no Harmony patch
-    public class DynamicPawnRenderNodeSetup_EntadWorn : DynamicPawnRenderNodeSetup
+    // Runs whenever a pawn's render tree is built (spawning, apparel changes, SetAllGraphicsDirty), where vanilla adds
+    // the nodes of every DynamicPawnRenderNodeSetup subclass. Not a subclass of that: GetDynamicNodes returns value
+    // tuples, and the 1.7 build (net472 against the game's net10 references) can't name the game's tuple type.
+    [HarmonyPatch(typeof(PawnRenderTree), "SetupDynamicNodes")]
+    public static class Patch_PawnRenderTree_WornVisuals
     {
-        public override bool HumanlikeOnly => false;
+        private static readonly System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode> addChild =
+            AccessTools.MethodDelegate<System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode>>(AccessTools.Method(typeof(PawnRenderTree), "AddChild"));
 
-        public override IEnumerable<(PawnRenderNode node, PawnRenderNode parent)> GetDynamicNodes(Pawn pawn, PawnRenderTree tree)
+        public static void Postfix(PawnRenderTree __instance)
         {
-            if (!EntadTraitDef.AnyWornVisuals) yield break;
+            if (!EntadTraitDef.AnyWornVisuals) return;
+            Pawn pawn = __instance.pawn;
             var worn = pawn.apparel?.WornApparel;
-            if (worn == null) yield break;
+            if (worn == null) return;
             for (int i = 0; i < worn.Count; i++)
             {
                 var comp = worn[i].GetComp<CompEntad>();
                 if (comp == null) continue;
                 comp.wornNodeBuilt = comp.HasWornVisualTraits;
                 if (!comp.wornNodeBuilt) continue;
-                yield return (new PawnRenderNode_EntadWorn(pawn, PawnRenderNode_EntadWorn.Props, tree) { item = worn[i], comp = comp }, null);
+                addChild(__instance, new PawnRenderNode_EntadWorn(pawn, PawnRenderNode_EntadWorn.NodeProps, __instance) { item = worn[i], comp = comp }, null);
             }
         }
     }
