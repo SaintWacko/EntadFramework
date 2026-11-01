@@ -33,8 +33,9 @@ namespace EntadFramework
         public Map map;
         // The node's matrix: the body's position, facing and lying rotation, at the node's layer
         public Matrix4x4 matrix;
-        // Body mesh in cells
-        public float width, height;
+        // Body mesh in cells, and the scale the matrix carries from the tree (a drawData size, an animation), which
+        // spots follow through the matrix and sprite sizes have to be given
+        public float width, height, scale;
         public bool narrow, west;
         public bool drawNow;
         public int seed;
@@ -112,7 +113,7 @@ namespace EntadFramework
                 // A flame moves to a new spot now and then, so a pawn standing still doesn't burn in the same places
                 int spot = EntadGlint.Mix(seed ^ (frame / 12) * 0x2C1B3C6D);
                 Vector3 pos = d.Spot(this, (spot & 0xFFFF) / 65535f, ((spot >> 16) & 0xFFFF) / 65535f);
-                float s = Mathf.Lerp(size.min, size.max, Rand.ValueSeeded(seed + 2)) * d.height;
+                float s = Mathf.Lerp(size.min, size.max, Rand.ValueSeeded(seed + 2)) * d.height * d.scale;
                 // Fire sprites sit on their base, so the flame rises from the spot
                 pos.z += s * 0.35f;
                 pos.y += 0.002f * (i + 1);
@@ -152,7 +153,7 @@ namespace EntadFramework
                 b = SpotFor(d, Gen.HashCombineInt(seed, k));
                 if ((b - a).MagnitudeHorizontalSquared() >= minLength * minLength) break;
             }
-            EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width, minLength, d.drawNow);
+            EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width * d.scale, minLength, d.drawNow);
         }
 
         private Vector3 SpotFor(EntadWornDraw d, int hash)
@@ -294,6 +295,7 @@ namespace EntadFramework
             d.item = item;
             d.map = pawn.Map;
             d.matrix = matrix;
+            d.scale = matrix.lossyScale.x;
             d.width = node.width;
             d.height = node.height;
             d.narrow = pawn.RaceProps.Humanlike ? parms.facing.IsHorizontal : !parms.facing.IsHorizontal;
