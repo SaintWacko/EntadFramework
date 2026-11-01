@@ -77,8 +77,8 @@ namespace EntadFramework
                 if (u >= 1f) continue;
                 if (EntadSettings.GlintHideIdentified && !comp.HasHidden) continue;
                 Thing anchor = Anchor(comp.parent);
-                // A walking pawn's draw position trails its cell, so the spot check in Draw could pass for a frame
-                // while it steps into fog
+                // Vanilla hides a pawn by its Position cell, while its draw position leads towards the next cell, so
+                // the spot check in Draw alone would glint on a pawn still hidden as it walks out of fog
                 if (anchor == null || anchor.Map != map || !view.Contains(anchor.Position) || anchor is Pawn && anchor.Position.Fogged(map)) continue;
                 try { Draw(anchor, map, Mix(seed ^ cycle * 0x2C1B3C6D), u, size); }
                 catch (System.Exception e)
