@@ -28,18 +28,33 @@
     <growthRate>0.35</growthRate>
   </FleckDef>
 
-  <!-- Thin pale smoke rising off a wearer, fainter than the cinder smoke a weapon gives off -->
+  <!-- Grey smoke rising off a wearer. Stronger than the weapon smoke: it starts over the pawn's own sprite, where
+       a faint puff disappears against the clothes. -->
   <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_SmokeWisp</defName>
     <graphicData>
       <texPath>Things/Mote/Smoke</texPath>
-      <color>(0.45, 0.42, 0.4, 0.28)</color>
+      <color>(0.32, 0.3, 0.29, 0.6)</color>
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.3</fadeInTime>
-    <solidTime>0.2</solidTime>
+    <fadeInTime>0.25</fadeInTime>
+    <solidTime>0.35</solidTime>
+    <fadeOutTime>1.5</fadeOutTime>
+    <growthRate>0.45</growthRate>
+  </FleckDef>
+
+  <!-- Frost mist for worn gear: denser than the weapon mist for the same reason as the smoke above -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_FrostMistWorn</defName>
+    <graphicData>
+      <texPath>Things/Mote/Smoke</texPath>
+      <color>(0.8, 0.92, 1, 0.75)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.2</fadeInTime>
+    <solidTime>0.4</solidTime>
     <fadeOutTime>1.4</fadeOutTime>
-    <growthRate>0.3</growthRate>
+    <growthRate>0.4</growthRate>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">

@@ -53,6 +53,9 @@ namespace EntadFramework
     public static partial class EntadVisuals
     {
         private static readonly EntadWeaponDraw draw = new EntadWeaponDraw();
+        // For the weapon glow. Here rather than on EntadVisual_WeaponGlow: that class is built by the def loader and
+        // has no StaticConstructorOnStartup, so RimWorld warns about a Unity object field on it at startup.
+        internal static readonly MaterialPropertyBlock glowBlock = new MaterialPropertyBlock();
         // Last game tick each weapon or worn item spawned flecks, by thing id. Cleared when it grows large: that costs
         // an item one skipped tick of flecks, not a leak.
         private static readonly Dictionary<int, int> lastFleckTick = new Dictionary<int, int>();
