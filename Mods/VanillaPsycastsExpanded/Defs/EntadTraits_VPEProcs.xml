@@ -67,6 +67,24 @@
         </casts>
       </li>
     </triggers>
+    <!-- Mist sinking off the wearer with glints of ice over it: the strongest of the frost looks, for the Epic one -->
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_FrostMist</fleck>
+        <perSecond>2.5</perSecond>
+        <scale>0.35~0.55</scale>
+        <speed>0.05~0.15</speed>
+        <angle>150~210</angle>
+        <rotationRate>-15~15</rotationRate>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_FrostGlint</fleck>
+        <perSecond>1.5</perSecond>
+        <scale>0.15~0.25</scale>
+        <speed>0~0.05</speed>
+        <z>-0.2~0.2</z>
+      </li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <!-- A decoy where the holder stood, then a chaos skip away. Royalty's chaos skip, since VPE's draws its skip
@@ -240,6 +258,16 @@
         </casts>
       </li>
     </triggers>
+    <!-- Glints of rime over the wearer, without Frostward's mist -->
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_FrostGlint</fleck>
+        <perSecond>1.5</perSecond>
+        <scale>0.12~0.2</scale>
+        <speed>0~0.05</speed>
+        <z>-0.2~0.2</z>
+      </li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <!-- 20 seconds of a shield that sets melee attackers alight -->
@@ -261,6 +289,25 @@
         </casts>
       </li>
     </triggers>
+    <!-- Thin smoke and the odd ember rising off the wearer, as if something under the clothes were smouldering -->
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_SmokeWisp</fleck>
+        <perSecond>1.2</perSecond>
+        <scale>0.3~0.45</scale>
+        <speed>0.15~0.3</speed>
+        <angle>-20~20</angle>
+        <rotationRate>-10~10</rotationRate>
+        <z>-0.1~0.15</z>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perSecond>0.8</perSecond>
+        <scale>0.07~0.12</scale>
+        <speed>0.3~0.6</speed>
+        <angle>-30~30</angle>
+      </li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <!-- Stops bleeding for 2.4 hours, enough for a rescuer to get there -->

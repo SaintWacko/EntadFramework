@@ -86,24 +86,9 @@ namespace EntadFramework
 
         [Unsaved] private List<Material> materials;
 
-        private List<Material> Materials
-        {
-            get
-            {
-                if (materials == null)
-                {
-                    materials = new List<Material>();
-                    foreach (var tex in ContentFinder<Texture2D>.GetAllInFolder(texFolder))
-                        materials.Add(MaterialPool.MatFrom(tex, ShaderDatabase.TransparentPostLight, color));
-                    if (materials.Count == 0) Log.ErrorOnce($"[Entad Framework] no textures in flame folder '{texFolder}'", texFolder.GetHashCode());
-                }
-                return materials;
-            }
-        }
-
         public override void Draw(EntadWeaponDraw d)
         {
-            var mats = Materials;
+            var mats = materials ??= EntadVisuals.LoadFrames(texFolder, ShaderDatabase.TransparentPostLight, color, "flame");
             if (mats.Count == 0) return;
             for (int i = 0; i < count; i++)
             {
@@ -175,24 +160,9 @@ namespace EntadFramework
 
         [Unsaved] private List<Material> materials;
 
-        private List<Material> Materials
-        {
-            get
-            {
-                if (materials == null)
-                {
-                    materials = new List<Material>();
-                    foreach (var tex in ContentFinder<Texture2D>.GetAllInFolder(texFolder))
-                        materials.Add(MaterialPool.MatFrom(tex, ShaderDatabase.MoteGlow, color));
-                    if (materials.Count == 0) Log.ErrorOnce($"[Entad Framework] no textures in arc folder '{texFolder}'", texFolder.GetHashCode());
-                }
-                return materials;
-            }
-        }
-
         public override void Draw(EntadWeaponDraw d)
         {
-            var mats = Materials;
+            var mats = materials ??= EntadVisuals.LoadFrames(texFolder, ShaderDatabase.MoteGlow, color, "arc");
             if (mats.Count == 0) return;
             int interval = Mathf.Max(arcTicks + 1, intervalTicks);
             int t = d.ticks + (d.seed & 0xFFFF);
@@ -209,14 +179,7 @@ namespace EntadFramework
                 b = d.Point(Gen.HashCombineInt(seed, k));
                 if ((b - a).MagnitudeHorizontalSquared() >= min * min) break;
             }
-            Vector3 dir = b - a;
-            float length = Mathf.Sqrt(dir.MagnitudeHorizontalSquared());
-            if (length < min) return;
-            float deg = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-            Vector3 mid = (a + b) * 0.5f;
-            mid.y += 0.002f;
-            var mat = mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count];
-            Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(mid, Quaternion.AngleAxis(deg, Vector3.up), new Vector3(length * 1.15f, 1f, width)), mat, 0);
+            EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width, min);
         }
     }
 }

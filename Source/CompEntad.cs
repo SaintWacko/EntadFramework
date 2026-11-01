@@ -600,6 +600,20 @@ namespace EntadFramework
         private EntadVisualSet visuals;
         internal EntadVisualSet Visuals => visuals ?? (visuals = EntadVisualSet.For(this));
 
+        // Whether a trait has visuals drawn on the wearer, revealed or not, and whether the wearer's render tree was
+        // last built with a node for this item (EntadWornVisuals.cs), so a trait change can rebuild the tree when the
+        // two disagree
+        internal bool HasWornVisualTraits
+        {
+            get
+            {
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (activeTraits[i].def.HasWornVisuals) return true;
+                return false;
+            }
+        }
+        internal bool wornNodeBuilt;
+
         private void TraitsChanged()
         {
             hitStatFlags = -1;
@@ -614,6 +628,8 @@ namespace EntadFramework
             EntadGlint.Register(this);
             EntadStorage.Refresh(this, parent.Spawned);
             EntadFurnitureEffects.Refresh(this);
+            if (parent.ParentHolder is Pawn_ApparelTracker apparel && wornNodeBuilt != HasWornVisualTraits)
+                apparel.pawn.Drawer?.renderer?.SetAllGraphicsDirty();
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);

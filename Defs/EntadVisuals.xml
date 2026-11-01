@@ -28,6 +28,20 @@
     <growthRate>0.35</growthRate>
   </FleckDef>
 
+  <!-- Thin pale smoke rising off a wearer, fainter than the cinder smoke a weapon gives off -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_SmokeWisp</defName>
+    <graphicData>
+      <texPath>Things/Mote/Smoke</texPath>
+      <color>(0.45, 0.42, 0.4, 0.28)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.3</fadeInTime>
+    <solidTime>0.2</solidTime>
+    <fadeOutTime>1.4</fadeOutTime>
+    <growthRate>0.3</growthRate>
+  </FleckDef>
+
   <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_Static</defName>
     <graphicData>

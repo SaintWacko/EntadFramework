@@ -245,5 +245,17 @@
         </casts>
       </li>
     </triggers>
+    <!-- Cold air sinks: a little mist slides off the wearer and pools round the feet -->
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WornFlecks">
+        <fleck>Entad_Fleck_FrostMist</fleck>
+        <perSecond>1.5</perSecond>
+        <scale>0.3~0.45</scale>
+        <speed>0.05~0.15</speed>
+        <angle>150~210</angle>
+        <rotationRate>-15~15</rotationRate>
+        <z>-0.25~0</z>
+      </li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 </Defs>

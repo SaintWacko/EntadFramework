@@ -20,12 +20,14 @@ namespace EntadFramework
         public static readonly EntadVisualSet Empty = new EntadVisualSet();
         public EntadWeaponVisual[] weapon = new EntadWeaponVisual[0];
         public EntadVisual_ProjectileTrail[] trails = new EntadVisual_ProjectileTrail[0];
-        public bool Any => weapon.Length > 0 || trails.Length > 0;
+        public EntadWornVisual[] worn = new EntadWornVisual[0];
+        public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0;
 
         public static EntadVisualSet For(CompEntad comp)
         {
             List<EntadWeaponVisual> weapon = null;
             List<EntadVisual_ProjectileTrail> trails = null;
+            List<EntadWornVisual> worn = null;
             var traits = comp.activeTraits;
             for (int i = 0; i < traits.Count; i++)
             {
@@ -35,12 +37,14 @@ namespace EntadFramework
                 {
                     if (v is EntadWeaponVisual w) (weapon ?? (weapon = new List<EntadWeaponVisual>())).Add(w);
                     else if (v is EntadVisual_ProjectileTrail p) (trails ?? (trails = new List<EntadVisual_ProjectileTrail>())).Add(p);
+                    else if (v is EntadWornVisual o) (worn ?? (worn = new List<EntadWornVisual>())).Add(o);
                 }
             }
-            if (weapon == null && trails == null) return Empty;
+            if (weapon == null && trails == null && worn == null) return Empty;
             var set = new EntadVisualSet();
             if (weapon != null) set.weapon = weapon.ToArray();
             if (trails != null) set.trails = trails.ToArray();
+            if (worn != null) set.worn = worn.ToArray();
             return set;
         }
     }
@@ -49,8 +53,8 @@ namespace EntadFramework
     public static partial class EntadVisuals
     {
         private static readonly EntadWeaponDraw draw = new EntadWeaponDraw();
-        // Last game tick each weapon spawned flecks, by thing id. Cleared when it grows large: that costs a weapon one
-        // skipped tick of flecks, not a leak.
+        // Last game tick each weapon or worn item spawned flecks, by thing id. Cleared when it grows large: that costs
+        // an item one skipped tick of flecks, not a leak.
         private static readonly Dictionary<int, int> lastFleckTick = new Dictionary<int, int>();
         private const int MaxCatchUpTicks = 6;
 
@@ -61,6 +65,43 @@ namespace EntadFramework
             lastFleckTick.Clear();
             trails.Clear();
             zaps.Clear();
+        }
+
+        // Game ticks since the item last spawned flecks, capped, and 1 the first time it's seen
+        private static int NewTicks(int id, int now)
+        {
+            int newTicks;
+            if (lastFleckTick.TryGetValue(id, out int last)) newTicks = Mathf.Clamp(now - last, 0, MaxCatchUpTicks);
+            else
+            {
+                newTicks = 1;
+                if (lastFleckTick.Count > 1024) lastFleckTick.Clear();
+            }
+            if (newTicks > 0 || last == 0) lastFleckTick[id] = now;
+            return newTicks;
+        }
+
+        // Every texture in a folder as a material, for flicker frames and arc variants. Called on first draw (main
+        // thread), never while defs load.
+        internal static List<Material> LoadFrames(string folder, Shader shader, Color color, string what)
+        {
+            var materials = new List<Material>();
+            foreach (var tex in ContentFinder<Texture2D>.GetAllInFolder(folder))
+                materials.Add(MaterialPool.MatFrom(tex, shader, color));
+            if (materials.Count == 0) Log.ErrorOnce($"[Entad Framework] no textures in {what} folder '{folder}'", folder.GetHashCode());
+            return materials;
+        }
+
+        // An arc sprite stretched from a to b; none when the spots are closer than minLength
+        internal static void DrawArc(Material mat, Vector3 a, Vector3 b, float width, float minLength, bool drawNow = false)
+        {
+            Vector3 dir = b - a;
+            float length = Mathf.Sqrt(dir.MagnitudeHorizontalSquared());
+            if (length < minLength) return;
+            float deg = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+            Vector3 mid = (a + b) * 0.5f;
+            mid.y += 0.002f;
+            GenDraw.DrawMeshNowOrLater(MeshPool.plane10, Matrix4x4.TRS(mid, Quaternion.AngleAxis(deg, Vector3.up), new Vector3(length * 1.15f, 1f, width)), mat, drawNow);
         }
 
         // In a pawn's hands: the matrix is rebuilt the way DrawEquipmentAiming builds it. drawLoc already carries the
@@ -130,14 +171,7 @@ namespace EntadFramework
             if (shape == null) return;
             int now = Find.TickManager.TicksGame;
             int id = weapon.thingIDNumber;
-            int newTicks;
-            if (lastFleckTick.TryGetValue(id, out int last)) newTicks = Mathf.Clamp(now - last, 0, MaxCatchUpTicks);
-            else
-            {
-                newTicks = 1;
-                if (lastFleckTick.Count > 1024) lastFleckTick.Clear();
-            }
-            if (newTicks > 0 || last == 0) lastFleckTick[id] = now;
+            int newTicks = NewTicks(id, now);
 
             draw.weapon = weapon;
             draw.map = map;

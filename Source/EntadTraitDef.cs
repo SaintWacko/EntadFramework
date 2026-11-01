@@ -435,23 +435,30 @@ namespace EntadFramework
 
         // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost
         // one field read in a game whose traits have none
-        private static bool? anyWeaponVisuals, anyTrailVisuals;
+        private static bool? anyWeaponVisuals, anyTrailVisuals, anyWornVisuals;
         public static bool AnyWeaponVisuals => anyWeaponVisuals ?? ReadVisuals().Item1;
         public static bool AnyTrailVisuals => anyTrailVisuals ?? ReadVisuals().Item2;
+        public static bool AnyWornVisuals => anyWornVisuals ?? ReadVisuals().Item3;
 
-        private static (bool, bool) ReadVisuals()
+        // Whether the trait has a visual drawn on the wearer, which puts a node in the wearer's render tree
+        [Unsaved] private bool? hasWornVisuals;
+        public bool HasWornVisuals => hasWornVisuals ??= visuals != null && visuals.Any(v => v is EntadWornVisual);
+
+        private static (bool, bool, bool) ReadVisuals()
         {
-            bool weapon = false, trail = false;
+            bool weapon = false, trail = false, worn = false;
             foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 if (d.visuals != null)
                     foreach (var v in d.visuals)
                     {
                         weapon |= v is EntadWeaponVisual;
                         trail |= v is EntadVisual_ProjectileTrail;
+                        worn |= v is EntadWornVisual;
                     }
             anyWeaponVisuals = weapon;
             anyTrailVisuals = trail;
-            return (weapon, trail);
+            anyWornVisuals = worn;
+            return (weapon, trail, worn);
         }
 
         // On/off effects a compat assembly implements (Mods/<Mod>/), by key: the module registers each key with
@@ -797,6 +804,8 @@ namespace EntadFramework
                     if (v == null) { yield return $"{defName}: visuals contains an empty entry"; continue; }
                     foreach (var e in v.ConfigErrors(defName)) yield return e;
                 }
+            if (HasWornVisuals && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
+                yield return $"{defName}: worn visuals only play on apparel, and the trait's categories don't include Apparel";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
             if (categories != null)
                 foreach (string c in categories)
