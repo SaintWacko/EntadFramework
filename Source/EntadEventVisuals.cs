@@ -490,12 +490,13 @@ namespace EntadFramework
         }
 
         // Something hit the pawn. Heatstroke burns and roof collapses have no instigator; the flames on a burning pawn
-        // name whoever lit them (or the fire) but carry no weapon and no angle, which a flame spewer's blast has; surgery and execution cuts come from a doctor and
+        // name whoever lit them (or the fire) but carry no weapon (nor does a mech's flame spewer, which loses its
+        // visual with them: a DamageInfo can't tell the two apart); surgery and execution cuts come from a doctor and
         // count as violence to vanilla, being cuts.
         private static bool IsBlow(DamageInfo dinfo, Pawn pawn)
         {
             if (dinfo.Instigator == null || !dinfo.Def.ExternalViolenceFor(pawn)) return false;
-            if (dinfo.Def == DamageDefOf.Flame && dinfo.Weapon == null && dinfo.Angle < 0f) return false;
+            if (dinfo.Def == DamageDefOf.Flame && dinfo.Weapon == null) return false;
             return dinfo.Def != DamageDefOf.SurgicalCut && dinfo.Def != DamageDefOf.ExecutionCut;
         }
     }
