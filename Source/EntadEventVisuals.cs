@@ -262,7 +262,7 @@ namespace EntadFramework
         }
     }
 
-    // Flecks flowing from one spot to another, arriving as they fade: life drunk from a corpse into the wielder, or
+    // Flecks flowing from one spot to another at a set speed, fading out as they arrive: life drunk from a corpse into the wielder, or
     // madness poured from the wielder into its victim. 'at' isn't used; from and to say which way it runs.
     public class EntadVisual_EventStream : EntadEventVisual
     {
@@ -277,9 +277,10 @@ namespace EntadFramework
         public float lead = 0.5f;
         // Start spots scattered this far around the line
         public float spread = 0.2f;
-        // Tiles per second, the same at any distance. Each fleck stops where the target stood when it was thrown and
-        // stays solid until it gets there, then fades. Flecks don't follow a moving pawn; at this speed one rarely
-        // gets far before they land.
+        // Tiles per second, the same at any distance. Each fleck's life ends where the target stood when it was
+        // thrown, its fade-out spanning the last stretch: a thrown fleck whose air time runs out skids on by up to a
+        // couple of tiles (vanilla rolls the skid per fleck), which read as the stream flying past the pawn. Flecks
+        // don't follow a moving pawn; at this speed one rarely gets far before they land.
         public FloatRange speed = new FloatRange(7f, 9f);
 
         public override void Play(EntadVisualContext ctx)
@@ -302,9 +303,7 @@ namespace EntadFramework
                         data.velocityAngle = path.AngleFlat();
                         data.velocitySpeed = v;
                         data.rotation = Rand.Range(0f, 360f);
-                        // FleckThrown stops moving once its air time runs out
-                        data.airTimeLeft = dist / v;
-                        data.solidTimeOverride = Mathf.Max(0f, dist / v - fleck.fadeInTime);
+                        data.solidTimeOverride = Mathf.Max(0f, dist / v - fleck.fadeInTime - fleck.fadeOutTime);
                         if (color != Color.white) data.instanceColor = color;
                         ctx.map.flecks.CreateFleck(data);
                     }
@@ -549,7 +548,7 @@ namespace EntadFramework
     }
 
     // Vanilla picks the dodge sound only in the branch where the target dodged, so this reveals dodge stats and plays
-    // dodge visuals. Combat Extended's melee verb has its own dodge and parry handling and never calls this.
+    // dodge visuals. Combat Extended's melee verb calls it from its own dodge branch too.
     [HarmonyPatch(typeof(Verb_MeleeAttack), "SoundDodge")]
     public static class Patch_MeleeDodge_Visuals
     {

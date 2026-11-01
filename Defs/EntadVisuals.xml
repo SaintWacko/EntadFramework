@@ -97,7 +97,7 @@
   </FleckDef>
 
   <!-- One-off effects (EntadEventVisuals.cs): hit flashes, pulses, and wisps that fly from one pawn to another.
-       A wisp's speed is set so it arrives as its solid time ends, then fades where it landed. -->
+       A wisp flies at a set speed and its solid time is stretched so it fades out as it reaches the target. -->
   <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_BurnFlash</defName>
     <graphicData>
@@ -151,7 +151,7 @@
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
     <solidTime>0.6</solidTime>
-    <fadeOutTime>0.25</fadeOutTime>
+    <fadeOutTime>0.12</fadeOutTime>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
@@ -164,7 +164,7 @@
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
     <solidTime>0.6</solidTime>
-    <fadeOutTime>0.25</fadeOutTime>
+    <fadeOutTime>0.12</fadeOutTime>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
@@ -177,7 +177,7 @@
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.1</fadeInTime>
     <solidTime>0.6</solidTime>
-    <fadeOutTime>0.25</fadeOutTime>
+    <fadeOutTime>0.12</fadeOutTime>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
@@ -190,7 +190,7 @@
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.08</fadeInTime>
     <solidTime>0.45</solidTime>
-    <fadeOutTime>0.2</fadeOutTime>
+    <fadeOutTime>0.12</fadeOutTime>
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">

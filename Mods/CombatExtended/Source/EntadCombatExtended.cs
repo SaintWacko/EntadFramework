@@ -266,7 +266,7 @@ namespace EntadFramework.CECompat
         }
 
         public static void Postfix(Verb_MeleeAttackCE __instance, LocalTargetInfo target, DamageWorker.DamageResult __result) =>
-            EntadWeaponReveal.MeleeHit(__instance.CasterPawn, target, __result, true);
+            EntadWeaponReveal.MeleeHit(__instance.CasterPawn, target, __result);
     }
 
     // Melee Piercing. CE builds melee penetration from the tool's sharp and blunt values and never calls the
