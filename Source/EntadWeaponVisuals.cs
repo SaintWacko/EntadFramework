@@ -50,7 +50,9 @@ namespace EntadFramework
         public float flicker = 0.15f;
         public float flickerSpeed = 0.15f;
 
-        private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        // Made on first draw, not in a field initializer: this class is built by the def loader off the main thread,
+        // where Unity objects can't be created (RimWorld warns about the field at startup)
+        private static MaterialPropertyBlock block;
 
         public override void Draw(EntadWeaponDraw d)
         {
@@ -63,6 +65,7 @@ namespace EntadFramework
             float noise = flicker > 0f ? Mathf.PerlinNoise((float)((d.ticks * (double)flickerSpeed) % 256.0), phase * 37f) : 0f;
             Color c = color;
             c.a *= Mathf.Lerp(pulseMin, 1f, wave) * (1f - flicker * noise);
+            block ??= new MaterialPropertyBlock();
             block.SetColor(ShaderPropertyIDs.Color, c);
             Matrix4x4 m = d.matrix * Matrix4x4.Scale(new Vector3(EntadWeaponShape.HaloScale, 1f, EntadWeaponShape.HaloScale));
             m.m13 = d.altitude;
