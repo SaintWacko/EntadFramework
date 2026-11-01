@@ -485,7 +485,9 @@ namespace EntadFramework
     {
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
-            if (totalDamageDealt > 0f && !__instance.Dead) EntadVisuals.FromGear(__instance, EntadVisualEvent.Struck, dinfo.Instigator);
+            // Blows only, as vanilla counts damage taken: not a surgery cut or a burn ticking
+            if (totalDamageDealt > 0f && !__instance.Dead && dinfo.Def.ExternalViolenceFor(__instance))
+                EntadVisuals.FromGear(__instance, EntadVisualEvent.Struck, dinfo.Instigator);
         }
     }
 

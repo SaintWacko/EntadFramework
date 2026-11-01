@@ -231,13 +231,16 @@ namespace EntadFramework
             float ap = explosion.GetArmorPenetrationAt(cell);
             // Captured first: extra damage can kill something that explodes, but that is another Explosion's list
             int end = damaged.Count;
+            bool extra = EntadWeaponDamage.HasExtra(comp);
             for (int k = start; k < end; k++)
             {
                 Thing t = damaged[k];
                 // damagedThings also holds ignored things and fires a bomb put out; neither took the blast
                 if (t == null || t is Fire || (ignored != null && ignored.Contains(t))) continue;
                 EntadVisuals.BlastHit(explosion, comp, t, cell);
-                if (t.Destroyed) continue;
+                // A blast marked for its hit visuals alone: the angle below costs a game random number, which a
+                // visuals setting mustn't decide
+                if (t.Destroyed || !extra) continue;
                 float angle = t.Position == explosion.Position ? Rand.RangeInclusive(0, 359) : (t.Position - explosion.Position).AngleFlat;
                 var template = new DamageInfo(explosion.damType, 0f, ap, angle, explosion.instigator, null, explosion.weapon,
                     DamageInfo.SourceCategory.ThingOrUnknown, explosion.intendedTarget);

@@ -39,6 +39,7 @@ namespace EntadFramework
         public static void Clear()
         {
             ghosts.Clear();
+            foreach (var mat in materials.Values) Object.Destroy(mat);
             materials.Clear();
         }
 
@@ -78,6 +79,7 @@ namespace EntadFramework
                 if (rt == null) continue;
                 if (!materials.TryGetValue(rt, out var mat))
                 {
+                    PruneMaterials();
                     mat = new Material(ShaderDatabase.Transparent) { mainTexture = rt };
                     materials[rt] = mat;
                 }
@@ -87,6 +89,22 @@ namespace EntadFramework
                 pos.y = y;
                 Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(cells, 1f, cells)), mat, 0, null, 0, block);
             }
+        }
+
+        // Vanilla destroys every portrait texture when it clears its cache (a texture atlas rebake does), and hands
+        // out new ones after
+        private static readonly List<RenderTexture> deadTextures = new List<RenderTexture>();
+
+        private static void PruneMaterials()
+        {
+            foreach (var pair in materials)
+                if (pair.Key == null) deadTextures.Add(pair.Key);
+            foreach (var rt in deadTextures)
+            {
+                Object.Destroy(materials[rt]);
+                materials.Remove(rt);
+            }
+            deadTextures.Clear();
         }
 
         // The square the portrait covers, in cells: two for a person (vanilla's portrait camera at zoom 1), more for a

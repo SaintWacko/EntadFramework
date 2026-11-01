@@ -92,6 +92,7 @@ namespace EntadFramework
             zaps.Clear();
             lastEventTick.Clear();
             blastHits.Clear();
+            eventContext.Reset(null, null);
             EntadAfterimages.Clear();
         }
 
