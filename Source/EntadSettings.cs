@@ -172,6 +172,9 @@ namespace EntadFramework
         public static bool Visuals = true;
         public static bool VisualsGear = true;
         public static bool VisualsProjectiles = true;
+        // Visuals play before their trait is identified, as a hint that something is there; an entry's
+        // beforeIdentified overrides it
+        public static bool VisualsUnidentified = true;
 
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
@@ -202,6 +205,7 @@ namespace EntadFramework
             Visuals = true;
             VisualsGear = true;
             VisualsProjectiles = true;
+            VisualsUnidentified = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -264,6 +268,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref Visuals, "visuals", true);
             Scribe_Values.Look(ref VisualsGear, "visualsGear", true);
             Scribe_Values.Look(ref VisualsProjectiles, "visualsProjectiles", true);
+            Scribe_Values.Look(ref VisualsUnidentified, "visualsUnidentified", true);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
@@ -391,6 +396,7 @@ namespace EntadFramework
             if (appliedDurability != null && Current.Game != null) EntadUtility.RescaleDurability(appliedDurability);
             appliedDurability = null;
             EntadFurnitureEffects.RefreshAll();
+            EntadVisualSet.Invalidate();
         }
 
         private enum Tab { General, Generation, World, Rarity, Traits }
@@ -628,6 +634,7 @@ namespace EntadFramework
             {
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsProjectiles".Translate(), ref EntadSettings.VisualsProjectiles, "EF_Settings_VisualsProjectiles_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsUnidentified".Translate(), ref EntadSettings.VisualsUnidentified, "EF_Settings_VisualsUnidentified_Tip".Translate());
             }
             list.Gap();
 

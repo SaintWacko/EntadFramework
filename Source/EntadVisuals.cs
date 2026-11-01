@@ -6,22 +6,32 @@ using Verse;
 
 namespace EntadFramework
 {
-    // One entry of a trait's <visuals> list. An entry plays only while its trait is fully revealed, so a hidden trait
-    // never gives itself away by its look; a visible trait (EntadTraitDef.visible) is always revealed, which is how a
-    // burning blade shows on a raider's weapon.
+    // One entry of a trait's <visuals> list. By default it plays before its trait is identified (setting
+    // VisualsUnidentified): frost mist off a coat says something cold is in it, not which trait, what sets it off or
+    // how strong it is, so several traits share a look on purpose. Identifying the item stays the way to learn the rest.
     public abstract class EntadVisual
     {
+        // Null follows the setting; true plays while the trait is hidden whatever the setting, false only once it is
+        // fully revealed
+        public bool? beforeIdentified;
+
         public virtual IEnumerable<string> ConfigErrors(string defName) { yield break; }
     }
 
     // The item's visuals that are playing, by kind; rebuilt when its traits or what is revealed of them change
     internal class EntadVisualSet
     {
-        public static readonly EntadVisualSet Empty = new EntadVisualSet();
         public EntadWeaponVisual[] weapon = new EntadWeaponVisual[0];
         public EntadVisual_ProjectileTrail[] trails = new EntadVisual_ProjectileTrail[0];
         public EntadWornVisual[] worn = new EntadWornVisual[0];
         public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0;
+
+        // Bumped when a setting changes which entries play, so every item's cached set is rebuilt on its next draw
+        // without walking the items
+        internal static int version;
+        internal int builtVersion;
+
+        internal static void Invalidate() => version++;
 
         public static EntadVisualSet For(CompEntad comp)
         {
@@ -32,16 +42,18 @@ namespace EntadFramework
             for (int i = 0; i < traits.Count; i++)
             {
                 var visuals = traits[i].def.visuals;
-                if (visuals == null || traits[i].AnyHidden) continue;
+                if (visuals == null) continue;
+                bool hidden = traits[i].AnyHidden;
                 foreach (var v in visuals)
                 {
+                    if (hidden && !(v.beforeIdentified ?? EntadSettings.VisualsUnidentified)) continue;
                     if (v is EntadWeaponVisual w) (weapon ?? (weapon = new List<EntadWeaponVisual>())).Add(w);
                     else if (v is EntadVisual_ProjectileTrail p) (trails ?? (trails = new List<EntadVisual_ProjectileTrail>())).Add(p);
                     else if (v is EntadWornVisual o) (worn ?? (worn = new List<EntadWornVisual>())).Add(o);
                 }
             }
-            if (weapon == null && trails == null && worn == null) return Empty;
-            var set = new EntadVisualSet();
+            if (weapon == null && trails == null && worn == null) return new EntadVisualSet { builtVersion = version };
+            var set = new EntadVisualSet { builtVersion = version };
             if (weapon != null) set.weapon = weapon.ToArray();
             if (trails != null) set.trails = trails.ToArray();
             if (worn != null) set.worn = worn.ToArray();

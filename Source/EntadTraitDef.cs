@@ -430,7 +430,8 @@ namespace EntadFramework
         // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
         public EntadPowerNetEffect powerNet;
 
-        // How the trait shows on the item (EntadVisuals.cs), played only while the trait is fully revealed
+        // How the trait shows on the item (EntadVisuals.cs); before it is identified too, unless the setting or the
+        // entry's beforeIdentified says otherwise
         public List<EntadVisual> visuals;
 
         // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost

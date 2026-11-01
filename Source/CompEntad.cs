@@ -596,9 +596,10 @@ namespace EntadFramework
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
         internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
 
-        // The visuals playing on this item (EntadVisuals.cs), built on first draw and dropped on a trait or reveal change
+        // The visuals playing on this item (EntadVisuals.cs), built on first draw and dropped on a trait or reveal change,
+        // or rebuilt when a setting changed which ones play
         private EntadVisualSet visuals;
-        internal EntadVisualSet Visuals => visuals ?? (visuals = EntadVisualSet.For(this));
+        internal EntadVisualSet Visuals => visuals != null && visuals.builtVersion == EntadVisualSet.version ? visuals : (visuals = EntadVisualSet.For(this));
 
         // Whether a trait has visuals drawn on the wearer, revealed or not, and whether the wearer's render tree was
         // last built with a node for this item (EntadWornVisuals.cs), so a trait change can rebuild the tree when the

@@ -50,7 +50,6 @@ namespace EntadFramework
         public float flicker = 0.15f;
         public float flickerSpeed = 0.15f;
 
-
         public override void Draw(EntadWeaponDraw d)
         {
             float phase = (d.seed & 0xFF) / 255f;

@@ -245,9 +245,11 @@
   <EF_Settings_GlintHideIdentified>Stop glinting once identified</EF_Settings_GlintHideIdentified>
   <EF_Settings_GlintHideIdentified_Tip>An entad whose traits are all identified stops glinting. With trait hiding off in the discovery settings, nothing glints.</EF_Settings_GlintHideIdentified_Tip>
   <EF_Settings_TraitVisuals>Trait visuals</EF_Settings_TraitVisuals>
-  <EF_Settings_TraitVisuals_Tip>Identified traits show on their item: a burning blade glows and smoulders, a shocking one crackles with static. Traits that are always known, such as Emberforged, show on anyone's gear.</EF_Settings_TraitVisuals_Tip>
+  <EF_Settings_TraitVisuals_Tip>Traits show on their item: a burning blade glows and smoulders, a shocking one crackles with static, a coat breathes frost mist.</EF_Settings_TraitVisuals_Tip>
   <EF_Settings_VisualsGear>On weapons and apparel</EF_Settings_VisualsGear>
   <EF_Settings_VisualsGear_Tip>Weapons show their traits in a pawn's hands, whenever the game draws the weapon (drafted, aiming or carrying it openly), and lying on the ground. Apparel shows its traits on the wearer: frost mist, smoke, flames.</EF_Settings_VisualsGear_Tip>
+  <EF_Settings_VisualsUnidentified>Before identification</EF_Settings_VisualsUnidentified>
+  <EF_Settings_VisualsUnidentified_Tip>Traits show on their item before they are identified, as a hint: frost mist says there is something cold in the coat, not which trait it is or what it does. Off: only identified traits and traits that are always known show. Some traits set their own rule and ignore this.</EF_Settings_VisualsUnidentified_Tip>
   <EF_Settings_VisualsProjectiles>Trails on shots</EF_Settings_VisualsProjectiles>
   <EF_Settings_VisualsProjectiles_Tip>Shots from a ranged weapon with such a trait leave a trail of embers, sparks or frost.</EF_Settings_VisualsProjectiles_Tip>
   <EF_Settings_VerityReadout_Tip>Adds the colony's entad verity as a row under the resource list in the top left, once the colony has any. Research benches show it either way.</EF_Settings_VerityReadout_Tip>
