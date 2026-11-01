@@ -7,8 +7,8 @@ using Verse;
 namespace EntadFramework
 {
     // One entry of a trait's <visuals> list. By default it plays before its trait is identified (setting
-    // VisualsUnidentified): frost mist off a coat says something cold is in it, not which trait, what sets it off or
-    // how strong it is, so several traits share a look on purpose. Identifying the item stays the way to learn the rest.
+    // VisualsUnidentified): frost mist off a coat says something cold is in it, not what sets it off or how strong it
+    // is. Nothing is revealed by it; identifying the item stays the way to learn the rest.
     public abstract class EntadVisual
     {
         // Null follows the setting; true plays while the trait is hidden whatever the setting, false only once it is
