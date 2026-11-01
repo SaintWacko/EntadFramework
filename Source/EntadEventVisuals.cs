@@ -485,9 +485,16 @@ namespace EntadFramework
     {
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
-            // Blows only, as vanilla counts damage taken: not a surgery cut or a burn ticking
-            if (totalDamageDealt > 0f && !__instance.Dead && dinfo.Def.ExternalViolenceFor(__instance))
+            if (totalDamageDealt > 0f && !__instance.Dead && IsBlow(dinfo, __instance))
                 EntadVisuals.FromGear(__instance, EntadVisualEvent.Struck, dinfo.Instigator);
+        }
+
+        // Something hit the pawn: heatstroke burns have no instigator, a burning pawn's flames are instigated by the
+        // fire, and surgery and execution cuts are dealt by a doctor (they count as violence to vanilla, being cuts)
+        private static bool IsBlow(DamageInfo dinfo, Pawn pawn)
+        {
+            if (dinfo.Instigator == null || dinfo.Instigator is Fire || !dinfo.Def.ExternalViolenceFor(pawn)) return false;
+            return dinfo.Def != DamageDefOf.SurgicalCut && dinfo.Def != DamageDefOf.ExecutionCut;
         }
     }
 
