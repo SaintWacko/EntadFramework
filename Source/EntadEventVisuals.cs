@@ -316,6 +316,7 @@ namespace EntadFramework
         {
             foreach (var e in base.ConfigErrors(defName)) yield return e;
             if (fleck == null) yield return $"{defName}: event stream visual needs a fleck";
+            if (speed.min <= 0f) yield return $"{defName}: event stream speed must be above 0";
             if ((from == EntadVisualSpot.Affected || from == EntadVisualSpot.Source || to == EntadVisualSpot.Affected || to == EntadVisualSpot.Source)
                 && on != EntadVisualEvent.Trigger)
                 yield return $"{defName}: stream spots Affected and Source only exist on Trigger events";
