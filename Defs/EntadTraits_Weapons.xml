@@ -266,11 +266,13 @@
         <speed>0.3~0.8</speed>
         <angle>0~360</angle>
       </li>
-      <li Class="EntadFramework.EntadVisual_ProjectileTrail">
+      <!-- Zaps of lightning from the shot to spots around it, with a spark where each lands -->
+      <li Class="EntadFramework.EntadVisual_ProjectileArcs">
         <fleck>Entad_Fleck_Static</fleck>
-        <perCell>3</perCell>
-        <scale>0.16~0.24</scale>
-        <speed>0.2~0.6</speed>
+        <perCell>0.9</perCell>
+        <reach>0.5~1.3</reach>
+        <scale>0.14~0.22</scale>
+        <speed>0.1~0.4</speed>
       </li>
     </visuals>
   </EntadFramework.EntadTraitDef>
@@ -351,8 +353,8 @@
       </li>
       <li Class="EntadFramework.EntadVisual_ProjectileTrail">
         <fleck>Entad_Fleck_FrostMist</fleck>
-        <perCell>2.5</perCell>
-        <scale>0.35~0.5</scale>
+        <perCell>4</perCell>
+        <scale>0.45~0.65</scale>
         <speed>0~0.1</speed>
       </li>
     </visuals>

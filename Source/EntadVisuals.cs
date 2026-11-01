@@ -235,7 +235,7 @@ namespace EntadFramework
         public float jitter = 0.05f;
         public Color color = Color.white;
 
-        public void Spawn(Vector3 from, Vector3 to, Map map)
+        public virtual void Spawn(Vector3 from, Vector3 to, Map map)
         {
             float n = perCell * Mathf.Max(0.3f, Vector3.Distance(from, to));
             while (n > 0f)
@@ -257,6 +257,67 @@ namespace EntadFramework
         {
             if (fleck == null) yield return $"{defName}: projectile trail visual needs a fleck";
             if (perCell <= 0f) yield return $"{defName}: projectile trail perCell must be above 0";
+        }
+    }
+
+    // Little lightning zaps jumping from the shot to spots around it as it flies, in the same arc sprites the weapon
+    // crackles with. A trail subclass so the launch hook and the per-tick walk treat it like any other trail; the arcs
+    // themselves are drawn every frame by EntadVisuals.DrawZaps, since a stretched sprite isn't something a fleck does.
+    public class EntadVisual_ProjectileArcs : EntadVisual_ProjectileTrail
+    {
+        [NoTranslate] public string texFolder = "Things/Mote/EntadArc";
+        public Color arcColor = new Color(0.7f, 0.85f, 1f, 0.9f);
+        // How far from the shot a zap lands, its width in cells, and how many game ticks it shows
+        public FloatRange reach = new FloatRange(0.5f, 1.3f);
+        public float width = 0.18f;
+        public int arcTicks = 4;
+
+        [Unsaved] private List<Material> materials;
+
+        public EntadVisual_ProjectileArcs() { perCell = 0.8f; }
+
+        internal List<Material> Materials
+        {
+            get
+            {
+                if (materials == null)
+                {
+                    materials = new List<Material>();
+                    foreach (var tex in ContentFinder<Texture2D>.GetAllInFolder(texFolder))
+                        materials.Add(MaterialPool.MatFrom(tex, ShaderDatabase.MoteGlow, arcColor));
+                    if (materials.Count == 0) Log.ErrorOnce($"[Entad Framework] no textures in arc folder '{texFolder}'", texFolder.GetHashCode());
+                }
+                return materials;
+            }
+        }
+
+        public override void Spawn(Vector3 from, Vector3 to, Map map)
+        {
+            var mats = Materials;
+            if (mats.Count == 0) return;
+            float n = perCell * Mathf.Max(0.3f, Vector3.Distance(from, to));
+            while (n > 0f)
+            {
+                if (n < 1f && !Rand.Chance(n)) break;
+                n -= 1f;
+                Vector3 a = Vector3.Lerp(from, to, Rand.Value);
+                Vector3 b = a + Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * new Vector3(reach.RandomInRange, 0f, 0f);
+                EntadVisuals.AddZap(map, a, b, mats.RandomElement(), width, arcTicks);
+                if (fleck != null)
+                {
+                    var data = FleckMaker.GetDataStatic(b, map, fleck, scale.RandomInRange);
+                    data.velocityAngle = Rand.Range(0f, 360f);
+                    data.velocitySpeed = speed.RandomInRange;
+                    if (color != Color.white) data.instanceColor = color;
+                    map.flecks.CreateFleck(data);
+                }
+            }
+        }
+
+        public override IEnumerable<string> ConfigErrors(string defName)
+        {
+            if (perCell <= 0f) yield return $"{defName}: projectile arcs perCell must be above 0";
+            if (arcTicks < 1) yield return $"{defName}: projectile arcs arcTicks must be at least 1";
         }
     }
 
@@ -422,6 +483,7 @@ namespace EntadFramework
         {
             lastFleckTick.Clear();
             trails.Clear();
+            zaps.Clear();
         }
 
         // In a pawn's hands: drawLoc and the angle are what vanilla drew the weapon at, and the matrix is rebuilt the way
@@ -547,6 +609,47 @@ namespace EntadFramework
         }
 
         public static bool AnyTrails => trails.Count > 0;
+
+        private struct Zap
+        {
+            public Map map;
+            public Matrix4x4 matrix;
+            public Material mat;
+            public int until;
+        }
+
+        // Zaps from shots (EntadVisual_ProjectileArcs). They expire by game tick, so a pause holds them on screen like
+        // the weapon's own arcs; a bullet lives a few ticks, so the list stays a handful long.
+        private static readonly List<Zap> zaps = new List<Zap>();
+
+        internal static void AddZap(Map map, Vector3 a, Vector3 b, Material mat, float width, int ticks)
+        {
+            Vector3 dir = b - a;
+            float length = Mathf.Sqrt(dir.MagnitudeHorizontalSquared());
+            if (length < 0.05f) return;
+            float deg = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+            Vector3 mid = (a + b) * 0.5f;
+            mid.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+            zaps.Add(new Zap
+            {
+                map = map,
+                matrix = Matrix4x4.TRS(mid, Quaternion.AngleAxis(deg, Vector3.up), new Vector3(length * 1.15f, 1f, width)),
+                mat = mat,
+                until = Find.TickManager.TicksGame + ticks,
+            });
+        }
+
+        internal static void DrawZaps(Map map)
+        {
+            if (zaps.Count == 0) return;
+            int now = Find.TickManager.TicksGame;
+            for (int i = zaps.Count - 1; i >= 0; i--)
+            {
+                var z = zaps[i];
+                if (now >= z.until) { zaps.RemoveAt(i); continue; }
+                if (z.map == map) Graphics.DrawMesh(MeshPool.plane10, z.matrix, z.mat, 0);
+            }
+        }
     }
 
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming))]

@@ -45,7 +45,7 @@
     <defName>Entad_Fleck_FrostMist</defName>
     <graphicData>
       <texPath>Things/Mote/Smoke</texPath>
-      <color>(0.82, 0.93, 1, 0.3)</color>
+      <color>(0.82, 0.93, 1, 0.45)</color>
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.3</fadeInTime>
