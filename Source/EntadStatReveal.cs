@@ -215,10 +215,12 @@ namespace EntadFramework
             EntadStatReveal.Fire(pawn, melee ? EntadStatTrigger.MeleeAttack : EntadStatTrigger.Shoot);
         }
 
-        // After a melee verb's ApplyMeleeDamageToTarget (vanilla's, or Combat Extended's override)
-        public static void MeleeHit(Pawn caster, LocalTargetInfo target, DamageWorker.DamageResult result)
+        // After a melee verb's ApplyMeleeDamageToTarget (vanilla's, or Combat Extended's override). Dodge stats reveal
+        // on a dodge (Patch_MeleeDodge_Visuals); Combat Extended has no hook for its own dodges, so there the first
+        // blow taken reveals them, as every melee attack did before.
+        public static void MeleeHit(Pawn caster, LocalTargetInfo target, DamageWorker.DamageResult result, bool revealDodge = false)
         {
-            if (target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
+            if (revealDodge && target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
             if (result != null && result.totalDamageDealt > 0f) Hit(caster, true);
         }
     }

@@ -277,16 +277,16 @@ namespace EntadFramework
         public float lead = 0.5f;
         // Start spots scattered this far around the line
         public float spread = 0.2f;
-        // When each arrives, as a fraction of its fleck's fade-in plus solid time; the rest of its life it fades out
-        // at the far end
-        public FloatRange arrive = new FloatRange(0.6f, 1f);
+        // Tiles per second, the same at any distance. Each fleck stops where the target stood when it was thrown and
+        // stays solid until it gets there, then fades. Flecks don't follow a moving pawn; at this speed one rarely
+        // gets far before they land.
+        public FloatRange speed = new FloatRange(7f, 9f);
 
         public override void Play(EntadVisualContext ctx)
         {
             ctx.Spots(from, spotsA);
             if (spotsA.Count == 0) return;
             ctx.Spots(to, spotsB);
-            float travel = Mathf.Max(0.05f, fleck.fadeInTime + fleck.solidTime);
             foreach (var (a, _) in spotsA)
                 foreach (var (b, _) in spotsB)
                 {
@@ -297,7 +297,16 @@ namespace EntadFramework
                         Vector3 start = Vector3.Lerp(a, b, Rand.Range(0f, lead)) + Rand.InsideUnitCircleVec3 * spread;
                         Vector3 path = b - start;
                         float dist = Mathf.Sqrt(path.MagnitudeHorizontalSquared());
-                        Throw(fleck, start, ctx.map, scale.RandomInRange, path.AngleFlat(), dist / (travel * arrive.RandomInRange), 0f, color);
+                        float v = speed.RandomInRange;
+                        var data = FleckMaker.GetDataStatic(start, ctx.map, fleck, scale.RandomInRange);
+                        data.velocityAngle = path.AngleFlat();
+                        data.velocitySpeed = v;
+                        data.rotation = Rand.Range(0f, 360f);
+                        // FleckThrown stops moving once its air time runs out
+                        data.airTimeLeft = dist / v;
+                        data.solidTimeOverride = Mathf.Max(0f, dist / v - fleck.fadeInTime);
+                        if (color != Color.white) data.instanceColor = color;
+                        ctx.map.flecks.CreateFleck(data);
                     }
                 }
         }
@@ -539,14 +548,31 @@ namespace EntadFramework
         }
     }
 
-    // Vanilla picks the dodge sound only in the branch where the target dodged. Combat Extended's melee verb has its
-    // own dodge and parry handling and never calls this.
+    // Vanilla picks the dodge sound only in the branch where the target dodged, so this reveals dodge stats and plays
+    // dodge visuals. Combat Extended's melee verb has its own dodge and parry handling and never calls this.
     [HarmonyPatch(typeof(Verb_MeleeAttack), "SoundDodge")]
     public static class Patch_MeleeDodge_Visuals
     {
         public static void Postfix(Verb_MeleeAttack __instance, Thing target)
         {
-            if (target is Pawn pawn) EntadVisuals.FromGear(pawn, EntadVisualEvent.Dodge, __instance.CasterPawn);
+            if (!(target is Pawn pawn)) return;
+            EntadStatReveal.Fire(pawn, EntadStatTrigger.MeleeDodge);
+            EntadVisuals.FromGear(pawn, EntadVisualEvent.Dodge, __instance.CasterPawn);
+        }
+    }
+
+    // See Entad_Fleck_FlameLick in Defs/EntadVisuals.xml for why the path is set here
+    [StaticConstructorOnStartup]
+    public static class EntadFlameLick
+    {
+        static EntadFlameLick()
+        {
+            var def = DefDatabase<FleckDef>.GetNamedSilentFail("Entad_Fleck_FlameLick");
+            if (def?.graphicData == null) return;
+            var data = new GraphicData();
+            data.CopyFrom(def.graphicData);
+            data.texPath = "Things/Special/Fire/FireA";
+            def.graphicData = data;
         }
     }
 }

@@ -106,9 +106,15 @@ namespace EntadFramework
             CompEntad comp = EntadAtMouse(out Thing thing);
             if (comp == null) return;
 
+            TraitMenu(comp, thing, null);
+        }
+
+        // Applicable traits first, then alphabetical by defName within each group; a trait that scales picks its
+        // rarity in a second list. 'after' runs once a trait was added (granting abilities to a pawn's gear).
+        private static void TraitMenu(CompEntad comp, Thing thing, Action after)
+        {
             var options = new List<DebugMenuOption>();
-            // Applicable traits first, then alphabetical by defName within each group.
-            // CanApplyTo is evaluated once per def so the sort and the label agree.
+            // CanApplyTo is evaluated once per def so the sort and the label agree
             var sorted = DefDatabase<EntadTraitDef>.AllDefsListForReading
                 .Select(d => (def: d, ok: d.CanApplyTo(thing)))
                 .OrderByDescending(p => p.ok)
@@ -116,19 +122,23 @@ namespace EntadFramework
             foreach (var pair in sorted)
             {
                 var d = pair.def;
-                bool ok = pair.ok;
-                string label = MenuLabel(d) + (ok ? "" : " (not applicable)");
-                // A trait that scales picks its rarity in a second list, like Titan Framework's dev action
+                string label = MenuLabel(d) + (d.abilities.NullOrEmpty() ? "" : " (ability)") + (pair.ok ? "" : " (not applicable)");
                 var rarities = ((EntadRarity[])Enum.GetValues(typeof(EntadRarity))).Where(d.CanAppearAt).ToList();
                 if (rarities.Count > 1)
                 {
                     options.Add(new DebugMenuOption(label + " ...", DebugMenuOptionMode.Action, () =>
                     {
-                        var sub = rarities.Select(r => new DebugMenuOption($"{r} ({d.PointsAt(r):0.#} points)", DebugMenuOptionMode.Action, () => AddAt(comp, thing, d, r))).ToList();
+                        var sub = rarities.Select(r => new DebugMenuOption($"{r} ({d.PointsAt(r):0.#} points)", DebugMenuOptionMode.Action, () =>
+                        {
+                            if (AddAt(comp, thing, d, r)) after?.Invoke();
+                        })).ToList();
                         Find.WindowStack.Add(new Dialog_DebugOptionListLister(sub));
                     }));
                 }
-                else options.Add(new DebugMenuOption(label, DebugMenuOptionMode.Action, () => AddAt(comp, thing, d, null)));
+                else options.Add(new DebugMenuOption(label, DebugMenuOptionMode.Action, () =>
+                {
+                    if (AddAt(comp, thing, d, null)) after?.Invoke();
+                }));
             }
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
@@ -151,16 +161,7 @@ namespace EntadFramework
             var options = items.Select(item => new DebugMenuOption(item.LabelCap, DebugMenuOptionMode.Action, () =>
             {
                 var comp = item.GetComp<CompEntad>();
-                var traits = DefDatabase<EntadTraitDef>.AllDefsListForReading
-                    .Where(d => d.CanApplyTo(item))
-                    .OrderByDescending(d => !d.abilities.NullOrEmpty())
-                    .ThenBy(d => d.defName, StringComparer.OrdinalIgnoreCase)
-                    .Select(d => new DebugMenuOption(MenuLabel(d) + (d.abilities.NullOrEmpty() ? "" : " (ability)"), DebugMenuOptionMode.Action, () =>
-                    {
-                        AddAt(comp, item, d, null);
-                        EntadAbilities.Grant(pawn, comp);
-                    })).ToList();
-                Find.WindowStack.Add(new Dialog_DebugOptionListLister(traits));
+                TraitMenu(comp, item, () => EntadAbilities.Grant(pawn, comp));
             })).ToList();
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
@@ -168,14 +169,15 @@ namespace EntadFramework
         // defNames are named after what a trait does (Entad_Proc_Burden), the card after its label (Burdening)
         private static string MenuLabel(EntadTraitDef d) => d.label.NullOrEmpty() ? d.defName : $"{d.defName} ({d.LabelCap})";
 
-        private static void AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
+        private static bool AddAt(CompEntad comp, Thing thing, EntadTraitDef d, EntadRarity? rarity)
         {
             if (!comp.AddTrait(d, rarity, true))
             {
                 Messages.Message($"Could not apply '{d.LabelCap}' to {thing.Label}.", MessageTypeDefOf.RejectInput, false);
-                return;
+                return false;
             }
             Messages.Message($"Applied '{d.LabelCap}'{(rarity.HasValue ? $" at {rarity.Value}" : "")} to {thing.Label}.", MessageTypeDefOf.PositiveEvent, false);
+            return true;
         }
 
         [DebugAction(category = "Entad Framework", name = "Remove specific Entad trait", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
