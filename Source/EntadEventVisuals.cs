@@ -489,11 +489,13 @@ namespace EntadFramework
                 EntadVisuals.FromGear(__instance, EntadVisualEvent.Struck, dinfo.Instigator);
         }
 
-        // Something hit the pawn: heatstroke burns have no instigator, a burning pawn's flames are instigated by the
-        // fire, and surgery and execution cuts are dealt by a doctor (they count as violence to vanilla, being cuts)
+        // Something hit the pawn. Heatstroke burns and roof collapses have no instigator; the flames on a burning pawn
+        // name whoever lit them (or the fire) but carry no weapon; surgery and execution cuts come from a doctor and
+        // count as violence to vanilla, being cuts.
         private static bool IsBlow(DamageInfo dinfo, Pawn pawn)
         {
-            if (dinfo.Instigator == null || dinfo.Instigator is Fire || !dinfo.Def.ExternalViolenceFor(pawn)) return false;
+            if (dinfo.Instigator == null || !dinfo.Def.ExternalViolenceFor(pawn)) return false;
+            if (dinfo.Def == DamageDefOf.Flame && dinfo.Weapon == null) return false;
             return dinfo.Def != DamageDefOf.SurgicalCut && dinfo.Def != DamageDefOf.ExecutionCut;
         }
     }
