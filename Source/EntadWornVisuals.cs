@@ -172,6 +172,12 @@ namespace EntadFramework
         public Apparel item;
         public CompEntad comp;
         public float width = 1f, height = 1f;
+        // Whether the item itself is drawn, so a hat another mod or the indoor headgear setting hides takes its
+        // visuals with it. Worked out on the first draw after the tree rebuilds its request list (AppendDrawRequests
+        // marks it stale), not on every frame: headgear sits under the head, which the tree walks after the body,
+        // so its request isn't in the list yet when this node's request is added.
+        public volatile bool requestsStale = true;
+        public bool itemShown = true;
 
         private static PawnRenderNodeProperties nodeProps;
 
@@ -224,6 +230,7 @@ namespace EntadFramework
         public override void AppendDrawRequests(PawnRenderNode node, PawnDrawParms parms, List<PawnGraphicDrawRequest> requests)
         {
             if (parms.Portrait || parms.Statue) return;
+            if (node is PawnRenderNode_EntadWorn worn) worn.requestsStale = true;
             requests.Add(new PawnGraphicDrawRequest(node));
         }
 
@@ -241,6 +248,7 @@ namespace EntadFramework
     public static class Patch_PawnRenderTree_WornVisuals
     {
         private static System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode> addChild;
+        internal static AccessTools.FieldRef<PawnRenderTree, List<PawnGraphicDrawRequest>> drawRequests;
 
         // Without the private AddChild (a game update renamed it) the patch stays off and worn visuals don't draw,
         // rather than every pawn's tree build throwing
@@ -254,6 +262,10 @@ namespace EntadFramework
                 return false;
             }
             addChild = AccessTools.MethodDelegate<System.Action<PawnRenderTree, PawnRenderNode, PawnRenderNode>>(method);
+            // Without it every worn item counts as shown, as before hidden apparel was checked
+            if (AccessTools.Field(typeof(PawnRenderTree), "drawRequests")?.FieldType == typeof(List<PawnGraphicDrawRequest>))
+                drawRequests = AccessTools.FieldRefAccess<PawnRenderTree, List<PawnGraphicDrawRequest>>("drawRequests");
+            else Log.Warning("[Entad Framework] PawnRenderTree.drawRequests not found: trait visuals on worn apparel show even when the apparel is hidden");
             return true;
         }
 
@@ -278,6 +290,28 @@ namespace EntadFramework
     {
         private static readonly EntadWornDraw wornDraw = new EntadWornDraw();
 
+        // Drawn when one of the tree's draw requests is for one of the item's nodes. An item with no node at all
+        // (a belt with no worn graphic) counts as shown, or its visuals would never play.
+        private static bool ItemShown(PawnRenderTree tree, Apparel item)
+        {
+            var requests = Patch_PawnRenderTree_WornVisuals.drawRequests?.Invoke(tree);
+            if (requests == null) return true;
+            for (int i = 0; i < requests.Count; i++)
+                if (requests[i].node?.apparel == item) return true;
+            return !HasNodeFor(tree.rootNode, item);
+        }
+
+        private static bool HasNodeFor(PawnRenderNode node, Apparel item)
+        {
+            if (node == null) return false;
+            if (node.apparel == item) return true;
+            var children = node.children;
+            if (children != null)
+                for (int i = 0; i < children.Length; i++)
+                    if (HasNodeFor(children[i], item)) return true;
+            return false;
+        }
+
         internal static void DrawWorn(PawnRenderNode_EntadWorn node, PawnDrawParms parms, Matrix4x4 matrix)
         {
             if (!GearOn) return;
@@ -288,6 +322,12 @@ namespace EntadFramework
             var set = node.comp.Visuals;
             if (set.worn.Length == 0) return;
             if (pawn.Dead || !pawn.Spawned || pawn.Map != Find.CurrentMap || parms.flags.FlagSet(PawnRenderFlags.Invisible) || pawn.IsHiddenFromPlayer()) return;
+            if (node.requestsStale)
+            {
+                node.requestsStale = false;
+                node.itemShown = ItemShown(node.tree, item);
+            }
+            if (!node.itemShown) return;
 
             int now = Find.TickManager.TicksGame;
             int id = item.thingIDNumber;
