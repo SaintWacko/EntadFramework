@@ -94,6 +94,7 @@ namespace EntadFramework
             blastHits.Clear();
             eventContext.Reset(null, null);
             EntadAfterimages.Clear();
+            EntadRibbons.Clear();
         }
 
         // Game ticks since the item last spawned flecks, capped, and 1 the first time it's seen

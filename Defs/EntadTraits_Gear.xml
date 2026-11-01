@@ -20,7 +20,7 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_BloodWisp</fleck><from>Other</from><to>Holder</to><count>7~10</count></li>
+      <li Class="EntadFramework.EntadVisual_EventRibbons"><on>Trigger</on><from>Other</from><to>Holder</to><color>(1, 0.12, 0.15)</color></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 

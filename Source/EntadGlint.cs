@@ -67,6 +67,14 @@ namespace EntadFramework
                     Log.ErrorOnce($"[Entad Framework] drawing shot zaps failed: {e}", 0x7A11CAFE);
                 }
             }
+            if (EntadRibbons.Any && Find.CurrentMap != null && WorldRendererUtility.DrawingMap)
+            {
+                try { EntadRibbons.Draw(Find.CurrentMap); }
+                catch (System.Exception e)
+                {
+                    Log.ErrorOnce($"[Entad Framework] drawing ribbons failed: {e}", 0x7A11CAFF);
+                }
+            }
             // Afterimages come from hediffs and dodges, not from the entad list, so they don't wait on it either
             if (EntadAfterimages.Any && Find.CurrentMap != null && WorldRendererUtility.DrawingMap)
             {

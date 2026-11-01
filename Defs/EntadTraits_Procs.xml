@@ -23,7 +23,7 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_BurdenWisp</fleck><from>Holder</from><to>Other</to><count>6~8</count></li>
+      <li Class="EntadFramework.EntadVisual_EventRibbons"><on>Trigger</on><from>Holder</from><to>Other</to><color>(0.45, 0.6, 1)</color></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 
@@ -45,7 +45,7 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_StunWisp</fleck><from>Holder</from><to>Other</to><count>6~8</count></li>
+      <li Class="EntadFramework.EntadVisual_EventRibbons"><on>Trigger</on><from>Holder</from><to>Other</to><color>(1, 0.88, 0.35)</color></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 
@@ -67,7 +67,7 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventStream"><on>Trigger</on><fleck>Entad_Fleck_MadnessWisp</fleck><from>Holder</from><to>Other</to><count>8~11</count></li>
+      <li Class="EntadFramework.EntadVisual_EventRibbons"><on>Trigger</on><from>Holder</from><to>Other</to><color>(1, 0.25, 0.85)</color></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 

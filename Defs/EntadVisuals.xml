@@ -155,45 +155,6 @@
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_MadnessWisp</defName>
-    <graphicData>
-      <texPath>Things/Mote/FireGlow</texPath>
-      <shaderType>MoteGlow</shaderType>
-      <color>(0.8, 0.15, 0.6)</color>
-    </graphicData>
-    <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.6</solidTime>
-    <fadeOutTime>0.12</fadeOutTime>
-  </FleckDef>
-
-  <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_BurdenWisp</defName>
-    <graphicData>
-      <texPath>Things/Mote/FireGlow</texPath>
-      <shaderType>MoteGlow</shaderType>
-      <color>(0.5, 0.58, 0.8)</color>
-    </graphicData>
-    <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.6</solidTime>
-    <fadeOutTime>0.12</fadeOutTime>
-  </FleckDef>
-
-  <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_StunWisp</defName>
-    <graphicData>
-      <texPath>Things/Mote/FireGlow</texPath>
-      <shaderType>MoteGlow</shaderType>
-      <color>(1, 0.92, 0.55)</color>
-    </graphicData>
-    <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.08</fadeInTime>
-    <solidTime>0.45</solidTime>
-    <fadeOutTime>0.12</fadeOutTime>
-  </FleckDef>
-
-  <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_HealPulse</defName>
     <graphicData>
       <texPath>Things/Mote/FireGlow</texPath>
