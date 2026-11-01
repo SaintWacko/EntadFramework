@@ -270,7 +270,8 @@ namespace EntadFramework
         // How far from the shot a zap lands, its width in cells, and how many game ticks it shows
         public FloatRange reach = new FloatRange(0.5f, 1.3f);
         public float width = 0.18f;
-        public int arcTicks = 4;
+        // Short, because the near end follows the shot: a bullet flies about a tile a tick, so each tick stretches it
+        public int arcTicks = 2;
 
         [Unsaved] private List<Material> materials;
 
@@ -604,37 +605,44 @@ namespace EntadFramework
                 trail.last = pos;
                 trail.hasLast = true;
                 if (!view.Contains(pos.ToIntVec3()) || !pos.ShouldSpawnMotesAt(current)) continue;
+                spawningFor = projectile;
                 for (int k = 0; k < trail.visuals.Length; k++) trail.visuals[k].Spawn(from, pos, current);
+                spawningFor = null;
             }
         }
 
         public static bool AnyTrails => trails.Count > 0;
 
-        private struct Zap
+        private class Zap
         {
             public Map map;
-            public Matrix4x4 matrix;
+            public Projectile projectile;
+            public Vector3 near;
+            public Vector3 far;
             public Material mat;
+            public float width;
             public int until;
         }
 
         // Zaps from shots (EntadVisual_ProjectileArcs). They expire by game tick, so a pause holds them on screen like
-        // the weapon's own arcs; a bullet lives a few ticks, so the list stays a handful long.
+        // the weapon's own arcs; a bullet lives a few ticks, so the list stays a handful long. The near end follows the
+        // shot every frame and the far end stays where it struck, so a zap reads as the bullet arcing to the ground
+        // rather than a stray bolt it left behind (which is how they looked paused when both ends were fixed).
         private static readonly List<Zap> zaps = new List<Zap>();
+
+        // The shot TickTrails is spawning for, so the trail visuals don't need a projectile in their signature
+        internal static Projectile spawningFor;
 
         internal static void AddZap(Map map, Vector3 a, Vector3 b, Material mat, float width, int ticks)
         {
-            Vector3 dir = b - a;
-            float length = Mathf.Sqrt(dir.MagnitudeHorizontalSquared());
-            if (length < 0.05f) return;
-            float deg = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-            Vector3 mid = (a + b) * 0.5f;
-            mid.y = AltitudeLayer.MoteOverhead.AltitudeFor();
             zaps.Add(new Zap
             {
                 map = map,
-                matrix = Matrix4x4.TRS(mid, Quaternion.AngleAxis(deg, Vector3.up), new Vector3(length * 1.15f, 1f, width)),
+                projectile = spawningFor,
+                near = a,
+                far = b,
                 mat = mat,
+                width = width,
                 until = Find.TickManager.TicksGame + ticks,
             });
         }
@@ -643,11 +651,21 @@ namespace EntadFramework
         {
             if (zaps.Count == 0) return;
             int now = Find.TickManager.TicksGame;
+            float y = AltitudeLayer.MoteOverhead.AltitudeFor();
             for (int i = zaps.Count - 1; i >= 0; i--)
             {
                 var z = zaps[i];
                 if (now >= z.until) { zaps.RemoveAt(i); continue; }
-                if (z.map == map) Graphics.DrawMesh(MeshPool.plane10, z.matrix, z.mat, 0);
+                if (z.map != map) continue;
+                // Once the shot lands the zap keeps its last spot for the few ticks it has left
+                if (z.projectile != null && z.projectile.Spawned && !z.projectile.Destroyed) z.near = z.projectile.DrawPos;
+                Vector3 dir = z.far - z.near;
+                float length = Mathf.Sqrt(dir.MagnitudeHorizontalSquared());
+                if (length < 0.05f) continue;
+                float deg = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+                Vector3 mid = (z.near + z.far) * 0.5f;
+                mid.y = y;
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(mid, Quaternion.AngleAxis(deg, Vector3.up), new Vector3(length * 1.15f, 1f, z.width)), z.mat, 0);
             }
         }
     }
