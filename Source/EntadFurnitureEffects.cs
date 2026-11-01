@@ -50,6 +50,7 @@ namespace EntadFramework
             humbleItems.Clear();
             sheddingItems.Clear();
             EntadGlint.Clear();
+            EntadVisuals.Clear();
             EntadCompat.RaiseGameStarted(game);
         }
 
@@ -158,6 +159,7 @@ namespace EntadFramework
 
         public override void GameComponentTick()
         {
+            if (EntadVisuals.AnyTrails) EntadVisuals.TickTrails();
             if (Find.TickManager.TicksGame % 250 != 0) return;
             EntadCompat.RaiseTick250();
             if (sheddingItems.Count > 0) TickShedding();

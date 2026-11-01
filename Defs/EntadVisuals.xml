@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Flecks for trait visuals (EntadVisuals.cs): thrown off weapons and left behind shots. Small scales are set
+       per visual; the textures are vanilla's soft glow and smoke, tinted here. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_Ember</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(1, 0.55, 0.2)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.08</fadeInTime>
+    <solidTime>0.35</solidTime>
+    <fadeOutTime>0.6</fadeOutTime>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_CinderSmoke</defName>
+    <graphicData>
+      <texPath>Things/Mote/Smoke</texPath>
+      <color>(0.25, 0.22, 0.2, 0.45)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.2</fadeInTime>
+    <solidTime>0.3</solidTime>
+    <fadeOutTime>1.2</fadeOutTime>
+    <growthRate>0.35</growthRate>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_Static</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.55, 0.75, 1)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.02</fadeInTime>
+    <solidTime>0.08</solidTime>
+    <fadeOutTime>0.25</fadeOutTime>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_FrostMist</defName>
+    <graphicData>
+      <texPath>Things/Mote/Smoke</texPath>
+      <color>(0.82, 0.93, 1, 0.3)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.3</fadeInTime>
+    <solidTime>0.2</solidTime>
+    <fadeOutTime>1.2</fadeOutTime>
+    <growthRate>0.25</growthRate>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_FrostGlint</defName>
+    <graphicData>
+      <texPath>Things/Mote/EntadGlint</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.75, 0.9, 1)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.15</fadeInTime>
+    <solidTime>0.05</solidTime>
+    <fadeOutTime>0.35</fadeOutTime>
+  </FleckDef>
+</Defs>

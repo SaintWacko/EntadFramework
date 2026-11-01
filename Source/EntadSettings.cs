@@ -168,6 +168,11 @@ namespace EntadFramework
         public static bool GlintOnGear = true;
         public static bool GlintHideIdentified = false;
 
+        // Trait visuals (EntadVisuals.cs): the master switch, then on gear (held and lying weapons) and on shots
+        public static bool Visuals = true;
+        public static bool VisualsGear = true;
+        public static bool VisualsProjectiles = true;
+
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
 
@@ -194,6 +199,9 @@ namespace EntadFramework
             Glint = true;
             GlintOnGear = true;
             GlintHideIdentified = false;
+            Visuals = true;
+            VisualsGear = true;
+            VisualsProjectiles = true;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -253,6 +261,9 @@ namespace EntadFramework
             Scribe_Values.Look(ref Glint, "glint", true);
             Scribe_Values.Look(ref GlintOnGear, "glintOnGear", true);
             Scribe_Values.Look(ref GlintHideIdentified, "glintHideIdentified", false);
+            Scribe_Values.Look(ref Visuals, "visuals", true);
+            Scribe_Values.Look(ref VisualsGear, "visualsGear", true);
+            Scribe_Values.Look(ref VisualsProjectiles, "visualsProjectiles", true);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
@@ -611,6 +622,12 @@ namespace EntadFramework
             {
                 list.CheckboxLabeled("  " + "EF_Settings_GlintOnGear".Translate(), ref EntadSettings.GlintOnGear, "EF_Settings_GlintOnGear_Tip".Translate());
                 list.CheckboxLabeled("  " + "EF_Settings_GlintHideIdentified".Translate(), ref EntadSettings.GlintHideIdentified, "EF_Settings_GlintHideIdentified_Tip".Translate());
+            }
+            list.CheckboxLabeled("EF_Settings_Visuals".Translate(), ref EntadSettings.Visuals, "EF_Settings_Visuals_Tip".Translate());
+            if (EntadSettings.Visuals)
+            {
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsProjectiles".Translate(), ref EntadSettings.VisualsProjectiles, "EF_Settings_VisualsProjectiles_Tip".Translate());
             }
             list.Gap();
 

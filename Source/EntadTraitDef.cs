@@ -430,6 +430,30 @@ namespace EntadFramework
         // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
         public EntadPowerNetEffect powerNet;
 
+        // How the trait shows on the item (EntadVisuals.cs), played only while the trait is fully revealed
+        public List<EntadVisual> visuals;
+
+        // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost
+        // one field read in a game whose traits have none
+        private static bool? anyWeaponVisuals, anyTrailVisuals;
+        public static bool AnyWeaponVisuals => anyWeaponVisuals ?? ReadVisuals().Item1;
+        public static bool AnyTrailVisuals => anyTrailVisuals ?? ReadVisuals().Item2;
+
+        private static (bool, bool) ReadVisuals()
+        {
+            bool weapon = false, trail = false;
+            foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
+                if (d.visuals != null)
+                    foreach (var v in d.visuals)
+                    {
+                        weapon |= v is EntadWeaponVisual;
+                        trail |= v is EntadVisual_ProjectileTrail;
+                    }
+            anyWeaponVisuals = weapon;
+            anyTrailVisuals = trail;
+            return (weapon, trail);
+        }
+
         // On/off effects a compat assembly implements (Mods/<Mod>/), by key: the module registers each key with
         // EntadCompat.RegisterEffect, saying which buildings it can go on, and reads it with CompEntad.HasCustomEffect.
         // A key nothing registered (its mod isn't loaded) never rolls. customCardLines say on the card what the
@@ -767,6 +791,12 @@ namespace EntadFramework
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
             if (powerNet != null)
                 foreach (var e in powerNet.ConfigErrors(defName)) yield return e;
+            if (visuals != null)
+                foreach (var v in visuals)
+                {
+                    if (v == null) { yield return $"{defName}: visuals contains an empty entry"; continue; }
+                    foreach (var e in v.ConfigErrors(defName)) yield return e;
+                }
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
             if (categories != null)
                 foreach (string c in categories)

@@ -428,6 +428,7 @@ namespace EntadFramework
         public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
+            visuals = null;
             propertyFactors = null;
             wearerOffsets = null;
             ClearStatCaches();
@@ -595,9 +596,14 @@ namespace EntadFramework
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
         internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
 
+        // The visuals playing on this item (EntadVisuals.cs), built on first draw and dropped on a trait or reveal change
+        private EntadVisualSet visuals;
+        internal EntadVisualSet Visuals => visuals ?? (visuals = EntadVisualSet.For(this));
+
         private void TraitsChanged()
         {
             hitStatFlags = -1;
+            visuals = null;
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;

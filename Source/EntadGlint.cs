@@ -58,7 +58,12 @@ namespace EntadFramework
 
         public static void Postfix()
         {
-            if (!EntadSettings.Glint || items.Count == 0) return;
+            if (items.Count == 0) return;
+            bool glint = EntadSettings.Glint;
+            // Weapons lying on the map show their trait visuals from this pass too: it already walks every entad, and
+            // a printed item has no per-frame draw of its own to hook
+            bool ground = EntadVisuals.GearOn && EntadTraitDef.AnyWeaponVisuals;
+            if (!glint && !ground) return;
             Map map = Find.CurrentMap;
             if (map == null || !WorldRendererUtility.DrawingMap) return;
             // Double: a float clock this far into a session would round to steps near a frame long
@@ -68,6 +73,15 @@ namespace EntadFramework
             for (int i = items.Count - 1; i >= 0; i--)
             {
                 if (Dead(i, out var comp)) { items.RemoveAt(i); continue; }
+                if (ground && comp.parent.Spawned && comp.parent.Map == map)
+                {
+                    try { EntadVisuals.DrawGround(comp, map, view); }
+                    catch (System.Exception e)
+                    {
+                        Log.ErrorOnce($"[Entad Framework] trait visuals failed on {comp.parent}: {e}", 0x7A110000 ^ comp.parent.thingIDNumber);
+                    }
+                }
+                if (!glint) continue;
                 int seed = Gen.HashCombineInt(comp.parent.thingIDNumber, 0x5E1C);
                 double period = MinPeriod + PeriodSpread * ((seed & 0xFF) / 255f);
                 double t = now + period * (((seed >> 8) & 0xFFFF) / 65535f);
@@ -116,7 +130,7 @@ namespace EntadFramework
 
         // Murmur3's finaliser. Gen.HashCombineInt only adds the value in, so consecutive cycles changed the low bits
         // by about one and the spot stayed put
-        private static int Mix(int h)
+        internal static int Mix(int h)
         {
             uint x = (uint)h;
             x ^= x >> 16;
