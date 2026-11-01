@@ -298,7 +298,8 @@ namespace EntadFramework
                         Vector3 start = Vector3.Lerp(a, b, Rand.Range(0f, lead)) + Rand.InsideUnitCircleVec3 * spread;
                         Vector3 path = b - start;
                         float dist = Mathf.Sqrt(path.MagnitudeHorizontalSquared());
-                        float v = speed.RandomInRange;
+                        // Slower over a short hop, so the shortest life the fleck has still ends at the target
+                        float v = Mathf.Min(speed.RandomInRange, dist / Mathf.Max(0.05f, fleck.fadeInTime + fleck.fadeOutTime));
                         var data = FleckMaker.GetDataStatic(start, ctx.map, fleck, scale.RandomInRange);
                         data.velocityAngle = path.AngleFlat();
                         data.velocitySpeed = v;
