@@ -55,8 +55,12 @@ namespace EntadFramework
         public override void Draw(EntadWeaponDraw d)
         {
             float phase = (d.seed & 0xFF) / 255f;
-            float wave = pulseSpeed > 0f ? (Mathf.Sin((d.ticks / 60f * pulseSpeed + phase) * Mathf.PI * 2f) + 1f) * 0.5f : 1f;
-            float noise = flicker > 0f ? Mathf.PerlinNoise(d.ticks * flickerSpeed, phase * 37f) : 0f;
+            // Times worked out in double and wrapped: a float of the raw tick count is too coarse a few years into a game,
+            // and the pulse and flicker would step instead of moving. Unity's Perlin noise should repeat every 256 units
+            // (its permutation table), so that wrap has no seam; if it doesn't, the flicker jumps once every half minute.
+            float cycle = (float)((d.ticks / 60.0 * pulseSpeed + phase) % 1.0);
+            float wave = pulseSpeed > 0f ? (Mathf.Sin(cycle * Mathf.PI * 2f) + 1f) * 0.5f : 1f;
+            float noise = flicker > 0f ? Mathf.PerlinNoise((float)((d.ticks * (double)flickerSpeed) % 256.0), phase * 37f) : 0f;
             Color c = color;
             c.a *= Mathf.Lerp(pulseMin, 1f, wave) * (1f - flicker * noise);
             block.SetColor(ShaderPropertyIDs.Color, c);

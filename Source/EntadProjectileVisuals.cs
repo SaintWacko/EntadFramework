@@ -146,16 +146,27 @@ namespace EntadFramework
                 var trail = trails[i];
                 var projectile = trail.projectile;
                 if (projectile.Destroyed || !projectile.Spawned) { trails.RemoveAt(i); continue; }
-                if (projectile.Map != current) continue;
+                // Forget the last spot while the shot is on another map, or switching to it would spawn one long burst
+                // over the whole unseen stretch
+                if (projectile.Map != current) { trail.hasLast = false; continue; }
                 Vector3 pos = projectile.DrawPos;
                 pos.y = AltitudeLayer.MoteLow.AltitudeFor();
                 Vector3 from = trail.hasLast ? trail.last : pos;
                 trail.last = pos;
                 trail.hasLast = true;
                 if (!view.Contains(pos.ToIntVec3()) || !pos.ShouldSpawnMotesAt(current)) continue;
+                // Seeded from the shot and tick so that where the camera is doesn't change the game's random stream
                 spawningFor = projectile;
-                for (int k = 0; k < trail.visuals.Length; k++) trail.visuals[k].Spawn(from, pos, current);
-                spawningFor = null;
+                Rand.PushState(Gen.HashCombineInt(projectile.thingIDNumber, now));
+                try
+                {
+                    for (int k = 0; k < trail.visuals.Length; k++) trail.visuals[k].Spawn(from, pos, current);
+                }
+                finally
+                {
+                    Rand.PopState();
+                    spawningFor = null;
+                }
             }
         }
 

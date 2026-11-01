@@ -59,7 +59,14 @@ namespace EntadFramework
         public static void Postfix()
         {
             // Before the empty check: the entad that fired a zapping shot may be gone while its zaps still show
-            if (EntadVisuals.AnyZaps && Find.CurrentMap != null && WorldRendererUtility.DrawingMap) EntadVisuals.DrawZaps(Find.CurrentMap);
+            if (EntadVisuals.AnyZaps && Find.CurrentMap != null && WorldRendererUtility.DrawingMap)
+            {
+                try { EntadVisuals.DrawZaps(Find.CurrentMap); }
+                catch (System.Exception e)
+                {
+                    Log.ErrorOnce($"[Entad Framework] drawing shot zaps failed: {e}", 0x7A11CAFE);
+                }
+            }
             if (items.Count == 0) return;
             bool glint = EntadSettings.Glint;
             // Weapons lying on the map show their trait visuals from this pass too: it already walks every entad, and

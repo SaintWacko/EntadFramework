@@ -159,7 +159,7 @@ namespace EntadFramework
 
         public override void GameComponentTick()
         {
-            if (EntadVisuals.AnyTrails) EntadVisuals.TickTrails();
+            if (EntadVisuals.AnyTrails || EntadVisuals.AnyZaps) EntadVisuals.TickTrails();
             if (Find.TickManager.TicksGame % 250 != 0) return;
             EntadCompat.RaiseTick250();
             if (sheddingItems.Count > 0) TickShedding();

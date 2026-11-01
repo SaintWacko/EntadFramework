@@ -116,7 +116,7 @@ namespace EntadFramework
             }
             Vector2 size = graphic.drawSize;
             if (thing.MultipleItemsPerCellDrawn()) size *= 0.8f;
-            Vector3 pos = thing.DrawPos;
+            Vector3 pos = thing.DrawPos + graphic.DrawOffset(thing.Rotation);
             float altitude = AltitudeLayer.Item.AltitudeFor() + 0.01f;
             Run(set, thing, map, Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(size.x, 1f, size.y)), false, graphic.MatSingleFor(thing), size, altitude);
         }
@@ -146,14 +146,21 @@ namespace EntadFramework
             draw.ticks = now;
             draw.newTicks = newTicks;
             draw.altitude = altitude;
-            for (int i = 0; i < set.weapon.Length; i++)
+            // Draw code must not move the game's shared random stream, or how far it moves would depend on frame rate
+            // and what's on screen (vanilla's Recoil does the same in this method)
+            Rand.PushState(Gen.HashCombineInt(draw.seed, now));
+            try
             {
-                try { set.weapon[i].Draw(draw); }
-                catch (System.Exception e)
+                for (int i = 0; i < set.weapon.Length; i++)
                 {
-                    Log.ErrorOnce($"[Entad Framework] weapon visual {set.weapon[i].GetType().Name} failed on {weapon}: {e}", Gen.HashCombineInt(id, i));
+                    try { set.weapon[i].Draw(draw); }
+                    catch (System.Exception e)
+                    {
+                        Log.ErrorOnce($"[Entad Framework] weapon visual {set.weapon[i].GetType().Name} failed on {weapon}: {e}", Gen.HashCombineInt(id, i));
+                    }
                 }
             }
+            finally { Rand.PopState(); }
         }
     }
 

@@ -39,21 +39,21 @@ namespace EntadFramework
         {
             var rt = RenderTexture.GetTemporary(Size, Size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             var previous = RenderTexture.active;
+            Texture2D read = null;
             Color32[] pixels;
             try
             {
                 Graphics.Blit(tex, rt);
                 RenderTexture.active = rt;
-                var read = new Texture2D(Size, Size, TextureFormat.ARGB32, false);
+                read = new Texture2D(Size, Size, TextureFormat.ARGB32, false);
                 read.ReadPixels(new Rect(0, 0, Size, Size), 0, 0);
-                read.Apply();
                 pixels = read.GetPixels32();
-                Object.Destroy(read);
             }
             finally
             {
                 RenderTexture.active = previous;
                 RenderTexture.ReleaseTemporary(rt);
+                if (read != null) Object.Destroy(read);
             }
 
             var spots = new List<Vector2>();
