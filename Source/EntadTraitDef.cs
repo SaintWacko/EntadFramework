@@ -482,6 +482,9 @@ namespace EntadFramework
         public float killThirstDays = 20f;
         // Never picked by random generation: only added by name (API, dev tools)
         public bool neverRandom;
+        // Gives itself away at a glance (a burning blade, a lit room): starts fully revealed and stays so, whatever
+        // HideTraits, Secretive or a trader's partial identification would do to the item's other traits
+        public bool visible;
 
         public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;
 
@@ -758,6 +761,7 @@ namespace EntadFramework
             if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
             if (!float.IsNaN(points) && points == 0f) yield return $"{defName}: points 0 lets generation add it for free until the trait cap; use a small positive value";
             if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
+            if (visible && secretive) yield return $"{defName}: a visible trait can't be secretive (it would hide the item's other traits while showing itself)";
             if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;

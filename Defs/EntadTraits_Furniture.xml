@@ -176,6 +176,7 @@
     <description>A soft light hangs about it that no one ever lit.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
+    <visible>true</visible>
     <scalesWithRarity>true</scalesWithRarity>
     <!-- Only on buildings without a light of their own; Bright scales those -->
     <statOffsets>

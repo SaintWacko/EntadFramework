@@ -49,7 +49,12 @@ namespace EntadFramework
             owner?.RevealedChanged(this, kind, announce);
         }
 
-        public void Hide() { revealedKinds = EntadEffectKind.None; owner?.RevealedChanged(this, EntadEffectKind.All, false); }
+        public void Hide()
+        {
+            if (def.visible) return;
+            revealedKinds = EntadEffectKind.None;
+            owner?.RevealedChanged(this, EntadEffectKind.All, false);
+        }
 
         // Furniture abilities: game tick each ability is ready again, parallel to def.abilities
         public List<int> abilityReadyTicks = new List<int>();
@@ -97,6 +102,8 @@ namespace EntadFramework
             }
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                // A trait made visible after the save was written: the owner's hidden-state caches aren't built yet
+                if (def != null && def.visible) revealedKinds = EntadEffectKind.All;
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
                 abilityCharges = abilityCharges ?? new List<int>();
                 offsetValues = offsetValues ?? new List<float>();
@@ -163,7 +170,7 @@ namespace EntadFramework
         {
             EntadRarity at = def.ClampRarity(rarity ?? def.rarity);
             float scale = def.RarityScale(at);
-            var applied = new AppliedEntadTrait { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideTraits ? EntadEffectKind.None : EntadEffectKind.All };
+            var applied = new AppliedEntadTrait { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideTraits && !def.visible ? EntadEffectKind.None : EntadEffectKind.All };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.RollScaled(scale, false));
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.RollScaled(scale, true));
             if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));

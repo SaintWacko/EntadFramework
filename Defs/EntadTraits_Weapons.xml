@@ -190,6 +190,7 @@
     <description>Whatever it was made to do, now it burns.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <!-- Burn is checked against heat armor instead of sharp or blunt, which most armor is weaker against -->
     <changeDamageType>Burn</changeDamageType>
   </EntadFramework.EntadTraitDef>
@@ -221,6 +222,7 @@
     <description>Crackles with static, and wrecks machinery.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>EMP</damageType><min>2</min><max>6</max></li></extraDamage>
   </EntadFramework.EntadTraitDef>
@@ -230,6 +232,7 @@
     <description>Every hit bursts into flame, and can set the target alight.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
+    <visible>true</visible>
     <extraDamage>
       <li><damageType>Flame</damageType><min>4</min><max>10</max></li>
     </extraDamage>
@@ -240,6 +243,7 @@
     <description>This weapon's attacks are bitterly cold.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <!-- Extra damage rather than changeDamageType: Frostbite ignores armor and isn't violence, so a weapon converted
          to it would bypass all armor and provoke no retaliation -->
     <extraDamage>

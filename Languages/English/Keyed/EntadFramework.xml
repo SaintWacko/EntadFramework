@@ -345,6 +345,7 @@
   <EF_Summary_Persona>Bonds to one wielder</EF_Summary_Persona>
   <EF_Summary_NeverBond>Never bonds</EF_Summary_NeverBond>
   <EF_Summary_Secretive>Hides its other traits</EF_Summary_Secretive>
+  <EF_Summary_Visible>Always known</EF_Summary_Visible>
   <EF_Summary_BondedMood>Mood while bonded</EF_Summary_BondedMood>
   <EF_Summary_OtherWeapon>Mood when using another weapon</EF_Summary_OtherWeapon>
   <EF_Summary_KillThirst>Needs kills</EF_Summary_KillThirst>

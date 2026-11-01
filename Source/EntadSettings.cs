@@ -589,6 +589,7 @@ namespace EntadFramework
             if (d.persona) parts.Add("EF_Summary_Persona".Translate());
             if (d.neverBond) parts.Add("EF_Summary_NeverBond".Translate());
             if (d.secretive) parts.Add("EF_Summary_Secretive".Translate());
+            if (d.visible) parts.Add("EF_Summary_Visible".Translate());
             if (d.bondedHediffs != null) foreach (var h in d.bondedHediffs) if (h != null) parts.Add(h.LabelCap);
             if (d.bondedThought != null) parts.Add("EF_Summary_BondedMood".Translate());
             if (d.otherWeaponThought != null) parts.Add("EF_Summary_OtherWeapon".Translate());
