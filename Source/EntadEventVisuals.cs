@@ -23,6 +23,8 @@ namespace EntadFramework
     {
         public Map map;
         public Thing holder;
+        // Where the holder end is when it isn't a spawned thing (where a chain's last target stood)
+        public Vector3? holderPos;
         public Thing other;
         public IntVec3 otherCell = IntVec3.Invalid;
         // Where the other end is when it can't be read from a spawned thing (a blast cell)
@@ -35,6 +37,7 @@ namespace EntadFramework
         {
             this.map = map;
             this.holder = holder;
+            holderPos = null;
             other = null;
             otherCell = IntVec3.Invalid;
             otherPos = null;
@@ -49,7 +52,10 @@ namespace EntadFramework
             into.Clear();
             switch (spot)
             {
-                case EntadVisualSpot.Holder: AddThing(holder, into); break;
+                case EntadVisualSpot.Holder:
+                    if (holderPos.HasValue) AddPos(holderPos.Value, new TargetInfo(holderPos.Value.ToIntVec3(), map), into);
+                    else AddThing(holder, into);
+                    break;
                 case EntadVisualSpot.Source: AddThing(source ?? holder, into); break;
                 case EntadVisualSpot.Other:
                     if (otherPos.HasValue) AddPos(otherPos.Value, otherCell.IsValid ? new TargetInfo(otherCell, map) : new TargetInfo(otherPos.Value.ToIntVec3(), map), into);
@@ -463,6 +469,34 @@ namespace EntadFramework
             ctx.affected = affected;
             ctx.trigger = p.index;
             Play(Gen.HashCombineInt(pawn.thingIDNumber, p.trait.def.shortHash), visuals, EntadVisualEvent.Trigger, ctx, p.trait);
+        }
+
+        // An ability's own look (CompProperties_AbilityEntadDamage.visuals): played whatever the visuals settings say, as
+        // a vanilla explosion's flecks are, since it is the effect and not a hint about an item. 'on' and the item rules
+        // don't apply; chance does. Seeded like the rest, so it doesn't move the game's random stream.
+        internal static void PlayEffect(List<EntadEventVisual> visuals, Map map, Thing holder, Vector3? holderPos, Thing other, IntVec3 otherCell)
+        {
+            if (visuals == null || visuals.Count == 0 || map != Find.CurrentMap) return;
+            var ctx = eventContext;
+            ctx.Reset(map, holder);
+            ctx.holderPos = holderPos;
+            ctx.other = other;
+            ctx.otherCell = otherCell;
+            int seed = Gen.HashCombineInt(Find.TickManager.TicksGame, otherCell.GetHashCode());
+            for (int i = 0; i < visuals.Count; i++)
+            {
+                var v = visuals[i];
+                Rand.PushState(Gen.HashCombineInt(seed, v.Id));
+                try
+                {
+                    if (v.chance >= 1f || Rand.Chance(v.chance)) v.Play(ctx);
+                }
+                catch (System.Exception e)
+                {
+                    Log.ErrorOnce($"[Entad Framework] ability visual {v.GetType().Name} failed: {e}", Gen.HashCombineInt(v.Id, 0x5EE8));
+                }
+                finally { Rand.PopState(); }
+            }
         }
 
         // trait is given when the list is a trait's own, whose hidden entries an item's set hasn't already filtered out

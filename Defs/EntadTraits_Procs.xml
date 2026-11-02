@@ -244,6 +244,78 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
+  <!-- Ranged hits 6+ tiles out: the burst spares the holder's side, but the ground fires it starts don't -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Flaring</defName>
+    <label>Flaring</label>
+    <description>Every so often a shot from it lands in a burst of flame.</description>
+    <categories><li>WeaponRanged</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <minDistance>6</minDistance>
+        <chance>0.15~0.2</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
+        <casts>
+          <li><ability>Entad_Flare</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Crackling</defName>
+    <label>Crackling</label>
+    <description>The air around its barrel tastes of copper before a storm.</description>
+    <categories><li>WeaponRanged</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <chance>0.22~0.3</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
+        <casts>
+          <li><ability>Entad_Crackle</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Only ever jumps onto enemies, so no minimum distance -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Proc_Arcing</defName>
+    <label>Arcing</label>
+    <description>Whatever it hits, lightning goes looking for the next one.</description>
+    <categories><li>WeaponRanged</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <chance>0.15~0.2</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
+        <casts>
+          <li><ability>Entad_ChainArc</ability><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Shockwave</defName>
     <label>Shockwave</label>
