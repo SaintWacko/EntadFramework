@@ -762,6 +762,36 @@ namespace EntadFramework.VPECompat
         public static void Finalizer() => depth--;
     }
 
+    // Flameball and other plain projectiles VEF's Ability_ShootProjectile fires take their damage from the projectile def
+    // (Projectile.DamageAmount), not from the ability's power as VEF's AbilityProjectile does, so a damage-scaled proc
+    // tags what it launches and the damage is scaled where vanilla reads it. AbilityProjectile never reads DamageAmount,
+    // so nothing is scaled twice.
+    [HarmonyPatch]
+    public static class Patch_ProcProjectilePower
+    {
+        private static readonly Dictionary<Projectile, float> powerOf = new Dictionary<Projectile, float>();
+
+        public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability_ShootProjectile), "ShootProjectile");
+
+        public static void Postfix(Ability __instance, Projectile __result)
+        {
+            float power = EntadVEFAbilities.PowerOf(__instance);
+            if (__result == null || power == 1f) return;
+            if (powerOf.Count > 0) powerOf.RemoveAll(kv => kv.Key.Destroyed);
+            powerOf[__result] = power;
+        }
+
+        [HarmonyPatch(typeof(Projectile), nameof(Projectile.DamageAmount), MethodType.Getter)]
+        public static class Patch_DamageAmount
+        {
+            public static void Postfix(Projectile __instance, ref int __result)
+            {
+                if (powerOf.Count > 0 && powerOf.TryGetValue(__instance, out float power))
+                    __result = Mathf.Max(1, Mathf.RoundToInt(__result * power));
+            }
+        }
+    }
+
     // Every place VEF and VPE read the caster's psychic sensitivity for the abilities the traits use: the def's stat
     // factors and offsets (range, radius, power, duration), hediff, stun and mental state durations, Mend's repair and
     // Word of Animals' taming chance. The GetStatValue call becomes EntadVEFAbilities.CasterStat, handed the method's
