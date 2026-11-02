@@ -32,6 +32,10 @@ namespace EntadFramework
         // removing the other mod never leaves a save naming a class that is gone
         public static event Action Tick250;
 
+        // Raised every 10 ticks in play, for checks that must catch something brief (a pawn walking past). Keep the
+        // handler to a count check whenever it has nothing to watch.
+        public static event Action Tick10;
+
         // Raised once as each game is created or loaded, before anything spawns: the moment to clear static registries.
         // Current.Game may not point at the new game yet, so a handler should only clear.
         public static event Action GameStarted;
@@ -331,6 +335,8 @@ namespace EntadFramework
         }
 
         internal static void RaiseTick250() => Raise(Tick250);
+
+        internal static void RaiseTick10() => Raise(Tick10);
 
         internal static void RaiseGameStarted(Game game)
         {

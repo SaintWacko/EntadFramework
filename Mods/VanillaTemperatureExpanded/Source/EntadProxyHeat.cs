@@ -32,8 +32,9 @@ namespace EntadFramework.VTECompat
         // VTE's snow melting for heat pushers: depth per tick on cells at 0 °C or warmer
         private const float SnowMeltPerTick = 0.001f;
         private const int TickInterval = 250;
-        // The colony notices an effect once it has been running this long, as EntadFurnitureEffects
-        private const int NoticeTicks = 2500;
+        // Pawns near the building as it is installed or built don't count, so placing it outdoors doesn't identify it
+        // on the spot. Also runs after a load (TicksSinceSpawned counts from then).
+        private const int GraceTicks = 250;
 
         private class Source
         {
@@ -48,6 +49,8 @@ namespace EntadFramework.VTECompat
 
         private static readonly Dictionary<CompEntad, Source> sources = new Dictionary<CompEntad, Source>();
         private static readonly List<Source> gone = new List<Source>();
+        // Player-owned sources whose heat trait is still hidden, listed by the 250-tick pass for the 10-tick pawn check
+        private static readonly List<Source> watched = new List<Source>();
 
         // VTE turns a source with a power, fuel or switch comp on and off with it from its tick list. Entad heat
         // needs none of those (indoors it runs unpowered), so ours leave the tick list and are switched on here.
@@ -67,7 +70,8 @@ namespace EntadFramework.VTECompat
             if (enableField == null) Log.Warning("[Entad Framework] Proxy Heat's enableProxyHeat setting not found: entad furniture reveals and melts snow as if proxy heat were on.");
             EntadCompat.Refreshed += Refresh;
             EntadCompat.Tick250 += Tick;
-            EntadCompat.GameStarted += sources.Clear;
+            EntadCompat.Tick10 += CheckPawns;
+            EntadCompat.GameStarted += Clear;
             EntadCompat.SelectionOverlays += DrawSelected;
             EntadCompat.RegisterSettings(EntadSettingsTab.General, DrawSettings);
         }
@@ -138,6 +142,7 @@ namespace EntadFramework.VTECompat
         private static void Remove(Source source)
         {
             sources.Remove(source.comp);
+            watched.Remove(source);
             source.temp.PostDeSpawn(source.map);
             // VTE's own despawn hook may have queued this comp for a recount, which re-registers it if the building is
             // still (or again) spawned. Switched off it adds nothing back; with no outcome it changes nothing even if
@@ -148,6 +153,7 @@ namespace EntadFramework.VTECompat
 
         private static void Tick()
         {
+            watched.Clear();
             if (sources.Count == 0) return;
             bool on = ProxyHeatOn();
             foreach (var source in sources.Values)
@@ -160,19 +166,49 @@ namespace EntadFramework.VTECompat
                     continue;
                 }
                 if (!on || source.temp.AffectedCells.Count == 0) continue;
-                if (thing.Faction == Faction.OfPlayer && source.comp.HasHidden && source.comp.TicksSinceSpawned >= NoticeTicks && Acting(source, thing))
-                    source.comp.RevealStat(source.heating ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling);
+                if (thing.Faction == Faction.OfPlayer && source.comp.HasHidden && !Revealed(source)) watched.Add(source);
                 if (source.heating) MeltSnow(source);
             }
             for (int i = 0; i < gone.Count; i++) Remove(gone[i]);
             gone.Clear();
         }
 
-        // Short of its target where it stands, so the cells around it read warmer (or colder) than the air
-        private static bool Acting(Source source, Thing thing)
+        // The colony identifies the trait the first time one of its people stands in the changed air outdoors (indoors
+        // the room effect reveals it, as without VTE). Only while the air there is short of the trait's target, since
+        // VTE changes nothing past it.
+        private static void CheckPawns()
         {
-            float temperature = thing.Position.GetTemperature(source.map);
-            return source.heating ? temperature < source.target : temperature > source.target;
+            for (int i = watched.Count - 1; i >= 0; i--)
+            {
+                var source = watched[i];
+                Thing thing = source.comp.parent;
+                if (!thing.Spawned || thing.Faction != Faction.OfPlayer || source.comp.TicksSinceSpawned < GraceTicks) continue;
+                Map map = source.map;
+                foreach (IntVec3 cell in source.temp.AffectedCells)
+                {
+                    if (!cell.UsesOutdoorTemperature(map) || !Feels(map, cell)) continue;
+                    float temperature = cell.GetTemperature(map);
+                    if (source.heating ? temperature >= source.target : temperature <= source.target) continue;
+                    source.comp.RevealStat(source.heating ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling);
+                    watched.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
+        // A colonist or slave: animals and visitors don't tell the colony anything
+        private static bool Feels(Map map, IntVec3 cell)
+        {
+            List<Thing> things = map.thingGrid.ThingsListAtFast(cell);
+            for (int i = 0; i < things.Count; i++)
+                if (things[i] is Pawn pawn && pawn.Faction == Faction.OfPlayer && pawn.RaceProps.Humanlike && !pawn.Dead) return true;
+            return false;
+        }
+
+        private static void Clear()
+        {
+            sources.Clear();
+            watched.Clear();
         }
 
         private static void MeltSnow(Source source)
@@ -189,19 +225,22 @@ namespace EntadFramework.VTECompat
         // VTE's own outline of the cells it changes, once the trait doing it is identified
         private static void DrawSelected(CompEntad comp)
         {
-            if (!sources.TryGetValue(comp, out var source)) return;
+            if (sources.TryGetValue(comp, out var source) && Revealed(source)) source.temp.PostDrawExtraSelectionOverlays();
+        }
+
+        // Whether a trait doing the heating (or cooling) is identified
+        private static bool Revealed(Source source)
+        {
+            var comp = source.comp;
             StatDef stat = source.heating ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling;
             for (int t = 0; t < comp.activeTraits.Count; t++)
             {
                 var trait = comp.activeTraits[t];
                 if (!trait.IsRevealed(EntadEffectKind.Stat)) continue;
                 foreach (var range in trait.def.AllRanges())
-                {
-                    if (range.stat != stat) continue;
-                    source.temp.PostDrawExtraSelectionOverlays();
-                    return;
-                }
+                    if (range.stat == stat) return true;
             }
+            return false;
         }
 
         private static void DrawSettings(Listing_Standard list)
