@@ -184,7 +184,7 @@ namespace EntadFramework.VTECompat
                 Thing thing = source.comp.parent;
                 if (!thing.Spawned || thing.Faction != Faction.OfPlayer || source.comp.TicksSinceSpawned < GraceTicks) continue;
                 Map map = source.map;
-                // Colonists and slaves: animals and visitors don't tell the colony anything. Free humanlikes is a list
+                // Colonists and slaves: animals, ghouls and visitors don't tell the colony anything. Free humanlikes is a list
                 // vanilla reuses, so asking for it allocates nothing.
                 List<Pawn> pawns = map.mapPawns.FreeColonistsSpawned;
                 for (int p = 0; p < pawns.Count; p++)
