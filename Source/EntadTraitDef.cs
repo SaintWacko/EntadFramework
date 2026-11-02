@@ -993,6 +993,11 @@ namespace EntadFramework
             // A compat module's own stats (EntadCompat), read by its own hooks
             if (EntadCompat.TryStatAppliesTo(stat, td, out bool registered)) return registered;
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            // Apparel made from stuff lists the stuff multiplier (StuffEffectMultiplierArmor), not the armor or insulation
+            // it gets from it, so a parka has cold insulation without listing it
+            if (td.MadeFromStuff && td.statBases != null && stat.parts != null
+                && stat.parts.Any(p => p is StatPart_Stuff s && s.multiplierStat != null && td.statBases.Any(m => m.stat == s.multiplierStat)))
+                return true;
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
             // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
             if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
@@ -1005,7 +1010,9 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && Cached(stackableIngredients, td, UsesStackableIngredients);
             // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
             // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
-            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.building != null && td.GetCompProperties<CompProperties_Glower>() == null;
+            // Worn, the light follows the wearer (EntadWornLight.cs)
+            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.IsApparel || (td.building != null && td.GetCompProperties<CompProperties_Glower>() == null);
+            if (stat == EntadStatDefOf.Entad_DeflectChance) return td.IsApparel;
             if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
                 return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
             if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && Cached(storesRottables, td, StoresRottables);

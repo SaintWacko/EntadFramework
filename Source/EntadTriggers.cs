@@ -136,8 +136,16 @@ namespace EntadFramework
         public float healthBelow;                     // TakeDamage only: the holder's health after the hit is under this (0.3 = 30%); 0 = any
         public float minDistance;                     // TakeDamage, Hit, Kill: the other pawn is at least this many tiles from the holder
         public bool finishing;                        // Hit only: the hit downed or killed a pawn that was standing before it
+        public bool includeBlocked;                   // TakeDamage only: also a blow armor stopped entirely (not one a shield absorbed)
         public float chance = 1f;
         public float cooldownHours;                   // per item: shared by everyone who uses it
+        // After the trigger fires at a pawn, that pawn can't set this trigger (of this trait, on any item) off again for
+        // this long: a stun on every blow would otherwise hold a melee attacker in place for good
+        public float adaptSeconds;
+
+        // The effects go to the other pawn instead of the pawn the event happened to: the attacker on TakeDamage, the
+        // pawn hit on Hit. Damage also reaches an attacker that isn't a pawn (a turret).
+        public bool toOther;
 
         // Effects
         public ThoughtDef thought;                    // plain memory with its own duration
@@ -150,6 +158,14 @@ namespace EntadFramework
         public FloatRange stunSeconds = FloatRange.Zero; // StunHandler.StunFor, as an EMP or a stun grenade does
         public InspirationDef inspiration;            // starts this inspiration if the pawn can have it
         public bool randomInspiration;                // or a random one the pawn can have
+        // Damage dealt by the pawn the event happened to, after the other effects. The mechanoid damage is dealt on
+        // top, to mechanoids only (an EMP that stuns them).
+        public DamageDef damageDef;
+        public FloatRange damage = FloatRange.Zero;
+        public float armorPenetration;
+        public float igniteChance;
+        public DamageDef mechanoidDamageDef;
+        public FloatRange mechanoidDamage = FloatRange.Zero;
         public List<EntadTriggerCast> casts;          // cast in order, after the other effects (see EntadTriggerCast)
 
         public bool HasCasts => !casts.NullOrEmpty();
@@ -168,8 +184,8 @@ namespace EntadFramework
         public bool IsArea => radius > 0f;
 
         // Rolled values per trigger, in this order, in AppliedEntadTrait.triggerValues
-        public const int ValueCount = 6;
-        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4, StunSeconds = 5;
+        public const int ValueCount = 8;
+        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4, StunSeconds = 5, Damage = 6, MechanoidDamage = 7;
 
         public FloatRange RangeAt(int k)
         {
@@ -180,6 +196,8 @@ namespace EntadFramework
                 case Food: return food;
                 case Joy: return joy;
                 case StunSeconds: return stunSeconds;
+                case Damage: return damage;
+                case MechanoidDamage: return mechanoidDamage;
                 default: return hediffHours;
             }
         }
@@ -187,7 +205,10 @@ namespace EntadFramework
         public bool HasInspiration => inspiration != null || randomInspiration;
 
         public bool HasEffect => thought != null || hediff != null || heal.max > 0f || rest.max > 0f || food.max > 0f || joy.max > 0f
-            || stunSeconds.max > 0f || HasInspiration || HasCasts;
+            || stunSeconds.max > 0f || HasInspiration || HasCasts || HasDamage || HasMechanoidDamage;
+
+        public bool HasDamage => damageDef != null && damage.max > 0f;
+        public bool HasMechanoidDamage => mechanoidDamageDef != null && mechanoidDamage.max > 0f;
 
         public string EventLabel
         {
@@ -214,7 +235,7 @@ namespace EntadFramework
                     }
                     case EntadTriggerEvent.TakeDamage:
                     {
-                        string label = ("EF_Trigger_TakeDamage" + (attack == EntadAttackKind.Any ? "" : attack.ToString())).Translate();
+                        string label = ((includeBlocked ? "EF_Trigger_Struck" : "EF_Trigger_TakeDamage") + (attack == EntadAttackKind.Any ? "" : attack.ToString())).Translate();
                         if (fromEnemy) label += " " + "EF_TriggerQual_FromEnemy".Translate();
                         label = WithDistance(label);
                         if (healthBelow > 0f) label += " " + "EF_TriggerQual_HealthBelow".Translate(healthBelow.ToStringPercent());
@@ -251,8 +272,19 @@ namespace EntadFramework
             if (stunSeconds.max > 0f) parts.Add("EF_TriggerEffect_Stun".Translate(Amount(StunSeconds, v => v.ToString("0.#"))));
             if (inspiration != null) parts.Add("EF_TriggerEffect_Inspiration".Translate(inspiration.label));
             if (randomInspiration) parts.Add("EF_TriggerEffect_RandomInspiration".Translate());
-            if (casts != null) foreach (var c in casts) parts.Add(c.Label(on));
+            if (HasDamage) parts.Add("EF_TriggerEffect_Damage".Translate(Amount(Damage, v => v.ToString("0.#")), damageDef.label));
+            if (igniteChance > 0f) parts.Add("EF_TriggerEffect_Ignite".Translate(igniteChance.ToStringPercent()));
+            if (HasMechanoidDamage) parts.Add("EF_TriggerEffect_MechanoidDamage".Translate(Amount(MechanoidDamage, v => v.ToString("0.#")), mechanoidDamageDef.label));
             string effects = string.Join(", ", parts);
+            if (toOther) effects = (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerToOther_Attacker" : "EF_TriggerToOther_Victim").Translate(effects);
+            // Casts name their own target
+            if (casts != null)
+            {
+                var castParts = new List<string>();
+                if (!effects.NullOrEmpty()) castParts.Add(effects);
+                foreach (var c in casts) castParts.Add(c.Label(on));
+                effects = string.Join(", ", castParts);
+            }
             if (!IsArea) return effects;
             var who = new List<string>();
             if ((targets & EntadTriggerTargets.Self) != 0) who.Add("EF_TriggerTargets_Self".Translate());
@@ -267,6 +299,7 @@ namespace EntadFramework
             var parts = new List<string>();
             if (chance < 1f) parts.Add("EF_Trigger_Chance".Translate(chance.ToStringPercent()));
             if (cooldownHours > 0f) parts.Add("EF_Trigger_Cooldown".Translate(cooldownHours.ToString("0.#")));
+            if (adaptSeconds > 0f) parts.Add("EF_Trigger_Adapt".Translate(adaptSeconds.ToString("0.#")));
             return string.Join(", ", parts);
         }
 
@@ -287,6 +320,18 @@ namespace EntadFramework
             if (on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.TakeDamage && attack != EntadAttackKind.Any) yield return $"{owner}: 'attack' only applies to Hit and TakeDamage triggers";
             if (on != EntadTriggerEvent.TakeDamage && (fromEnemy || healthBelow != 0f)) yield return $"{owner}: fromEnemy and healthBelow only apply to TakeDamage triggers";
             if (finishing && on != EntadTriggerEvent.Hit) yield return $"{owner}: finishing only applies to Hit triggers";
+            if (includeBlocked && on != EntadTriggerEvent.TakeDamage) yield return $"{owner}: includeBlocked only applies to TakeDamage triggers";
+            if (toOther && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit) yield return $"{owner}: toOther only applies to TakeDamage and Hit triggers";
+            if (toOther && IsArea) yield return $"{owner}: toOther can't go on a trigger with a radius";
+            if (adaptSeconds < 0f) yield return $"{owner}: adaptSeconds can't be negative";
+            if (adaptSeconds > 0f && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit) yield return $"{owner}: adaptSeconds only applies to TakeDamage and Hit triggers";
+            if ((damageDef != null) != (damage.max > 0f)) yield return $"{owner}: damageDef and damage go together";
+            if ((mechanoidDamageDef != null) != (mechanoidDamage.max > 0f)) yield return $"{owner}: mechanoidDamageDef and mechanoidDamage go together";
+            if (igniteChance < 0f || igniteChance > 1f) yield return $"{owner}: igniteChance must be between 0 and 1";
+            // Damage, fire and the mechanoid damage are dealt by the holder to someone else; on itself it would be a
+            // drawback written as a trigger
+            if ((HasDamage || HasMechanoidDamage || igniteChance > 0f) && !toOther)
+                yield return $"{owner}: damage and igniteChance need toOther";
             if (healthBelow < 0f || healthBelow > 1f) yield return $"{owner}: healthBelow is a fraction of health (above 0, at most 1)";
             if (minDistance < 0f) yield return $"{owner}: minDistance can't be negative";
             if (minDistance > 0f && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill)
@@ -336,6 +381,7 @@ namespace EntadFramework
         // trait using an event its hook is one array read.
         private static bool[] anyEvent;
         private static bool anyFinishing;
+        private static bool anyIncludeBlocked;
 
         private static void ReadEvents()
         {
@@ -346,6 +392,7 @@ namespace EntadFramework
                     {
                         a[(int)t.on] = true;
                         if (t.finishing) anyFinishing = true;
+                        if (t.includeBlocked) anyIncludeBlocked = true;
                     }
             anyEvent = a;
         }
@@ -364,6 +411,39 @@ namespace EntadFramework
                 return anyFinishing;
             }
         }
+
+        internal static bool AnyIncludeBlocked
+        {
+            get
+            {
+                if (anyEvent == null) ReadEvents();
+                return anyIncludeBlocked;
+            }
+        }
+
+        // Pawns that adapted to a trigger (EntadTrigger.adaptSeconds): key of pawn, trait and trigger index -> the tick
+        // they can be hit by it again. Not saved: it lasts seconds, and a load lets one extra stun through at most.
+        private static readonly Dictionary<long, int> adaptedUntil = new Dictionary<long, int>();
+
+        private static long AdaptKey(Thing other, EntadTraitDef def, int index) =>
+            ((long)other.thingIDNumber << 32) ^ (uint)Gen.HashCombineInt(def.shortHash, index);
+
+        private static bool Adapted(Thing other, EntadTraitDef def, int index) =>
+            adaptedUntil.TryGetValue(AdaptKey(other, def, index), out int until) && until > Find.TickManager.TicksGame;
+
+        private static void Adapt(Thing other, EntadTraitDef def, int index, float seconds)
+        {
+            int now = Find.TickManager.TicksGame;
+            if (adaptedUntil.Count > 256)
+            {
+                var expired = new List<long>();
+                foreach (var kv in adaptedUntil) if (kv.Value <= now) expired.Add(kv.Key);
+                foreach (long k in expired) adaptedUntil.Remove(k);
+            }
+            adaptedUntil[AdaptKey(other, def, index)] = now + Mathf.RoundToInt(seconds * GenTicks.TicksPerRealSecond);
+        }
+
+        internal static void ClearAdaptation() => adaptedUntil.Clear();
 
         // The pawn about to be damaged and whether it was standing, from Pawn.PreApplyDamage, for 'finishing' Hit
         // triggers: by PostApplyDamage the hit has already downed or killed it. Damage dealt to another pawn in between
@@ -395,6 +475,7 @@ namespace EntadFramework
             public bool melee;
             public ThingDef weapon;
             public bool finishing;
+            public bool blocked;   // armor stopped the whole blow: only includeBlocked TakeDamage triggers count it
         }
 
         // Gear events: every worn or wielded entad that works for this pawn, checked now so a weapon dropped by the
@@ -414,16 +495,16 @@ namespace EntadFramework
         }
 
         // From the damaged pawn's PostApplyDamage, for damage that got through: TakeDamage for the pawn hit, Hit for
-        // whoever dealt it
-        public static void FromDamage(Pawn hurt, DamageInfo dinfo)
+        // whoever dealt it. A blocked blow (armor took all of it) only reaches includeBlocked TakeDamage triggers.
+        public static void FromDamage(Pawn hurt, DamageInfo dinfo, bool blocked = false)
         {
             bool takeDamage = Any(EntadTriggerEvent.TakeDamage) && !hurt.Dead;
             Pawn attacker = dinfo.Instigator as Pawn;
-            bool hit = attacker != null && attacker != hurt && Any(EntadTriggerEvent.Hit);
+            bool hit = !blocked && attacker != null && attacker != hurt && Any(EntadTriggerEvent.Hit);
             if (!takeDamage && !hit) return;
             bool wasStanding = damagedPawn == hurt && damagedWasStanding;
             damagedPawn = null;
-            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = EntadDamageSource.WeaponOf(dinfo), finishing = wasStanding && (hurt.Dead || hurt.Downed) };
+            var ctx = new DamageContext { melee = meleeDepth > 0, weapon = EntadDamageSource.WeaponOf(dinfo), finishing = wasStanding && (hurt.Dead || hurt.Downed), blocked = blocked };
             if (takeDamage)
             {
                 ctx.other = dinfo.Instigator;
@@ -514,6 +595,7 @@ namespace EntadFramework
                             if (!AttackMatches(t.attack, ctx.melee) || !VictimMatches(t.victims, victim, pawn) || (t.finishing && !ctx.finishing)) continue;
                             break;
                         case EntadTriggerEvent.TakeDamage:
+                            if (ctx.blocked && !t.includeBlocked) continue;
                             if (!AttackMatches(t.attack, ctx.melee)) continue;
                             if (t.fromEnemy && (ctx.other == null || !ctx.other.HostileTo(pawn))) continue;
                             if (t.healthBelow > 0f && pawn.health.summaryHealth.SummaryHealthPercent >= t.healthBelow) continue;
@@ -521,9 +603,16 @@ namespace EntadFramework
                     }
                     if (t.minDistance > 0f && (ctx.other == null || !ctx.other.PositionHeld.IsValid
                         || ctx.other.PositionHeld.DistanceToSquared(pawn.PositionHeld) < t.minDistance * t.minDistance)) continue;
+                    if (t.adaptSeconds > 0f && ctx.other != null && Adapted(ctx.other, m.def, i))
+                    {
+                        if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: target adapted", ctx.other);
+                        continue;
+                    }
                     // Cells now: by the next tick the corpse may have been moved or destroyed, and the holder moved on
                     IntVec3 otherCell = ctx.other != null ? ctx.other.PositionHeld : IntVec3.Invalid;
-                    TryQueue(pawn, m, i, null, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell);
+                    // Adapted as it is queued: two blows in one tick would both pass the check before either applied
+                    if (TryQueue(pawn, m, i, null, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell) && t.adaptSeconds > 0f && ctx.other != null)
+                        Adapt(ctx.other, m.def, i, t.adaptSeconds);
                 }
             }
         }
@@ -542,7 +631,7 @@ namespace EntadFramework
         }
 
         // Chance and cooldown are settled here, so two events in the same tick can't both get past a cooldown
-        private static void TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null)
+        private static bool TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null)
         {
             var t = m.def.triggers[i];
             int now = Find.TickManager.TicksGame;
@@ -550,12 +639,12 @@ namespace EntadFramework
             if (readyTick > now)
             {
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: on cooldown", other);
-                return;
+                return false;
             }
             if (t.chance < 1f && !Rand.Chance(t.chance))
             {
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {t.chance.ToStringPercent()} roll", other);
-                return;
+                return false;
             }
             if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: fired", other);
             if (t.cooldownHours > 0f) m.SetTriggerReadyTick(i, now + Mathf.RoundToInt(t.cooldownHours * GenDate.TicksPerHour));
@@ -564,6 +653,7 @@ namespace EntadFramework
                 pawn = pawn, trait = m, index = i, source = source, at = at ?? IntVec3.Invalid,
                 other = other, otherCell = otherCell ?? IntVec3.Invalid, origin = pawn.PositionHeld, readyTickBefore = readyTick
             });
+            return true;
         }
 
         // Effects run on the next tick, outside whatever raised the event: healing inside MakeDowned or damage
@@ -586,7 +676,15 @@ namespace EntadFramework
             }
 
             IList<Pawn> affected = null;
-            if (!t.IsArea) ApplyTo(pawn, pawn, t, p);
+            if (t.toOther)
+            {
+                // Gone by now (killed by the blow's other effects, left the map): nothing to answer
+                Thing other = p.other;
+                if (other == null || other.Destroyed || !other.Spawned || other.Map != pawn.MapHeld || (other is Pawn op && op.Dead)) return;
+                if (other is Pawn otherPawn) ApplyTo(otherPawn, pawn, t, p);
+                else DealDamage(other, pawn, t, p);
+            }
+            else if (!t.IsArea) ApplyTo(pawn, pawn, t, p);
             else
             {
                 Map map = p.source?.MapHeld ?? pawn.MapHeld;
@@ -671,6 +769,26 @@ namespace EntadFramework
                 Thing item = p.source ?? m.owner?.parent;
                 if (def != null) handler.TryStartInspiration(def, item != null ? "EF_InspirationReason".Translate(item.LabelShort).ToString() : null);
             }
+            DealDamage(target, user, t, p);
+        }
+
+        // Damage from the pawn the event happened to, last so a killing blow comes after the stun and hediff. Not
+        // dealt inside a melee attack, so it counts as ranged: a melee-only thorn on the attacker doesn't answer it.
+        private static void DealDamage(Thing target, Pawn user, EntadTrigger t, EntadTriggerQueue.Pending p)
+        {
+            var m = p.trait;
+            if (t.HasDamage && !target.Destroyed)
+            {
+                float amount = m.TriggerValue(p.index, EntadTrigger.Damage);
+                if (amount > 0f) target.TakeDamage(new DamageInfo(t.damageDef, amount, t.armorPenetration, -1f, user));
+            }
+            if (t.HasMechanoidDamage && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
+            {
+                float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage);
+                if (amount > 0f) target.TakeDamage(new DamageInfo(t.mechanoidDamageDef, amount, 0f, -1f, user));
+            }
+            if (t.igniteChance > 0f && !target.Destroyed && target.Spawned && Rand.Chance(t.igniteChance))
+                target.TryAttachFire(Rand.Range(0.2f, 0.4f), user);
         }
 
         internal static void Restore(Need need, float fraction)
@@ -759,15 +877,33 @@ namespace EntadFramework
 
         internal static readonly List<Pending> pending = new List<Pending>();
 
+        // Actions waiting for the next tick, for work that can't happen inside the damage call that set it off (a
+        // deflected shot sent back)
+        internal static readonly List<System.Action> nextTick = new List<System.Action>();
+
+        public static void NextTick(System.Action action) => nextTick.Add(action);
+
         public EntadTriggerQueue(Game game)
         {
             pending.Clear();
+            nextTick.Clear();
             EntadProcs.Clear();
+            EntadTriggers.ClearAdaptation();
         }
 
         public override void GameComponentTick()
         {
             EntadProcs.Tick();
+            if (nextTick.Count > 0)
+            {
+                var actions = nextTick.ToArray();
+                nextTick.Clear();
+                for (int i = 0; i < actions.Length; i++)
+                {
+                    try { actions[i](); }
+                    catch (System.Exception e) { Log.Error($"[Entad Framework] delayed action failed: {e}"); }
+                }
+            }
             if (pending.Count == 0) return;
             var batch = pending.ToArray();
             pending.Clear();
@@ -798,6 +934,9 @@ namespace EntadFramework
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
             if (totalDamageDealt > 0f) EntadTriggers.FromDamage(__instance, dinfo);
+            // Armor took all of it (vanilla deflects to 0). A shield belt's absorbed hit never gets here.
+            else if (EntadTriggers.AnyIncludeBlocked && dinfo.Amount > 0f && dinfo.Instigator != null && dinfo.Def.ExternalViolenceFor(__instance))
+                EntadTriggers.FromDamage(__instance, dinfo, blocked: true);
             EntadTriggers.ForgetKill(__instance);
         }
     }

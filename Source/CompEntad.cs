@@ -565,7 +565,7 @@ namespace EntadFramework
         // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn, and
         // the Hit trigger on every hit its holder lands. -1 unknown. Not saved; a loaded item starts unknown.
         private int hitStatFlags = -1;
-        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4, FlagDeflect = 8;
 
         private int HitStatFlags
         {
@@ -585,6 +585,9 @@ namespace EntadFramework
                             if (factors[i].stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) flags |= FlagMeleePenetration;
                             else if (factors[i].stat == EntadStatDefOf.Entad_MercilessDamageFactor) flags |= FlagMerciless;
                         }
+                        var offsets = activeTraits[t].def.statOffsets;
+                        for (int i = 0; offsets != null && i < offsets.Count; i++)
+                            if (offsets[i].stat == EntadStatDefOf.Entad_DeflectChance) flags |= FlagDeflect;
                     }
                     hitStatFlags = flags;
                 }
@@ -595,6 +598,16 @@ namespace EntadFramework
         public bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
         internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
+        internal bool HasDeflect => (HitStatFlags & FlagDeflect) != 0;
+
+        // Worn apparel is asked this for every hit on its wearer (Apparel.CheckPreAbsorbDamage, before the wearer's
+        // health sees the hit), and every item for hits on itself. Mirrored (EntadDeflect.cs) is the only answer.
+        public override void PostPreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
+        {
+            absorbed = false;
+            if (activeTraits.Count == 0 || !HasDeflect) return;
+            absorbed = EntadDeflect.TryDeflect(this, dinfo);
+        }
 
         // The visuals playing on this item (EntadVisuals.cs), built on first draw and dropped on a trait or reveal change,
         // or rebuilt when a setting changed which ones play

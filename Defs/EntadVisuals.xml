@@ -195,6 +195,20 @@
     <growthRate>1.8</growthRate>
   </FleckDef>
 
+  <!-- Mirrored's sheen: a cold white glint off polished metal -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_MirrorGlint</defName>
+    <graphicData>
+      <texPath>Things/Mote/EntadGlint</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.92, 0.96, 1)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.05</solidTime>
+    <fadeOutTime>0.3</fadeOutTime>
+  </FleckDef>
+
   <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_GoldGlint</defName>
     <graphicData>

@@ -87,6 +87,9 @@
   <EF_Trigger_TakeDamage>On taking damage</EF_Trigger_TakeDamage>
   <EF_Trigger_TakeDamageMelee>On taking melee damage</EF_Trigger_TakeDamageMelee>
   <EF_Trigger_TakeDamageRanged>On taking ranged damage</EF_Trigger_TakeDamageRanged>
+  <EF_Trigger_Struck>When struck</EF_Trigger_Struck>
+  <EF_Trigger_StruckMelee>When struck in melee</EF_Trigger_StruckMelee>
+  <EF_Trigger_StruckRanged>When struck by a shot</EF_Trigger_StruckRanged>
   <EF_Trigger_Hit>On a hit</EF_Trigger_Hit>
   <EF_Trigger_HitMelee>On a melee hit</EF_Trigger_HitMelee>
   <EF_Trigger_HitRanged>On a ranged hit</EF_Trigger_HitRanged>
@@ -117,6 +120,11 @@
   <EF_TriggerEffect_Stun>stuns for {0} seconds</EF_TriggerEffect_Stun>
   <EF_TriggerEffect_Inspiration>inspires: {0}</EF_TriggerEffect_Inspiration>
   <EF_TriggerEffect_RandomInspiration>gives a random inspiration</EF_TriggerEffect_RandomInspiration>
+  <EF_TriggerEffect_Damage>deals {0} {1} damage</EF_TriggerEffect_Damage>
+  <EF_TriggerEffect_Ignite>{0} chance to set them on fire</EF_TriggerEffect_Ignite>
+  <EF_TriggerEffect_MechanoidDamage>{0} {1} damage to a mechanoid</EF_TriggerEffect_MechanoidDamage>
+  <EF_TriggerToOther_Attacker>{0}, to the attacker</EF_TriggerToOther_Attacker>
+  <EF_TriggerToOther_Victim>{0}, to the target</EF_TriggerToOther_Victim>
   <EF_TriggerCast_Self>casts {0} on the user</EF_TriggerCast_Self>
   <EF_TriggerCast_Attacker>casts {0} at the attacker</EF_TriggerCast_Attacker>
   <EF_TriggerCast_Victim>casts {0} at the target</EF_TriggerCast_Victim>
@@ -145,6 +153,7 @@
   <EF_IngredientsSpared>{0}'s work at {1} used only half the ingredients.</EF_IngredientsSpared>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
   <EF_Trigger_Cooldown>at most once every {0} hours</EF_Trigger_Cooldown>
+  <EF_Trigger_Adapt>not again on the same target for {0} seconds</EF_Trigger_Adapt>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
   <EF_Card_Aura>Aura on {0} within {1} tiles</EF_Card_Aura>
   <EF_Card_AuraWho>{0} ({1})</EF_Card_AuraWho>
@@ -250,6 +259,9 @@
   <EF_Settings_VisualsGear_Tip>Weapons show their traits in a pawn's hands, whenever the game draws the weapon (drafted, aiming or carrying it openly), and lying on the ground. Apparel shows its traits on the wearer: frost mist, smoke, flames.</EF_Settings_VisualsGear_Tip>
   <EF_Settings_VisualsUnidentified>Before identification</EF_Settings_VisualsUnidentified>
   <EF_Settings_VisualsUnidentified_Tip>Traits show on their item before they are identified, as a hint: frost mist says there is something cold in the coat, but the trait stays unidentified until you find out what it does. Off: only identified traits and traits that are always known show. Some traits set their own rule and ignore this.</EF_Settings_VisualsUnidentified_Tip>
+  <EF_Settings_LightFollowEvery>Worn lights move with every step</EF_Settings_LightFollowEvery>
+  <EF_Settings_LightFollow>Worn lights move every {0} cells</EF_Settings_LightFollow>
+  <EF_Settings_LightFollow_Tip>A light worn on apparel (Radiant) moves with its wearer. Each move redraws the lighting around it, which costs a little time with many lit pawns walking about. A higher number moves the light less often while the wearer walks; it catches up when they stop.</EF_Settings_LightFollow_Tip>
   <EF_Settings_VisualsProjectiles>Trails on shots</EF_Settings_VisualsProjectiles>
   <EF_Settings_VisualsProjectiles_Tip>Shots from a ranged weapon with such a trait leave a trail of embers, sparks or frost.</EF_Settings_VisualsProjectiles_Tip>
   <EF_Settings_VisualsEvents>On hits and reactions</EF_Settings_VisualsEvents>

@@ -49,6 +49,7 @@ namespace EntadFramework
             sources.Clear();
             humbleItems.Clear();
             sheddingItems.Clear();
+            EntadWornLight.Clear();
             EntadGlint.Clear();
             EntadVisuals.Clear();
             EntadCompat.RaiseGameStarted(game);
@@ -81,6 +82,7 @@ namespace EntadFramework
         {
             RefreshHumble(comp);
             RefreshShedding(comp);
+            EntadWornLight.Refresh(comp);
             EntadPowerNets.Refresh(comp);
             EntadBuildingVisuals.Refresh(comp);
             EntadCompat.RaiseRefreshed(comp);
@@ -173,6 +175,7 @@ namespace EntadFramework
         public override void GameComponentTick()
         {
             if (EntadVisuals.AnyTrails || EntadVisuals.AnyZaps) EntadVisuals.TickTrails();
+            if (EntadWornLight.Any) EntadWornLight.Tick();
             int ticks = Find.TickManager.TicksGame;
             if (ticks % 10 == 0) EntadCompat.RaiseTick10();
             if (ticks % 250 != 0) return;

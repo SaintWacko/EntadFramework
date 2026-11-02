@@ -83,8 +83,8 @@
   <StatDef>
     <defName>Entad_GlowRadius</defName>
     <label>light radius</label>
-    <description>How far the light this gives off reaches, in tiles. It needs no power or fuel.</description>
-    <category>Building</category>
+    <description>How far the light this gives off reaches, in tiles. It needs no power or fuel. Worn, the light moves with its wearer.</description>
+    <category>BasicsNonPawn</category>
     <defaultBaseValue>0</defaultBaseValue>
     <minValue>0</minValue>
     <maxValue>20</maxValue>
@@ -206,6 +206,19 @@
     <minValue>0</minValue>
     <maxValue>1</maxValue>
     <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <!-- Mirrored (EntadDeflect.cs): read per shot at the wearer -->
+  <StatDef>
+    <defName>Entad_DeflectChance</defName>
+    <label>shot deflection chance</label>
+    <description>The chance that a shot hitting the wearer glances off this apparel without harming them. Explosions and melee attacks get through. Of the shots turned aside, some fly back at the shooter and the rest glance off in a random direction, where they can hit anyone. An active shield takes the shot first.</description>
+    <category>Apparel</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>0.6</maxValue>
+    <hideAtValue>0</hideAtValue>
     <toStringStyle>PercentZero</toStringStyle>
   </StatDef>
 </Defs>

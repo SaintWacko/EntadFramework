@@ -328,6 +328,8 @@ namespace EntadFramework
         public static StatDef Entad_NetPowerFactor;
         public static StatDef Entad_NetPowerLeak;
         public static StatDef Entad_NetBatteryLossFactor;
+        // Mirrored: chance worn apparel turns a shot aside (EntadDeflect.cs)
+        public static StatDef Entad_DeflectChance;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
     }

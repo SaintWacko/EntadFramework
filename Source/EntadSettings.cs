@@ -180,6 +180,10 @@ namespace EntadFramework
         // beforeIdentified overrides it
         public static bool VisualsUnidentified = true;
 
+        // Worn lights (EntadWornLight.cs) move with a walking wearer only every this many cells; each move rebuilds
+        // the lighting around it. 1 follows every step.
+        public static int LightFollowCells = 1;
+
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
 
@@ -212,6 +216,7 @@ namespace EntadFramework
             VisualsEvents = true;
             VisualsFurniture = true;
             VisualsUnidentified = true;
+            LightFollowCells = 1;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -277,6 +282,7 @@ namespace EntadFramework
             Scribe_Values.Look(ref VisualsEvents, "visualsEvents", true);
             Scribe_Values.Look(ref VisualsFurniture, "visualsFurniture", true);
             Scribe_Values.Look(ref VisualsUnidentified, "visualsUnidentified", true);
+            Scribe_Values.Look(ref LightFollowCells, "lightFollowCells", 1);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
@@ -652,6 +658,9 @@ namespace EntadFramework
                 list.CheckboxLabeled("  " + "EF_Settings_VisualsUnidentified".Translate(), ref EntadSettings.VisualsUnidentified, "EF_Settings_VisualsUnidentified_Tip".Translate());
                 if (unidentified != EntadSettings.VisualsUnidentified) EntadVisualSet.Invalidate();
             }
+            list.Label(EntadSettings.LightFollowCells == 1 ? "EF_Settings_LightFollowEvery".Translate() : "EF_Settings_LightFollow".Translate(EntadSettings.LightFollowCells),
+                tooltip: "EF_Settings_LightFollow_Tip".Translate());
+            EntadSettings.LightFollowCells = Mathf.RoundToInt(list.Slider(EntadSettings.LightFollowCells, 1f, 6f));
             list.Gap();
 
             Section(list, "EF_Settings_MarketValue");

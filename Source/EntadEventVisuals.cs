@@ -8,8 +8,9 @@ namespace EntadFramework
 {
     // What a one-off visual plays on. Hit: the item's weapon damage lands on something. Struck: its holder takes
     // damage that gets through. Heal: one of the holder's injuries heals. Dodge: the holder dodges a melee attack.
-    // Trigger: one of the trait's triggers fires (after a cast's check passed, before its effects show).
-    public enum EntadVisualEvent { Hit, Struck, Heal, Dodge, Trigger }
+    // Trigger: one of the trait's triggers fires (after a cast's check passed, before its effects show). Deflect: worn
+    // apparel turned a shot aside (EntadDeflect); Other is the shooter.
+    public enum EntadVisualEvent { Hit, Struck, Heal, Dodge, Trigger, Deflect }
 
     // Where on the event it plays. Holder: the pawn (or turret) using the item. Other: the thing hit, the attacker,
     // the pawn killed, or the cell a trigger noted for it. Affected: each pawn a trigger's effects reached (the holder
@@ -438,6 +439,13 @@ namespace EntadFramework
             ctx.Reset(pawn.Map, pawn);
             ctx.other = other;
             Play(item.thingIDNumber, set.events, ev, ctx, null);
+        }
+
+        // The item that turned the shot aside, not every piece the wearer has on
+        public static void Deflected(CompEntad comp, Pawn wearer, Thing shooter)
+        {
+            if (!On(EntadVisualEvent.Deflect) || wearer.Map != Find.CurrentMap) return;
+            FromItem(wearer, comp.parent, EntadVisualEvent.Deflect, EntadEventVisual.Bit(EntadVisualEvent.Deflect), shooter);
         }
 
         // From EntadTriggers.Apply once the trigger's checks passed. The trigger names its trait but not the item, so
