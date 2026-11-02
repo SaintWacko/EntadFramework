@@ -11,6 +11,7 @@
     <description>Every so often a shot from it arrives with company.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <!-- Ranged hits 6+ tiles out: the flameball bursts 3 tiles wide and can land up to 1.9 tiles off its mark -->
     <triggers>
       <li>
@@ -18,8 +19,9 @@
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>6</minDistance>
-        <chance>0.1</chance>
-        <cooldownHours>4</cooldownHours>
+        <chance>0.04~0.06</chance>
+        <rarityScales>Chance</rarityScales>
+        <scaleWithDamage>true</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_Flameball</externalAbility><target>Victim</target></li>
         </casts>
@@ -33,12 +35,14 @@
     <description>Strike its owner and the air around them hardens.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <fromEnemy>true</fromEnemy>
         <chance>0.3</chance>
-        <cooldownHours>12</cooldownHours>
+        <cooldownSeconds>45~60</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><externalAbility>VPE_Overshield</externalAbility><target>Self</target></li>
         </casts>
@@ -54,6 +58,7 @@
     <description>Those who shoot at its owner sometimes find themselves walled in by ice.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
@@ -61,7 +66,8 @@
         <fromEnemy>true</fromEnemy>
         <minDistance>8</minDistance>
         <chance>0.2</chance>
-        <cooldownHours>24</cooldownHours>
+        <cooldownSeconds>60~90</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><externalAbility>VPE_IceWall</externalAbility><target>Attacker</target></li>
         </casts>
@@ -109,7 +115,7 @@
         <on>TakeDamage</on>
         <fromEnemy>true</fromEnemy>
         <healthBelow>0.5</healthBelow>
-        <cooldownHours>120</cooldownHours>
+        <cooldownHours>96</cooldownHours>
         <casts>
           <li><externalAbility>VPE_Decoy</externalAbility><target>Origin</target><optional>true</optional></li>
           <li><ability>ChaosSkip</ability><target>Self</target></li>
@@ -125,14 +131,16 @@
     <description>The air around its barrel tastes of copper before a storm.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>5</minDistance>
-        <chance>0.1</chance>
-        <cooldownHours>4</cooldownHours>
+        <chance>0.06~0.08</chance>
+        <rarityScales>Chance</rarityScales>
+        <scaleWithDamage>true</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_Bolt</externalAbility><target>Victim</target></li>
         </casts>
@@ -147,13 +155,15 @@
     <description>Whatever it hits, lightning goes looking for the next one.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
-        <chance>0.1</chance>
-        <cooldownHours>8</cooldownHours>
+        <chance>0.04~0.06</chance>
+        <rarityScales>Chance</rarityScales>
+        <scaleWithDamage>true</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_ChainBolt</externalAbility><target>Victim</target></li>
         </casts>
@@ -161,20 +171,23 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Both effects last a day, so a shorter cooldown would only top them up -->
+  <!-- Both effects last a day and refresh rather than stack: the wielder keeps the buff through a fight, and each
+       pawn it lands on carries the debuff -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_VPE_Proc_StealVitality</defName>
     <label>Siphoning</label>
     <description>A cut from it leaves the victim pale and its wielder flushed.</description>
     <categories><li>WeaponMelee</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Melee</attack>
         <victims>Hostile</victims>
-        <chance>0.1</chance>
-        <cooldownHours>24</cooldownHours>
+        <chance>0.06~0.08</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>true</rateNormalized>
         <casts>
           <li><externalAbility>VPE_StealVitality</externalAbility><target>Victim</target></li>
         </casts>
@@ -190,12 +203,15 @@
     <description>Machines it strikes sometimes forget whose side they are on.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <victims>HostileMechanoid</victims>
-        <chance>0.15</chance>
-        <cooldownHours>24</cooldownHours>
+        <chance>0.04~0.06</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>true</rateNormalized>
+        <adaptSeconds>60</adaptSeconds>
         <casts>
           <li><externalAbility>VPE_Haywire</externalAbility><target>Victim</target></li>
         </casts>
@@ -211,13 +227,14 @@
     <description>Now and then, what it kills does not stay quiet.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Kill</on>
         <victims>Hostile</victims>
         <minDistance>10</minDistance>
-        <chance>0.25</chance>
-        <cooldownHours>24</cooldownHours>
+        <chance>0.15~0.2</chance>
+        <rarityScales>Chance</rarityScales>
         <casts>
           <li><externalAbility>VPE_Explosion</externalAbility><target>VictimCell</target></li>
         </casts>
@@ -240,7 +257,7 @@
         <victims>Hostile</victims>
         <finishing>true</finishing>
         <chance>0.3</chance>
-        <cooldownHours>72</cooldownHours>
+        <cooldownHours>48</cooldownHours>
         <casts>
           <li><externalAbility>VPE_Killskip</externalAbility><target>NearestEnemy</target></li>
         </casts>
@@ -254,12 +271,14 @@
     <description>Hurt its owner, and a shard of ice answers.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <fromEnemy>true</fromEnemy>
         <chance>0.25</chance>
-        <cooldownHours>6</cooldownHours>
+        <cooldownSeconds>20~30</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><externalAbility>VPE_IceSpike</externalAbility><target>Attacker</target></li>
         </casts>
@@ -290,13 +309,15 @@
     <description>Those who get close enough to strike its owner tend to leave singed.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <attack>Melee</attack>
         <fromEnemy>true</fromEnemy>
         <chance>0.3</chance>
-        <cooldownHours>6</cooldownHours>
+        <cooldownSeconds>45~60</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><externalAbility>VPE_FireShield</externalAbility><target>Self</target></li>
         </casts>
@@ -336,10 +357,12 @@
     <description>Its owners have a habit of not bleeding out.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Downed</on>
-        <cooldownHours>24</cooldownHours>
+        <cooldownHours>20~28</cooldownHours>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><externalAbility>VPE_Stabilize</externalAbility><target>Self</target></li>
         </casts>

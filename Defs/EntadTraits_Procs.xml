@@ -2,7 +2,7 @@
 <Defs>
   <!-- Royalty psycasts cast by triggers (EntadProcs.cs): at once, no psylink, psyfocus or heat, ignoring the psycast's
        range and line of sight. A psycast that can't go off (a psychically deaf target, nowhere to skip to) skips the
-       trigger and keeps its cooldown. Durations still scale with the target's psychic sensitivity, as the psycast's do.
+       trigger (and keeps its cooldown, where it has one). Durations still scale with the target's psychic sensitivity, as the psycast's do.
        Vanilla Psycasts Expanded's copies of these psycasts aren't used: VPE needs Royalty, so these cover it. -->
 
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
@@ -11,12 +11,15 @@
     <description>Those it strikes feel the weight of every step afterwards.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <victims>Hostile</victims>
-        <chance>0.15</chance>
-        <cooldownHours>2</cooldownHours>
+        <chance>0.06~0.08</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>true</rateNormalized>
+        <adaptSeconds>30</adaptSeconds>
         <casts>
           <li><ability>Burden</ability><target>Victim</target></li>
         </casts>
@@ -33,12 +36,15 @@
     <description>Now and then a hit from it lands harder in the mind than on the body.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <victims>Hostile</victims>
-        <chance>0.1</chance>
-        <cooldownHours>6</cooldownHours>
+        <chance>0.05~0.07</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>true</rateNormalized>
+        <adaptSeconds>12</adaptSeconds>
         <casts>
           <li><ability>Stun</ability><target>Victim</target></li>
         </casts>
@@ -55,12 +61,16 @@
     <description>Some it wounds forget which side they were on.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <victims>Hostile</victims>
         <chance>0.05</chance>
-        <cooldownHours>48</cooldownHours>
+        <cooldownHours>20~28</cooldownHours>
+        <rarityScales>Cooldown</rarityScales>
+        <rateNormalized>true</rateNormalized>
+        <adaptSeconds>60</adaptSeconds>
         <casts>
           <li><ability>Berserk</ability><target>Victim</target></li>
         </casts>
@@ -78,6 +88,7 @@
     <description>Whoever takes aim at its owner sometimes finds the world gone white.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
@@ -85,7 +96,8 @@
         <fromEnemy>true</fromEnemy>
         <minDistance>5</minDistance>
         <chance>0.25</chance>
-        <cooldownHours>12</cooldownHours>
+        <cooldownSeconds>30~45</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><ability>BlindingPulse</ability><target>Attacker</target></li>
         </casts>
@@ -99,13 +111,15 @@
     <description>Grab for its owner and you may find your hands empty.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <attack>Melee</attack>
         <fromEnemy>true</fromEnemy>
         <chance>0.2</chance>
-        <cooldownHours>24</cooldownHours>
+        <cooldownSeconds>30~45</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><ability>ChaosSkip</ability><target>Self</target></li>
         </casts>
@@ -119,12 +133,14 @@
     <description>When its owner is badly hurt, the eye slides off them.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <fromEnemy>true</fromEnemy>
         <healthBelow>0.5</healthBelow>
-        <cooldownHours>72</cooldownHours>
+        <cooldownHours>40~56</cooldownHours>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><ability>Invisibility</ability><target>Self</target></li>
         </casts>
@@ -143,13 +159,14 @@
     <description>Its shots rarely stop at the first body they find.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
-        <chance>0.2</chance>
-        <cooldownHours>0.5</cooldownHours>
+        <chance>0.12~0.16</chance>
+        <rarityScales>Chance</rarityScales>
         <casts>
           <li><ability>Entad_Ricochet</ability><target>VictimCell</target></li>
         </casts>
@@ -157,20 +174,23 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- People only: an animal has no weapon, and a mech's gun can't be dropped. A hit on either spends no cooldown. -->
+  <!-- People only: an animal has no weapon, and a mech's gun can't be dropped. A hit on either does nothing. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Disarm</defName>
     <label>Disarming</label>
     <description>It has a way of finding the hand that holds the weapon.</description>
     <categories><li>WeaponMelee</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Hit</on>
         <attack>Melee</attack>
         <victims>Hostile</victims>
-        <chance>0.1</chance>
-        <cooldownHours>4</cooldownHours>
+        <chance>0.06~0.08</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>true</rateNormalized>
+        <adaptSeconds>30</adaptSeconds>
         <casts>
           <li><ability>Entad_Disarm</ability><target>Victim</target></li>
         </casts>
@@ -184,12 +204,13 @@
     <description>Those who see what it does to one of them lose the stomach for the rest.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Kill</on>
         <victims>Hostile</victims>
-        <chance>0.25</chance>
-        <cooldownHours>12</cooldownHours>
+        <chance>0.2~0.3</chance>
+        <rarityScales>Chance</rarityScales>
         <casts>
           <li><ability>Entad_Harrow</ability><target>VictimCell</target></li>
         </casts>
@@ -206,12 +227,14 @@
     <description>What it kills sometimes goes off like a grenade, though never in its owner's face.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>Kill</on>
         <victims>Hostile</victims>
-        <chance>0.2</chance>
-        <cooldownHours>4</cooldownHours>
+        <chance>0.15~0.2</chance>
+        <rarityScales>Chance</rarityScales>
+        <scaleWithDamage>true</scaleWithDamage>
         <casts>
           <li><ability>Entad_Volatile</ability><target>VictimCell</target></li>
         </casts>
@@ -225,13 +248,15 @@
     <description>Crowd its owner, and the air itself shoves back.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <attack>Melee</attack>
         <fromEnemy>true</fromEnemy>
         <chance>0.25</chance>
-        <cooldownHours>6</cooldownHours>
+        <cooldownSeconds>20~30</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><ability>Entad_Shockwave</ability><target>Self</target></li>
         </casts>
@@ -245,13 +270,15 @@
     <description>Those who strike its owner up close come away with frost in their joints.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
         <on>TakeDamage</on>
         <attack>Melee</attack>
         <fromEnemy>true</fromEnemy>
         <chance>0.3</chance>
-        <cooldownHours>4</cooldownHours>
+        <cooldownSeconds>15~20</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
         <casts>
           <li><ability>Entad_Frostburst</ability><target>Self</target></li>
         </casts>
