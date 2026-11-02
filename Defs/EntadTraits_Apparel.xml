@@ -71,6 +71,7 @@
         <threshold>0.5</threshold>
         <coreThreshold>0.78</coreThreshold>
         <loopTicks>360</loopTicks>
+        <frames>32</frames>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
@@ -121,6 +122,7 @@
         <coreThreshold>0.7</coreThreshold>
         <loopTicks>300</loopTicks>
         <scrolls>3</scrolls>
+        <frames>40</frames>
         <evolveCells>4</evolveCells>
         <pulseSpeed>0.7</pulseSpeed>
         <pulseMin>0.75</pulseMin>

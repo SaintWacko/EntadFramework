@@ -457,9 +457,10 @@ namespace EntadFramework
                             float alpha = mask[y * n + x];
                             if (alpha <= 0f) { colors[y * n + x] = default; continue; }
                             float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                            // The fine octave's time is offset half a cell so the two don't pause on the same beat
                             float rise = v - t * scrolls;
                             float value = 0.65f * Noise(u * cellsAcross, rise * cellsUp, t * evolveCells, cellsAcross, cellsUp, evolveCells, 17)
-                                + 0.35f * Noise(u * cellsAcross * 2, rise * cellsUp * 2, t * evolveCells * 2, cellsAcross * 2, cellsUp * 2, evolveCells * 2, 91);
+                                + 0.35f * Noise(u * cellsAcross * 2, rise * cellsUp * 2, t * evolveCells * 2 + 0.5f, cellsAcross * 2, cellsUp * 2, evolveCells * 2, 91);
                             float show = Mathf.Clamp01((value - threshold) / (1f - threshold));
                             show = show * show * (3f - 2f * show);
                             float core = coreThreshold < 1f ? Mathf.Clamp01((value - coreThreshold) / (1f - coreThreshold)) : 0f;
