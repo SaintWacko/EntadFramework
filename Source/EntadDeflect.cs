@@ -7,8 +7,8 @@ namespace EntadFramework
 {
     // Mirrored: worn apparel with Entad_DeflectChance turns aside some of the shots that hit its wearer, Bastle
     // Framework's mirror-scaled. Asked from CompEntad.PostPreApplyDamage, which vanilla calls for each worn piece in
-    // turn (worn order, first absorber wins) before the hit reaches the wearer's health, so a deflected shot causes
-    // no stagger, stun, clamor or thought.
+    // turn (worn order, first absorber wins) before the hit reaches the wearer's injuries, so a deflected shot does
+    // no harm and causes no stun or thought. As with a shield belt, the clamor and the bullet's stagger still happen.
     public static class EntadDeflect
     {
         // Share of deflected shots that fly back at the shooter, aimed; the rest glance off at random
@@ -17,6 +17,14 @@ namespace EntadFramework
         // Accuracy of a shot sent back, as a ShootingAccuracyPawn-style per-tile value: 0.95 is roughly a middling
         // colonist, about 60% on target at 10 tiles
         private const float ReflectAccuracy = 0.95f;
+
+        // A bullet deals its main damage and each extra damage (a unique weapon's) as separate calls in one tick:
+        // the first roll stands for all of them, so one shot is never half turned aside or sent back twice
+        private static CompEntad lastComp;
+        private static Pawn lastWearer;
+        private static Thing lastShooter;
+        private static int lastTick = -1;
+        private static bool lastDeflected;
 
         public static bool TryDeflect(CompEntad comp, DamageInfo dinfo)
         {
@@ -28,7 +36,15 @@ namespace EntadFramework
             if (!dinfo.Def.ignoreShields && HasActiveShield(wearer)) return false;
             // The stat part applies binding: a bound item on someone outside its bloodline reads 0
             float chance = apparel.GetStatValue(EntadStatDefOf.Entad_DeflectChance);
-            if (chance <= 0f || !Rand.Chance(chance)) return false;
+            if (chance <= 0f) return false;
+            int now = Find.TickManager.TicksGame;
+            if (now == lastTick && comp == lastComp && wearer == lastWearer && dinfo.Instigator == lastShooter) return lastDeflected;
+            lastTick = now;
+            lastComp = comp;
+            lastWearer = wearer;
+            lastShooter = dinfo.Instigator;
+            lastDeflected = Rand.Chance(chance);
+            if (!lastDeflected) return false;
 
             EntadVisuals.Deflected(comp, wearer, dinfo.Instigator);
             if (wearer.Map == Find.CurrentMap && !wearer.Position.Fogged(wearer.Map))

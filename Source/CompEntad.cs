@@ -584,6 +584,7 @@ namespace EntadFramework
                         {
                             if (factors[i].stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) flags |= FlagMeleePenetration;
                             else if (factors[i].stat == EntadStatDefOf.Entad_MercilessDamageFactor) flags |= FlagMerciless;
+                            else if (factors[i].stat == EntadStatDefOf.Entad_DeflectChance) flags |= FlagDeflect;
                         }
                         var offsets = activeTraits[t].def.statOffsets;
                         for (int i = 0; offsets != null && i < offsets.Count; i++)
@@ -601,7 +602,7 @@ namespace EntadFramework
         internal bool HasDeflect => (HitStatFlags & FlagDeflect) != 0;
 
         // Worn apparel is asked this for every hit on its wearer (Apparel.CheckPreAbsorbDamage, before the wearer's
-        // health sees the hit), and every item for hits on itself. Mirrored (EntadDeflect.cs) is the only answer.
+        // injuries, stun and thoughts), and every item for hits on itself. Mirrored (EntadDeflect.cs) is the only answer.
         public override void PostPreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
         {
             absorbed = false;

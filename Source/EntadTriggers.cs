@@ -205,7 +205,7 @@ namespace EntadFramework
         public bool HasInspiration => inspiration != null || randomInspiration;
 
         public bool HasEffect => thought != null || hediff != null || heal.max > 0f || rest.max > 0f || food.max > 0f || joy.max > 0f
-            || stunSeconds.max > 0f || HasInspiration || HasCasts || HasDamage || HasMechanoidDamage;
+            || stunSeconds.max > 0f || HasInspiration || HasCasts || HasDamage || HasMechanoidDamage || igniteChance > 0f;
 
         public bool HasDamage => damageDef != null && damage.max > 0f;
         public bool HasMechanoidDamage => mechanoidDamageDef != null && mechanoidDamage.max > 0f;
@@ -276,7 +276,7 @@ namespace EntadFramework
             if (igniteChance > 0f) parts.Add("EF_TriggerEffect_Ignite".Translate(igniteChance.ToStringPercent()));
             if (HasMechanoidDamage) parts.Add("EF_TriggerEffect_MechanoidDamage".Translate(Amount(MechanoidDamage, v => v.ToString("0.#")), mechanoidDamageDef.label));
             string effects = string.Join(", ", parts);
-            if (toOther) effects = (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerToOther_Attacker" : "EF_TriggerToOther_Victim").Translate(effects);
+            if (toOther && !effects.NullOrEmpty()) effects = (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerToOther_Attacker" : "EF_TriggerToOther_Victim").Translate(effects);
             // Casts name their own target
             if (casts != null)
             {
@@ -498,6 +498,8 @@ namespace EntadFramework
         // whoever dealt it. A blocked blow (armor took all of it) only reaches includeBlocked TakeDamage triggers.
         public static void FromDamage(Pawn hurt, DamageInfo dinfo, bool blocked = false)
         {
+            // A trigger's own damage raises nothing: two thorned pawns would otherwise answer each other for ever
+            if (dealingDamage) return;
             bool takeDamage = Any(EntadTriggerEvent.TakeDamage) && !hurt.Dead;
             Pawn attacker = dinfo.Instigator as Pawn;
             bool hit = !blocked && attacker != null && attacker != hurt && Any(EntadTriggerEvent.Hit);
@@ -603,6 +605,8 @@ namespace EntadFramework
                     }
                     if (t.minDistance > 0f && (ctx.other == null || !ctx.other.PositionHeld.IsValid
                         || ctx.other.PositionHeld.DistanceToSquared(pawn.PositionHeld) < t.minDistance * t.minDistance)) continue;
+                    // Its own grenade: answering the attacker would hurt the holder
+                    if (t.toOther && ctx.other == pawn) continue;
                     if (t.adaptSeconds > 0f && ctx.other != null && Adapted(ctx.other, m.def, i))
                     {
                         if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: target adapted", ctx.other);
@@ -774,19 +778,26 @@ namespace EntadFramework
 
         // Damage from the pawn the event happened to, last so a killing blow comes after the stun and hediff. Not
         // dealt inside a melee attack, so it counts as ranged: a melee-only thorn on the attacker doesn't answer it.
+        [System.ThreadStatic] private static bool dealingDamage;
+
         private static void DealDamage(Thing target, Pawn user, EntadTrigger t, EntadTriggerQueue.Pending p)
         {
             var m = p.trait;
-            if (t.HasDamage && !target.Destroyed)
+            dealingDamage = true;
+            try
             {
-                float amount = m.TriggerValue(p.index, EntadTrigger.Damage);
-                if (amount > 0f) target.TakeDamage(new DamageInfo(t.damageDef, amount, t.armorPenetration, -1f, user));
+                if (t.HasDamage && !target.Destroyed)
+                {
+                    float amount = m.TriggerValue(p.index, EntadTrigger.Damage);
+                    if (amount > 0f) target.TakeDamage(new DamageInfo(t.damageDef, amount, t.armorPenetration, -1f, user));
+                }
+                if (t.HasMechanoidDamage && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
+                {
+                    float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage);
+                    if (amount > 0f) target.TakeDamage(new DamageInfo(t.mechanoidDamageDef, amount, 0f, -1f, user));
+                }
             }
-            if (t.HasMechanoidDamage && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
-            {
-                float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage);
-                if (amount > 0f) target.TakeDamage(new DamageInfo(t.mechanoidDamageDef, amount, 0f, -1f, user));
-            }
+            finally { dealingDamage = false; }
             if (t.igniteChance > 0f && !target.Destroyed && target.Spawned && Rand.Chance(t.igniteChance))
                 target.TryAttachFire(Rand.Range(0.2f, 0.4f), user);
         }

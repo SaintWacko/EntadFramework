@@ -1011,7 +1011,7 @@ namespace EntadFramework
             // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
             // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
             // Worn, the light follows the wearer (EntadWornLight.cs)
-            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.IsApparel || (td.building != null && td.GetCompProperties<CompProperties_Glower>() == null);
+            if (stat == EntadStatDefOf.Entad_GlowRadius) return (td.IsApparel || td.building != null) && td.GetCompProperties<CompProperties_Glower>() == null;
             if (stat == EntadStatDefOf.Entad_DeflectChance) return td.IsApparel;
             if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
                 return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
