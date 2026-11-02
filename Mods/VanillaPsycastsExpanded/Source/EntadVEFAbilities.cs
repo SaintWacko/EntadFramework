@@ -191,6 +191,7 @@ namespace EntadFramework.VPECompat
             {
                 ticking.Clear();
                 carriers.Clear();
+                Patch_ProcProjectilePower.powerOf.Clear();
             };
             // Apparel destroyed while worn never despawns, so it never refreshes out
             EntadCompat.Tick250 += () => carriers.RemoveWhere(c => c.parent.Destroyed);
@@ -764,12 +765,13 @@ namespace EntadFramework.VPECompat
 
     // Flameball and other plain projectiles VEF's Ability_ShootProjectile fires take their damage from the projectile def
     // (Projectile.DamageAmount), not from the ability's power as VEF's AbilityProjectile does, so a damage-scaled proc
-    // tags what it launches and the damage is scaled where vanilla reads it. AbilityProjectile never reads DamageAmount,
-    // so nothing is scaled twice.
+    // tags what it launches and the damage is scaled where vanilla reads it. AbilityProjectile's own impact doesn't read
+    // DamageAmount; VPE's Ball Lightning reads both (one blast each), and each is scaled once. Cleared on GameStarted so a
+    // shot from a game the player left doesn't outlive it.
     [HarmonyPatch]
     public static class Patch_ProcProjectilePower
     {
-        private static readonly Dictionary<Projectile, float> powerOf = new Dictionary<Projectile, float>();
+        internal static readonly Dictionary<Projectile, float> powerOf = new Dictionary<Projectile, float>();
 
         public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability_ShootProjectile), "ShootProjectile");
 
@@ -786,7 +788,7 @@ namespace EntadFramework.VPECompat
         {
             public static void Postfix(Projectile __instance, ref int __result)
             {
-                if (powerOf.Count > 0 && powerOf.TryGetValue(__instance, out float power))
+                if (powerOf.Count > 0 && __result > 0 && powerOf.TryGetValue(__instance, out float power))
                     __result = Mathf.Max(1, Mathf.RoundToInt(__result * power));
             }
         }
