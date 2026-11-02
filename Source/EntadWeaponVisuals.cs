@@ -370,8 +370,9 @@ namespace EntadFramework
     // Soft patches of colour crawling up the item, masked to its shape: flames licking over a burning coat, or static
     // or frost with other colours. Like the sheen, a looping set of frames is made once per texture from its alpha
     // (EntadWeaponShape.mask), so it fits any apparel or weapon with no art; the two frames either side of the moment
-    // are cross-faded. The pattern is value noise that wraps vertically, scrolled up by exactly one wrap per loop,
-    // so the loop has no seam.
+    // are cross-faded. The pattern is 3D value noise: scrolled up a whole number of wraps per loop, and moved through
+    // its third axis one wrap per loop, so the patches change shape as they rise and the loop has no seam. Scrolling
+    // alone showed the same lick passing over and over.
     public class EntadVisual_WeaponFlow : EntadWeaponVisual
     {
         public Color color = new Color(1f, 0.45f, 0.08f, 0.6f);
@@ -380,12 +381,16 @@ namespace EntadFramework
         // Noise above threshold shows, and from coreThreshold up it turns to the core colour
         public float threshold = 0.45f;
         public float coreThreshold = 0.75f;
-        // Noise cells across and up the item: more across than up gives taller patches, like flames
-        public int cellsAcross = 3;
-        public int cellsUp = 2;
-        // Ticks for the pattern to move up one wrap, and frames in the loop
-        public int loopTicks = 120;
-        public int frames = 16;
+        // Noise cells across and up the item's square texture (most items fill only the middle of it): more across
+        // than up gives taller patches, like flames
+        public int cellsAcross = 7;
+        public int cellsUp = 4;
+        // Cells the shapes change through per loop; more = faster change
+        public int evolveCells = 3;
+        // Ticks for one loop, how many times the pattern rises the item's height in it, and frames in the loop
+        public int loopTicks = 300;
+        public int scrolls = 2;
+        public int frames = 24;
         // Brightness pulse on top, as in the glow
         public float pulseSpeed = 0f;
         public float pulseMin = 1f;
@@ -398,7 +403,8 @@ namespace EntadFramework
         {
             if (frames < 2 || frames > 64) yield return $"{defName}: weapon flow frames must be from 2 to 64";
             if (loopTicks < 1) yield return $"{defName}: weapon flow loopTicks must be at least 1";
-            if (cellsAcross < 1 || cellsUp < 1) yield return $"{defName}: weapon flow cellsAcross and cellsUp must be at least 1";
+            if (cellsAcross < 1 || cellsUp < 1 || evolveCells < 1) yield return $"{defName}: weapon flow cellsAcross, cellsUp and evolveCells must be at least 1";
+            if (scrolls < 0) yield return $"{defName}: weapon flow scrolls must not be negative";
             if (threshold < 0f || threshold >= 1f) yield return $"{defName}: weapon flow threshold must be from 0 to below 1";
         }
 
@@ -451,8 +457,9 @@ namespace EntadFramework
                             float alpha = mask[y * n + x];
                             if (alpha <= 0f) { colors[y * n + x] = default; continue; }
                             float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
-                            float value = 0.65f * Noise(u * cellsAcross, (v - t) * cellsUp, cellsAcross, cellsUp, 17)
-                                + 0.35f * Noise(u * cellsAcross * 2, (v - t) * cellsUp * 2, cellsAcross * 2, cellsUp * 2, 91);
+                            float rise = v - t * scrolls;
+                            float value = 0.65f * Noise(u * cellsAcross, rise * cellsUp, t * evolveCells, cellsAcross, cellsUp, evolveCells, 17)
+                                + 0.35f * Noise(u * cellsAcross * 2, rise * cellsUp * 2, t * evolveCells * 2, cellsAcross * 2, cellsUp * 2, evolveCells * 2, 91);
                             float show = Mathf.Clamp01((value - threshold) / (1f - threshold));
                             show = show * show * (3f - 2f * show);
                             float core = coreThreshold < 1f ? Mathf.Clamp01((value - coreThreshold) / (1f - coreThreshold)) : 0f;
@@ -470,23 +477,25 @@ namespace EntadFramework
             return mats;
         }
 
-        // Smooth value noise on a grid that wraps every wrapX by wrapY cells
-        private static float Noise(float x, float y, int wrapX, int wrapY, int salt)
+        // Smooth value noise on a grid that wraps every wrapX by wrapY by wrapZ cells
+        private static float Noise(float x, float y, float z, int wrapX, int wrapY, int wrapZ, int salt)
         {
-            int x0 = Mathf.FloorToInt(x), y0 = Mathf.FloorToInt(y);
-            float fx = x - x0, fy = y - y0;
-            fx = fx * fx * (3f - 2f * fx);
-            fy = fy * fy * (3f - 2f * fy);
-            float a = Cell(x0, y0, wrapX, wrapY, salt), b = Cell(x0 + 1, y0, wrapX, wrapY, salt);
-            float c = Cell(x0, y0 + 1, wrapX, wrapY, salt), e = Cell(x0 + 1, y0 + 1, wrapX, wrapY, salt);
-            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, e, fx), fy);
+            int x0 = Mathf.FloorToInt(x), y0 = Mathf.FloorToInt(y), z0 = Mathf.FloorToInt(z);
+            float fx = Smooth(x - x0), fy = Smooth(y - y0), fz = Smooth(z - z0);
+            float Layer(int zc) => Mathf.Lerp(
+                Mathf.Lerp(Cell(x0, y0, zc, wrapX, wrapY, wrapZ, salt), Cell(x0 + 1, y0, zc, wrapX, wrapY, wrapZ, salt), fx),
+                Mathf.Lerp(Cell(x0, y0 + 1, zc, wrapX, wrapY, wrapZ, salt), Cell(x0 + 1, y0 + 1, zc, wrapX, wrapY, wrapZ, salt), fx), fy);
+            return Mathf.Lerp(Layer(z0), Layer(z0 + 1), fz);
         }
 
-        private static float Cell(int x, int y, int wrapX, int wrapY, int salt)
+        private static float Smooth(float f) => f * f * (3f - 2f * f);
+
+        private static float Cell(int x, int y, int z, int wrapX, int wrapY, int wrapZ, int salt)
         {
             x = (x % wrapX + wrapX) % wrapX;
             y = (y % wrapY + wrapY) % wrapY;
-            return (EntadGlint.Mix(Gen.HashCombineInt(x * 7349 + salt, y * 3517)) & 0xFFFF) / 65535f;
+            z = (z % wrapZ + wrapZ) % wrapZ;
+            return (EntadGlint.Mix(Gen.HashCombineInt(Gen.HashCombineInt(x * 7349 + salt, y * 3517), z * 9241)) & 0xFFFF) / 65535f;
         }
     }
 }
