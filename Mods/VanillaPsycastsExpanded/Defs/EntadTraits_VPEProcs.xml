@@ -335,26 +335,30 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
-  <!-- Brambles on every fertile cell within 6 tiles of the holder without a building or a tree, replacing whatever
+  <!-- Brambles on every fertile cell within 6 tiles of the target without a building or a tree, replacing whatever
        grew there (crops too), gone after an hour instead of the psycast's 12. They roughly halve a walker's speed and
-       give no cover: they slow a melee raid closing in, and the holder's side as well. A holder on a building's cell
-       (a door) can't cast it, and the trigger keeps its cooldown. -->
+       give no cover: a melee raid shot at on its way in wades through them. 8+ tiles keeps the field off the shooter.
+       A target on a building's cell (a door) can't be cast at. The 30 second cooldown is there because a second field
+       on the first changes nothing and spawns some hundred things each time. -->
   <EntadFramework.EntadTraitDef>
     <defName>Entad_VPE_Proc_BrambleMaze</defName>
     <label>Thornwake</label>
-    <description>Strike its owner and the ground around them bristles with thorns.</description>
-    <categories><li>Apparel</li></categories>
+    <description>Where its shots land, thorns spring up from the ground.</description>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <triggers>
       <li>
-        <on>TakeDamage</on>
-        <fromEnemy>true</fromEnemy>
-        <chance>0.5</chance>
-        <cooldownSeconds>60~90</cooldownSeconds>
-        <rarityScales>Cooldown</rarityScales>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <minDistance>8</minDistance>
+        <chance>0.08~0.12</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>1</rateNormalized>
+        <cooldownSeconds>30</cooldownSeconds>
         <casts>
-          <li><externalAbility>VPE_BrambleMaze</externalAbility><target>Self</target></li>
+          <li><externalAbility>VPE_BrambleMaze</externalAbility><target>Victim</target></li>
         </casts>
       </li>
     </triggers>
