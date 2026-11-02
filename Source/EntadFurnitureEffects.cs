@@ -206,7 +206,7 @@ namespace EntadFramework
                 // shows which of its contents left the mess
                 if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Map.IsPlayerHome
                     && (at.Faction == null || at.Faction == Faction.OfPlayer)
-                    && (at == thing || at is Pawn) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
+                    && (at == thing || at is Pawn || at is MinifiedThing) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
                     comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }
