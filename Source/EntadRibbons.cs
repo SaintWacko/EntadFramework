@@ -15,8 +15,9 @@ namespace EntadFramework
         public IntRange strands = new IntRange(3, 3);
         // How far a strand swings off the line, as a fraction of the distance, capped in tiles. Each strand is two
         // sine waves of its own (random frequency and phase) under an envelope pinned at both ends, so strands cross
-        // and wind around each other; both waves slide along over time (spin, radians per second), which makes them
-        // twist as they fly.
+        // and wind around each other. Both waves also shift with the time the head passes each point (spin, radians
+        // per second of flight), so longer flights curl more. A point's place is fixed once the head has passed it:
+        // the tail follows the head's path instead of the whole strand writhing as the waves move.
         public float bulge = 0.14f;
         public float maxBulge = 0.8f;
         public FloatRange turns = new FloatRange(0.8f, 1.8f);
@@ -28,8 +29,8 @@ namespace EntadFramework
         // How far the core is lightened towards white
         public float coreWhiten = 0.55f;
         // Tiles per second for the head; the travel time never drops under minTravel seconds
-        public float speed = 9f;
-        public float minTravel = 0.18f;
+        public float speed = 14f;
+        public float minTravel = 0.12f;
         // Length of the lit stretch behind the head, as a fraction of the path
         public float tail = 0.3f;
         // Seconds between one strand setting off and the next
@@ -186,11 +187,11 @@ namespace EntadFramework
             int steps = Mathf.Clamp(Mathf.CeilToInt(span * dist * 5f), 3, 40);
 
             Color core = Color.Lerp(d.color, Color.white, d.coreWhiten);
-            Vector3 prev = Point(from, line, perp, tail, s, d, r.age);
+            Vector3 prev = Point(from, line, perp, tail, s, d, r.travel);
             for (int i = 1; i <= steps; i++)
             {
                 float t = Mathf.Lerp(tail, head, i / (float)steps);
-                Vector3 p = Point(from, line, perp, t, s, d, r.age);
+                Vector3 p = Point(from, line, perp, t, s, d, r.travel);
                 // Brightest just behind the head, fading out along the tail
                 float u = (i - 0.5f) / steps;
                 float fade = Mathf.Clamp01(u * 2.2f) * Mathf.Clamp01((1f - u) * 10f);
@@ -201,9 +202,10 @@ namespace EntadFramework
             return true;
         }
 
-        private static Vector3 Point(Vector3 from, Vector3 line, Vector3 perp, float t, Strand s, EntadVisual_EventRibbons d, float age)
+        private static Vector3 Point(Vector3 from, Vector3 line, Vector3 perp, float t, Strand s, EntadVisual_EventRibbons d, float travel)
         {
-            // Pinned at both ends, so every strand leaves and lands on its pawn
+            // Pinned at both ends, so every strand leaves and lands on its pawn. Time is when the head was at t.
+            float age = t * travel;
             float envelope = Mathf.Sin(t * Mathf.PI);
             float off = s.amp * envelope * (Mathf.Sin(s.freq * t + s.phase + s.spin * age)
                 + d.chaos * Mathf.Sin(s.freq2 * t + s.phase2 + s.spin2 * age));
