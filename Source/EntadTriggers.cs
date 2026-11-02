@@ -123,8 +123,16 @@ namespace EntadFramework
         Enemies = 4    // pawns hostile to it
     }
 
-    // One "when X happens, do Y" on a trait. Amounts are rolled per item and scale with rarity like stat values;
-    // chance, cooldown and radius don't.
+    // What a trigger's rarity scaling does to its chance and cooldown (its amounts always scale with a scaling trait)
+    public enum EntadTriggerRarityScaling
+    {
+        None,
+        Chance,     // chance x the rarity scale: offensive procs, kept in check by how often they go off
+        Cooldown    // cooldown / the rarity scale: defensive procs and lifesavers, kept in check by their cooldown
+    }
+
+    // One "when X happens, do Y" on a trait. Amounts, chance and cooldown are rolled per item. Amounts scale with
+    // rarity like stat values; chance or cooldown only as rarityScales says; radius doesn't.
     public class EntadTrigger
     {
         public EntadTriggerEvent on;
@@ -137,8 +145,20 @@ namespace EntadFramework
         public float minDistance;                     // TakeDamage, Hit, Kill: the other pawn is at least this many tiles from the holder
         public bool finishing;                        // Hit only: the hit downed or killed a pawn that was standing before it
         public bool includeBlocked;                   // TakeDamage only: also a blow armor stopped entirely (not one a shield absorbed)
-        public float chance = 1f;
-        public float cooldownHours;                   // per item: shared by everyone who uses it
+        public FloatRange chance = new FloatRange(1f, 1f);
+        // Per item, shared by everyone who uses it. Set one of the two.
+        public FloatRange cooldownHours = FloatRange.Zero;
+        public FloatRange cooldownSeconds = FloatRange.Zero;
+        public EntadTriggerRarityScaling rarityScales;
+        // Hit only: the chance is for a weapon that attacks once a second (ranged) or every two seconds (melee), and
+        // is multiplied by this weapon's time per attack, so a minigun and a sniper rifle go off about as often per
+        // minute of fighting. For effects that are all or nothing (a stun, a disarm), where a fast weapon would
+        // otherwise land them over and over.
+        public bool rateNormalized;
+        // Hit and Kill: the effect's strength is multiplied by the weapon's damage per attack against the reference
+        // (EntadAttackRate), clamped. Reaches the trigger's stun and damage and every cast (EntadProcContext.power),
+        // where the ability reads it. A fast weapon procs more often and weaker, a slow one rarely and hard.
+        public bool scaleWithDamage;
         // After the trigger fires at a pawn, that pawn can't set this trigger (of this trait, on any item) off again for
         // this long: a stun on every blow would otherwise hold a melee attacker in place for good
         public float adaptSeconds;
@@ -184,8 +204,49 @@ namespace EntadFramework
         public bool IsArea => radius > 0f;
 
         // Rolled values per trigger, in this order, in AppliedEntadTrait.triggerValues
-        public const int ValueCount = 8;
-        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4, StunSeconds = 5, Damage = 6, MechanoidDamage = 7;
+        public const int ValueCount = 10;
+        public const int Heal = 0, Rest = 1, Food = 2, Joy = 3, HediffHours = 4, StunSeconds = 5, Damage = 6, MechanoidDamage = 7,
+            Chance = 8, Cooldown = 9;   // Cooldown in ticks
+
+        public bool HasCooldown => cooldownHours.max > 0f || cooldownSeconds.max > 0f;
+
+        public FloatRange CooldownTicks => cooldownSeconds.max > 0f
+            ? new FloatRange(cooldownSeconds.min * GenTicks.TicksPerRealSecond, cooldownSeconds.max * GenTicks.TicksPerRealSecond)
+            : new FloatRange(cooldownHours.min * GenDate.TicksPerHour, cooldownHours.max * GenDate.TicksPerHour);
+
+        // The events the settings' trigger chance and cooldown multipliers apply to
+        public bool IsCombat => on == EntadTriggerEvent.Hit || on == EntadTriggerEvent.TakeDamage || on == EntadTriggerEvent.Kill || on == EntadTriggerEvent.Downed;
+
+        // Multiplier on rolled value k at a trait's rarity scale
+        public float ScaleOf(int k, float scale)
+        {
+            if (k == Chance) return rarityScales == EntadTriggerRarityScaling.Chance ? scale : 1f;
+            if (k == Cooldown) return rarityScales == EntadTriggerRarityScaling.Cooldown && scale > 0f ? 1f / scale : 1f;
+            return scale;
+        }
+
+        public float Roll(int k, float scale)
+        {
+            float v = RangeAt(k).RandomInRange * ScaleOf(k, scale);
+            return k == Chance ? Mathf.Min(1f, v) : v;
+        }
+
+        // The chance an event sets this off on this item, from its rolled chance. melee: the attack that made the hit.
+        public float EffectiveChance(float rolled, CompEntad item, bool melee)
+        {
+            float c = rolled;
+            if (IsCombat) c *= EntadSettings.TriggerChanceFactor;
+            if (rateNormalized && item != null) c *= EntadAttackRate.ChanceFactor(item, melee);
+            return Mathf.Min(1f, c);
+        }
+
+        public int EffectiveCooldownTicks(float rolled) =>
+            Mathf.RoundToInt(rolled * (IsCombat ? EntadSettings.TriggerCooldownFactor : 1f));
+
+        // Which of the item's attacks the card's chance and strength are for: what the trigger asks for, else the
+        // weapon's main attack
+        public bool CardMelee(Thing item) =>
+            attack == EntadAttackKind.Melee || (attack == EntadAttackKind.Any && !item.def.IsRangedWeapon);
 
         public FloatRange RangeAt(int k)
         {
@@ -198,6 +259,8 @@ namespace EntadFramework
                 case StunSeconds: return stunSeconds;
                 case Damage: return damage;
                 case MechanoidDamage: return mechanoidDamage;
+                case Chance: return chance;
+                case Cooldown: return CooldownTicks;
                 default: return hediffHours;
             }
         }
@@ -294,18 +357,25 @@ namespace EntadFramework
             return key.Translate(effects, who.ToCommaList(useAnd: true), radius.ToString("0.#"));
         }
 
-        public string LimitsLabel()
+        // This item's chance, cooldown and strength, with the settings' multipliers and its weapon's speed and damage
+        public string LimitsLabel(System.Func<int, float> value, CompEntad item)
         {
             var parts = new List<string>();
-            if (chance < 1f) parts.Add("EF_Trigger_Chance".Translate(chance.ToStringPercent()));
-            if (cooldownHours > 0f) parts.Add("EF_Trigger_Cooldown".Translate(cooldownHours.ToString("0.#")));
+            bool melee = item != null && CardMelee(item.parent);
+            float c = EffectiveChance(value(Chance), item, melee);
+            if (c < 1f)
+                parts.Add((rateNormalized && EntadAttackRate.IsWeapon(item) ? "EF_Trigger_ChanceRate" : "EF_Trigger_Chance").Translate(c.ToStringPercent()));
+            int cooldown = EffectiveCooldownTicks(value(Cooldown));
+            if (cooldown > 0) parts.Add("EF_Trigger_Cooldown".Translate(cooldown.ToStringTicksToPeriod()));
+            if (scaleWithDamage && EntadAttackRate.IsWeapon(item))
+                parts.Add("EF_Trigger_Power".Translate(EntadAttackRate.DamagePower(item, melee).ToStringPercent()));
             if (adaptSeconds > 0f) parts.Add("EF_Trigger_Adapt".Translate(adaptSeconds.ToString("0.#")));
             return string.Join(", ", parts);
         }
 
-        public string Line(System.Func<int, float> value)
+        public string Line(System.Func<int, float> value, CompEntad item)
         {
-            string limits = LimitsLabel();
+            string limits = LimitsLabel(value, item);
             return limits.NullOrEmpty()
                 ? "EF_Card_Trigger".Translate(EventLabel, EffectsLabel(value))
                 : "EF_Card_TriggerLimited".Translate(EventLabel, EffectsLabel(value), limits);
@@ -340,12 +410,17 @@ namespace EntadFramework
             {
                 if (casts.Any(c => c == null)) yield return $"{owner}: casts contains an empty entry";
                 foreach (var c in casts) if (c != null) foreach (var e in c.ConfigErrors(owner, on)) yield return e;
-                // Hit and TakeDamage fire per damage event: without a cooldown a shotgun or a minigun casts several times a second
-                if (cooldownHours <= 0f) yield return $"{owner}: a trigger with casts needs cooldownHours";
+                // Hit and TakeDamage fire per damage event: with neither, every bullet of a minigun casts
+                if ((on == EntadTriggerEvent.Hit || on == EntadTriggerEvent.TakeDamage) && !HasCooldown && chance.max >= 1f)
+                    yield return $"{owner}: a Hit or TakeDamage trigger with casts needs a chance below 1 or a cooldown";
                 if (IsArea) yield return $"{owner}: casts can't go on a trigger with a radius (the ability has its own area)";
             }
-            if (chance <= 0f || chance > 1f) yield return $"{owner}: trigger chance must be above 0 and at most 1";
-            if (cooldownHours < 0f) yield return $"{owner}: trigger cooldownHours can't be negative";
+            if (chance.min <= 0f || chance.max > 1f) yield return $"{owner}: trigger chance must be above 0 and at most 1";
+            if (cooldownHours.max > 0f && cooldownSeconds.max > 0f) yield return $"{owner}: set cooldownHours or cooldownSeconds, not both";
+            if (rarityScales == EntadTriggerRarityScaling.Chance && chance.max >= 1f) yield return $"{owner}: rarityScales Chance needs a chance below 1";
+            if (rarityScales == EntadTriggerRarityScaling.Cooldown && !HasCooldown) yield return $"{owner}: rarityScales Cooldown needs a cooldown";
+            if (rateNormalized && on != EntadTriggerEvent.Hit) yield return $"{owner}: rateNormalized only applies to Hit triggers";
+            if (scaleWithDamage && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill) yield return $"{owner}: scaleWithDamage only applies to Hit and Kill triggers";
             for (int k = 0; k < ValueCount; k++)
             {
                 var r = RangeAt(k);
@@ -483,7 +558,8 @@ namespace EntadFramework
         public static void FromGear(Pawn pawn, EntadTriggerEvent ev, JobDef job = null, Thing other = null)
         {
             if (pawn == null || !Any(ev)) return;
-            FromGear(pawn, ev, job, new DamageContext { other = other });
+            // A kill inside a melee attack was a melee kill, for a damage-scaled Kill trigger's strength
+            FromGear(pawn, ev, job, new DamageContext { other = other, melee = ev == EntadTriggerEvent.Kill && meleeDepth > 0 });
         }
 
         private static void FromGear(Pawn pawn, EntadTriggerEvent ev, JobDef job, DamageContext ctx)
@@ -615,7 +691,7 @@ namespace EntadFramework
                     // Cells now: by the next tick the corpse may have been moved or destroyed, and the holder moved on
                     IntVec3 otherCell = ctx.other != null ? ctx.other.PositionHeld : IntVec3.Invalid;
                     // Adapted as it is queued: two blows in one tick would both pass the check before either applied
-                    if (TryQueue(pawn, m, i, null, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell) && t.adaptSeconds > 0f && ctx.other != null)
+                    if (TryQueue(pawn, m, i, null, ctx.melee, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell) && t.adaptSeconds > 0f && ctx.other != null)
                         Adapt(ctx.other, m.def, i, t.adaptSeconds);
                 }
             }
@@ -630,12 +706,12 @@ namespace EntadFramework
                 var ts = m.def.triggers;
                 if (ts == null) continue;
                 for (int i = 0; i < ts.Count; i++)
-                    if (ts[i].on == EntadTriggerEvent.Use && (ts[i].use & kind) != 0) TryQueue(pawn, m, i, comp.parent);
+                    if (ts[i].on == EntadTriggerEvent.Use && (ts[i].use & kind) != 0) TryQueue(pawn, m, i, comp.parent, false);
             }
         }
 
         // Chance and cooldown are settled here, so two events in the same tick can't both get past a cooldown
-        private static bool TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null)
+        private static bool TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, bool melee, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null)
         {
             var t = m.def.triggers[i];
             int now = Find.TickManager.TicksGame;
@@ -645,17 +721,21 @@ namespace EntadFramework
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: on cooldown", other);
                 return false;
             }
-            if (t.chance < 1f && !Rand.Chance(t.chance))
+            float chance = t.EffectiveChance(m.TriggerValue(i, EntadTrigger.Chance), m.owner, melee);
+            if (chance < 1f && !Rand.Chance(chance))
             {
-                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {t.chance.ToStringPercent()} roll", other);
+                if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {chance.ToStringPercent()} roll", other);
                 return false;
             }
-            if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: fired", other);
-            if (t.cooldownHours > 0f) m.SetTriggerReadyTick(i, now + Mathf.RoundToInt(t.cooldownHours * GenDate.TicksPerHour));
+            float power = t.scaleWithDamage ? EntadAttackRate.DamagePower(m.owner, melee) : 1f;
+            if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, power != 1f ? $"{t.on}: fired at {power.ToStringPercent()} strength" : $"{t.on}: fired", other);
+            int cooldown = t.HasCooldown ? t.EffectiveCooldownTicks(m.TriggerValue(i, EntadTrigger.Cooldown)) : 0;
+            if (cooldown > 0) m.SetTriggerReadyTick(i, now + cooldown);
             EntadTriggerQueue.pending.Add(new EntadTriggerQueue.Pending
             {
                 pawn = pawn, trait = m, index = i, source = source, at = at ?? IntVec3.Invalid,
-                other = other, otherCell = otherCell ?? IntVec3.Invalid, origin = pawn.PositionHeld, readyTickBefore = readyTick
+                other = other, otherCell = otherCell ?? IntVec3.Invalid, origin = pawn.PositionHeld, readyTickBefore = readyTick,
+                power = power
             });
             return true;
         }
@@ -675,7 +755,7 @@ namespace EntadFramework
             if (t.HasCasts && !EntadProcs.TryPrepare(t, p, out casts))
             {
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"cast skipped, cooldown kept: {EntadProcs.refusal}");
-                if (t.cooldownHours > 0f) m.SetTriggerReadyTick(p.index, p.readyTickBefore);
+                if (t.HasCooldown) m.SetTriggerReadyTick(p.index, p.readyTickBefore);
                 return;
             }
 
@@ -763,7 +843,7 @@ namespace EntadFramework
                 if (p.source != null) EntadMoods.Give(target, t.thought, t.thought.DurationTicks, p.source);
                 else target.needs.mood.thoughts.memories.TryGainMemory(t.thought);
             }
-            float stun = m.TriggerValue(p.index, EntadTrigger.StunSeconds);
+            float stun = m.TriggerValue(p.index, EntadTrigger.StunSeconds) * p.power;
             if (stun > 0f && target.Spawned && target.stances?.stunner != null)
                 target.stances.stunner.StunFor(UnityEngine.Mathf.RoundToInt(stun * GenTicks.TicksPerRealSecond), user);
             if (t.HasInspiration && target.mindState?.inspirationHandler != null && !target.Inspired)
@@ -788,12 +868,12 @@ namespace EntadFramework
             {
                 if (t.HasDamage && !target.Destroyed)
                 {
-                    float amount = m.TriggerValue(p.index, EntadTrigger.Damage);
+                    float amount = m.TriggerValue(p.index, EntadTrigger.Damage) * p.power;
                     if (amount > 0f) target.TakeDamage(new DamageInfo(t.damageDef, amount, t.armorPenetration, -1f, user));
                 }
                 if (t.HasMechanoidDamage && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
                 {
-                    float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage);
+                    float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage) * p.power;
                     if (amount > 0f) target.TakeDamage(new DamageInfo(t.mechanoidDamageDef, amount, 0f, -1f, user));
                 }
             }
@@ -884,6 +964,7 @@ namespace EntadFramework
             public IntVec3 otherCell;
             public IntVec3 origin;
             public int readyTickBefore;  // the trigger's ready tick before this firing set its cooldown
+            public float power;          // scaleWithDamage's multiplier, 1 otherwise
         }
 
         internal static readonly List<Pending> pending = new List<Pending>();

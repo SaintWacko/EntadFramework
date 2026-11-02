@@ -178,7 +178,7 @@ namespace EntadFramework
             if (def.weaponProperties != null) foreach (var r in def.weaponProperties) applied.weaponValues.Add(r.RollScaled(scale));
             if (def.triggers != null)
                 foreach (var t in def.triggers)
-                    for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.RangeAt(k).RandomInRange * scale);
+                    for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.Roll(k, scale));
             if (def.HasPortableSpace)
                 for (int k = 0; k < 2; k++) applied.spaceValues.Add(UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(def.portableSpace.RandomInRange * scale)));
             applied.thought = def.thought;
@@ -246,7 +246,8 @@ namespace EntadFramework
         public float TriggerValue(int triggerIndex, int triggerValue)
         {
             int idx = triggerIndex * EntadTrigger.ValueCount + triggerValue;
-            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[triggerIndex].RangeAt(triggerValue).Average * def.RarityScale(Rarity);
+            var t = def.triggers[triggerIndex];
+            return idx < triggerValues.Count ? triggerValues[idx] : t.RangeAt(triggerValue).Average * t.ScaleOf(triggerValue, def.RarityScale(Rarity));
         }
 
         public int TriggerReadyTick(int triggerIndex) => triggerIndex < triggerReadyTicks.Count ? triggerReadyTicks[triggerIndex] : 0;
@@ -279,7 +280,10 @@ namespace EntadFramework
                     {
                         var triggerRange = def.triggers[i].RangeAt(k);
                         if (triggerRange.max - triggerRange.min <= 0.0001f) continue;
-                        rollQualitySum += UnityEngine.Mathf.InverseLerp(triggerRange.min * scale, triggerRange.max * scale, TriggerValue(i, k)); totalTraits++;
+                        float s = def.triggers[i].ScaleOf(k, scale);
+                        float q = UnityEngine.Mathf.InverseLerp(triggerRange.min * s, triggerRange.max * s, TriggerValue(i, k));
+                        // A shorter cooldown is the better roll
+                        rollQualitySum += k == EntadTrigger.Cooldown ? 1f - q : q; totalTraits++;
                     }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { rollQualitySum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); totalTraits++; }
@@ -565,6 +569,9 @@ namespace EntadFramework
         // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn, and
         // the Hit trigger on every hit its holder lands. -1 unknown. Not saved; a loaded item starts unknown.
         private int hitStatFlags = -1;
+
+        // The weapon's time and damage per attack, for triggers that scale by them; not saved
+        internal EntadAttackRate.Cache attackRate;
         private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4, FlagDeflect = 8;
 
         private int HitStatFlags
@@ -642,6 +649,7 @@ namespace EntadFramework
         private void TraitsChanged()
         {
             hitStatFlags = -1;
+            attackRate = null;
             visuals = null;
             propertyFactors = null;
             wearerOffsets = null;
@@ -888,7 +896,7 @@ namespace EntadFramework
         // How long until a trigger on cooldown can fire again; null when it is ready
         private static string TriggerReadyIn(AppliedEntadTrait trait, int triggerIndex)
         {
-            if (Current.Game == null || trait.def.triggers[triggerIndex].cooldownHours <= 0f) return null;
+            if (Current.Game == null || !trait.def.triggers[triggerIndex].HasCooldown) return null;
             int left = trait.TriggerReadyTick(triggerIndex) - Find.TickManager.TicksGame;
             return left > 0 ? left.ToStringTicksToPeriod() : null;
         }
@@ -976,7 +984,7 @@ namespace EntadFramework
                 {
                     int triggerIndex = i;
                     var trigger = trait.def.triggers[i];
-                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue));
+                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue), this);
                     string ready = TriggerReadyIn(trait, i);
                     if (ready != null) triggerLine += " " + "EF_Card_TriggerReadyIn".Translate(ready);
                     infoString.AppendLine(" - " + triggerLine);

@@ -333,7 +333,9 @@ namespace EntadFramework
             // Triggered need restores are fractions of the need: past 100% they'd be wasted
             if (triggers != null)
                 foreach (var t in triggers)
-                    if ((t.rest.max > 0f && t.rest.max * scale > 1f) || (t.food.max > 0f && t.food.max * scale > 1f) || (t.joy.max > 0f && t.joy.max * scale > 1f)) return false;
+                    if ((t.rest.max > 0f && t.rest.max * scale > 1f) || (t.food.max > 0f && t.food.max * scale > 1f) || (t.joy.max > 0f && t.joy.max * scale > 1f)
+                        // A chance scaled past 100% would cost the points of a rarity it can't use
+                        || t.chance.max * t.ScaleOf(EntadTrigger.Chance, scale) > 1f) return false;
             // Burst factors and stopping power: a factor can't drop to nothing, and nothing may pass its cap
             if (weaponProperties != null)
                 foreach (var w in weaponProperties)
@@ -799,7 +801,11 @@ namespace EntadFramework
                 yield return $"{defName}: killVictims only applies to killThought; set 'victims' on a written-out Kill trigger instead";
             if (triggers != null)
                 foreach (var t in triggers)
+                {
                     foreach (var e in t.ConfigErrors(defName)) yield return e;
+                    if (t.rarityScales != EntadTriggerRarityScaling.None && !scalesWithRarity)
+                        yield return $"{defName}: a trigger's rarityScales does nothing without scalesWithRarity on the trait";
+                }
             if (HasGearTrigger && HasUseTrigger) yield return $"{defName}: Use triggers (furniture) can't be mixed with gear triggers on one trait";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";

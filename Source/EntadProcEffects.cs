@@ -318,7 +318,10 @@ namespace EntadFramework
             {
                 if (!t.HostileTo(caster)) spared.Add(t);
             }
-            GenExplosion.DoExplosion(center, map, Props.radius, Props.damageDef, caster, Props.damageAmount, Props.armorPenetration,
+            // A damage-scaled trigger's power (EntadTrigger.scaleWithDamage)
+            int damage = Props.damageAmount >= 0 ? Props.damageAmount : Props.damageDef.defaultDamage;
+            if (parent is EntadProcAbility proc) damage = Mathf.Max(1, Mathf.RoundToInt(damage * proc.power));
+            GenExplosion.DoExplosion(center, map, Props.radius, Props.damageDef, caster, damage, Props.armorPenetration,
                 Props.explosionSound, ignoredThings: spared);
         }
 

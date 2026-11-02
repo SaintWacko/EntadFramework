@@ -147,6 +147,11 @@ namespace EntadFramework
         public static int LootMaxEntads = DefaultLootMaxEntads;
         public const float DefaultLootBindChance = 0.25f;
         public static float LootBindChance = DefaultLootBindChance;
+
+        // Multipliers on the chance and cooldown of every combat trigger (EntadTrigger.IsCombat), read as they roll, so
+        // they change existing items too
+        public static float TriggerChanceFactor = 1f;
+        public static float TriggerCooldownFactor = 1f;
         public static readonly float[] ItemCurveValues = { 1000f, 4000f, 10000f, 25000f };
         public static readonly float[] DefaultItemCurvePoints = { 3f, 8f, 15f, 25f };
         public static readonly float[] ItemCurvePoints = (float[])DefaultItemCurvePoints.Clone();
@@ -253,6 +258,8 @@ namespace EntadFramework
             LootItemChance = DefaultLootItemChance;
             LootMaxEntads = DefaultLootMaxEntads;
             LootBindChance = DefaultLootBindChance;
+            TriggerChanceFactor = 1f;
+            TriggerCooldownFactor = 1f;
             DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
             ItemPointVariance = DefaultItemPointVariance;
             VerityReadout = true;
@@ -361,6 +368,10 @@ namespace EntadFramework
             LootMaxEntads = Mathf.Clamp(LootMaxEntads, 1, 10);
             Scribe_Values.Look(ref LootBindChance, "lootBindChance", DefaultLootBindChance);
             LootBindChance = Mathf.Clamp01(LootBindChance);
+            Scribe_Values.Look(ref TriggerChanceFactor, "triggerChanceFactor", 1f);
+            TriggerChanceFactor = Mathf.Clamp(TriggerChanceFactor, 0f, 2f);
+            Scribe_Values.Look(ref TriggerCooldownFactor, "triggerCooldownFactor", 1f);
+            TriggerCooldownFactor = Mathf.Clamp(TriggerCooldownFactor, 0f, 2f);
             for (int i = 0; i < ItemCurvePoints.Length; i++)
             {
                 float v = ItemCurvePoints[i];
@@ -636,6 +647,14 @@ namespace EntadFramework
         {
             Section(list, "EF_Settings_Discovery");
             list.CheckboxLabeled("EF_Settings_HideTraits".Translate(), ref EntadSettings.HideTraits, "EF_Settings_HideTraits_Tip".Translate());
+            list.Gap();
+
+            Section(list, "EF_Settings_Triggers");
+            list.Label("EF_Settings_TriggerChance".Translate(EntadSettings.TriggerChanceFactor.ToStringPercent()));
+            EntadSettings.TriggerChanceFactor = Mathf.Round(list.Slider(EntadSettings.TriggerChanceFactor, 0f, 2f) * 20f) / 20f;
+            list.Label("EF_Settings_TriggerCooldown".Translate(EntadSettings.TriggerCooldownFactor.ToStringPercent()));
+            EntadSettings.TriggerCooldownFactor = Mathf.Round(list.Slider(EntadSettings.TriggerCooldownFactor, 0f, 2f) * 20f) / 20f;
+            list.Label("EF_Settings_Triggers_Desc".Translate());
             list.Gap();
 
             Section(list, "EF_Settings_Visuals");

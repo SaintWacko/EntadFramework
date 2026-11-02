@@ -76,6 +76,13 @@ namespace EntadFramework.VPECompat
         private static readonly HashSet<EntadTraitDef> vanillaPsycastTraits = new HashSet<EntadTraitDef>();
         private static readonly Dictionary<AbilityDef, float> sensitivityOf = new Dictionary<AbilityDef, float>();
 
+        // A damage-scaled proc's power (EntadProcContext.power), per proc ability, as of its last cast. Kept after the
+        // cast because VEF reads it again when the projectile lands (AbilityProjectile.DoImpact). Not saved: a shot in
+        // flight across a load lands at its base power.
+        private static readonly ConditionalWeakTable<Ability, StrongBox<float>> procPower = new ConditionalWeakTable<Ability, StrongBox<float>>();
+
+        internal static float PowerOf(Ability ability) => procPower.TryGetValue(ability, out var p) ? p.Value : 1f;
+
         // Items with a copy among their traits, for the AI's questions about a pawn. Few items carry them, so a scan
         // over these is cheaper than a per-pawn index kept in step with every equip and unequip.
         private static readonly HashSet<CompEntad> carriers = new HashSet<CompEntad>();
@@ -343,6 +350,7 @@ namespace EntadFramework.VPECompat
             if (!(ctx.state is GlobalTargetInfo[] targets) || !TryGetProc(ctx, out var ability)) return;
             if (!ability.def.hasAoE && targets[0].HasThing && !targets[0].Thing.Spawned) return;
             Hold(ability, ctx.caster);
+            procPower.GetValue(ability, _ => new StrongBox<float>()).Value = ctx.power;
             var comp = ability.Comp;
             var casting = comp.currentlyCasting;
             var castingTargets = comp.currentlyCastingTargets;
@@ -719,6 +727,39 @@ namespace EntadFramework.VPECompat
             if (!(__instance.parent is Pawn pawn) || !(pawn.jobs?.curDriver is JobDriver_CastAbilityOnce))
                 __instance.currentlyCasting = null;
         }
+    }
+
+    // A damage-scaled proc's damage, or Chain Bolt's bounce count: what the ability calls its power. VEF's own and every
+    // override VPE's proc abilities use; an override that calls the base is multiplied once (depth).
+    [HarmonyPatch]
+    public static class Patch_ProcPower
+    {
+        private static readonly string[] VpeOverrides =
+        {
+            "VanillaPsycastsExpanded.Staticlord.Ability_ChainBolt:GetPowerForPawn",
+        };
+
+        [ThreadStatic] private static int depth;
+
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.DeclaredMethod(typeof(Ability), nameof(Ability.GetPowerForPawn));
+            foreach (string name in VpeOverrides)
+            {
+                var m = AccessTools.Method(name);
+                if (m != null) yield return m;
+                else Log.Warning($"[Entad Framework] {name} is gone from VPE, so its procs don't scale with the weapon's damage.");
+            }
+        }
+
+        public static void Prefix() => depth++;
+
+        public static void Postfix(Ability __instance, ref float __result)
+        {
+            if (depth == 1) __result *= EntadVEFAbilities.PowerOf(__instance);
+        }
+
+        public static void Finalizer() => depth--;
     }
 
     // Every place VEF and VPE read the caster's psychic sensitivity for the abilities the traits use: the def's stat
