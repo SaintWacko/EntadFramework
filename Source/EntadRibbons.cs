@@ -4,8 +4,8 @@ using Verse;
 
 namespace EntadFramework
 {
-    // Glowing strands of energy that bow out from the line between two spots and meet at the far end, the head
-    // racing ahead and the tail following it in (Maddening pouring into its victim, Vampiric drawing life back). A
+    // Glowing strands of energy that writhe around the line between two spots, twisting around each other as they go
+    // and meeting at the far end, the head racing ahead and the tail following it in (Maddening pouring into its victim, Vampiric drawing life back). A
     // fleck can't bend, so these are drawn every frame as short stretched segments of one soft strip.
     public class EntadVisual_EventRibbons : EntadEventVisual
     {
@@ -13,12 +13,16 @@ namespace EntadFramework
         public EntadVisualSpot to = EntadVisualSpot.Other;
         public Color color = Color.white;
         public IntRange strands = new IntRange(3, 3);
-        // How far the outer strands bow out, as a fraction of the distance, capped in tiles
-        public float bulge = 0.28f;
-        public float maxBulge = 1.6f;
-        // A small sideways ripple along each strand, in tiles, and how many times it waves over the length
-        public float wobble = 0.1f;
-        public float waves = 1.5f;
+        // How far a strand swings off the line, as a fraction of the distance, capped in tiles. Each strand is two
+        // sine waves of its own (random frequency and phase) under an envelope pinned at both ends, so strands cross
+        // and wind around each other; both waves slide along over time (spin, radians per second), which makes them
+        // twist as they fly.
+        public float bulge = 0.14f;
+        public float maxBulge = 0.8f;
+        public FloatRange turns = new FloatRange(0.8f, 1.8f);
+        public FloatRange spin = new FloatRange(5f, 10f);
+        // Strength of the second, faster wave against the first
+        public float chaos = 0.45f;
         public float width = 0.32f;
         public float coreWidth = 0.09f;
         // How far the core is lightened towards white
@@ -27,7 +31,7 @@ namespace EntadFramework
         public float speed = 9f;
         public float minTravel = 0.18f;
         // Length of the lit stretch behind the head, as a fraction of the path
-        public float tail = 0.6f;
+        public float tail = 0.3f;
         // Seconds between one strand setting off and the next
         public float stagger = 0.05f;
 
@@ -43,16 +47,21 @@ namespace EntadFramework
                     if (dist < 0.3f) continue;
                     int n = strands.RandomInRange;
                     var s = new EntadRibbons.Strand[n];
-                    float bow = Mathf.Min(dist * bulge, maxBulge);
+                    float amp = Mathf.Min(dist * bulge, maxBulge);
+                    float spread = Mathf.PI * 2f / n;
                     for (int k = 0; k < n; k++)
                     {
-                        // Outer strands bow either way; a middle one keeps close to the line with a slight bend
-                        float side = n == 1 ? 0f : Mathf.Lerp(-1f, 1f, k / (float)(n - 1));
-                        if (Mathf.Abs(side) < 0.01f) side = Rand.Range(-0.25f, 0.25f);
+                        // Phases spread round the circle so the strands start apart and cross later, not in step
+                        float side = Rand.Bool ? 1f : -1f;
                         s[k] = new EntadRibbons.Strand
                         {
-                            bow = side * bow * Rand.Range(0.75f, 1.1f),
-                            phase = Rand.Range(0f, Mathf.PI * 2f),
+                            amp = amp * Rand.Range(0.7f, 1.15f),
+                            freq = turns.RandomInRange * Mathf.PI * 2f,
+                            phase = k * spread + Rand.Range(-0.6f, 0.6f),
+                            spin = spin.RandomInRange * side,
+                            freq2 = turns.RandomInRange * 2.3f * Mathf.PI * 2f,
+                            phase2 = Rand.Range(0f, Mathf.PI * 2f),
+                            spin2 = -spin.RandomInRange * side * 1.4f,
                             delay = k * stagger + Rand.Range(0f, stagger * 0.5f),
                         };
                     }
@@ -87,8 +96,13 @@ namespace EntadFramework
     {
         internal struct Strand
         {
-            public float bow;
+            public float amp;
+            public float freq;
             public float phase;
+            public float spin;
+            public float freq2;
+            public float phase2;
+            public float spin2;
             public float delay;
         }
 
@@ -172,11 +186,11 @@ namespace EntadFramework
             int steps = Mathf.Clamp(Mathf.CeilToInt(span * dist * 5f), 3, 40);
 
             Color core = Color.Lerp(d.color, Color.white, d.coreWhiten);
-            Vector3 prev = Point(from, line, perp, tail, s, d, dist);
+            Vector3 prev = Point(from, line, perp, tail, s, d, r.age);
             for (int i = 1; i <= steps; i++)
             {
                 float t = Mathf.Lerp(tail, head, i / (float)steps);
-                Vector3 p = Point(from, line, perp, t, s, d, dist);
+                Vector3 p = Point(from, line, perp, t, s, d, r.age);
                 // Brightest just behind the head, fading out along the tail
                 float u = (i - 0.5f) / steps;
                 float fade = Mathf.Clamp01(u * 2.2f) * Mathf.Clamp01((1f - u) * 10f);
@@ -187,11 +201,12 @@ namespace EntadFramework
             return true;
         }
 
-        private static Vector3 Point(Vector3 from, Vector3 line, Vector3 perp, float t, Strand s, EntadVisual_EventRibbons d, float dist)
+        private static Vector3 Point(Vector3 from, Vector3 line, Vector3 perp, float t, Strand s, EntadVisual_EventRibbons d, float age)
         {
-            // Pinned at both ends: the bow is a parabola and the ripple dies away towards the ends
-            float off = s.bow * 4f * t * (1f - t)
-                + d.wobble * Mathf.Sin(t * Mathf.PI * 2f * d.waves + s.phase) * Mathf.Sin(t * Mathf.PI);
+            // Pinned at both ends, so every strand leaves and lands on its pawn
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            float off = s.amp * envelope * (Mathf.Sin(s.freq * t + s.phase + s.spin * age)
+                + d.chaos * Mathf.Sin(s.freq2 * t + s.phase2 + s.spin2 * age));
             return from + line * t + perp * off;
         }
 

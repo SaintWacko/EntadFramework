@@ -201,9 +201,12 @@ namespace EntadFramework
                 if (!cell.InBounds(at.Map)) continue;
                 ThingDef filth = comp.activeTraits
                     .FirstOrDefault(t => t.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))?.def.filth ?? ThingDefOf.Filth_Dirt;
-                // Seen at home on the colony's own things or loose items; not on a raider's gear
+                // Seen at home on the colony's own things or loose items; not on a raider's gear, not under fog (an
+                // ancient complex on the home map), and not from inside a crate or shelf container, where nothing
+                // shows which of its contents left the mess
                 if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Map.IsPlayerHome
-                    && (at.Faction == null || at.Faction == Faction.OfPlayer))
+                    && (at.Faction == null || at.Faction == Faction.OfPlayer)
+                    && (at == thing || at is Pawn) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
                     comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }
