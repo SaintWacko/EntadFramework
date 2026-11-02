@@ -366,4 +366,124 @@ namespace EntadFramework
             return mats;
         }
     }
+
+    // Soft patches of colour crawling up the item, masked to its shape: flames licking over a burning coat, or static
+    // or frost with other colours. Like the sheen, a looping set of frames is made once per texture from its alpha
+    // (EntadWeaponShape.mask), so it fits any apparel or weapon with no art; the two frames either side of the moment
+    // are cross-faded. The pattern is value noise that wraps vertically, scrolled up by exactly one wrap per loop,
+    // so the loop has no seam.
+    public class EntadVisual_WeaponFlow : EntadWeaponVisual
+    {
+        public Color color = new Color(1f, 0.45f, 0.08f, 0.6f);
+        // The brightest part of each patch blends towards this colour (fire's yellow core); alpha unused
+        public Color coreColor = new Color(1f, 0.85f, 0.4f, 1f);
+        // Noise above threshold shows, and from coreThreshold up it turns to the core colour
+        public float threshold = 0.45f;
+        public float coreThreshold = 0.75f;
+        // Noise cells across and up the item: more across than up gives taller patches, like flames
+        public int cellsAcross = 3;
+        public int cellsUp = 2;
+        // Ticks for the pattern to move up one wrap, and frames in the loop
+        public int loopTicks = 120;
+        public int frames = 16;
+        // Brightness pulse on top, as in the glow
+        public float pulseSpeed = 0f;
+        public float pulseMin = 1f;
+        // Added light (fire, sparks) or blended colour (frost, smoke, anything that should show on white cloth)
+        public bool additive = true;
+
+        private readonly Dictionary<EntadWeaponShape, Material[]> frameCache = new Dictionary<EntadWeaponShape, Material[]>();
+
+        public override IEnumerable<string> ConfigErrors(string defName)
+        {
+            if (frames < 2) yield return $"{defName}: weapon flow needs at least 2 frames";
+            if (loopTicks < 1) yield return $"{defName}: weapon flow loopTicks must be at least 1";
+            if (cellsAcross < 1 || cellsUp < 1) yield return $"{defName}: weapon flow cellsAcross and cellsUp must be at least 1";
+            if (threshold < 0f || threshold >= 1f) yield return $"{defName}: weapon flow threshold must be from 0 to below 1";
+        }
+
+        public override void Draw(EntadWeaponDraw d)
+        {
+            var mats = FramesFor(d.shape);
+            if (mats == null || mats.Length < 2 || loopTicks < 1) return;
+            int seed = Gen.HashCombineInt(d.seed, 0xF10);
+            float at = (d.ticks + ((seed >> 4) & 0xFFFF)) % loopTicks / (float)loopTicks * mats.Length;
+            int a = (int)at % mats.Length;
+            int b = (a + 1) % mats.Length;
+            float f = at - (int)at;
+            float strength = color.a;
+            if (pulseSpeed > 0f)
+            {
+                float cycle = (float)((d.ticks / 60.0 * pulseSpeed + (seed & 0xFF) / 255f) % 1.0);
+                strength *= Mathf.Lerp(pulseMin, 1f, (Mathf.Sin(cycle * Mathf.PI * 2f) + 1f) * 0.5f);
+            }
+            Matrix4x4 m = d.matrix;
+            // Over the tint, under the sheen and the halo
+            m.m13 = d.altitude - 0.00015f;
+            Mesh mesh = d.Plane;
+            var block = EntadVisuals.glowBlock;
+            block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, strength * (1f - f)));
+            Graphics.DrawMesh(mesh, m, mats[a], 0, null, 0, block);
+            block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, strength * f));
+            Graphics.DrawMesh(mesh, m, mats[b], 0, null, 0, block);
+        }
+
+        private Material[] FramesFor(EntadWeaponShape shape)
+        {
+            if (frameCache.TryGetValue(shape, out var mats)) return mats;
+            mats = null;
+            float[] mask = shape.mask;
+            if (mask != null && frames >= 2)
+            {
+                int n = EntadWeaponShape.Size;
+                mats = new Material[frames];
+                var colors = new Color32[n * n];
+                Shader shader = additive ? ShaderDatabase.MoteGlow : ShaderDatabase.Transparent;
+                for (int k = 0; k < frames; k++)
+                {
+                    float t = k / (float)frames;
+                    for (int y = 0; y < n; y++)
+                        for (int x = 0; x < n; x++)
+                        {
+                            float alpha = mask[y * n + x];
+                            if (alpha <= 0f) { colors[y * n + x] = default; continue; }
+                            float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                            float value = 0.65f * Noise(u * cellsAcross, (v - t) * cellsUp, cellsAcross, cellsUp, 17)
+                                + 0.35f * Noise(u * cellsAcross * 2, (v - t) * cellsUp * 2, cellsAcross * 2, cellsUp * 2, 91);
+                            float show = Mathf.Clamp01((value - threshold) / (1f - threshold));
+                            show = show * show * (3f - 2f * show);
+                            float core = coreThreshold < 1f ? Mathf.Clamp01((value - coreThreshold) / (1f - coreThreshold)) : 0f;
+                            Color c = Color.Lerp(color, coreColor, core);
+                            c.a = show * alpha;
+                            colors[y * n + x] = c;
+                        }
+                    var tex = new Texture2D(n, n, TextureFormat.ARGB32, false) { name = "EntadFlow_" + k, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                    tex.SetPixels32(colors);
+                    tex.Apply(false, true);
+                    mats[k] = new Material(shader) { mainTexture = tex, name = tex.name };
+                }
+            }
+            frameCache[shape] = mats;
+            return mats;
+        }
+
+        // Smooth value noise on a grid that wraps every wrapX by wrapY cells
+        private static float Noise(float x, float y, int wrapX, int wrapY, int salt)
+        {
+            int x0 = Mathf.FloorToInt(x), y0 = Mathf.FloorToInt(y);
+            float fx = x - x0, fy = y - y0;
+            fx = fx * fx * (3f - 2f * fx);
+            fy = fy * fy * (3f - 2f * fy);
+            float a = Cell(x0, y0, wrapX, wrapY, salt), b = Cell(x0 + 1, y0, wrapX, wrapY, salt);
+            float c = Cell(x0, y0 + 1, wrapX, wrapY, salt), e = Cell(x0 + 1, y0 + 1, wrapX, wrapY, salt);
+            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, e, fx), fy);
+        }
+
+        private static float Cell(int x, int y, int wrapX, int wrapY, int salt)
+        {
+            x = (x % wrapX + wrapX) % wrapX;
+            y = (y % wrapY + wrapY) % wrapY;
+            return (EntadGlint.Mix(Gen.HashCombineInt(x * 7349 + salt, y * 3517)) & 0xFFFF) / 65535f;
+        }
+    }
 }

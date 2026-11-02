@@ -64,7 +64,13 @@
         <color>(1, 0.45, 0.1, 0.22)</color>
         <pulseSpeed>0.5</pulseSpeed>
         <flicker>0.25</flicker>
-        <tint>1</tint>
+        <tint>0.6</tint>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.45, 0.08, 0.5)</color>
+        <threshold>0.5</threshold>
+        <coreThreshold>0.85</coreThreshold>
+        <loopTicks>150</loopTicks>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
@@ -107,7 +113,15 @@
         <color>(1, 0.35, 0.05, 0.4)</color>
         <pulseSpeed>0.7</pulseSpeed>
         <flicker>0.35</flicker>
-        <tint>1.2</tint>
+        <tint>0.8</tint>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.4, 0.05, 0.8)</color>
+        <threshold>0.4</threshold>
+        <coreThreshold>0.7</coreThreshold>
+        <loopTicks>100</loopTicks>
+        <pulseSpeed>0.7</pulseSpeed>
+        <pulseMin>0.75</pulseMin>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
