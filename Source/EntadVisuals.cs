@@ -25,9 +25,10 @@ namespace EntadFramework
         public EntadVisual_ProjectileTrail[] trails = new EntadVisual_ProjectileTrail[0];
         public EntadWornVisual[] worn = new EntadWornVisual[0];
         public EntadEventVisual[] events = new EntadEventVisual[0];
+        public EntadBuildingVisual[] building = new EntadBuildingVisual[0];
         // EntadEventVisual.Bit of every event the set plays on
         public int eventMask;
-        public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0 || events.Length > 0;
+        public bool Any => weapon.Length > 0 || trails.Length > 0 || worn.Length > 0 || events.Length > 0 || building.Length > 0;
 
         // Bumped when a setting changes which entries play, so every item's cached set is rebuilt on its next draw
         // without walking the items
@@ -42,6 +43,7 @@ namespace EntadFramework
             List<EntadVisual_ProjectileTrail> trails = null;
             List<EntadWornVisual> worn = null;
             List<EntadEventVisual> events = null;
+            List<EntadBuildingVisual> building = null;
             var traits = comp.activeTraits;
             for (int i = 0; i < traits.Count; i++)
             {
@@ -55,13 +57,15 @@ namespace EntadFramework
                     else if (v is EntadVisual_ProjectileTrail p) (trails ?? (trails = new List<EntadVisual_ProjectileTrail>())).Add(p);
                     else if (v is EntadWornVisual o) (worn ?? (worn = new List<EntadWornVisual>())).Add(o);
                     else if (v is EntadEventVisual e) (events ?? (events = new List<EntadEventVisual>())).Add(e);
+                    else if (v is EntadBuildingVisual b) (building ?? (building = new List<EntadBuildingVisual>())).Add(b);
                 }
             }
-            if (weapon == null && trails == null && worn == null && events == null) return new EntadVisualSet { builtVersion = version };
+            if (weapon == null && trails == null && worn == null && events == null && building == null) return new EntadVisualSet { builtVersion = version };
             var set = new EntadVisualSet { builtVersion = version };
             if (weapon != null) set.weapon = weapon.ToArray();
             if (trails != null) set.trails = trails.ToArray();
             if (worn != null) set.worn = worn.ToArray();
+            if (building != null) set.building = building.ToArray();
             if (events != null)
             {
                 set.events = events.ToArray();
@@ -78,6 +82,7 @@ namespace EntadFramework
         // For the weapon glow. Here rather than on EntadVisual_WeaponGlow: that class is built by the def loader and
         // has no StaticConstructorOnStartup, so RimWorld warns about a Unity object field on it at startup.
         internal static readonly MaterialPropertyBlock glowBlock = new MaterialPropertyBlock();
+        internal static readonly MaterialPropertyBlock swirlBlock = new MaterialPropertyBlock();
         // Last game tick each weapon or worn item spawned flecks, by thing id. Cleared when it grows large: that costs
         // an item one skipped tick of flecks, not a leak.
         private static readonly Dictionary<int, int> lastFleckTick = new Dictionary<int, int>();
@@ -95,10 +100,11 @@ namespace EntadFramework
             eventContext.Reset(null, null);
             EntadAfterimages.Clear();
             EntadRibbons.Clear();
+            EntadBuildingVisuals.Clear();
         }
 
         // Game ticks since the item last spawned flecks, capped, and 1 the first time it's seen
-        private static int NewTicks(int id, int now)
+        internal static int NewTicks(int id, int now)
         {
             int newTicks;
             if (lastFleckTick.TryGetValue(id, out int last)) newTicks = Mathf.Clamp(now - last, 0, MaxCatchUpTicks);

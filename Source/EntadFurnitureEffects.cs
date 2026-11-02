@@ -82,6 +82,7 @@ namespace EntadFramework
             RefreshHumble(comp);
             RefreshShedding(comp);
             EntadPowerNets.Refresh(comp);
+            EntadBuildingVisuals.Refresh(comp);
             EntadCompat.RaiseRefreshed(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);

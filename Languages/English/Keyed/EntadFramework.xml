@@ -254,6 +254,8 @@
   <EF_Settings_VisualsProjectiles_Tip>Shots from a ranged weapon with such a trait leave a trail of embers, sparks or frost.</EF_Settings_VisualsProjectiles_Tip>
   <EF_Settings_VisualsEvents>On hits and reactions</EF_Settings_VisualsEvents>
   <EF_Settings_VisualsEvents_Tip>Short effects when a trait acts: a burn flash where a searing blade lands, red wisps drawn from a kill into a vampiric weapon, sparks off armor, a dodge leaving an afterimage, a pulse when an injury heals. Sprinting pawns leave afterimages too.</EF_Settings_VisualsEvents_Tip>
+  <EF_Settings_VisualsFurniture>On furniture</EF_Settings_VisualsFurniture>
+  <EF_Settings_VisualsFurniture_Tip>Installed furniture shows its traits while they are at work: cold mist off a cool shelf, heat haze over a warm one, sparks off a building on a leaking or sparking power network, motes over a planter.</EF_Settings_VisualsFurniture_Tip>
   <EF_Settings_VerityReadout_Tip>Adds the colony's entad verity as a row under the resource list in the top left, once the colony has any. Research benches show it either way.</EF_Settings_VerityReadout_Tip>
   <EF_Settings_HideTraits_Tip>Newly generated entad items show "???" for their traits until something the trait affects happens. Existing items keep their current state.</EF_Settings_HideTraits_Tip>
   <EF_Settings_Generation>Generation</EF_Settings_Generation>

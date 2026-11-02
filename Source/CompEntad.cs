@@ -615,6 +615,16 @@ namespace EntadFramework
         }
         internal bool wornNodeBuilt;
 
+        internal bool HasBuildingVisualTraits
+        {
+            get
+            {
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (activeTraits[i].def.HasBuildingVisuals) return true;
+                return false;
+            }
+        }
+
         private void TraitsChanged()
         {
             hitStatFlags = -1;

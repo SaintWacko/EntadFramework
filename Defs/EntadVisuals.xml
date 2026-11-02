@@ -223,6 +223,105 @@
     <growthRate>1.0</growthRate>
   </FleckDef>
 
+  <!-- Furniture (EntadBuildingVisuals.cs): ambient effects off installed buildings. Heat shimmer bends the air
+       over a warm building with vanilla's heat-wave distortion, much slower and fainter than a hellfire blast. -->
+  <FleckDef ParentName="FleckGlowDistortBackground" Name="EntadHeatShimmerBase">
+    <defName>Entad_Fleck_HeatShimmer</defName>
+    <fleckSystemClass>FleckSystemThrown</fleckSystemClass>
+    <altitudeLayer>MoteOverheadLow</altitudeLayer>
+    <graphicData>
+      <texPath>Things/Mote/Black</texPath>
+      <shaderParameters>
+        <_distortionIntensity>0.012</_distortionIntensity>
+        <_brightnessMultiplier>1.0</_brightnessMultiplier>
+        <_DistortionTex>/Things/Mote/MoteHellfireCannon_HeatWaveDistortion</_DistortionTex>
+      </shaderParameters>
+    </graphicData>
+    <fadeInTime>0.6</fadeInTime>
+    <solidTime>0.5</solidTime>
+    <fadeOutTime>0.9</fadeOutTime>
+    <growthRate>0.25</growthRate>
+  </FleckDef>
+
+  <FleckDef ParentName="EntadHeatShimmerBase">
+    <defName>Entad_Fleck_HeatShimmerStrong</defName>
+    <graphicData>
+      <shaderParameters>
+        <_distortionIntensity>0.022</_distortionIntensity>
+      </shaderParameters>
+    </graphicData>
+  </FleckDef>
+
+  <!-- A dull red glow breathing off a sweltering building, added like light, so it is kept dim -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_HeatHaze</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.4, 0.15, 0.05)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverheadLow</altitudeLayer>
+    <fadeInTime>0.8</fadeInTime>
+    <solidTime>0.4</solidTime>
+    <fadeOutTime>1.2</fadeOutTime>
+    <growthRate>0.2</growthRate>
+  </FleckDef>
+
+  <!-- Small orange sparks dripping off a building whose network leaks -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_LeakSpark</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(1, 0.6, 0.2)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.02</fadeInTime>
+    <solidTime>0.15</solidTime>
+    <fadeOutTime>0.35</fadeOutTime>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_GrowthMote</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.4, 0.95, 0.35)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.4</fadeInTime>
+    <solidTime>0.8</solidTime>
+    <fadeOutTime>0.8</fadeOutTime>
+  </FleckDef>
+
+  <!-- Barren's motes: Fertile's, black. Drawn over the plant rather than added like a glow, which black can't be. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_BlightMote</defName>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <shaderType>Transparent</shaderType>
+      <color>(0.05, 0.04, 0.04, 0.85)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.4</fadeInTime>
+    <solidTime>0.8</solidTime>
+    <fadeOutTime>0.8</fadeOutTime>
+  </FleckDef>
+
+  <!-- Greenish-brown fumes off food going off on a spoiling shelf -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Entad_Fleck_SpoilFume</defName>
+    <graphicData>
+      <texPath>Things/Mote/Smoke</texPath>
+      <color>(0.42, 0.45, 0.2, 0.5)</color>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.4</fadeInTime>
+    <solidTime>0.4</solidTime>
+    <fadeOutTime>1.4</fadeOutTime>
+    <growthRate>0.3</growthRate>
+  </FleckDef>
+
   <FleckDef ParentName="FleckBase_Thrown">
     <defName>Entad_Fleck_DreadWisp</defName>
     <graphicData>

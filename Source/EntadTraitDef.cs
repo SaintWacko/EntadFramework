@@ -436,11 +436,19 @@ namespace EntadFramework
 
         // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost
         // one field read in a game whose traits have none
-        private static bool? anyWeaponVisuals, anyTrailVisuals, anyWornVisuals;
+        private static bool? anyWeaponVisuals, anyTrailVisuals, anyWornVisuals, anyBuildingVisuals;
         private static int eventVisualMask = -1;
         public static bool AnyWeaponVisuals => anyWeaponVisuals ?? ReadVisuals().Item1;
         public static bool AnyTrailVisuals => anyTrailVisuals ?? ReadVisuals().Item2;
         public static bool AnyWornVisuals => anyWornVisuals ?? ReadVisuals().Item3;
+        public static bool AnyBuildingVisuals
+        {
+            get
+            {
+                if (anyBuildingVisuals == null) ReadVisuals();
+                return anyBuildingVisuals.Value;
+            }
+        }
         // One bit per EntadVisualEvent some trait plays a visual on, so each event's hook is one int test otherwise
         public static bool AnyEventVisuals(EntadVisualEvent ev)
         {
@@ -452,9 +460,12 @@ namespace EntadFramework
         [Unsaved] private bool? hasWornVisuals;
         public bool HasWornVisuals => hasWornVisuals ??= visuals != null && visuals.Any(v => v is EntadWornVisual);
 
+        [Unsaved] private bool? hasBuildingVisuals;
+        public bool HasBuildingVisuals => hasBuildingVisuals ??= visuals != null && visuals.Any(v => v is EntadBuildingVisual);
+
         private static (bool, bool, bool) ReadVisuals()
         {
-            bool weapon = false, trail = false, worn = false;
+            bool weapon = false, trail = false, worn = false, building = false;
             int events = 0;
             foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
                 if (d.visuals != null)
@@ -463,12 +474,14 @@ namespace EntadFramework
                         weapon |= v is EntadWeaponVisual;
                         trail |= v is EntadVisual_ProjectileTrail;
                         worn |= v is EntadWornVisual;
+                        building |= v is EntadBuildingVisual;
                         if (v is EntadEventVisual e) events |= EntadEventVisual.Bit(e.on);
                     }
             eventVisualMask = events;
             anyWeaponVisuals = weapon;
             anyTrailVisuals = trail;
             anyWornVisuals = worn;
+            anyBuildingVisuals = building;
             return (weapon, trail, worn);
         }
 
@@ -817,6 +830,8 @@ namespace EntadFramework
                 }
             if (HasWornVisuals && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
                 yield return $"{defName}: worn visuals only play on apparel, and the trait's categories don't include Apparel";
+            if (HasBuildingVisuals && !categories.NullOrEmpty() && !categories.Contains("Furniture"))
+                yield return $"{defName}: building visuals only play on installed buildings, and the trait's categories don't include Furniture";
             if (visuals != null)
                 foreach (var v in visuals)
                     if (v is EntadEventVisual e && e.on == EntadVisualEvent.Trigger && e.trigger >= (triggers?.Count ?? 0))

@@ -22,6 +22,7 @@ namespace EntadFramework
     {
         private static readonly Dictionary<StatDef, Func<ThingDef, bool>> statChecks = new Dictionary<StatDef, Func<ThingDef, bool>>();
         private static readonly Dictionary<string, Func<ThingDef, bool>> effectChecks = new Dictionary<string, Func<ThingDef, bool>>();
+        private static readonly Dictionary<string, Func<Thing, bool>> visualConditions = new Dictionary<string, Func<Thing, bool>>();
 
         // Raised whenever an entad's traits or spawned state change (spawn, despawn, trait added or removed, game
         // loaded), the moment for a module to list or drop it
@@ -260,6 +261,25 @@ namespace EntadFramework
         {
             if (key.NullOrEmpty() || appliesTo == null) throw new ArgumentNullException(key.NullOrEmpty() ? nameof(key) : nameof(appliesTo));
             effectChecks[key] = appliesTo;
+        }
+
+        // A condition building visuals can name with when Custom and this key (EntadBuildingVisuals.cs): asked about
+        // the spawned building at most every 250 ticks while it is in view. A key nothing registered never plays.
+        public static void RegisterVisualCondition(string key, Func<Thing, bool> holds)
+        {
+            if (key.NullOrEmpty() || holds == null) throw new ArgumentNullException(key.NullOrEmpty() ? nameof(key) : nameof(holds));
+            visualConditions[key] = holds;
+        }
+
+        internal static bool VisualCondition(string key, Thing thing)
+        {
+            if (!visualConditions.TryGetValue(key, out var holds)) return false;
+            try { return holds(thing); }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] {holds.Method.DeclaringType}.{holds.Method.Name} failed on {thing}: {e}", holds.Method.GetHashCode());
+                return false;
+            }
         }
 
         internal static bool TryStatAppliesTo(StatDef stat, ThingDef td, out bool applies)
