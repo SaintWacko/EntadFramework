@@ -88,7 +88,7 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><fleck>Entad_Fleck_GoldGlint</fleck><count>4~6</count><scale>0.3~0.45</scale><angle>-40~40</angle><speed>0.1~0.3</speed><spread>0.35</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><fleck>Entad_Fleck_Glint</fleck><color>(1, 0.85, 0.45)</color><count>4~6</count><scale>0.3~0.45</scale><angle>-40~40</angle><speed>0.1~0.3</speed><spread>0.35</spread></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 

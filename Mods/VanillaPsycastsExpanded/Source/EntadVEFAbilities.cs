@@ -213,7 +213,9 @@ namespace EntadFramework.VPECompat
             copy.modExtensions = source.modExtensions?.Where(e => e != psycast).ToList() ?? new List<DefModExtension>();
             if (psycast != null && AccessTools.Field(psycast.GetType(), "psychic")?.GetValue(psycast) is bool psychic && psychic)
                 copy.modExtensions.Add(new AbilityExtension_EntadPsychic { abilityDef = copy });
-            sensitivityOf[copy] = trait.GetModExtension<EntadVEFTraitExtension>()?.casterSensitivity ?? 1f;
+            var ext = trait.GetModExtension<EntadVEFTraitExtension>();
+            sensitivityOf[copy] = ext?.casterSensitivity ?? 1f;
+            if (ext != null && ext.durationTicks > 0) copy.durationTime = ext.durationTicks;
             copy.requiredHediff = null;
             copy.requiredTrait = null;
             copy.gizmoClass = typeof(Command_EntadAbility);
@@ -633,11 +635,15 @@ namespace EntadFramework.VPECompat
     public class EntadVEFTraitExtension : DefModExtension
     {
         public float casterSensitivity = 1f;
+        // Replaces the copies' durationTime (before VEF's stat factors), for an effect whose psycast length is wrong
+        // for a trait: brambles that stay half a day after a fight. 0 keeps the ability's own.
+        public int durationTicks;
 
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string e in base.ConfigErrors()) yield return e;
             if (casterSensitivity < 0f) yield return "casterSensitivity can't be negative";
+            if (durationTicks < 0) yield return "durationTicks can't be negative";
         }
     }
 

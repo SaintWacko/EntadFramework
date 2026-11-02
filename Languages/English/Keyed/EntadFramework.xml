@@ -135,6 +135,7 @@
   <EF_TriggerCast_NearestEnemy>casts {0} at the nearest enemy in sight</EF_TriggerCast_NearestEnemy>
   <EF_TriggerCast_FromTarget>casts {0} out of the target</EF_TriggerCast_FromTarget>
   <EF_TriggerCast_Optional>{0} (when it can)</EF_TriggerCast_Optional>
+  <EF_TriggerCast_Unroofed>{0}, under open sky</EF_TriggerCast_Unroofed>
   <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
   <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
   <EF_TriggerArea_Victim>{0}, to {1} within {2} tiles of the victim</EF_TriggerArea_Victim>

@@ -131,6 +131,11 @@ namespace EntadFramework
                     ok = false;
                     if (LogTriggers) refusal = $"{name}: no {cast.target} target";
                 }
+                else if (cast.unroofed && ctx.target.Cell.Roofed(caster.Map))
+                {
+                    ok = false;
+                    if (LogTriggers) refusal = $"{name}: {ctx.target} is under a roof";
+                }
                 else
                 {
                     ok = cast.IsExternal ? EntadCompat.CanCastExternal(ctx) : CanCastVanilla(ctx);

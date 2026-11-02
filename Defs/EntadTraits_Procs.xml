@@ -129,6 +129,32 @@
     </triggers>
   </EntadFramework.EntadTraitDef>
 
+  <!-- The attacker is skipped 7-25 tiles in a random direction, which can land them behind the holder's lines, and
+       stunned for 1-2 seconds on arrival. Vanilla won't skip anything over body size 3.5 or a psychically deaf pawn,
+       and the trigger keeps its cooldown then. One melee answer per item, like Thorned, Infernal and Stormcloak. -->
+  <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
+    <defName>Entad_Proc_Banish</defName>
+    <label>Banishing</label>
+    <description>Those who come to blows with its owner are sometimes simply elsewhere.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusivityTags><li>EntadMeleeRetaliation</li></exclusivityTags>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.25</chance>
+        <cooldownSeconds>30~45</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
+        <casts>
+          <li><ability>ChaosSkip</ability><target>Attacker</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_Invisibility</defName>
     <label>Fading</label>

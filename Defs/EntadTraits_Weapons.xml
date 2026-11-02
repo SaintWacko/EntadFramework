@@ -365,7 +365,8 @@
         <rotationRate>-15~15</rotationRate>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
-        <fleck>Entad_Fleck_FrostGlint</fleck>
+        <fleck>Entad_Fleck_Glint</fleck>
+        <color>(0.4, 0.68, 1)</color>
         <perSecond>1.2</perSecond>
         <scale>0.12~0.2</scale>
         <speed>0~0.05</speed>
@@ -376,7 +377,7 @@
         <scale>0.45~0.65</scale>
         <speed>0~0.1</speed>
       </li>
-      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FrostGlint</fleck><count>3~4</count><scale>0.25~0.4</scale><speed>0.3~0.7</speed><spread>0.2</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Glint</fleck><color>(0.4, 0.68, 1)</color><count>3~4</count><scale>0.25~0.4</scale><speed>0.3~0.7</speed><spread>0.2</spread></li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FrostMist</fleck><count>1~2</count><scale>0.6~0.8</scale><speed>0.1~0.3</speed></li>
     </visuals>
   </EntadFramework.EntadTraitDef>

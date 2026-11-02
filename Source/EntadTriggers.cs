@@ -63,6 +63,9 @@ namespace EntadFramework
         // the pawn hit rather than streaking in from the shooter. Only modules that launch projectiles honour it (VPE:
         // VEF's Ability_ShootProjectile); the target must be a thing.
         public bool fromTarget;
+        // The target's cell must have no roof over it: a strike called down from the sky, which the ability itself
+        // would land under a roof or a mountain
+        public bool unroofed;
 
         public bool IsExternal => ability == null;
 
@@ -73,6 +76,7 @@ namespace EntadFramework
             string label = fromTarget ? "EF_TriggerCast_FromTarget".Translate(AbilityLabel).Resolve() : target == EntadCastTarget.Between
                 ? (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerCast_BetweenAttacker" : "EF_TriggerCast_BetweenVictim").Translate(AbilityLabel)
                 : ("EF_TriggerCast_" + target).Translate(AbilityLabel);
+            if (unroofed) label = "EF_TriggerCast_Unroofed".Translate(label).Resolve();
             return optional ? "EF_TriggerCast_Optional".Translate(label) : label;
         }
 
@@ -90,6 +94,7 @@ namespace EntadFramework
             if (fromTarget && ability != null) yield return $"{owner}: fromTarget only applies to externalAbility casts";
             if (fromTarget && target != EntadCastTarget.Victim && target != EntadCastTarget.Attacker && target != EntadCastTarget.NearestEnemy)
                 yield return $"{owner}: fromTarget needs a cast target that is a pawn (Victim, Attacker or NearestEnemy)";
+            if (unroofed && fromTarget) yield return $"{owner}: unroofed and fromTarget don't go together";
         }
     }
 

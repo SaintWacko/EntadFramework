@@ -41,7 +41,7 @@
     </statOffsets>
     <visuals>
       <li Class="EntadFramework.EntadVisual_BuildingFlecks"><fleck>Entad_Fleck_FrostMistWorn</fleck><perSecond>2</perSecond><maxPerSecond>8</maxPerSecond><scale>0.5~0.7</scale><angle>150~210</angle><speed>0.08~0.2</speed><spread>0.15</spread></li>
-      <li Class="EntadFramework.EntadVisual_BuildingFlecks"><fleck>Entad_Fleck_FrostGlint</fleck><perSecond>0.6</perSecond><maxPerSecond>3</maxPerSecond><scale>0.2~0.3</scale><angle>0~0</angle><speed>0~0</speed></li>
+      <li Class="EntadFramework.EntadVisual_BuildingFlecks"><fleck>Entad_Fleck_Glint</fleck><color>(0.4, 0.68, 1)</color><perSecond>0.6</perSecond><maxPerSecond>3</maxPerSecond><scale>0.2~0.3</scale><angle>0~0</angle><speed>0~0</speed></li>
     </visuals>
   </EntadFramework.EntadTraitDef>
 

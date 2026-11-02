@@ -67,7 +67,8 @@
         <x>-0.25~0.25</x>
       </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
-        <fleck>Entad_Fleck_FrostGlint</fleck>
+        <fleck>Entad_Fleck_Glint</fleck>
+        <color>(0.4, 0.68, 1)</color>
         <perSecond>1.5</perSecond>
         <scale>0.15~0.25</scale>
         <speed>0~0.05</speed>
@@ -223,7 +224,8 @@
         <tint>1.2</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
-        <fleck>Entad_Fleck_FrostGlint</fleck>
+        <fleck>Entad_Fleck_Glint</fleck>
+        <color>(0.4, 0.68, 1)</color>
         <perSecond>1.5</perSecond>
         <scale>0.12~0.2</scale>
         <speed>0~0.05</speed>
@@ -278,6 +280,89 @@
         <angle>-30~30</angle>
       </li>
     </visuals>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- 25 burn damage to whatever stands on the target's cell, VPE's 6 tile EMP blast (shield belts, turrets and mechs,
+       the holder's side included) and the lightning strike's own small fire blast. 9+ tiles keeps the holder out of
+       the EMP; only under open sky, since the bolt comes down from it. The blast doesn't grow with the weapon's
+       damage: VPE's numbers are fixed. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_Thunderbolt</defName>
+    <label>Stormcalling</label>
+    <description>Now and then the sky answers its shots.</description>
+    <categories><li>WeaponRanged</li></categories>
+    <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <attack>Ranged</attack>
+        <victims>Hostile</victims>
+        <minDistance>9</minDistance>
+        <chance>0.04~0.06</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>1</rateNormalized>
+        <casts>
+          <li><externalAbility>VPE_Thunderbolt</externalAbility><target>Victim</target><unroofed>true</unroofed></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Everyone within 3 tiles of the target, allies and animals too, but never the holder, is frozen for 6 seconds
+       (less above freezing: 4.8 at 20C) and chilled towards hypothermia. Repeats on the same target within 30 seconds
+       freeze it for half as long each time; others caught in the area don't adapt. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_SnapFreeze</defName>
+    <label>Snapfrost</label>
+    <description>What it strikes is sometimes left standing in a block of ice, along with anyone close by.</description>
+    <categories><li>Weapon</li></categories>
+    <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>Hit</on>
+        <victims>Hostile</victims>
+        <chance>0.03~0.05</chance>
+        <rarityScales>Chance</rarityScales>
+        <rateNormalized>1</rateNormalized>
+        <adaptSeconds>30</adaptSeconds>
+        <adaptFactor>0.5</adaptFactor>
+        <casts>
+          <li><externalAbility>VPE_SnapFreeze</externalAbility><target>Victim</target></li>
+        </casts>
+      </li>
+    </triggers>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Brambles on every fertile cell within 6 tiles of the holder without a building or a tree, replacing whatever
+       grew there (crops too), gone after an hour instead of the psycast's 12. They roughly halve a walker's speed and
+       give no cover: they slow a melee raid closing in, and the holder's side as well. A holder on a building's cell
+       (a door) can't cast it, and the trigger keeps its cooldown. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Proc_BrambleMaze</defName>
+    <label>Thornwake</label>
+    <description>Strike its owner and the ground around them bristles with thorns.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <fromEnemy>true</fromEnemy>
+        <chance>0.5</chance>
+        <cooldownSeconds>60~90</cooldownSeconds>
+        <rarityScales>Cooldown</rarityScales>
+        <casts>
+          <li><externalAbility>VPE_BrambleMaze</externalAbility><target>Self</target></li>
+        </casts>
+      </li>
+    </triggers>
+    <modExtensions>
+      <li Class="EntadFramework.VPECompat.EntadVEFTraitExtension">
+        <durationTicks>2500</durationTicks>
+      </li>
+    </modExtensions>
   </EntadFramework.EntadTraitDef>
 
   <!-- Stops bleeding for 2.4 hours, enough for a rescuer to get there -->

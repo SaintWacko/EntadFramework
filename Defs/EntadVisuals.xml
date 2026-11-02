@@ -84,11 +84,10 @@
   </FleckDef>
 
   <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_FrostGlint</defName>
+    <defName>Entad_Fleck_Glint</defName>
     <graphicData>
       <texPath>Things/Mote/EntadGlint</texPath>
       <shaderType>MoteGlow</shaderType>
-      <color>(0.4, 0.68, 1)</color>
     </graphicData>
     <altitudeLayer>MoteOverhead</altitudeLayer>
     <fadeInTime>0.15</fadeInTime>
@@ -193,33 +192,6 @@
     <solidTime>0.08</solidTime>
     <fadeOutTime>0.4</fadeOutTime>
     <growthRate>1.8</growthRate>
-  </FleckDef>
-
-  <!-- Mirrored's sheen: a cold white glint off polished metal -->
-  <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_MirrorGlint</defName>
-    <graphicData>
-      <texPath>Things/Mote/EntadGlint</texPath>
-      <shaderType>MoteGlow</shaderType>
-      <color>(0.92, 0.96, 1)</color>
-    </graphicData>
-    <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.1</fadeInTime>
-    <solidTime>0.05</solidTime>
-    <fadeOutTime>0.3</fadeOutTime>
-  </FleckDef>
-
-  <FleckDef ParentName="FleckBase_Thrown">
-    <defName>Entad_Fleck_GoldGlint</defName>
-    <graphicData>
-      <texPath>Things/Mote/EntadGlint</texPath>
-      <shaderType>MoteGlow</shaderType>
-      <color>(1, 0.85, 0.45)</color>
-    </graphicData>
-    <altitudeLayer>MoteOverhead</altitudeLayer>
-    <fadeInTime>0.15</fadeInTime>
-    <solidTime>0.1</solidTime>
-    <fadeOutTime>0.4</fadeOutTime>
   </FleckDef>
 
   <!-- Dark blood closing over a wound: drawn over the pawn rather than added like a glow, which a dark red barely shows as -->
