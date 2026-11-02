@@ -157,7 +157,8 @@ namespace EntadFramework
                 // A shot that stopped has landed but is still spawned: CE's delayed-fuse grenades and shells, and its
                 // flares, sit where they fell until they go off, and would otherwise keep shedding flecks on the spot.
                 // Counted over ticks rather than dropped on the first still one, because a vanilla shot out of view
-                // only moves every 15 ticks (Projectile.UpdateRateTicks).
+                // only moves every 15 ticks (Projectile.UpdateRateTicks, capped by Thing.MaxTickIntervalRate at 15);
+                // the limit has to stay above that cap.
                 if (trail.hasLast && (pos - trail.last).MagnitudeHorizontalSquared() < 0.0001f)
                 {
                     if (++trail.stillTicks > 20) trails.RemoveAt(i);
