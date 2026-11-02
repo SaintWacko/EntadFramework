@@ -59,6 +59,10 @@ namespace EntadFramework
         public string externalAbility;
         public EntadCastTarget target = EntadCastTarget.Self;
         public bool optional;
+        // A projectile ability starts its flight at the target instead of the holder: a chain bolt that jumps out of
+        // the pawn hit rather than streaking in from the shooter. Only modules that launch projectiles honour it (VPE:
+        // VEF's Ability_ShootProjectile); the target must be a thing.
+        public bool fromTarget;
 
         public bool IsExternal => ability == null;
 
@@ -66,7 +70,7 @@ namespace EntadFramework
 
         public string Label(EntadTriggerEvent on)
         {
-            string label = target == EntadCastTarget.Between
+            string label = fromTarget ? "EF_TriggerCast_FromTarget".Translate(AbilityLabel).Resolve() : target == EntadCastTarget.Between
                 ? (on == EntadTriggerEvent.TakeDamage ? "EF_TriggerCast_BetweenAttacker" : "EF_TriggerCast_BetweenVictim").Translate(AbilityLabel)
                 : ("EF_TriggerCast_" + target).Translate(AbilityLabel);
             return optional ? "EF_TriggerCast_Optional".Translate(label) : label;
@@ -83,6 +87,9 @@ namespace EntadFramework
             if ((target == EntadCastTarget.Victim || target == EntadCastTarget.VictimCell) && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill)
                 yield return $"{owner}: cast targets Victim and VictimCell only apply to Hit and Kill triggers";
             if (target == EntadCastTarget.Between && !hasOther) yield return $"{owner}: cast target Between needs a TakeDamage, Hit or Kill trigger";
+            if (fromTarget && ability != null) yield return $"{owner}: fromTarget only applies to externalAbility casts";
+            if (fromTarget && target != EntadCastTarget.Victim && target != EntadCastTarget.Attacker && target != EntadCastTarget.NearestEnemy)
+                yield return $"{owner}: fromTarget needs a cast target that is a pawn (Victim, Attacker or NearestEnemy)";
         }
     }
 

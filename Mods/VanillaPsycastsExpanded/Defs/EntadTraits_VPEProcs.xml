@@ -168,7 +168,7 @@
         <rateNormalized>0.5</rateNormalized>
         <scaleWithDamage>0.5</scaleWithDamage>
         <casts>
-          <li><externalAbility>VPE_ChainBolt</externalAbility><target>Victim</target></li>
+          <li><externalAbility>VPE_ChainBolt</externalAbility><target>Victim</target><fromTarget>true</fromTarget></li>
         </casts>
       </li>
     </triggers>

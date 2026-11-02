@@ -9,6 +9,7 @@ using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using VEF.Abilities;
+using VEF.Weapons;
 using Verse;
 using Ability = VEF.Abilities.Ability;
 using AbilityDef = VEF.Abilities.AbilityDef;
@@ -170,6 +171,8 @@ namespace EntadFramework.VPECompat
                             Log.Warning($"[Entad Framework] {trait.defName}: {name} needs a second target a trigger can't pick, so the trait never rolls.");
                             continue;
                         }
+                        if (cast.fromTarget && !typeof(Ability_ShootProjectile).IsAssignableFrom(source.abilityClass))
+                            Log.Warning($"[Entad Framework] {trait.defName}: {name} doesn't shoot a projectile, so fromTarget does nothing.");
                         if (byName == null) procCopies[trait] = byName = new Dictionary<string, AbilityDef>();
                         var copy = Copy(source, trait, "Entad_" + trait.defName + "_Proc_" + name, clone, true);
                         byName[name] = copy;
@@ -357,9 +360,11 @@ namespace EntadFramework.VPECompat
             var castingTargets = comp.currentlyCastingTargets;
             comp.currentlyCasting = ability;
             comp.currentlyCastingTargets = targets;
+            Patch_ProcFromTarget.active = ctx.cast.fromTarget;
             try { ability.Cast(targets); }
             finally
             {
+                Patch_ProcFromTarget.active = false;
                 comp.currentlyCasting = casting;
                 comp.currentlyCastingTargets = castingTargets;
             }
@@ -814,6 +819,44 @@ namespace EntadFramework.VPECompat
                 if (powerOf.Count > 0 && __result > 0 && powerOf.TryGetValue(__instance, out float power))
                     __result = Mathf.Max(1, Mathf.RoundToInt(__result * power));
             }
+        }
+    }
+
+    // EntadTriggerCast.fromTarget: the projectile is spawned on the target and launched at it from there, so it lands the
+    // next tick. A chain bolt draws its arc from its holder, the launcher unless set, so the first arc would still
+    // streak in from the shooter: its holder is set to itself, and every jump after it is drawn from where the last one
+    // landed. The holder can't be the target pawn, whose death would end the chain (the bolt destroys itself when its
+    // holder is destroyed). VEF's accuracy and forced miss are skipped: the target is where the projectile already is.
+    [HarmonyPatch]
+    public static class Patch_ProcFromTarget
+    {
+        [ThreadStatic] internal static bool active;
+
+        private static readonly AccessTools.FieldRef<TeslaProjectile, Thing> TeslaHolder = Field();
+
+        private static AccessTools.FieldRef<TeslaProjectile, Thing> Field()
+        {
+            if (AccessTools.DeclaredField(typeof(TeslaProjectile), "holder") != null) return AccessTools.FieldRefAccess<TeslaProjectile, Thing>("holder");
+            Log.Warning("[Entad Framework] Vanilla Expanded Framework's TeslaProjectile has changed: a chain bolt cast from its target draws its first arc from the caster.");
+            return null;
+        }
+
+        public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability_ShootProjectile), "ShootProjectile");
+
+        public static bool Prefix(Ability __instance, GlobalTargetInfo target, ref Projectile __result)
+        {
+            if (!active || !target.HasThing || !target.Thing.Spawned) return true;
+            Thing at = target.Thing;
+            var ext = __instance.def.GetModExtension<AbilityExtension_Projectile>();
+            if (ext?.projectile == null) return true;
+            if (!(GenSpawn.Spawn(ext.projectile, at.Position, at.Map) is Projectile projectile)) return true;
+            if (projectile is AbilityProjectile abilityProjectile) abilityProjectile.ability = __instance;
+            var comp = projectile.TryGetComp<CompAbilityProjectile>();
+            if (comp != null) comp.ability = __instance;
+            if (projectile is TeslaProjectile tesla && TeslaHolder != null) TeslaHolder(tesla) = tesla;
+            projectile.Launch(__instance.pawn, at.DrawPos, at, at, ProjectileHitFlags.IntendedTarget);
+            __result = projectile;
+            return false;
         }
     }
 

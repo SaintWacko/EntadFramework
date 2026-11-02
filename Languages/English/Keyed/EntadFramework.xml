@@ -133,6 +133,7 @@
   <EF_TriggerCast_BetweenVictim>casts {0} halfway to the target</EF_TriggerCast_BetweenVictim>
   <EF_TriggerCast_Origin>casts {0} where the user stood</EF_TriggerCast_Origin>
   <EF_TriggerCast_NearestEnemy>casts {0} at the nearest enemy in sight</EF_TriggerCast_NearestEnemy>
+  <EF_TriggerCast_FromTarget>casts {0} out of the target</EF_TriggerCast_FromTarget>
   <EF_TriggerCast_Optional>{0} (when it can)</EF_TriggerCast_Optional>
   <EF_TriggerArea>{0}, to {1} within {2} tiles</EF_TriggerArea>
   <EF_TriggerArea_Room>{0}, to {1} in the same room within {2} tiles</EF_TriggerArea_Room>
