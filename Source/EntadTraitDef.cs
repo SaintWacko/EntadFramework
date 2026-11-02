@@ -458,7 +458,7 @@ namespace EntadFramework
 
         // Whether the trait has a visual drawn on the wearer, which puts a node in the wearer's render tree
         [Unsaved] private bool? hasWornVisuals;
-        public bool HasWornVisuals => hasWornVisuals ??= visuals != null && visuals.Any(v => v is EntadWornVisual);
+        public bool HasWornVisuals => hasWornVisuals ??= visuals != null && visuals.Any(v => v is EntadWornVisual || v is EntadWeaponVisual);
 
         [Unsaved] private bool? hasBuildingVisuals;
         public bool HasBuildingVisuals => hasBuildingVisuals ??= visuals != null && visuals.Any(v => v is EntadBuildingVisual);
@@ -473,7 +473,8 @@ namespace EntadFramework
                     {
                         weapon |= v is EntadWeaponVisual;
                         trail |= v is EntadVisual_ProjectileTrail;
-                        worn |= v is EntadWornVisual;
+                        // Item visuals (glow, flames on the item's own shape) on apparel draw from the worn node too
+                        worn |= v is EntadWornVisual || v is EntadWeaponVisual;
                         building |= v is EntadBuildingVisual;
                         if (v is EntadEventVisual e) events |= EntadEventVisual.Bit(e.on);
                     }

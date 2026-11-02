@@ -60,12 +60,12 @@
     </statOffsets>
     <equippedHediffs><li>Entad_Hediff_FlameWreathed</li></equippedHediffs>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_WornFlames">
-        <count>2</count>
-        <size>0.14~0.2</size>
-        <color>(1, 1, 1, 0.75)</color>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.45, 0.1, 0.22)</color>
+        <pulseSpeed>0.5</pulseSpeed>
+        <flicker>0.25</flicker>
       </li>
-      <li Class="EntadFramework.EntadVisual_WornFlecks">
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
         <perSecond>1.5</perSecond>
         <scale>0.07~0.12</scale>
@@ -102,16 +102,25 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_WornFlames">
-        <count>4</count>
-        <size>0.2~0.3</size>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.35, 0.05, 0.4)</color>
+        <pulseSpeed>0.7</pulseSpeed>
+        <flicker>0.35</flicker>
       </li>
-      <li Class="EntadFramework.EntadVisual_WornFlecks">
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
         <perSecond>3</perSecond>
         <scale>0.08~0.14</scale>
         <speed>0.3~0.6</speed>
         <angle>-25~25</angle>
+      </li>
+      <!-- Sparks spitting upward and out -->
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_LeakSpark</fleck>
+        <perSecond>2.5</perSecond>
+        <scale>0.06~0.1</scale>
+        <speed>1~1.8</speed>
+        <angle>-50~50</angle>
       </li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.45~0.55</scale></li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>2~3</count><scale>0.35~0.5</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
@@ -145,7 +154,14 @@
     </statOffsets>
     <visuals>
       <!-- The shine is how the item looks, so it shows before the trait is identified whatever the setting -->
-      <li Class="EntadFramework.EntadVisual_WornFlecks">
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <beforeIdentified>true</beforeIdentified>
+        <color>(0.85, 0.92, 1, 0.22)</color>
+        <pulseSpeed>0.25</pulseSpeed>
+        <pulseMin>0.4</pulseMin>
+        <flicker>0</flicker>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <beforeIdentified>true</beforeIdentified>
         <fleck>Entad_Fleck_MirrorGlint</fleck>
         <perSecond>1.2</perSecond>
@@ -210,23 +226,24 @@
       </li>
     </triggers>
     <visuals>
-      <li Class="EntadFramework.EntadVisual_WornArcs">
-        <intervalTicks>24</intervalTicks>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.5, 0.75, 1, 0.3)</color>
+        <pulseSpeed>0</pulseSpeed>
+        <flicker>0.6</flicker>
+        <flickerSpeed>0.4</flickerSpeed>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponArcs">
+        <intervalTicks>22</intervalTicks>
         <chance>0.6</chance>
         <arcTicks>4</arcTicks>
         <width>0.18</width>
       </li>
-      <li Class="EntadFramework.EntadVisual_WornArcs">
-        <intervalTicks>37</intervalTicks>
-        <chance>0.5</chance>
-        <arcTicks>5</arcTicks>
-        <width>0.14</width>
-      </li>
-      <li Class="EntadFramework.EntadVisual_WornFlecks">
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Static</fleck>
         <perSecond>2</perSecond>
         <scale>0.08~0.14</scale>
-        <speed>0~0.1</speed>
+        <speed>0.1~0.4</speed>
+        <angle>0~360</angle>
       </li>
       <li Class="EntadFramework.EntadVisual_EventArcs"><on>Trigger</on><at>Holder</at><to>Other</to><segments>4</segments><jag>0.35</jag><width>0.22</width><arcTicks>10</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
     </visuals>

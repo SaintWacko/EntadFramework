@@ -178,6 +178,9 @@ namespace EntadFramework
         // so its request isn't in the list yet when this node's request is added.
         public volatile bool requestsStale = true;
         public bool itemShown = true;
+        // The tree's draw request for the item itself (its mesh, material and this frame's matrix), for the visuals
+        // that follow the item's own shape; -1 when it has none
+        public int itemRequest = -1;
 
         private static PawnRenderNodeProperties nodeProps;
 
@@ -292,13 +295,52 @@ namespace EntadFramework
 
         // Drawn when one of the tree's draw requests is for one of the item's nodes. An item with no node at all
         // (a belt with no worn graphic) counts as shown, or its visuals would never play.
-        private static bool ItemShown(PawnRenderTree tree, Apparel item)
+        private static bool ItemShown(PawnRenderTree tree, Apparel item, out int request)
         {
+            request = -1;
             var requests = Patch_PawnRenderTree_WornVisuals.drawRequests?.Invoke(tree);
             if (requests == null) return true;
             for (int i = 0; i < requests.Count; i++)
-                if (requests[i].node?.apparel == item) return true;
+                if (requests[i].node?.apparel == item && requests[i].material != null)
+                {
+                    request = i;
+                    return true;
+                }
             return !HasNodeFor(tree.rootNode, item);
+        }
+
+        // Size and mirroring of a pawn mesh, read once per mesh: the tree hands the west-facing side a mesh with its
+        // UVs flipped
+        private static readonly Dictionary<Mesh, (Vector2 size, bool flipped)> meshInfo = new Dictionary<Mesh, (Vector2, bool)>();
+
+        private static (Vector2 size, bool flipped) MeshInfo(Mesh mesh)
+        {
+            if (meshInfo.TryGetValue(mesh, out var info)) return info;
+            Vector3 b = mesh.bounds.size;
+            bool flipped = false;
+            if (mesh.isReadable)
+            {
+                var verts = mesh.vertices;
+                var uvs = mesh.uv;
+                if (verts.Length > 0 && uvs.Length == verts.Length) flipped = verts[0].x < 0f != uvs[0].x < 0.5f;
+            }
+            info = (new Vector2(b.x, b.z), flipped);
+            meshInfo[mesh] = info;
+            return info;
+        }
+
+        // The item's own-shape visuals (glow, flames, flecks, arcs) on the item as the tree draws it this frame
+        private static void DrawWornItem(PawnRenderNode_EntadWorn node, EntadVisualSet set, Apparel item, Map map)
+        {
+            var requests = Patch_PawnRenderTree_WornVisuals.drawRequests?.Invoke(node.tree);
+            int index = node.itemRequest;
+            if (requests == null || index < 0 || index >= requests.Count) return;
+            var request = requests[index];
+            if (request.node?.apparel != item || request.material == null || request.mesh == null) return;
+            var info = MeshInfo(request.mesh);
+            Matrix4x4 matrix = request.preDrawnComputedMatrix * Matrix4x4.Scale(new Vector3(info.size.x, 1f, info.size.y));
+            // Just over the item, so what the tree draws over it (the head over a shirt) covers its glow as well
+            Run(set, item, map, matrix, info.flipped, request.material, info.size, request.preDrawnComputedMatrix.m13 + 0.0004f);
         }
 
         private static bool HasNodeFor(PawnRenderNode node, Apparel item)
@@ -312,6 +354,53 @@ namespace EntadFramework
             return false;
         }
 
+        // Apparel lying on the map plays its worn visuals over its own sprite, the body spots mapped onto the item's
+        // draw size. Visuals for a drafted wearer don't play.
+        internal static void DrawWornOnGround(EntadVisualSet set, Thing item, Map map, Matrix4x4 matrix, Vector2 size)
+        {
+            int now = Find.TickManager.TicksGame;
+            int id = item.thingIDNumber;
+            var d = wornDraw;
+            d.pawn = null;
+            d.item = item;
+            d.map = map;
+            d.matrix = matrix;
+            d.width = d.height = 1f;
+            d.scale = (size.x + size.y) * 0.5f;
+            d.narrow = false;
+            d.west = false;
+            d.drawNow = false;
+            d.seed = Gen.HashCombineInt(id, 0x3E57);
+            d.ticks = now;
+            // Its own clock: the item-shape visuals already took this frame's new ticks from the shared one
+            d.newTicks = NewTicks(id ^ 0x5A5A5A5, now);
+            RunWorn(set, d, id, item);
+        }
+
+        private static void RunWorn(EntadVisualSet set, EntadWornDraw d, int id, Thing item)
+        {
+            int shown = d.pawn == null ? 0 : -1;
+            Rand.PushState(Gen.HashCombineInt(d.seed, d.ticks));
+            try
+            {
+                for (int i = 0; i < set.worn.Length; i++)
+                {
+                    var v = set.worn[i];
+                    if (v.onlyDrafted)
+                    {
+                        if (shown < 0) shown = PawnRenderUtility.CarryWeaponOpenly(d.pawn) ? 1 : 0;
+                        if (shown == 0) continue;
+                    }
+                    try { v.Draw(d); }
+                    catch (System.Exception e)
+                    {
+                        Log.ErrorOnce($"[Entad Framework] worn visual {v.GetType().Name} failed on {item}: {e}", Gen.HashCombineInt(id, i + 0x51));
+                    }
+                }
+            }
+            finally { Rand.PopState(); }
+        }
+
         internal static void DrawWorn(PawnRenderNode_EntadWorn node, PawnDrawParms parms, Matrix4x4 matrix)
         {
             if (!GearOn) return;
@@ -320,14 +409,16 @@ namespace EntadFramework
             // The node outlives the item until the tree is next rebuilt: a destroyed or taken-off item is skipped
             if (item == null || item.Wearer != pawn) return;
             var set = node.comp.Visuals;
-            if (set.worn.Length == 0) return;
+            if (set.worn.Length == 0 && set.weapon.Length == 0) return;
             if (pawn.Dead || !pawn.Spawned || pawn.Map != Find.CurrentMap || parms.flags.FlagSet(PawnRenderFlags.Invisible) || pawn.IsHiddenFromPlayer()) return;
             if (node.requestsStale)
             {
                 node.requestsStale = false;
-                node.itemShown = ItemShown(node.tree, item);
+                node.itemShown = ItemShown(node.tree, item, out node.itemRequest);
             }
             if (!node.itemShown) return;
+            if (set.weapon.Length > 0) DrawWornItem(node, set, item, pawn.Map);
+            if (set.worn.Length == 0) return;
 
             int now = Find.TickManager.TicksGame;
             int id = item.thingIDNumber;
@@ -345,27 +436,8 @@ namespace EntadFramework
             d.drawNow = parms.DrawNow;
             d.seed = Gen.HashCombineInt(id, 0x3E57);
             d.ticks = now;
-            d.newTicks = NewTicks(id, now);
-            int shown = -1;
-            Rand.PushState(Gen.HashCombineInt(d.seed, now));
-            try
-            {
-                for (int i = 0; i < set.worn.Length; i++)
-                {
-                    var v = set.worn[i];
-                    if (v.onlyDrafted)
-                    {
-                        if (shown < 0) shown = PawnRenderUtility.CarryWeaponOpenly(pawn) ? 1 : 0;
-                        if (shown == 0) continue;
-                    }
-                    try { v.Draw(d); }
-                    catch (System.Exception e)
-                    {
-                        Log.ErrorOnce($"[Entad Framework] worn visual {v.GetType().Name} failed on {item}: {e}", Gen.HashCombineInt(id, i + 0x51));
-                    }
-                }
-            }
-            finally { Rand.PopState(); }
+            d.newTicks = NewTicks(id ^ 0x5A5A5A5, now);
+            RunWorn(set, d, id, item);
         }
     }
 }

@@ -13,13 +13,16 @@ namespace EntadFramework
     {
         Equip, Use, Hit, Armor,
         Work, GeneralLabor, Mining, Construction, Plant, Research, Doctor, Animals, Trade, Social, Eat, Rest, Learn,
-        Shoot, MeleeAttack, MeleeDodge, Damage, Toxic
+        Shoot, MeleeAttack, MeleeDodge, Damage, Toxic,
+        // Revealed by the code that acts on it (Mirrored's deflect), never by a general event
+        Own
     }
 
     public static class EntadStatReveal
     {
         public static EntadStatTrigger Classify(StatDef stat, ThingDef td)
         {
+            if (stat == EntadStatDefOf.Entad_DeflectChance) return EntadStatTrigger.Own;
             if (EntadTraitDef.IsWearerStat(stat))
             {
                 switch (stat.defName)

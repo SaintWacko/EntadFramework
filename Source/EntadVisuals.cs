@@ -180,9 +180,9 @@ namespace EntadFramework
         public static void DrawGround(CompEntad comp, Map map, CellRect view)
         {
             Thing thing = comp.parent;
-            if (!thing.def.IsWeapon || !view.Contains(thing.Position) || thing.Position.Fogged(map)) return;
+            if (!(thing.def.IsWeapon || thing.def.IsApparel) || !view.Contains(thing.Position) || thing.Position.Fogged(map)) return;
             var set = comp.Visuals;
-            if (set.weapon.Length == 0) return;
+            if (set.weapon.Length == 0 && set.worn.Length == 0) return;
             Graphic graphic = thing.Graphic;
             float angle = 0f;
             float maxAngle = thing.def.graphicData?.onGroundRandomRotateAngle ?? 0f;
@@ -198,10 +198,12 @@ namespace EntadFramework
             Graphic placed = (graphic as Graphic_RandomRotated)?.SubGraphic ?? graphic;
             Vector3 pos = thing.DrawPos + placed.DrawOffset(thing.Rotation);
             float altitude = AltitudeLayer.Item.AltitudeFor() + 0.01f;
-            Run(set, thing, map, Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(size.x, 1f, size.y)), false, graphic.MatSingleFor(thing), size, altitude);
+            Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.AngleAxis(angle, Vector3.up), new Vector3(size.x, 1f, size.y));
+            if (set.weapon.Length > 0) Run(set, thing, map, matrix, false, graphic.MatSingleFor(thing), size, altitude);
+            if (set.worn.Length > 0) DrawWornOnGround(set, thing, map, matrix, size);
         }
 
-        private static void Run(EntadVisualSet set, Thing weapon, Map map, Matrix4x4 matrix, bool flipped, Material mat, Vector2 size, float altitude)
+        internal static void Run(EntadVisualSet set, Thing weapon, Map map, Matrix4x4 matrix, bool flipped, Material mat, Vector2 size, float altitude)
         {
             var shape = EntadWeaponShape.For(mat?.mainTexture);
             if (shape == null) return;

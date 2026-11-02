@@ -69,6 +69,11 @@
     </triggers>
     <!-- Mist sinking off the wearer with glints of ice over it: the strongest of the frost looks, for the Epic one -->
     <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.65, 0.88, 1, 0.24)</color>
+        <pulseSpeed>0.3</pulseSpeed>
+        <flicker>0.05</flicker>
+      </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_FrostMistWorn</fleck>
         <perSecond>4.5</perSecond>
@@ -261,6 +266,11 @@
     </triggers>
     <!-- Glints of rime over the wearer, without Frostward's mist -->
     <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.65, 0.88, 1, 0.18)</color>
+        <pulseSpeed>0.3</pulseSpeed>
+        <flicker>0.05</flicker>
+      </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_FrostGlint</fleck>
         <perSecond>1.5</perSecond>
@@ -292,6 +302,11 @@
     </triggers>
     <!-- Thin smoke and the odd ember rising off the wearer, as if something under the clothes were smouldering -->
     <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.4, 0.1, 0.18)</color>
+        <pulseSpeed>0.5</pulseSpeed>
+        <flicker>0.3</flicker>
+      </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_SmokeWisp</fleck>
         <perSecond>2.5</perSecond>
