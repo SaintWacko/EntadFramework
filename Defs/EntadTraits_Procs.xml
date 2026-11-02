@@ -20,6 +20,7 @@
         <rarityScales>Chance</rarityScales>
         <rateNormalized>true</rateNormalized>
         <adaptSeconds>30</adaptSeconds>
+        <adaptFactor>0.5</adaptFactor>
         <casts>
           <li><ability>Burden</ability><target>Victim</target></li>
         </casts>
@@ -45,6 +46,7 @@
         <rarityScales>Chance</rarityScales>
         <rateNormalized>true</rateNormalized>
         <adaptSeconds>12</adaptSeconds>
+        <adaptFactor>0.5</adaptFactor>
         <casts>
           <li><ability>Stun</ability><target>Victim</target></li>
         </casts>

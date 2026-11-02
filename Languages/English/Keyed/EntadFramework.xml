@@ -152,10 +152,11 @@
   <EF_ArcGrounded>{0} arced, but its power network is grounded and the spark died harmlessly.</EF_ArcGrounded>
   <EF_IngredientsSpared>{0}'s work at {1} used only half the ingredients.</EF_IngredientsSpared>
   <EF_Trigger_Chance>{0} chance</EF_Trigger_Chance>
-  <EF_Trigger_ChanceRate>{0} chance a hit, for how fast it attacks</EF_Trigger_ChanceRate>
+  <EF_Trigger_ChanceRate>{0} chance a hit, scaled from attack speed</EF_Trigger_ChanceRate>
   <EF_Trigger_Cooldown>at most once every {0}</EF_Trigger_Cooldown>
-  <EF_Trigger_Power>{0} strength from its damage</EF_Trigger_Power>
+  <EF_Trigger_Power>{0} strength from weapon scaling</EF_Trigger_Power>
   <EF_Trigger_Adapt>not again on the same target for {0} seconds</EF_Trigger_Adapt>
+  <EF_Trigger_AdaptDiminish>again on the same target within {0} seconds: {1} as strong each time, at most {2} times in a row</EF_Trigger_AdaptDiminish>
   <EF_Card_EquippedHediffs>While equipped: {0}</EF_Card_EquippedHediffs>
   <EF_Card_Aura>Aura on {0} within {1} tiles</EF_Card_Aura>
   <EF_Card_AuraWho>{0} ({1})</EF_Card_AuraWho>

@@ -162,6 +162,14 @@ namespace EntadFramework
         // After the trigger fires at a pawn, that pawn can't set this trigger (of this trait, on any item) off again for
         // this long: a stun on every blow would otherwise hold a melee attacker in place for good
         public float adaptSeconds;
+        // With adaptSeconds: instead of the target being immune for that long, each repeat on it within adaptSeconds of
+        // the last one is this much as strong as the one before (stun, damage, cast durations), until it would fall
+        // under MinAdaptStrength. 0 = immune, as vanilla's EMP adaptation. Each repeat restarts the window.
+        public float adaptFactor;
+        public const float MinAdaptStrength = 0.25f;
+
+        // How many times in a row it can land on one target before it stops: 1 when adapting is plain immunity
+        public int AdaptRepeats => adaptFactor <= 0f ? 1 : Mathf.FloorToInt(Mathf.Log(MinAdaptStrength) / Mathf.Log(adaptFactor) + 0.001f) + 1;
 
         // The effects go to the other pawn instead of the pawn the event happened to: the attacker on TakeDamage, the
         // pawn hit on Hit. Damage also reaches an attacker that isn't a pawn (a turret).
@@ -369,7 +377,10 @@ namespace EntadFramework
             if (cooldown > 0) parts.Add("EF_Trigger_Cooldown".Translate(cooldown.ToStringTicksToPeriod()));
             if (scaleWithDamage && EntadAttackRate.IsWeapon(item))
                 parts.Add("EF_Trigger_Power".Translate(EntadAttackRate.DamagePower(item, melee).ToStringPercent()));
-            if (adaptSeconds > 0f) parts.Add("EF_Trigger_Adapt".Translate(adaptSeconds.ToString("0.#")));
+            if (adaptSeconds > 0f)
+                parts.Add(adaptFactor > 0f
+                    ? "EF_Trigger_AdaptDiminish".Translate(adaptSeconds.ToString("0.#"), adaptFactor.ToStringPercent(), AdaptRepeats)
+                    : "EF_Trigger_Adapt".Translate(adaptSeconds.ToString("0.#")));
             return string.Join(", ", parts);
         }
 
@@ -395,6 +406,8 @@ namespace EntadFramework
             if (toOther && IsArea) yield return $"{owner}: toOther can't go on a trigger with a radius";
             if (adaptSeconds < 0f) yield return $"{owner}: adaptSeconds can't be negative";
             if (adaptSeconds > 0f && on != EntadTriggerEvent.TakeDamage && on != EntadTriggerEvent.Hit) yield return $"{owner}: adaptSeconds only applies to TakeDamage and Hit triggers";
+            if (adaptFactor < 0f || adaptFactor >= 1f) yield return $"{owner}: adaptFactor must be at least 0 and below 1";
+            if (adaptFactor > 0f && adaptSeconds <= 0f) yield return $"{owner}: adaptFactor needs adaptSeconds";
             if ((damageDef != null) != (damage.max > 0f)) yield return $"{owner}: damageDef and damage go together";
             if ((mechanoidDamageDef != null) != (mechanoidDamage.max > 0f)) yield return $"{owner}: mechanoidDamageDef and mechanoidDamage go together";
             if (igniteChance < 0f || igniteChance > 1f) yield return $"{owner}: igniteChance must be between 0 and 1";
@@ -496,15 +509,28 @@ namespace EntadFramework
             }
         }
 
-        // Pawns that adapted to a trigger (EntadTrigger.adaptSeconds): key of pawn, trait and trigger index -> the tick
-        // they can be hit by it again. Not saved: it lasts seconds, and a load lets one extra stun through at most.
-        private static readonly Dictionary<long, int> adaptedUntil = new Dictionary<long, int>();
+        // Pawns adapting to a trigger (EntadTrigger.adaptSeconds): key of pawn, trait and trigger index -> the tick the
+        // window ends and how many times it landed in it. Not saved: it lasts seconds, and a load lets one extra stun
+        // through at most.
+        private struct Adaptation
+        {
+            public int until;
+            public int count;
+        }
+
+        private static readonly Dictionary<long, Adaptation> adaptedUntil = new Dictionary<long, Adaptation>();
 
         private static long AdaptKey(Thing other, EntadTraitDef def, int index) =>
             ((long)other.thingIDNumber << 32) ^ (uint)Gen.HashCombineInt(def.shortHash, index);
 
-        private static bool Adapted(Thing other, EntadTraitDef def, int index) =>
-            adaptedUntil.TryGetValue(AdaptKey(other, def, index), out int until) && until > Find.TickManager.TicksGame;
+        // The strength the trigger has left against this pawn: 1 outside a window, 0 when it has adapted fully
+        private static float AdaptStrength(Thing other, EntadTraitDef def, int index, EntadTrigger t)
+        {
+            if (!adaptedUntil.TryGetValue(AdaptKey(other, def, index), out var a) || a.until <= Find.TickManager.TicksGame) return 1f;
+            if (t.adaptFactor <= 0f) return 0f;
+            float strength = Mathf.Pow(t.adaptFactor, a.count);
+            return strength >= EntadTrigger.MinAdaptStrength - 0.001f ? strength : 0f;
+        }
 
         private static void Adapt(Thing other, EntadTraitDef def, int index, float seconds)
         {
@@ -512,10 +538,12 @@ namespace EntadFramework
             if (adaptedUntil.Count > 256)
             {
                 var expired = new List<long>();
-                foreach (var kv in adaptedUntil) if (kv.Value <= now) expired.Add(kv.Key);
+                foreach (var kv in adaptedUntil) if (kv.Value.until <= now) expired.Add(kv.Key);
                 foreach (long k in expired) adaptedUntil.Remove(k);
             }
-            adaptedUntil[AdaptKey(other, def, index)] = now + Mathf.RoundToInt(seconds * GenTicks.TicksPerRealSecond);
+            long key = AdaptKey(other, def, index);
+            int count = adaptedUntil.TryGetValue(key, out var a) && a.until > now ? a.count + 1 : 1;
+            adaptedUntil[key] = new Adaptation { until = now + Mathf.RoundToInt(seconds * GenTicks.TicksPerRealSecond), count = count };
         }
 
         internal static void ClearAdaptation() => adaptedUntil.Clear();
@@ -683,7 +711,8 @@ namespace EntadFramework
                         || ctx.other.PositionHeld.DistanceToSquared(pawn.PositionHeld) < t.minDistance * t.minDistance)) continue;
                     // Its own grenade: answering the attacker would hurt the holder
                     if (t.toOther && ctx.other == pawn) continue;
-                    if (t.adaptSeconds > 0f && ctx.other != null && Adapted(ctx.other, m.def, i))
+                    float strength = t.adaptSeconds > 0f && ctx.other != null ? AdaptStrength(ctx.other, m.def, i, t) : 1f;
+                    if (strength <= 0f)
                     {
                         if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: target adapted", ctx.other);
                         continue;
@@ -691,7 +720,7 @@ namespace EntadFramework
                     // Cells now: by the next tick the corpse may have been moved or destroyed, and the holder moved on
                     IntVec3 otherCell = ctx.other != null ? ctx.other.PositionHeld : IntVec3.Invalid;
                     // Adapted as it is queued: two blows in one tick would both pass the check before either applied
-                    if (TryQueue(pawn, m, i, null, ctx.melee, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell) && t.adaptSeconds > 0f && ctx.other != null)
+                    if (TryQueue(pawn, m, i, null, ctx.melee, t.atVictim ? otherCell : IntVec3.Invalid, ctx.other, otherCell, strength) && t.adaptSeconds > 0f && ctx.other != null)
                         Adapt(ctx.other, m.def, i, t.adaptSeconds);
                 }
             }
@@ -711,7 +740,7 @@ namespace EntadFramework
         }
 
         // Chance and cooldown are settled here, so two events in the same tick can't both get past a cooldown
-        private static bool TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, bool melee, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null)
+        private static bool TryQueue(Pawn pawn, AppliedEntadTrait m, int i, Thing source, bool melee, IntVec3? at = null, Thing other = null, IntVec3? otherCell = null, float strength = 1f)
         {
             var t = m.def.triggers[i];
             int now = Find.TickManager.TicksGame;
@@ -727,7 +756,7 @@ namespace EntadFramework
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {chance.ToStringPercent()} roll", other);
                 return false;
             }
-            float power = t.scaleWithDamage ? EntadAttackRate.DamagePower(m.owner, melee) : 1f;
+            float power = (t.scaleWithDamage ? EntadAttackRate.DamagePower(m.owner, melee) : 1f) * strength;
             if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, power != 1f ? $"{t.on}: fired at {power.ToStringPercent()} strength" : $"{t.on}: fired", other);
             int cooldown = t.HasCooldown ? t.EffectiveCooldownTicks(m.TriggerValue(i, EntadTrigger.Cooldown)) : 0;
             if (cooldown > 0) m.SetTriggerReadyTick(i, now + cooldown);

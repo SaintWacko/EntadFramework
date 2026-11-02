@@ -19,7 +19,7 @@
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>6</minDistance>
-        <chance>0.04~0.06</chance>
+        <chance>0.08~0.12</chance>
         <rarityScales>Chance</rarityScales>
         <scaleWithDamage>true</scaleWithDamage>
         <casts>
@@ -138,7 +138,7 @@
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>5</minDistance>
-        <chance>0.06~0.08</chance>
+        <chance>0.12~0.16</chance>
         <rarityScales>Chance</rarityScales>
         <scaleWithDamage>true</scaleWithDamage>
         <casts>
@@ -161,7 +161,7 @@
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
-        <chance>0.04~0.06</chance>
+        <chance>0.08~0.12</chance>
         <rarityScales>Chance</rarityScales>
         <scaleWithDamage>true</scaleWithDamage>
         <casts>
@@ -212,6 +212,7 @@
         <rarityScales>Chance</rarityScales>
         <rateNormalized>true</rateNormalized>
         <adaptSeconds>60</adaptSeconds>
+        <adaptFactor>0.5</adaptFactor>
         <casts>
           <li><externalAbility>VPE_Haywire</externalAbility><target>Victim</target></li>
         </casts>

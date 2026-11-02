@@ -763,6 +763,29 @@ namespace EntadFramework.VPECompat
         public static void Finalizer() => depth--;
     }
 
+    // A proc's power also scales how long its effect lasts (a haywire mech, a stun), as the main assembly does for vanilla
+    // abilities' durations: a diminished repeat on an adapting target (EntadTrigger.adaptFactor) lasts shorter.
+    [HarmonyPatch]
+    public static class Patch_ProcDuration
+    {
+        [ThreadStatic] private static int depth;
+
+        public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability), nameof(Ability.GetDurationForPawn));
+
+        public static void Prefix() => depth++;
+
+        public static void Postfix(Ability __instance, ref int __result)
+        {
+            if (depth == 1 && __result > 0)
+            {
+                float power = EntadVEFAbilities.PowerOf(__instance);
+                if (power != 1f) __result = Mathf.Max(1, Mathf.RoundToInt(__result * power));
+            }
+        }
+
+        public static void Finalizer() => depth--;
+    }
+
     // Flameball and other plain projectiles VEF's Ability_ShootProjectile fires take their damage from the projectile def
     // (Projectile.DamageAmount), not from the ability's power as VEF's AbilityProjectile does, so a damage-scaled proc
     // tags what it launches and the damage is scaled where vanilla reads it. AbilityProjectile's own impact doesn't read
