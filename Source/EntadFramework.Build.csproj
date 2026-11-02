@@ -18,7 +18,8 @@
     `dotnet build` there stops and asks which one to build.
   -->
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <!-- net48, the highest any referenced project targets (the VTE compat projects), so every reference is allowed -->
+    <TargetFramework>net48</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AssemblyName>EntadFramework.Build</AssemblyName>
     <!-- Same default as the compat projects; pass /p:AbilityAIDir=... to point both somewhere else -->
