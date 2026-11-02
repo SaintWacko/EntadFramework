@@ -115,7 +115,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Flare</defName>
     <label>flare</label>
-    <description>A burst of flame around the target, 2.9 tiles across, that burns only the user's enemies. The ground it scorches can still catch fire, and that fire spares nobody.</description>
+    <description>A burst of flame with a 2.9-tile radius around the target that burns only the user's enemies. The ground it scorches can still catch fire, and that fire spares nobody.</description>
     <iconPath>UI/Abilities/Entad/Flare</iconPath>
     <hostile>true</hostile>
     <verbProperties>

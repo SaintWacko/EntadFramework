@@ -47,9 +47,19 @@ namespace EntadFramework
             else if (damageAmount < 0 && damageDef.defaultDamage < 0) yield return $"damageAmount is required: {damageDef.defName} has no default damage";
             if (igniteChance < 0f || igniteChance > 1f) yield return "igniteChance must be between 0 and 1";
             if ((mechanoidDamageDef != null) != (mechanoidDamage > 0)) yield return "mechanoidDamageDef and mechanoidDamage go together";
-            if (visuals != null)
-                foreach (var v in visuals)
-                    foreach (var e in v.ConfigErrors(parentDef.defName)) yield return e;
+            foreach (var e in VisualErrors(visuals, parentDef)) yield return e;
+        }
+
+        // PlayEffect reads only a visual's chance: the item rules belong to a trait's own visuals
+        internal static IEnumerable<string> VisualErrors(List<EntadEventVisual> list, AbilityDef parentDef)
+        {
+            if (list == null) yield break;
+            foreach (var v in list)
+            {
+                foreach (var e in v.ConfigErrors(parentDef.defName)) yield return e;
+                if (v.minIntervalTicks > 0 || v.whileBleeding || v.beforeIdentified.HasValue || v.trigger >= 0)
+                    yield return $"{v.GetType().Name}: an ability's visuals ignore minIntervalTicks, whileBleeding, beforeIdentified and trigger";
+            }
         }
     }
 
@@ -70,7 +80,8 @@ namespace EntadFramework
             float angle = from == target.Position ? -1f : (target.Position - from).AngleFlat;
             int damage = p.DamageAt(power);
             target.TakeDamage(new DamageInfo(p.damageDef, damage, p.ArmorPenetrationAt(damage), angle, caster));
-            if (p.mechanoidDamageDef != null && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
+            // A pawn the first blow killed is a corpse now, not destroyed
+            if (p.mechanoidDamageDef != null && target is Pawn mech && !mech.Dead && !mech.Destroyed && mech.RaceProps.IsMechanoid)
                 target.TakeDamage(new DamageInfo(p.mechanoidDamageDef, Mathf.Max(1, Mathf.RoundToInt(p.mechanoidDamage * power)), 0f, angle, caster));
             if (p.igniteChance > 0f && !target.Destroyed && target.Spawned && Rand.Chance(p.igniteChance))
                 target.TryAttachFire(Rand.Range(0.2f, 0.4f), caster);
@@ -166,9 +177,7 @@ namespace EntadFramework
             foreach (var e in base.ConfigErrors(parentDef)) yield return e;
             if (jumps < 0) yield return "jumps can't be negative";
             if (jumps > 0 && jumpRange <= 0f) yield return "jumpRange must be above 0";
-            if (jumpVisuals != null)
-                foreach (var v in jumpVisuals)
-                    foreach (var e in v.ConfigErrors(parentDef.defName)) yield return e;
+            foreach (var e in VisualErrors(jumpVisuals, parentDef)) yield return e;
         }
     }
 

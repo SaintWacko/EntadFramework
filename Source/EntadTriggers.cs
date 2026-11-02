@@ -912,7 +912,7 @@ namespace EntadFramework
                     float amount = m.TriggerValue(p.index, EntadTrigger.Damage) * p.power;
                     if (amount > 0f) target.TakeDamage(new DamageInfo(t.damageDef, amount, t.armorPenetration, -1f, user));
                 }
-                if (t.HasMechanoidDamage && !target.Destroyed && target is Pawn mech && mech.RaceProps.IsMechanoid)
+                if (t.HasMechanoidDamage && target is Pawn mech && !mech.Dead && !mech.Destroyed && mech.RaceProps.IsMechanoid)
                 {
                     float amount = m.TriggerValue(p.index, EntadTrigger.MechanoidDamage) * p.power;
                     if (amount > 0f) target.TakeDamage(new DamageInfo(t.mechanoidDamageDef, amount, 0f, -1f, user));
