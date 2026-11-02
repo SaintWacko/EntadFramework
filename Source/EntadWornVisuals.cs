@@ -311,9 +311,9 @@ namespace EntadFramework
 
         // Size and mirroring of a pawn mesh, read once per mesh: the tree hands the west-facing side a mesh with its
         // UVs flipped
-        private static readonly Dictionary<Mesh, (Vector2 size, bool flipped)> meshInfo = new Dictionary<Mesh, (Vector2, bool)>();
+        private static readonly Dictionary<Mesh, (Vector2 size, bool flipped, float lift)> meshInfo = new Dictionary<Mesh, (Vector2, bool, float)>();
 
-        private static (Vector2 size, bool flipped) MeshInfo(Mesh mesh)
+        private static (Vector2 size, bool flipped, float lift) MeshInfo(Mesh mesh)
         {
             if (meshInfo.TryGetValue(mesh, out var info)) return info;
             Vector3 b = mesh.bounds.size;
@@ -324,7 +324,8 @@ namespace EntadFramework
                 var uvs = mesh.uv;
                 if (verts.Length > 0 && uvs.Length == verts.Length) flipped = verts[0].x < 0f != uvs[0].x < 0.5f;
             }
-            info = (new Vector2(b.x, b.z), flipped);
+            // The bounds' height is the back lift: a flat mesh has none
+            info = (new Vector2(b.x, b.z), flipped, b.y);
             meshInfo[mesh] = info;
             return info;
         }
@@ -339,8 +340,9 @@ namespace EntadFramework
             if (request.node?.apparel != item || request.material == null || request.mesh == null) return;
             var info = MeshInfo(request.mesh);
             Matrix4x4 matrix = request.preDrawnComputedMatrix * Matrix4x4.Scale(new Vector3(info.size.x, 1f, info.size.y));
-            // Just over the item, so what the tree draws over it (the head over a shirt) covers its glow as well
-            Run(set, item, map, matrix, info.flipped, request.material, info.size, request.preDrawnComputedMatrix.m13 + 0.0004f);
+            // Just over the item, so what the tree draws over it (the head over a shirt) covers its glow as well. Pawn
+            // meshes are raised along their top edge (vanilla's back lift), and the visuals follow it.
+            Run(set, item, map, matrix, info.flipped, request.material, info.size, request.preDrawnComputedMatrix.m13 + 0.0004f, info.lift);
         }
 
         private static bool HasNodeFor(PawnRenderNode node, Apparel item)

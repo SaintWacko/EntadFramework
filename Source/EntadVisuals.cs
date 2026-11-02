@@ -203,7 +203,7 @@ namespace EntadFramework
             if (set.worn.Length > 0) DrawWornOnGround(set, thing, map, matrix, size);
         }
 
-        internal static void Run(EntadVisualSet set, Thing weapon, Map map, Matrix4x4 matrix, bool flipped, Material mat, Vector2 size, float altitude)
+        internal static void Run(EntadVisualSet set, Thing weapon, Map map, Matrix4x4 matrix, bool flipped, Material mat, Vector2 size, float altitude, float lift = 0f)
         {
             var shape = EntadWeaponShape.For(mat?.mainTexture);
             if (shape == null) return;
@@ -222,6 +222,7 @@ namespace EntadFramework
             draw.ticks = now;
             draw.newTicks = newTicks;
             draw.altitude = altitude;
+            draw.lift = lift;
             // Draw code must not move the game's shared random stream, or how far it moves would depend on frame rate
             // and what's on screen (vanilla's Recoil does the same in this method)
             Rand.PushState(Gen.HashCombineInt(draw.seed, now));

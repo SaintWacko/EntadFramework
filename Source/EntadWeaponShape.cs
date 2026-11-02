@@ -10,13 +10,15 @@ namespace EntadFramework
     // readable from the CPU, so the texture is blitted into a small render texture and read from there.
     public class EntadWeaponShape
     {
-        private const int Size = 48;
+        public const int Size = 48;
         private const int Pad = 8;
         // The halo texture is padded so the blur has room past the weapon's edges; drawn this much larger to line up
         public const float HaloScale = (Size + 2f * Pad) / Size;
         private const int MaxPoints = 64;
 
         public Vector2[] points;
+        // The texture's alpha, Size x Size from the bottom row up, for visuals masked to the item's shape
+        public float[] mask;
         public Material HaloMaterial { get; private set; }
 
         private static readonly Dictionary<Texture, EntadWeaponShape> cache = new Dictionary<Texture, EntadWeaponShape>();
@@ -70,7 +72,9 @@ namespace EntadFramework
                 (chosen[i], chosen[j]) = (chosen[j], chosen[i]);
             }
 
-            return new EntadWeaponShape { points = chosen, HaloMaterial = MakeHalo(pixels, tex.name) };
+            var mask = new float[Size * Size];
+            for (int i = 0; i < mask.Length; i++) mask[i] = pixels[i].a / 255f;
+            return new EntadWeaponShape { points = chosen, mask = mask, HaloMaterial = MakeHalo(pixels, tex.name) };
         }
 
         private static Material MakeHalo(Color32[] pixels, string name)

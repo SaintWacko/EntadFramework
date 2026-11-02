@@ -156,12 +156,8 @@
     </statOffsets>
     <visuals>
       <!-- The shine is how the item looks, so it shows before the trait is identified whatever the setting -->
-      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+      <li Class="EntadFramework.EntadVisual_WeaponSheen">
         <beforeIdentified>true</beforeIdentified>
-        <color>(0.85, 0.92, 1, 0.22)</color>
-        <pulseSpeed>0.25</pulseSpeed>
-        <pulseMin>0.4</pulseMin>
-        <flicker>0</flicker>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponGlints">
         <beforeIdentified>true</beforeIdentified>

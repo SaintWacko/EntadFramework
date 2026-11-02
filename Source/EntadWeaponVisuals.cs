@@ -29,13 +29,35 @@ namespace EntadFramework
         // doesn't burst out a pile of them
         public int newTicks;
         public float altitude;
+        // Worn apparel is drawn on a pawn mesh whose top edge is raised by this much (vanilla's back lift, so a
+        // pawn's head sorts over the layer below it at every height). A flat quad just over the item's altitude sank
+        // under all of it but the bottom edge, so whatever covers the item uses a lifted quad, and anything drawn
+        // at a single spot sits over the whole lift.
+        public float lift;
+
+        private static Mesh liftedPlane, liftedPlaneFlip;
+
+        // A 1x1 quad, raised along its top edge when the item's own mesh is
+        public Mesh Plane
+        {
+            get
+            {
+                if (lift <= 0f) return flipped ? MeshPool.plane10Flip : MeshPool.plane10;
+                if (liftedPlane == null)
+                {
+                    liftedPlane = MeshMakerPlanes.NewPlaneMesh(1f, false, true);
+                    liftedPlaneFlip = MeshMakerPlanes.NewPlaneMesh(1f, true, true);
+                }
+                return flipped ? liftedPlaneFlip : liftedPlane;
+            }
+        }
 
         // A spot on the weapon's opaque pixels, in world space
         public Vector3 Point(int index)
         {
             Vector2 p = shape.points[(index & 0x7FFFFFFF) % shape.points.Length];
             Vector3 world = matrix.MultiplyPoint3x4(new Vector3(flipped ? -p.x : p.x, 0f, p.y));
-            world.y = altitude;
+            world.y = altitude + lift;
             return world;
         }
     }
@@ -75,7 +97,7 @@ namespace EntadFramework
             Color c = color;
             c.a *= Mathf.Lerp(pulseMin, 1f, wave) * (1f - flicker * noise);
             var block = EntadVisuals.glowBlock;
-            Mesh mesh = d.flipped ? MeshPool.plane10Flip : MeshPool.plane10;
+            Mesh mesh = d.Plane;
             if (tint > 0f && d.texture != null)
             {
                 if (!tintMaterials.TryGetValue(d.texture, out var tintMat))
@@ -238,7 +260,7 @@ namespace EntadFramework
                 float strength = Mathf.Sin(u * Mathf.PI);
                 int spot = EntadGlint.Mix(seed ^ (t / period) * 0x2C1B3C6D);
                 Vector3 pos = d.Point(spot);
-                pos.y = d.altitude + 0.0001f;
+                pos.y += 0.0001f;
                 float s = Mathf.Lerp(size.min, size.max, ((spot >> 12) & 0xFF) / 255f) * strength;
                 Color c = color;
                 c.a *= strength;
@@ -252,6 +274,91 @@ namespace EntadFramework
             if (texPath.NullOrEmpty()) yield return $"{defName}: weapon glints visual needs a texPath";
             if (glintTicks < 1) yield return $"{defName}: weapon glints glintTicks must be at least 1";
             if (periodTicks.min <= glintTicks) yield return $"{defName}: weapon glints periodTicks must be longer than glintTicks";
+        }
+    }
+
+    // A bright band sweeping across the item every few seconds, for a polished surface. The band is masked to the
+    // item's own shape: a set of frames is made once per texture from its alpha (EntadWeaponShape.mask) and the
+    // two frames either side of the band's position are cross-faded, so it moves smoothly with few frames.
+    public class EntadVisual_WeaponSheen : EntadWeaponVisual
+    {
+        public Color color = new Color(1f, 1f, 1f, 0.55f);
+        // One sweep per period, lasting sweepTicks
+        public IntRange periodTicks = new IntRange(240, 420);
+        public int sweepTicks = 45;
+        // Width of the band as a fraction of the item's size, and its slant from vertical in degrees
+        public float width = 0.16f;
+        public float angle = 30f;
+        public int frames = 16;
+
+        private readonly Dictionary<EntadWeaponShape, Material[]> frameCache = new Dictionary<EntadWeaponShape, Material[]>();
+
+        public override IEnumerable<string> ConfigErrors(string defName)
+        {
+            if (sweepTicks < 1) yield return $"{defName}: weapon sheen sweepTicks must be at least 1";
+            if (periodTicks.min <= sweepTicks) yield return $"{defName}: weapon sheen periodTicks must be longer than sweepTicks";
+            if (frames < 2) yield return $"{defName}: weapon sheen needs at least 2 frames";
+            if (width <= 0f) yield return $"{defName}: weapon sheen width must be above 0";
+        }
+
+        public override void Draw(EntadWeaponDraw d)
+        {
+            int seed = Gen.HashCombineInt(d.seed, 0x5EE7);
+            int period = periodTicks.min + (seed & 0x7FFFFFFF) % Mathf.Max(1, periodTicks.max - periodTicks.min + 1);
+            int phase = (d.ticks + ((seed >> 8) & 0xFFFF)) % period;
+            if (phase >= sweepTicks) return;
+            var mats = FramesFor(d.shape);
+            if (mats == null) return;
+            float at = phase / (float)sweepTicks * (mats.Length - 1);
+            int a = Mathf.Min((int)at, mats.Length - 2);
+            float f = at - a;
+            Matrix4x4 m = d.matrix;
+            m.m13 = d.altitude - 0.0001f;
+            Mesh mesh = d.Plane;
+            var block = EntadVisuals.glowBlock;
+            Color c = color;
+            c.a = color.a * (1f - f);
+            block.SetColor(ShaderPropertyIDs.Color, c);
+            Graphics.DrawMesh(mesh, m, mats[a], 0, null, 0, block);
+            c.a = color.a * f;
+            block.SetColor(ShaderPropertyIDs.Color, c);
+            Graphics.DrawMesh(mesh, m, mats[a + 1], 0, null, 0, block);
+        }
+
+        private Material[] FramesFor(EntadWeaponShape shape)
+        {
+            if (frameCache.TryGetValue(shape, out var mats)) return mats;
+            mats = null;
+            float[] mask = shape.mask;
+            if (mask != null)
+            {
+                int n = EntadWeaponShape.Size;
+                float rad = angle * Mathf.Deg2Rad;
+                // Across the band: x and z of the item's square, turned by the slant
+                float ax = Mathf.Cos(rad), az = -Mathf.Sin(rad);
+                float reach = 0.5f * (Mathf.Abs(ax) + Mathf.Abs(az)) + width;
+                mats = new Material[frames];
+                var colors = new Color32[n * n];
+                for (int k = 0; k < frames; k++)
+                {
+                    float centre = Mathf.Lerp(-reach, reach, k / (float)(frames - 1));
+                    for (int y = 0; y < n; y++)
+                        for (int x = 0; x < n; x++)
+                        {
+                            float u = (x + 0.5f) / n - 0.5f, v = (y + 0.5f) / n - 0.5f;
+                            float dist = Mathf.Abs(u * ax + v * az - centre) / width;
+                            // A soft band with a brighter core
+                            float band = dist >= 1f ? 0f : (1f - dist) * (1f - dist) * 0.7f + (dist < 0.3f ? 0.3f * (1f - dist / 0.3f) : 0f);
+                            colors[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(band * mask[y * n + x]) * 255f));
+                        }
+                    var tex = new Texture2D(n, n, TextureFormat.ARGB32, false) { name = "EntadSheen_" + k, wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                    tex.SetPixels32(colors);
+                    tex.Apply(false, true);
+                    mats[k] = new Material(ShaderDatabase.MoteGlow) { mainTexture = tex, name = tex.name };
+                }
+            }
+            frameCache[shape] = mats;
+            return mats;
         }
     }
 }
