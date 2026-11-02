@@ -205,8 +205,8 @@ namespace EntadFramework
                 // ancient complex on the home map), and not from inside a crate or shelf container, where nothing
                 // shows which of its contents left the mess
                 if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Map.IsPlayerHome
-                    && (at.Faction == null || at.Faction == Faction.OfPlayer)
-                    && (at == thing || at is Pawn || at is MinifiedThing) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
+                    && (at.Faction == null || at.Faction == Faction.OfPlayer) && (thing.Faction == null || thing.Faction == Faction.OfPlayer)
+                    && (at == thing || at is Pawn || (at is MinifiedThing && thing.ParentHolder == at)) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
                     comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }
