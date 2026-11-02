@@ -263,6 +263,9 @@ namespace EntadFramework
                 float strength = Mathf.Sin(u * Mathf.PI);
                 int spot = EntadGlint.Mix(seed ^ (t / period) * 0x2C1B3C6D);
                 Vector3 pos = d.Point(spot);
+                // A flat quad on the slope of a lifted pawn mesh: lowered to the middle of the gap to the next apparel
+                // layer, so neither edge goes through it
+                if (d.lift > 0f) pos.y -= 0.00012f;
                 float s = Mathf.Lerp(size.min, size.max, ((spot >> 12) & 0xFF) / 255f) * strength;
                 Color c = color;
                 c.a *= strength;
