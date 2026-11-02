@@ -302,8 +302,8 @@ namespace EntadFramework
         }
     }
 
-    // A damage-scaled proc's stun, burden or berserk lasts longer or shorter with its power. Every vanilla ability with a
-    // duration reads it here; for anything else it is one type check per cast.
+    // A damage-scaled proc's stun or burden lasts longer or shorter with its power. Vanilla's duration effects read it
+    // here (not mental states: GiveMentalState never asks); for anything else it is one type check per cast.
     [HarmonyPatch(typeof(CompAbilityEffect_WithDuration), nameof(CompAbilityEffect_WithDuration.GetDurationSeconds))]
     public static class Patch_AbilityDuration_EntadProc
     {
