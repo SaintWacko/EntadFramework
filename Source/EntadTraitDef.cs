@@ -807,7 +807,7 @@ namespace EntadFramework
                         yield return $"{defName}: a trigger's rarityScales does nothing without scalesWithRarity on the trait";
                 }
             // Both read the item's own attacks, so on apparel only they'd quietly do nothing (no categories = any item)
-            if (triggers != null && triggers.Any(t => t.rateNormalized || t.scaleWithDamage) && !categories.NullOrEmpty()
+            if (triggers != null && triggers.Any(t => t.rateNormalized > 0f || t.scaleWithDamage > 0f) && !categories.NullOrEmpty()
                 && !categories.Any(c => (EntadUtility.ParseKind(c) & EntadUtility.AnyWeapon) != EntadItemKind.None))
                 yield return $"{defName}: rateNormalized and scaleWithDamage need a weapon category";
             if (HasGearTrigger && HasUseTrigger) yield return $"{defName}: Use triggers (furniture) can't be mixed with gear triggers on one trait";

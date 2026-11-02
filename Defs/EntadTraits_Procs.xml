@@ -18,7 +18,7 @@
         <victims>Hostile</victims>
         <chance>0.06~0.08</chance>
         <rarityScales>Chance</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <adaptSeconds>30</adaptSeconds>
         <adaptFactor>0.5</adaptFactor>
         <casts>
@@ -44,7 +44,7 @@
         <victims>Hostile</victims>
         <chance>0.05~0.07</chance>
         <rarityScales>Chance</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <adaptSeconds>12</adaptSeconds>
         <adaptFactor>0.5</adaptFactor>
         <casts>
@@ -71,7 +71,7 @@
         <chance>0.05</chance>
         <cooldownHours>20~28</cooldownHours>
         <rarityScales>Cooldown</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <adaptSeconds>60</adaptSeconds>
         <casts>
           <li><ability>Berserk</ability><target>Victim</target></li>
@@ -191,7 +191,7 @@
         <victims>Hostile</victims>
         <chance>0.06~0.08</chance>
         <rarityScales>Chance</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <adaptSeconds>30</adaptSeconds>
         <casts>
           <li><ability>Entad_Disarm</ability><target>Victim</target></li>
@@ -236,7 +236,7 @@
         <victims>Hostile</victims>
         <chance>0.15~0.2</chance>
         <rarityScales>Chance</rarityScales>
-        <scaleWithDamage>true</scaleWithDamage>
+        <scaleWithDamage>0.5</scaleWithDamage>
         <casts>
           <li><ability>Entad_Volatile</ability><target>VictimCell</target></li>
         </casts>

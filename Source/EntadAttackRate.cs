@@ -29,23 +29,26 @@ namespace EntadFramework
 
         public static bool IsWeapon(CompEntad item) => item?.parent?.def?.IsWeapon == true;
 
-        // Multiplier on a per-hit chance: the weapon's time per attack against the reference
-        public static float ChanceFactor(CompEntad item, bool melee)
+        // Multiplier on a per-hit chance: the weapon's time per attack against the reference, to the power of exponent
+        public static float ChanceFactor(CompEntad item, bool melee, float exponent)
         {
             var c = Read(item);
             if (c == null) return 1f;
             float seconds = melee ? c.meleeSeconds : c.rangedSeconds;
-            return seconds > 0f ? seconds / (melee ? MeleeReferenceSeconds : RangedReferenceSeconds) : 1f;
+            return seconds > 0f ? Raise(seconds / (melee ? MeleeReferenceSeconds : RangedReferenceSeconds), exponent) : 1f;
         }
 
-        // Multiplier on an effect's strength: the weapon's damage per attack against the reference
-        public static float DamagePower(CompEntad item, bool melee)
+        // Multiplier on an effect's strength: the weapon's damage per attack against the reference, clamped, to the
+        // power of exponent
+        public static float DamagePower(CompEntad item, bool melee, float exponent)
         {
             var c = Read(item);
             if (c == null) return 1f;
             float damage = melee ? c.meleeDamage : c.rangedDamage;
-            return damage > 0f ? Mathf.Clamp(damage / (melee ? MeleeReferenceDamage : RangedReferenceDamage), MinPower, MaxPower) : 1f;
+            return damage > 0f ? Raise(Mathf.Clamp(damage / (melee ? MeleeReferenceDamage : RangedReferenceDamage), MinPower, MaxPower), exponent) : 1f;
         }
+
+        private static float Raise(float ratio, float exponent) => exponent >= 1f ? ratio : Mathf.Pow(ratio, exponent);
 
         private static Cache Read(CompEntad item)
         {

@@ -150,15 +150,18 @@ namespace EntadFramework
         public FloatRange cooldownHours = FloatRange.Zero;
         public FloatRange cooldownSeconds = FloatRange.Zero;
         public EntadTriggerRarityScaling rarityScales;
-        // Hit only: the chance is for a weapon that attacks once a second (ranged) or every two seconds (melee), and
-        // is multiplied by this weapon's time per attack, so a minigun and a sniper rifle go off about as often per
-        // minute of fighting. For effects that are all or nothing (a stun, a disarm), where a fast weapon would
-        // otherwise land them over and over.
-        public bool rateNormalized;
-        // Hit and Kill: the effect's strength is multiplied by the weapon's damage per attack against the reference
-        // (EntadAttackRate), clamped. Reaches the trigger's stun and damage and every cast (EntadProcContext.power),
-        // where the ability reads it. A fast weapon procs more often and weaker, a slow one rarely and hard.
-        public bool scaleWithDamage;
+        // Hit only, an exponent from 0 (off) to 1: the chance is for a weapon that attacks once a second (ranged) or
+        // every two seconds (melee), and is multiplied by this weapon's time per attack raised to this power. At 1 a
+        // minigun and a sniper rifle go off about as often per minute of fighting: for effects that are all or
+        // nothing (a stun, a disarm), where a fast weapon would otherwise land them over and over.
+        public float rateNormalized;
+        // Hit and Kill, an exponent from 0 (off) to 1: the effect's strength is multiplied by the weapon's damage per
+        // attack against the reference (EntadAttackRate), clamped, raised to this power. Reaches the trigger's stun
+        // and damage and every cast (EntadProcContext.power), where the ability reads it. Damage procs use 0.5 of both:
+        // the proc's damage per second then follows the square root of the weapon's, so a sniper rifle procs less
+        // often and harder than a minigun without either running away with it (at 1 of both, damage per shot would
+        // count twice and heavy guns would win by far).
+        public float scaleWithDamage;
         // After the trigger fires at a pawn, that pawn can't set this trigger (of this trait, on any item) off again for
         // this long: a stun on every blow would otherwise hold a melee attacker in place for good
         public float adaptSeconds;
@@ -244,7 +247,7 @@ namespace EntadFramework
         {
             float c = rolled;
             if (IsCombat) c *= EntadSettings.TriggerChanceFactor;
-            if (rateNormalized && item != null) c *= EntadAttackRate.ChanceFactor(item, melee);
+            if (rateNormalized > 0f && item != null) c *= EntadAttackRate.ChanceFactor(item, melee, rateNormalized);
             return Mathf.Min(1f, c);
         }
 
@@ -372,11 +375,11 @@ namespace EntadFramework
             bool melee = item != null && CardMelee(item.parent);
             float c = EffectiveChance(value(Chance), item, melee);
             if (c < 1f)
-                parts.Add((rateNormalized && EntadAttackRate.IsWeapon(item) ? "EF_Trigger_ChanceRate" : "EF_Trigger_Chance").Translate(c.ToStringPercent()));
+                parts.Add((rateNormalized > 0f && EntadAttackRate.IsWeapon(item) ? "EF_Trigger_ChanceRate" : "EF_Trigger_Chance").Translate(c.ToStringPercent()));
             int cooldown = EffectiveCooldownTicks(value(Cooldown));
             if (cooldown > 0) parts.Add("EF_Trigger_Cooldown".Translate(cooldown.ToStringTicksToPeriod()));
-            if (scaleWithDamage && EntadAttackRate.IsWeapon(item))
-                parts.Add("EF_Trigger_Power".Translate(EntadAttackRate.DamagePower(item, melee).ToStringPercent()));
+            if (scaleWithDamage > 0f && EntadAttackRate.IsWeapon(item))
+                parts.Add("EF_Trigger_Power".Translate(EntadAttackRate.DamagePower(item, melee, scaleWithDamage).ToStringPercent()));
             if (adaptSeconds > 0f)
                 parts.Add(adaptFactor > 0f
                     ? "EF_Trigger_AdaptDiminish".Translate(adaptSeconds.ToString("0.#"), adaptFactor.ToStringPercent(), AdaptRepeats)
@@ -432,8 +435,10 @@ namespace EntadFramework
             if (cooldownHours.max > 0f && cooldownSeconds.max > 0f) yield return $"{owner}: set cooldownHours or cooldownSeconds, not both";
             if (rarityScales == EntadTriggerRarityScaling.Chance && chance.max >= 1f) yield return $"{owner}: rarityScales Chance needs a chance below 1";
             if (rarityScales == EntadTriggerRarityScaling.Cooldown && !HasCooldown) yield return $"{owner}: rarityScales Cooldown needs a cooldown";
-            if (rateNormalized && on != EntadTriggerEvent.Hit) yield return $"{owner}: rateNormalized only applies to Hit triggers";
-            if (scaleWithDamage && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill) yield return $"{owner}: scaleWithDamage only applies to Hit and Kill triggers";
+            if (rateNormalized < 0f || rateNormalized > 1f) yield return $"{owner}: rateNormalized must be between 0 and 1";
+            if (scaleWithDamage < 0f || scaleWithDamage > 1f) yield return $"{owner}: scaleWithDamage must be between 0 and 1";
+            if (rateNormalized > 0f && on != EntadTriggerEvent.Hit) yield return $"{owner}: rateNormalized only applies to Hit triggers";
+            if (scaleWithDamage > 0f && on != EntadTriggerEvent.Hit && on != EntadTriggerEvent.Kill) yield return $"{owner}: scaleWithDamage only applies to Hit and Kill triggers";
             for (int k = 0; k < ValueCount; k++)
             {
                 var r = RangeAt(k);
@@ -756,7 +761,7 @@ namespace EntadFramework
                 if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, $"{t.on}: missed the {chance.ToStringPercent()} roll", other);
                 return false;
             }
-            float power = (t.scaleWithDamage ? EntadAttackRate.DamagePower(m.owner, melee) : 1f) * strength;
+            float power = (t.scaleWithDamage > 0f ? EntadAttackRate.DamagePower(m.owner, melee, t.scaleWithDamage) : 1f) * strength;
             if (EntadProcs.LogTriggers) EntadProcs.LogTrigger(pawn, m, power != 1f ? $"{t.on}: fired at {power.ToStringPercent()} strength" : $"{t.on}: fired", other);
             int cooldown = t.HasCooldown ? t.EffectiveCooldownTicks(m.TriggerValue(i, EntadTrigger.Cooldown)) : 0;
             if (cooldown > 0) m.SetTriggerReadyTick(i, now + cooldown);

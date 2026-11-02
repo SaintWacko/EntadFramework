@@ -19,9 +19,10 @@
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>6</minDistance>
-        <chance>0.08~0.12</chance>
+        <chance>0.15~0.2</chance>
         <rarityScales>Chance</rarityScales>
-        <scaleWithDamage>true</scaleWithDamage>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_Flameball</externalAbility><target>Victim</target></li>
         </casts>
@@ -138,9 +139,10 @@
         <attack>Ranged</attack>
         <victims>Hostile</victims>
         <minDistance>5</minDistance>
-        <chance>0.12~0.16</chance>
+        <chance>0.22~0.3</chance>
         <rarityScales>Chance</rarityScales>
-        <scaleWithDamage>true</scaleWithDamage>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_Bolt</externalAbility><target>Victim</target></li>
         </casts>
@@ -161,9 +163,10 @@
         <on>Hit</on>
         <attack>Ranged</attack>
         <victims>Hostile</victims>
-        <chance>0.08~0.12</chance>
+        <chance>0.15~0.2</chance>
         <rarityScales>Chance</rarityScales>
-        <scaleWithDamage>true</scaleWithDamage>
+        <rateNormalized>0.5</rateNormalized>
+        <scaleWithDamage>0.5</scaleWithDamage>
         <casts>
           <li><externalAbility>VPE_ChainBolt</externalAbility><target>Victim</target></li>
         </casts>
@@ -187,7 +190,7 @@
         <victims>Hostile</victims>
         <chance>0.06~0.08</chance>
         <rarityScales>Chance</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <casts>
           <li><externalAbility>VPE_StealVitality</externalAbility><target>Victim</target></li>
         </casts>
@@ -210,7 +213,7 @@
         <victims>HostileMechanoid</victims>
         <chance>0.04~0.06</chance>
         <rarityScales>Chance</rarityScales>
-        <rateNormalized>true</rateNormalized>
+        <rateNormalized>1</rateNormalized>
         <adaptSeconds>60</adaptSeconds>
         <adaptFactor>0.5</adaptFactor>
         <casts>
