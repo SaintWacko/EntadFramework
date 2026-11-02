@@ -9,7 +9,8 @@
        Framework abilities, loaded only when Vanilla Psycasts Expanded is active. Mods/CombatExtended holds the hooks
        that carry weapon traits over to Combat Extended's own bullets and melee verb, and moves the accuracy traits
        onto CE's aiming stats, loaded only when CE is active and
-       only on 1.6 (CE has no 1.7 build yet). -->
+       only on 1.6 (CE has no 1.7 build yet). Mods/VanillaTemperatureExpanded gives Warm, Cool and their drawbacks
+       Proxy Heat around the furniture, loaded only when Vanilla Temperature Expanded is active. -->
   <v1.6>
     <li>/</li>
     <li>1.6</li>
@@ -21,6 +22,8 @@
     <li IfModActive="VanillaExpanded.VPsycastsE">Mods/VanillaPsycastsExpanded/1.6</li>
     <li IfModActive="CETeam.CombatExtended">Mods/CombatExtended</li>
     <li IfModActive="CETeam.CombatExtended">Mods/CombatExtended/1.6</li>
+    <li IfModActive="VanillaExpanded.Temperature">Mods/VanillaTemperatureExpanded</li>
+    <li IfModActive="VanillaExpanded.Temperature">Mods/VanillaTemperatureExpanded/1.6</li>
   </v1.6>
   <v1.7>
     <li>/</li>
@@ -31,5 +34,7 @@
     <li IfModActive="Dubwise.DubsBadHygiene">Mods/DubsBadHygiene/1.7</li>
     <li IfModActive="VanillaExpanded.VPsycastsE">Mods/VanillaPsycastsExpanded</li>
     <li IfModActive="VanillaExpanded.VPsycastsE">Mods/VanillaPsycastsExpanded/1.7</li>
+    <li IfModActive="VanillaExpanded.Temperature">Mods/VanillaTemperatureExpanded</li>
+    <li IfModActive="VanillaExpanded.Temperature">Mods/VanillaTemperatureExpanded/1.7</li>
   </v1.7>
 </loadFolders>

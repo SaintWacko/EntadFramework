@@ -9,12 +9,13 @@
   <modVersion>1.0.0</modVersion>
   <loadAfter>
     <li>brrainz.harmony</li>
-    <!-- Optional, so not in modDependencies: Mods/AbilityAI, Mods/DubsBadHygiene, Mods/VanillaPsycastsExpanded and
-         Mods/CombatExtended load only when their mod is active -->
+    <!-- Optional, so not in modDependencies: Mods/AbilityAI, Mods/DubsBadHygiene, Mods/VanillaPsycastsExpanded,
+         Mods/CombatExtended and Mods/VanillaTemperatureExpanded load only when their mod is active -->
     <li>saintwacko.AbilityAI</li>
     <li>Dubwise.DubsBadHygiene</li>
     <li>VanillaExpanded.VPsycastsE</li>
     <li>CETeam.CombatExtended</li>
+    <li>VanillaExpanded.Temperature</li>
   </loadAfter>
   <description>Adds entads: weapons, apparel and furniture with randomly rolled hidden traits. Experiment with them to discover their unique effects and interactions. Based on the works of Alexander Wales.</description>
   <modDependencies>

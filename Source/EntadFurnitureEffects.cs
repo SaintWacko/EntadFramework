@@ -87,11 +87,10 @@ namespace EntadFramework
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
-            float heat = 0f, glow = 0f;
+            float heat = 0f, glow = 0f, target = 0f;
             if (spawned)
             {
-                if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomHeating)) heat += thing.GetStatValue(EntadStatDefOf.Entad_RoomHeating);
-                if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomCooling)) heat -= thing.GetStatValue(EntadStatDefOf.Entad_RoomCooling);
+                heat = HeatOf(comp, out target);
                 if (comp.HasStatTrait(EntadStatDefOf.Entad_GlowRadius)) glow = thing.GetStatValue(EntadStatDefOf.Entad_GlowRadius);
             }
             if (source != null && source.glower != null && (glow <= 0f || source.glowMap != thing.MapHeld || source.glower.Props.glowRadius != glow))
@@ -103,8 +102,21 @@ namespace EntadFramework
             }
             if (source == null) sources.Add(source = new Source { comp = comp });
             source.heat = heat;
-            if (heat != 0f) source.targetTemperature = TargetTemperature(comp, heat > 0f);
+            if (heat != 0f) source.targetTemperature = target;
             if (glow > 0f && source.glower == null) AddGlower(source, glow);
+        }
+
+        // Heat per second the item's traits push (negative cools; 0 without Warm, Cool or their drawbacks) and the
+        // temperature it stops at. Read again on each Refresh; modules that carry the heat further (Proxy Heat under
+        // Vanilla Temperature Expanded) read it here so they agree with the room effect.
+        public static float HeatOf(CompEntad comp, out float targetTemperature)
+        {
+            Thing thing = comp.parent;
+            float heat = 0f;
+            if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomHeating)) heat += thing.GetStatValue(EntadStatDefOf.Entad_RoomHeating);
+            if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomCooling)) heat -= thing.GetStatValue(EntadStatDefOf.Entad_RoomCooling);
+            targetTemperature = heat != 0f ? TargetTemperature(comp, heat > 0f) : 0f;
+            return heat;
         }
 
         // The temperature the trait doing the net heating (or cooling) aims for. Only a modded item would carry both.

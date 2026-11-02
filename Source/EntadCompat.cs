@@ -42,6 +42,10 @@ namespace EntadFramework
         // reads it, and nothing outside the module keeps a reference into what it saved.
         public static event Action<CompEntad> Exposing;
 
+        // Raised every frame while a spawned entad with traits is selected, from its comp's selection overlays: the
+        // place for a module's radius outlines. Draw nothing for an effect the player hasn't identified yet.
+        public static event Action<CompEntad> SelectionOverlays;
+
         // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
         private static System.WeakReference<Game> startedFor;
 
@@ -310,6 +314,16 @@ namespace EntadFramework
         {
             if (Refreshed == null) return;
             foreach (Action<CompEntad> handler in Refreshed.GetInvocationList())
+            {
+                try { handler(comp); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed on {comp.parent}: {e}", handler.Method.GetHashCode()); }
+            }
+        }
+
+        internal static void RaiseSelectionOverlays(CompEntad comp)
+        {
+            if (SelectionOverlays == null) return;
+            foreach (Action<CompEntad> handler in SelectionOverlays.GetInvocationList())
             {
                 try { handler(comp); }
                 catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed on {comp.parent}: {e}", handler.Method.GetHashCode()); }

@@ -728,6 +728,12 @@ namespace EntadFramework
             EntadFurnitureEffects.Refresh(this);
         }
 
+        public override void PostDrawExtraSelectionOverlays()
+        {
+            base.PostDrawExtraSelectionOverlays();
+            if (activeTraits.Count > 0) EntadCompat.RaiseSelectionOverlays(this);
+        }
+
         public void RemoveTrait(AppliedEntadTrait trait)
         {
             bool scaleHp = parent.def.useHitPoints;
