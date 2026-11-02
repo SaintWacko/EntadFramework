@@ -360,11 +360,12 @@ namespace EntadFramework.VPECompat
             var castingTargets = comp.currentlyCastingTargets;
             comp.currentlyCasting = ability;
             comp.currentlyCastingTargets = targets;
+            bool fromTarget = Patch_ProcFromTarget.active;
             Patch_ProcFromTarget.active = ctx.cast.fromTarget;
             try { ability.Cast(targets); }
             finally
             {
-                Patch_ProcFromTarget.active = false;
+                Patch_ProcFromTarget.active = fromTarget;
                 comp.currentlyCasting = casting;
                 comp.currentlyCastingTargets = castingTargets;
             }
@@ -848,13 +849,13 @@ namespace EntadFramework.VPECompat
             if (!active || !target.HasThing || !target.Thing.Spawned) return true;
             Thing at = target.Thing;
             var ext = __instance.def.GetModExtension<AbilityExtension_Projectile>();
-            if (ext?.projectile == null) return true;
-            if (!(GenSpawn.Spawn(ext.projectile, at.Position, at.Map) is Projectile projectile)) return true;
+            if (ext?.projectile == null || !typeof(Projectile).IsAssignableFrom(ext.projectile.thingClass)) return true;
+            var projectile = (Projectile)GenSpawn.Spawn(ext.projectile, at.Position, at.Map);
             if (projectile is AbilityProjectile abilityProjectile) abilityProjectile.ability = __instance;
             var comp = projectile.TryGetComp<CompAbilityProjectile>();
             if (comp != null) comp.ability = __instance;
             if (projectile is TeslaProjectile tesla && TeslaHolder != null) TeslaHolder(tesla) = tesla;
-            projectile.Launch(__instance.pawn, at.DrawPos, at, at, ProjectileHitFlags.IntendedTarget);
+            projectile.Launch(__instance.pawn, at.DrawPos, at, at, ext.hitFlags);
             __result = projectile;
             return false;
         }
