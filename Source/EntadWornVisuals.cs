@@ -411,6 +411,9 @@ namespace EntadFramework
             var set = node.comp.Visuals;
             if (set.worn.Length == 0 && set.weapon.Length == 0) return;
             if (pawn.Dead || !pawn.Spawned || pawn.Map != Find.CurrentMap || parms.flags.FlagSet(PawnRenderFlags.Invisible) || pawn.IsHiddenFromPlayer()) return;
+            // Zoomed out, vanilla draws humanlikes from a cached picture it renders at the map's origin
+            // (PawnRenderer.RenderCache): anything drawn then lands in the corner of the map or in the picture
+            if (parms.flags.FlagSet(PawnRenderFlags.Cache)) return;
             if (node.requestsStale)
             {
                 node.requestsStale = false;

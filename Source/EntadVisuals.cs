@@ -216,6 +216,7 @@ namespace EntadFramework
             draw.matrix = matrix;
             draw.flipped = flipped;
             draw.shape = shape;
+            draw.texture = mat.mainTexture;
             draw.size = Mathf.Max(size.x, size.y);
             draw.seed = Gen.HashCombineInt(id, 0x7A11);
             draw.ticks = now;

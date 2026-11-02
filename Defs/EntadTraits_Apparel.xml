@@ -64,6 +64,7 @@
         <color>(1, 0.45, 0.1, 0.22)</color>
         <pulseSpeed>0.5</pulseSpeed>
         <flicker>0.25</flicker>
+        <tint>1</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
@@ -106,6 +107,7 @@
         <color>(1, 0.35, 0.05, 0.4)</color>
         <pulseSpeed>0.7</pulseSpeed>
         <flicker>0.35</flicker>
+        <tint>1.2</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
@@ -161,13 +163,11 @@
         <pulseMin>0.4</pulseMin>
         <flicker>0</flicker>
       </li>
-      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+      <li Class="EntadFramework.EntadVisual_WeaponGlints">
         <beforeIdentified>true</beforeIdentified>
-        <fleck>Entad_Fleck_MirrorGlint</fleck>
-        <perSecond>1.2</perSecond>
-        <scale>0.18~0.3</scale>
-        <speed>0~0.05</speed>
-        <rotationRate>-60~60</rotationRate>
+        <count>2</count>
+        <periodTicks>90~200</periodTicks>
+        <size>0.2~0.32</size>
       </li>
       <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Deflect</on><fleck>ExplosionFlash</fleck><scale>1.4~1.8</scale></li>
       <li Class="EntadFramework.EntadVisual_EventEffecter"><on>Deflect</on><effecter>Deflect_Metal</effecter></li>
@@ -231,6 +231,7 @@
         <pulseSpeed>0</pulseSpeed>
         <flicker>0.6</flicker>
         <flickerSpeed>0.4</flickerSpeed>
+        <tint>1</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponArcs">
         <intervalTicks>22</intervalTicks>

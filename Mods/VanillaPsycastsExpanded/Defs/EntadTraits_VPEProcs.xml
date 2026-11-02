@@ -73,6 +73,7 @@
         <color>(0.65, 0.88, 1, 0.24)</color>
         <pulseSpeed>0.3</pulseSpeed>
         <flicker>0.05</flicker>
+        <tint>1</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_FrostMistWorn</fleck>
@@ -270,6 +271,7 @@
         <color>(0.65, 0.88, 1, 0.18)</color>
         <pulseSpeed>0.3</pulseSpeed>
         <flicker>0.05</flicker>
+        <tint>1.2</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_FrostGlint</fleck>
@@ -306,6 +308,7 @@
         <color>(1, 0.4, 0.1, 0.18)</color>
         <pulseSpeed>0.5</pulseSpeed>
         <flicker>0.3</flicker>
+        <tint>1.2</tint>
       </li>
       <li Class="EntadFramework.EntadVisual_WornFlecks">
         <fleck>Entad_Fleck_SmokeWisp</fleck>

@@ -20,6 +20,8 @@ namespace EntadFramework
         public Matrix4x4 matrix;
         public bool flipped;
         public EntadWeaponShape shape;
+        // The item's own texture as drawn this frame, for the tint
+        public Texture texture;
         public float size;
         public int seed;
         public int ticks;
@@ -49,6 +51,12 @@ namespace EntadFramework
         // Random flicker on top of the pulse, as a fraction of the strength (fire 0.2, static 0.5)
         public float flicker = 0.15f;
         public float flickerSpeed = 0.15f;
+        // Strength of a wash of the colour over the item itself, as a fraction of the glow's. The halo is additive, so
+        // on a pale shirt it only whitens and the colour shows round the edges; the wash dyes the item (its own
+        // texture times the colour, blended over it) so the colour reads on any cloth.
+        public float tint;
+
+        private static readonly Dictionary<Texture, Material> tintMaterials = new Dictionary<Texture, Material>();
 
         public override void Draw(EntadWeaponDraw d)
         {
@@ -62,10 +70,25 @@ namespace EntadFramework
             Color c = color;
             c.a *= Mathf.Lerp(pulseMin, 1f, wave) * (1f - flicker * noise);
             var block = EntadVisuals.glowBlock;
+            Mesh mesh = d.flipped ? MeshPool.plane10Flip : MeshPool.plane10;
+            if (tint > 0f && d.texture != null)
+            {
+                if (!tintMaterials.TryGetValue(d.texture, out var tintMat))
+                {
+                    tintMat = new Material(ShaderDatabase.Transparent) { mainTexture = d.texture, name = "EntadTint_" + d.texture.name };
+                    tintMaterials[d.texture] = tintMat;
+                }
+                Color t = c;
+                t.a = Mathf.Clamp01(c.a * tint);
+                block.SetColor(ShaderPropertyIDs.Color, t);
+                Matrix4x4 tm = d.matrix;
+                tm.m13 = d.altitude - 0.0002f;
+                Graphics.DrawMesh(mesh, tm, tintMat, 0, null, 0, block);
+            }
             block.SetColor(ShaderPropertyIDs.Color, c);
             Matrix4x4 m = d.matrix * Matrix4x4.Scale(new Vector3(EntadWeaponShape.HaloScale, 1f, EntadWeaponShape.HaloScale));
             m.m13 = d.altitude;
-            Graphics.DrawMesh(d.flipped ? MeshPool.plane10Flip : MeshPool.plane10, m, d.shape.HaloMaterial, 0, null, 0, block);
+            Graphics.DrawMesh(mesh, m, d.shape.HaloMaterial, 0, null, 0, block);
         }
     }
 
@@ -176,6 +199,47 @@ namespace EntadFramework
                 if ((b - a).MagnitudeHorizontalSquared() >= min * min) break;
             }
             EntadVisuals.DrawArc(mats[((seed >> 4) & 0x7FFFFFFF) % mats.Count], a, b, width, min);
+        }
+    }
+
+    // Glints twinkling on spots of the item, drawn at the item's own height rather than as flecks: a fleck sits over
+    // everything, so a glint on a shirt's collar showed on its wearer's face. Each slot twinkles on its own clock and
+    // moves to a new spot every time, from the game tick, so they hold still while paused.
+    public class EntadVisual_WeaponGlints : EntadWeaponVisual
+    {
+        [NoTranslate] public string texPath = "Things/Mote/EntadGlint";
+        public Color color = new Color(0.92f, 0.96f, 1f, 0.9f);
+        public int count = 2;
+        // Each slot shows one glint per period, lasting glintTicks
+        public IntRange periodTicks = new IntRange(90, 200);
+        public int glintTicks = 24;
+        // Size in cells at the brightest
+        public FloatRange size = new FloatRange(0.18f, 0.3f);
+
+        [Unsaved] private Material material;
+
+        public override void Draw(EntadWeaponDraw d)
+        {
+            material ??= MaterialPool.MatFrom(texPath, ShaderDatabase.MoteGlow, Color.white);
+            var block = EntadVisuals.glowBlock;
+            for (int i = 0; i < count; i++)
+            {
+                int seed = Gen.HashCombineInt(d.seed, i * 6151 + 29);
+                int period = Mathf.Max(glintTicks + 1, periodTicks.min + (seed & 0x7FFFFFFF) % Mathf.Max(1, periodTicks.max - periodTicks.min + 1));
+                int t = d.ticks + ((seed >> 8) & 0xFFFF);
+                int phase = t % period;
+                if (phase >= glintTicks) continue;
+                float u = phase / (float)glintTicks;
+                float strength = Mathf.Sin(u * Mathf.PI);
+                int spot = EntadGlint.Mix(seed ^ (t / period) * 0x2C1B3C6D);
+                Vector3 pos = d.Point(spot);
+                pos.y = d.altitude + 0.0001f;
+                float s = Mathf.Lerp(size.min, size.max, ((spot >> 12) & 0xFF) / 255f) * strength;
+                Color c = color;
+                c.a *= strength;
+                block.SetColor(ShaderPropertyIDs.Color, c);
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(u * 45f + (spot & 0x3F), Vector3.up), new Vector3(s, 1f, s)), material, 0, null, 0, block);
+            }
         }
     }
 }
