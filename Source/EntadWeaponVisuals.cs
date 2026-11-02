@@ -58,6 +58,11 @@ namespace EntadFramework
 
         private static readonly Dictionary<Texture, Material> tintMaterials = new Dictionary<Texture, Material>();
 
+        public override IEnumerable<string> ConfigErrors(string defName)
+        {
+            if (tint < 0f) yield return $"{defName}: weapon glow tint can't be negative";
+        }
+
         public override void Draw(EntadWeaponDraw d)
         {
             float phase = (d.seed & 0xFF) / 255f;
@@ -240,6 +245,13 @@ namespace EntadFramework
                 block.SetColor(ShaderPropertyIDs.Color, c);
                 Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(u * 45f + (spot & 0x3F), Vector3.up), new Vector3(s, 1f, s)), material, 0, null, 0, block);
             }
+        }
+
+        public override IEnumerable<string> ConfigErrors(string defName)
+        {
+            if (texPath.NullOrEmpty()) yield return $"{defName}: weapon glints visual needs a texPath";
+            if (glintTicks < 1) yield return $"{defName}: weapon glints glintTicks must be at least 1";
+            if (periodTicks.min <= glintTicks) yield return $"{defName}: weapon glints periodTicks must be longer than glintTicks";
         }
     }
 }
