@@ -10,7 +10,8 @@
     -->
     <PropertyGroup>
         <OutputType>Library</OutputType>
-        <TargetFramework>net472</TargetFramework>
+        <!-- net48 because ProxyHeat.dll is built for it; RimWorld's Mono loads either -->
+        <TargetFramework>net48</TargetFramework>
         <RootNamespace>EntadFramework.VTECompat</RootNamespace>
         <AssemblyName>EntadFramework.VTECompat</AssemblyName>
         <LangVersion>latest</LangVersion>
