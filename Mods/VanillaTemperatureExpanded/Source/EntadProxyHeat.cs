@@ -139,9 +139,11 @@ namespace EntadFramework.VTECompat
         {
             sources.Remove(source.comp);
             source.temp.PostDeSpawn(source.map);
-            // VTE's own despawn hook may have queued this comp for a recount; switched off, that recount adds nothing
-            // back if the building is already spawned again (a reinstall within one tick)
+            // VTE's own despawn hook may have queued this comp for a recount, which re-registers it if the building is
+            // still (or again) spawned. Switched off it adds nothing back; with no outcome it changes nothing even if
+            // the field is gone and it does come back.
             if (activeRef != null) activeRef(source.temp) = false;
+            source.props.tempOutcome = 0f;
         }
 
         private static void Tick()
