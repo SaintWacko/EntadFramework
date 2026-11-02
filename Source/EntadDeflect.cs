@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -18,33 +19,52 @@ namespace EntadFramework
         // colonist, about 60% on target at 10 tiles
         private const float ReflectAccuracy = 0.95f;
 
-        // A bullet deals its main damage and each extra damage (a unique weapon's) as separate calls in one tick:
-        // the first roll stands for all of them, so one shot is never half turned aside or sent back twice
-        private static CompEntad lastComp;
-        private static Pawn lastWearer;
-        private static Thing lastShooter;
-        private static int lastTick = -1;
-        private static bool lastDeflected;
+        // A bullet deals its main damage and each extra damage (a unique weapon's, EMP rounds) as separate calls in
+        // one tick: each piece's first roll stands for all of them, so one shot is never half turned aside or sent
+        // back twice. Pellets from one shooter landing in the same tick share the roll too.
+        private static readonly List<(CompEntad comp, bool deflected)> rolls = new List<(CompEntad, bool)>();
+        private static Pawn rollWearer;
+        private static Thing rollShooter;
+        private static int rollTick = -1;
+
+        public static void Clear()
+        {
+            rolls.Clear();
+            rollWearer = null;
+            rollShooter = null;
+            rollTick = -1;
+        }
 
         public static bool TryDeflect(CompEntad comp, DamageInfo dinfo)
         {
-            // Shots only: explosions and melee get through. The apparel's own armor damage has no instigator.
-            if (dinfo.Def == null || !dinfo.Def.isRanged || dinfo.Def.isExplosive || dinfo.Instigator == null || dinfo.Amount <= 0f) return false;
+            // The apparel's own armor damage has no instigator
+            if (dinfo.Def == null || dinfo.Instigator == null || dinfo.Amount <= 0f) return false;
             if (!(comp.parent is Apparel apparel) || !(apparel.Wearer is Pawn wearer) || !wearer.Spawned) return false;
+            int now = Find.TickManager.TicksGame;
+            // Before the shot filter: an extra damage of another kind (EMP) follows its bullet
+            if (now == rollTick && wearer == rollWearer && dinfo.Instigator == rollShooter)
+            {
+                for (int i = 0; i < rolls.Count; i++)
+                    if (rolls[i].comp == comp) return rolls[i].deflected;
+            }
+            else
+            {
+                rolls.Clear();
+                rollTick = now;
+                rollWearer = wearer;
+                rollShooter = dinfo.Instigator;
+            }
+            // Shots only: explosions and melee get through
+            if (!dinfo.Def.isRanged || dinfo.Def.isExplosive) return false;
             // A shield takes the shot instead. Vanilla asks pieces in worn order, so a jacket would otherwise get its
             // try before the belt. On the shield belt itself the shield comp comes first anyway.
             if (!dinfo.Def.ignoreShields && HasActiveShield(wearer)) return false;
             // The stat part applies binding: a bound item on someone outside its bloodline reads 0
             float chance = apparel.GetStatValue(EntadStatDefOf.Entad_DeflectChance);
             if (chance <= 0f) return false;
-            int now = Find.TickManager.TicksGame;
-            if (now == lastTick && comp == lastComp && wearer == lastWearer && dinfo.Instigator == lastShooter) return lastDeflected;
-            lastTick = now;
-            lastComp = comp;
-            lastWearer = wearer;
-            lastShooter = dinfo.Instigator;
-            lastDeflected = Rand.Chance(chance);
-            if (!lastDeflected) return false;
+            bool deflected = Rand.Chance(chance);
+            rolls.Add((comp, deflected));
+            if (!deflected) return false;
 
             EntadVisuals.Deflected(comp, wearer, dinfo.Instigator);
             if (wearer.Map == Find.CurrentMap && !wearer.Position.Fogged(wearer.Map))

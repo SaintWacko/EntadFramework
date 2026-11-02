@@ -900,6 +900,7 @@ namespace EntadFramework
             nextTick.Clear();
             EntadProcs.Clear();
             EntadTriggers.ClearAdaptation();
+            EntadDeflect.Clear();
         }
 
         public override void GameComponentTick()
