@@ -33,8 +33,15 @@ namespace EntadFramework
         public static event Action Tick250;
 
         // Raised every 10 ticks in play, for checks that must catch something brief (a pawn walking past). Keep the
-        // handler to a count check whenever it has nothing to watch.
-        public static event Action Tick10;
+        // handler to a count check whenever it has nothing to watch. The handler list is kept as an array, rebuilt on
+        // subscribe, so raising it this often makes no garbage (Raise's GetInvocationList allocates a new one each call).
+        public static event Action Tick10
+        {
+            add { tick10 += value; tick10Handlers = HandlersOf(tick10); }
+            remove { tick10 -= value; tick10Handlers = HandlersOf(tick10); }
+        }
+        private static Action tick10;
+        private static Action[] tick10Handlers = new Action[0];
 
         // Raised once as each game is created or loaded, before anything spawns: the moment to clear static registries.
         // Current.Game may not point at the new game yet, so a handler should only clear.
@@ -336,7 +343,24 @@ namespace EntadFramework
 
         internal static void RaiseTick250() => Raise(Tick250);
 
-        internal static void RaiseTick10() => Raise(Tick10);
+        internal static void RaiseTick10()
+        {
+            Action[] handlers = tick10Handlers;
+            for (int i = 0; i < handlers.Length; i++)
+            {
+                try { handlers[i](); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handlers[i].Method.DeclaringType}.{handlers[i].Method.Name} failed: {e}", handlers[i].Method.GetHashCode()); }
+            }
+        }
+
+        private static Action[] HandlersOf(Action action)
+        {
+            if (action == null) return new Action[0];
+            Delegate[] list = action.GetInvocationList();
+            var handlers = new Action[list.Length];
+            for (int i = 0; i < list.Length; i++) handlers[i] = (Action)list[i];
+            return handlers;
+        }
 
         internal static void RaiseGameStarted(Game game)
         {

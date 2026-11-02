@@ -184,9 +184,14 @@ namespace EntadFramework.VTECompat
                 Thing thing = source.comp.parent;
                 if (!thing.Spawned || thing.Faction != Faction.OfPlayer || source.comp.TicksSinceSpawned < GraceTicks) continue;
                 Map map = source.map;
-                foreach (IntVec3 cell in source.temp.AffectedCells)
+                // Colonists and slaves: animals and visitors don't tell the colony anything. Free humanlikes is a list
+                // vanilla reuses, so asking for it allocates nothing.
+                List<Pawn> pawns = map.mapPawns.FreeColonistsSpawned;
+                for (int p = 0; p < pawns.Count; p++)
                 {
-                    if (!cell.UsesOutdoorTemperature(map) || !Feels(map, cell)) continue;
+                    IntVec3 cell = pawns[p].Position;
+                    // VTE leaves a cell with a building on it (a bed, a door, the furniture itself) as it was
+                    if (!source.temp.AffectedCells.Contains(cell) || !cell.UsesOutdoorTemperature(map) || cell.GetEdifice(map) != null) continue;
                     float temperature = cell.GetTemperature(map);
                     if (source.heating ? temperature >= source.target : temperature <= source.target) continue;
                     source.comp.RevealStat(source.heating ? EntadStatDefOf.Entad_RoomHeating : EntadStatDefOf.Entad_RoomCooling);
@@ -194,15 +199,6 @@ namespace EntadFramework.VTECompat
                     break;
                 }
             }
-        }
-
-        // A colonist or slave: animals and visitors don't tell the colony anything
-        private static bool Feels(Map map, IntVec3 cell)
-        {
-            List<Thing> things = map.thingGrid.ThingsListAtFast(cell);
-            for (int i = 0; i < things.Count; i++)
-                if (things[i] is Pawn pawn && pawn.Faction == Faction.OfPlayer && pawn.RaceProps.Humanlike && !pawn.Dead) return true;
-            return false;
         }
 
         private static void Clear()
