@@ -829,7 +829,7 @@ namespace EntadFramework
                     if (v == null) { yield return $"{defName}: visuals contains an empty entry"; continue; }
                     foreach (var e in v.ConfigErrors(defName)) yield return e;
                 }
-            if (HasWornVisuals && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
+            if (visuals != null && visuals.Any(v => v is EntadWornVisual) && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
                 yield return $"{defName}: worn visuals only play on apparel, and the trait's categories don't include Apparel";
             if (HasBuildingVisuals && !categories.NullOrEmpty() && !categories.Contains("Furniture"))
                 yield return $"{defName}: building visuals only play on installed buildings, and the trait's categories don't include Furniture";
