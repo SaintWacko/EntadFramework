@@ -73,6 +73,14 @@ namespace EntadFramework.CECompat
             if (over != null) projectile.damageDefOverride = over;
         }
 
+        // Trails for shots that fly. The main assembly's Projectile.Launch postfix never sees a ProjectileCE, which
+        // isn't a Projectile; DrawPos already includes CE's height offset, so the trail follows the drawn shot.
+        internal static void AddTrail(ProjectileCE projectile)
+        {
+            if (projectile.equipment == null || !EntadTraitDef.AnyTrailVisuals) return;
+            EntadVisuals.Launched(projectile, projectile.equipment);
+        }
+
         internal static float MeleePenetrationFactor(Thing equipment)
         {
             if (equipment == null || !EntadCompInjector.MayHaveComp(equipment.def)) return 1f;
@@ -132,13 +140,19 @@ namespace EntadFramework.CECompat
         }
     }
 
+    // The long Launch overload ends in this one, so both get here
     [HarmonyPatch(typeof(ProjectileCE), nameof(ProjectileCE.Launch), new[] { typeof(Thing), typeof(Vector2), typeof(Thing) })]
     public static class Patch_ProjectileCE_Launch
     {
-        public static void Postfix(ProjectileCE __instance) => EntadCombatExtended.SetDamageType(__instance);
+        public static void Postfix(ProjectileCE __instance)
+        {
+            EntadCombatExtended.SetDamageType(__instance);
+            EntadCombatExtended.AddTrail(__instance);
+        }
     }
 
-    // Instant projectiles (CE lasers and other isInstant ammo) are ray cast instead of launched
+    // Instant projectiles (CE lasers and other isInstant ammo) are ray cast instead of launched. No trail: the shot
+    // is gone the tick it fires, as with vanilla beams, which get none either.
     [HarmonyPatch(typeof(ProjectileCE), nameof(ProjectileCE.RayCast), new[] {
         typeof(Thing), typeof(VerbProperties), typeof(Vector2), typeof(float), typeof(float), typeof(float), typeof(float),
         typeof(float), typeof(float), typeof(Thing), typeof(bool) })]
@@ -147,10 +161,15 @@ namespace EntadFramework.CECompat
         public static void Postfix(ProjectileCE __instance) => EntadCombatExtended.SetDamageType(__instance);
     }
 
+    // Thrown grenades. Fragments are launched with themselves as the equipment, so they never get a trail.
     [HarmonyPatch(typeof(ProjectileCE), nameof(ProjectileCE.Throw))]
     public static class Patch_ProjectileCE_Throw
     {
-        public static void Postfix(ProjectileCE __instance) => EntadCombatExtended.SetDamageType(__instance);
+        public static void Postfix(ProjectileCE __instance)
+        {
+            EntadCombatExtended.SetDamageType(__instance);
+            EntadCombatExtended.AddTrail(__instance);
+        }
     }
 
     // A bullet's hit. CE's DamageInfo names the projectile as the weapon, so the gun is noted for the hit's duration

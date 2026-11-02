@@ -114,16 +114,18 @@ namespace EntadFramework
 
     public static partial class EntadVisuals
     {
+        // Thing rather than Projectile so a module can register shots that aren't vanilla projectiles (Combat
+        // Extended's ProjectileCE); everything here only needs DrawPos, Map and Spawned
         private class Trail
         {
-            public Projectile projectile;
+            public Thing projectile;
             public Vector3 last;
             public bool hasLast;
             public EntadVisual_ProjectileTrail[] visuals;
         }
         private static readonly List<Trail> trails = new List<Trail>();
 
-        public static void Launched(Projectile projectile, Thing equipment)
+        public static void Launched(Thing projectile, Thing equipment)
         {
             if (!EntadSettings.Visuals || !EntadSettings.VisualsProjectiles || !(equipment is ThingWithComps eq)) return;
             var set = eq.GetComp<CompEntad>()?.Visuals;
@@ -151,6 +153,9 @@ namespace EntadFramework
                 if (projectile.Map != current) { trail.hasLast = false; continue; }
                 Vector3 pos = projectile.DrawPos;
                 pos.y = AltitudeLayer.MoteLow.AltitudeFor();
+                // A shot that stopped has landed but is still spawned: CE's delayed-fuse grenades and shells, and its
+                // flares, sit where they fell until they go off, and would otherwise keep shedding flecks on the spot
+                if (trail.hasLast && (pos - trail.last).MagnitudeHorizontalSquared() < 0.0001f) { trails.RemoveAt(i); continue; }
                 Vector3 from = trail.hasLast ? trail.last : pos;
                 trail.last = pos;
                 trail.hasLast = true;
@@ -176,7 +181,7 @@ namespace EntadFramework
         private class Zap
         {
             public Map map;
-            public Projectile projectile;
+            public Thing projectile;
             public Vector3 near;
             public Vector3 far;
             public Material mat;
@@ -191,7 +196,7 @@ namespace EntadFramework
         private static readonly List<Zap> zaps = new List<Zap>();
 
         // The shot TickTrails is spawning for, so the trail visuals don't need a projectile in their signature
-        internal static Projectile spawningFor;
+        internal static Thing spawningFor;
 
         internal static void AddZap(Map map, Vector3 a, Vector3 b, Material mat, float width, int ticks)
         {
