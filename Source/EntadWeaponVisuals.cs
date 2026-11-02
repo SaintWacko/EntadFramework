@@ -32,7 +32,7 @@ namespace EntadFramework
         // Worn apparel is drawn on a pawn mesh whose top edge is raised by this much (vanilla's back lift, so a
         // pawn's head sorts over the layer below it at every height). A flat quad just over the item's altitude sank
         // under all of it but the bottom edge, so whatever covers the item uses a lifted quad, and anything drawn
-        // at a single spot sits over the whole lift.
+        // at a single spot is raised by the lift at that spot.
         public float lift;
 
         private static Mesh liftedPlane, liftedPlaneFlip;
@@ -56,8 +56,11 @@ namespace EntadFramework
         public Vector3 Point(int index)
         {
             Vector2 p = shape.points[(index & 0x7FFFFFFF) % shape.points.Length];
-            Vector3 world = matrix.MultiplyPoint3x4(new Vector3(flipped ? -p.x : p.x, 0f, p.y));
-            world.y = altitude + lift;
+            float x = flipped ? -p.x : p.x;
+            Vector3 world = matrix.MultiplyPoint3x4(new Vector3(x, 0f, p.y));
+            // Vanilla's lifted quad (MeshMakerPlanes.NewPlaneMesh) is two triangles split on the bottom-left to
+            // top-right diagonal: the top edge at the full lift, bottom left at 0, bottom right at 0.4 of it
+            world.y = altitude + (lift <= 0f ? 0f : p.y >= x ? lift * (p.y + 0.5f) : lift * (0.4f * x + 0.6f * p.y + 0.5f));
             return world;
         }
     }
@@ -260,7 +263,6 @@ namespace EntadFramework
                 float strength = Mathf.Sin(u * Mathf.PI);
                 int spot = EntadGlint.Mix(seed ^ (t / period) * 0x2C1B3C6D);
                 Vector3 pos = d.Point(spot);
-                pos.y += 0.0001f;
                 float s = Mathf.Lerp(size.min, size.max, ((spot >> 12) & 0xFF) / 255f) * strength;
                 Color c = color;
                 c.a *= strength;
@@ -304,11 +306,11 @@ namespace EntadFramework
         public override void Draw(EntadWeaponDraw d)
         {
             int seed = Gen.HashCombineInt(d.seed, 0x5EE7);
-            int period = periodTicks.min + (seed & 0x7FFFFFFF) % Mathf.Max(1, periodTicks.max - periodTicks.min + 1);
+            int period = Mathf.Max(1, periodTicks.min + (seed & 0x7FFFFFFF) % Mathf.Max(1, periodTicks.max - periodTicks.min + 1));
             int phase = (d.ticks + ((seed >> 8) & 0xFFFF)) % period;
             if (phase >= sweepTicks) return;
             var mats = FramesFor(d.shape);
-            if (mats == null) return;
+            if (mats == null || mats.Length < 2) return;
             float at = phase / (float)sweepTicks * (mats.Length - 1);
             int a = Mathf.Min((int)at, mats.Length - 2);
             float f = at - a;

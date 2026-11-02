@@ -340,9 +340,10 @@ namespace EntadFramework
             if (request.node?.apparel != item || request.material == null || request.mesh == null) return;
             var info = MeshInfo(request.mesh);
             Matrix4x4 matrix = request.preDrawnComputedMatrix * Matrix4x4.Scale(new Vector3(info.size.x, 1f, info.size.y));
-            // Just over the item, so what the tree draws over it (the head over a shirt) covers its glow as well. Pawn
-            // meshes are raised along their top edge (vanilla's back lift), and the visuals follow it.
-            Run(set, item, map, matrix, info.flipped, request.material, info.size, request.preDrawnComputedMatrix.m13 + 0.0004f, info.lift);
+            // Just over the item and under the next apparel layer (0.000366 up), so what the tree draws over it (a
+            // jacket over a shirt, the head) covers its glow as well. Pawn meshes are raised along their top edge
+            // (vanilla's back lift), and the visuals follow it.
+            Run(set, item, map, matrix, info.flipped, request.material, info.size, request.preDrawnComputedMatrix.m13 + 0.0003f, info.lift);
         }
 
         private static bool HasNodeFor(PawnRenderNode node, Apparel item)
