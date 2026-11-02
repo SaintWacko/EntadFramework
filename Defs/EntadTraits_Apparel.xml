@@ -69,7 +69,7 @@
       <li Class="EntadFramework.EntadVisual_WeaponFlow">
         <color>(1, 0.45, 0.08, 0.5)</color>
         <threshold>0.5</threshold>
-        <coreThreshold>0.85</coreThreshold>
+        <coreThreshold>0.78</coreThreshold>
         <loopTicks>150</loopTicks>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">

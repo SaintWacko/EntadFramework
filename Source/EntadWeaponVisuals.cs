@@ -396,7 +396,7 @@ namespace EntadFramework
 
         public override IEnumerable<string> ConfigErrors(string defName)
         {
-            if (frames < 2) yield return $"{defName}: weapon flow needs at least 2 frames";
+            if (frames < 2 || frames > 64) yield return $"{defName}: weapon flow frames must be from 2 to 64";
             if (loopTicks < 1) yield return $"{defName}: weapon flow loopTicks must be at least 1";
             if (cellsAcross < 1 || cellsUp < 1) yield return $"{defName}: weapon flow cellsAcross and cellsUp must be at least 1";
             if (threshold < 0f || threshold >= 1f) yield return $"{defName}: weapon flow threshold must be from 0 to below 1";
@@ -424,7 +424,10 @@ namespace EntadFramework
             var block = EntadVisuals.glowBlock;
             block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, strength * (1f - f)));
             Graphics.DrawMesh(mesh, m, mats[a], 0, null, 0, block);
-            block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, strength * f));
+            // Added light sums to the full strength; two blended layers cover less than their sum, so the second is
+            // raised to keep the blend at full strength between frames
+            float second = additive ? strength * f : strength * f / Mathf.Max(0.0001f, 1f - strength * (1f - f));
+            block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, Mathf.Clamp01(second)));
             Graphics.DrawMesh(mesh, m, mats[b], 0, null, 0, block);
         }
 
