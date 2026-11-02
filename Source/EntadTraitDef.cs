@@ -805,11 +805,11 @@ namespace EntadFramework
                     foreach (var e in t.ConfigErrors(defName)) yield return e;
                     if (t.rarityScales != EntadTriggerRarityScaling.None && !scalesWithRarity)
                         yield return $"{defName}: a trigger's rarityScales does nothing without scalesWithRarity on the trait";
-                    // Both read the item's own attacks, so on apparel they'd quietly do nothing
-                    if ((t.rateNormalized || t.scaleWithDamage) && (categories.NullOrEmpty()
-                        || !categories.Any(c => (EntadUtility.ParseKind(c) & EntadUtility.AnyWeapon) != EntadItemKind.None)))
-                        yield return $"{defName}: rateNormalized and scaleWithDamage need a weapon category";
                 }
+            // Both read the item's own attacks, so on apparel only they'd quietly do nothing (no categories = any item)
+            if (triggers != null && triggers.Any(t => t.rateNormalized || t.scaleWithDamage) && !categories.NullOrEmpty()
+                && !categories.Any(c => (EntadUtility.ParseKind(c) & EntadUtility.AnyWeapon) != EntadItemKind.None))
+                yield return $"{defName}: rateNormalized and scaleWithDamage need a weapon category";
             if (HasGearTrigger && HasUseTrigger) yield return $"{defName}: Use triggers (furniture) can't be mixed with gear triggers on one trait";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
