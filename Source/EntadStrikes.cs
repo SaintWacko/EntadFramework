@@ -57,8 +57,8 @@ namespace EntadFramework
             foreach (var v in list)
             {
                 foreach (var e in v.ConfigErrors(parentDef.defName)) yield return e;
-                if (v.minIntervalTicks > 0 || v.whileBleeding || v.beforeIdentified.HasValue)
-                    yield return $"{parentDef.defName}: {v.GetType().Name} ignores minIntervalTicks, whileBleeding and beforeIdentified on an ability";
+                if (v.minIntervalTicks > 0 || v.whileBleeding || v.beforeIdentified.HasValue || v.trigger >= 0)
+                    yield return $"{parentDef.defName}: {v.GetType().Name} ignores minIntervalTicks, whileBleeding, beforeIdentified and trigger on an ability";
             }
         }
     }

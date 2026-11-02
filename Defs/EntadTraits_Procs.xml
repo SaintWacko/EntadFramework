@@ -131,7 +131,8 @@
 
   <!-- The attacker is skipped 7-25 tiles in a random direction, which can land them behind the holder's lines, and
        stunned for 1-2 seconds on arrival. Vanilla won't skip anything over body size 3.5 or a psychically deaf pawn,
-       and the trigger keeps its cooldown then. One melee answer per item, like Thorned, Infernal and Stormcloak. -->
+       and the trigger keeps its cooldown then. Like the psycast, each skip costs 15 goodwill with the attacker's
+       faction (vanilla's goodwillImpact). One melee answer per item, like Thorned, Infernal and Stormcloak. -->
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_Banish</defName>
     <label>Banishing</label>
