@@ -385,6 +385,9 @@ namespace EntadFramework
         // than up gives taller patches, like flames
         public int cellsAcross = 7;
         public int cellsUp = 4;
+        // How far the patches may reach above the item's outline, as a fraction of the texture's height (0 = kept
+        // inside it; 0.1-0.16 for fire). Only as far as the texture's top edge: the frames are the texture's size.
+        public float riseAbove = 0f;
         // Cells the shapes change through per loop; more = faster change
         public int evolveCells = 3;
         // Ticks for one loop, how many times the pattern rises the item's height in it, and frames in the loop
@@ -406,6 +409,7 @@ namespace EntadFramework
             if (cellsAcross < 1 || cellsUp < 1 || evolveCells < 1) yield return $"{defName}: weapon flow cellsAcross, cellsUp and evolveCells must be at least 1";
             if (scrolls < 0) yield return $"{defName}: weapon flow scrolls must not be negative";
             if (threshold < 0f || threshold >= 1f) yield return $"{defName}: weapon flow threshold must be from 0 to below 1";
+            if (riseAbove < 0f || riseAbove > 0.5f) yield return $"{defName}: weapon flow riseAbove must be from 0 to 0.5";
         }
 
         public override void Draw(EntadWeaponDraw d)
@@ -445,6 +449,8 @@ namespace EntadFramework
             if (mask != null && frames >= 2)
             {
                 int n = EntadWeaponShape.Size;
+                float[] height = null;
+                if (riseAbove > 0f) mask = StretchUp(mask, n, Mathf.RoundToInt(riseAbove * n), out height);
                 mats = new Material[frames];
                 var colors = new Color32[n * n];
                 Shader shader = additive ? ShaderDatabase.MoteGlow : ShaderDatabase.Transparent;
@@ -461,7 +467,10 @@ namespace EntadFramework
                             float rise = v - t * scrolls;
                             float value = 0.65f * Noise(u * cellsAcross, rise * cellsUp, t * evolveCells, cellsAcross, cellsUp, evolveCells, 17)
                                 + 0.35f * Noise(u * cellsAcross * 2, rise * cellsUp * 2, t * evolveCells * 2 + 0.5f, cellsAcross * 2, cellsUp * 2, evolveCells * 2, 91);
-                            float show = Mathf.Clamp01((value - threshold) / (1f - threshold));
+                            // Above the outline only the strongest noise survives, so the patches narrow into
+                            // tongues tapering to a tip; the upward scroll lifts them off the body
+                            float th = height == null ? threshold : threshold + (1f - threshold) * 0.45f * height[y * n + x];
+                            float show = Mathf.Clamp01((value - th) / (1f - th));
                             show = show * show * (3f - 2f * show);
                             float core = coreThreshold < 1f ? Mathf.Clamp01((value - coreThreshold) / (1f - coreThreshold)) : 0f;
                             Color c = Color.Lerp(color, coreColor, core);
@@ -476,6 +485,30 @@ namespace EntadFramework
             }
             frameCache[shape] = mats;
             return mats;
+        }
+
+        // The mask smeared upwards by up to reach rows, fading with distance, so the flow has room above the outline.
+        // height is how far above the outline each pixel's value came from (0 on the body, 1 at the reach).
+        private static float[] StretchUp(float[] mask, int n, int reach, out float[] height)
+        {
+            var stretched = (float[])mask.Clone();
+            height = new float[mask.Length];
+            if (reach < 1) return stretched;
+            for (int x = 0; x < n; x++)
+                for (int y = 1; y < n; y++)
+                {
+                    int i = y * n + x;
+                    float best = mask[i];
+                    int bestD = 0;
+                    for (int d = 1; d <= reach && d <= y; d++)
+                    {
+                        float v = mask[(y - d) * n + x] * (1f - d / (float)(reach + 1));
+                        if (v > best) { best = v; bestD = d; }
+                    }
+                    stretched[i] = best;
+                    height[i] = bestD / (float)reach;
+                }
+            return stretched;
         }
 
         // Smooth value noise on a grid that wraps every wrapX by wrapY by wrapZ cells
