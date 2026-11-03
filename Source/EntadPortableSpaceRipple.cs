@@ -28,8 +28,8 @@ namespace EntadFramework
         // Dust and shimmer at the ring's front, at most this many cells a tick however fast it moves
         private const int MaxFrontEffectsPerTick = 6;
 
-        // Tinted copies of graphics, shared by every ripple: GetColoredVersion makes a new graphic for some types,
-        // and a ghost is drawn every frame
+        // Tinted copies of graphics, shared by every ripple, so GraphicDatabase is asked once per graphic rather than
+        // once per ghost
         private static readonly Dictionary<Graphic, Graphic> tinted = new Dictionary<Graphic, Graphic>();
 
         private struct Ghost
