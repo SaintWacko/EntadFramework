@@ -38,6 +38,9 @@ namespace EntadFramework
             public Graphic graphic;
             // Walls and other linked graphics: the atlas piece for how the ghost links to its neighbours
             public Material linkedMat;
+            // Doors: their two closed leaves, turned to the walls around them as Building_Door.DrawMovers draws them
+            public Material doorMat;
+            public Matrix4x4 doorMatrix;
             public Vector3 loc;
             public Rot4 rot;
             public float key;
@@ -105,7 +108,7 @@ namespace EntadFramework
             else
                 foreach (Thing t in EntadPortableSpace.ThingsIn(map, rect))
                     if (!EntadPortableSpace.Ignored(t) && !EntadPortableSpace.IsNaturalRock(t)) pieces.Add((t, t.Position, t.Rotation));
-            ripple.AddGhosts(pieces, KeyAt, onMap: !unfolding);
+            ripple.AddGhosts(pieces, KeyAt, rect, onMap: !unfolding);
 
             // Begun partway (a load mid-channel, or the map only now being looked at): no burst for the cells already passed
             float progress = ripple.Progress;
@@ -138,13 +141,19 @@ namespace EntadFramework
 
         // onMap: the pieces are the real things still standing there (folding up), so walls link through the map's own
         // link grid and join the real walls outside the area too
-        private void AddGhosts(List<(Thing thing, IntVec3 pos, Rot4 rot)> pieces, System.Func<Vector3, float> keyAt, bool onMap)
+        private void AddGhosts(List<(Thing thing, IntVec3 pos, Rot4 rot)> pieces, System.Func<Vector3, float> keyAt, CellRect rect, bool onMap)
         {
-            // What each ghost cell links to, so ghost walls join up with each other the way the real ones do
+            // What each ghost cell links to, so ghost walls join up with each other the way the real ones do, and which
+            // ghost cells are solid or doors, for turning ghost doors
             var links = new Dictionary<IntVec3, LinkFlags>();
+            var solid = new HashSet<IntVec3>();
+            var doors = new HashSet<IntVec3>();
             foreach (var (thing, pos, rot) in pieces)
             {
                 if (onMap) break;
+                if (IsDoor(thing.def)) doors.Add(pos);
+                else if (thing.def.passability == Traversability.Impassable)
+                    foreach (IntVec3 c in GenAdj.OccupiedRect(pos, rot, thing.def.size)) solid.Add(c);
                 LinkFlags flags = thing.def.graphicData?.linkFlags ?? LinkFlags.None;
                 if (flags == LinkFlags.None) continue;
                 foreach (IntVec3 c in GenAdj.OccupiedRect(pos, rot, thing.def.size))
@@ -170,6 +179,25 @@ namespace EntadFramework
 
                 // Buildings, then attachments, then what sits on them, as they spawn
                 int layer = EntadPortableSpace.SpawnOrder(thing);
+                if (IsDoor(def))
+                {
+                    // A 1x1 door turns to its walls every frame (Building_Door.DoorPreDraw); a held one has no map to ask
+                    Rot4 doorRot = rot;
+                    if (def.size == IntVec2.One)
+                        doorRot = onMap ? DoorUtility.DoorRotationAt(pos, map, def.building.preferConnectingToFences) : GhostDoorRotation(pos, rect, solid, doors);
+                    Vector3 at = GenThing.TrueCenter(pos, doorRot, def.size, AltitudeLayer.Blueprint.AltitudeFor() + layer * 0.01f);
+                    ghosts.Add(new Ghost
+                    {
+                        def = def,
+                        graphic = graphic,
+                        rot = doorRot,
+                        loc = at,
+                        key = keyAt(GenThing.TrueCenter(pos, doorRot, def.size, 0f)),
+                        doorMat = graphic.MatAt(doorRot),
+                        doorMatrix = Matrix4x4.TRS(at, doorRot.AsQuat, new Vector3(def.size.x, 1f, def.size.z))
+                    });
+                    continue;
+                }
                 var ghost = new Ghost
                 {
                     def = def,
@@ -194,6 +222,27 @@ namespace EntadFramework
                 ghosts.Add(ghost);
             }
             ghosts.SortBy(g => g.key);
+        }
+
+        private static bool IsDoor(ThingDef def) => def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass);
+
+        // DoorUtility.DoorRotationAt against the room being set down: inside the area its ghosts count (solid 9, a
+        // door 1, or 5 with a door opposite too), outside it the map does. Leaves run north-south when east and
+        // west hold at least as much as north and south.
+        private Rot4 GhostDoorRotation(IntVec3 pos, CellRect rect, HashSet<IntVec3> solid, HashSet<IntVec3> doors)
+        {
+            int Quality(IntVec3 offset)
+            {
+                IntVec3 c = pos + offset;
+                if (!c.InBounds(map)) return 0;
+                if (!rect.Contains(c)) return c.WalkableByNormal(map) ? 0 : 9;
+                if (solid.Contains(c)) return 9;
+                if (doors.Contains(c)) return doors.Contains(pos - offset) ? 5 : 1;
+                return 0;
+            }
+            int eastWest = Quality(IntVec3.East) + Quality(IntVec3.West);
+            int northSouth = Quality(IntVec3.North) + Quality(IntVec3.South);
+            return eastWest >= northSouth ? Rot4.North : Rot4.East;
         }
 
         // The graphic in the transparent shader with the ghost tint and no shadow, made the way GhostUtility makes a
@@ -249,6 +298,12 @@ namespace EntadFramework
                 Ghost g = ghosts[i];
                 if (g.key > p) break;
                 if (g.linkedMat != null) { Graphics.DrawMesh(MeshPool.plane10, g.loc, Quaternion.identity, g.linkedMat, 0); continue; }
+                if (g.doorMat != null)
+                {
+                    Graphics.DrawMesh(MeshPool.plane10, g.doorMatrix, g.doorMat, 0);
+                    Graphics.DrawMesh(MeshPool.plane10Flip, g.doorMatrix, g.doorMat, 0);
+                    continue;
+                }
                 // A modded graphic whose DrawWorker needs the thing (it gets none here) would throw every frame: that
                 // ghost is dropped instead
                 try { g.graphic.DrawFromDef(g.loc, g.rot, g.def); }
