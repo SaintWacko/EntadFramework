@@ -60,6 +60,8 @@
         <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
       </li>
+      <!-- Faded copies left behind while running (setting: visuals on hits and reactions) -->
+      <li Class="EntadFramework.HediffCompProperties_EntadAfterimages" />
     </comps>
     <stages>
       <li>

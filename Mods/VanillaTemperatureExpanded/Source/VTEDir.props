@@ -1,0 +1,14 @@
+<Project>
+  <!-- Where Vanilla Temperature Expanded is installed: the folder holding its 1.6/ folder (VTE loads its 1.6 assemblies
+       on 1.7 too). Only ProxyHeat.dll is referenced. Shared by both compat projects and the build entry
+       (Source/EntadFramework.Build.csproj). Pass /p:VTEDir=... (with a trailing slash) for any other install. -->
+  <PropertyGroup>
+    <VTEDir Condition="'$(VTEDir)' == '' And Exists('$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/3202046258/')">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/3202046258/</VTEDir>
+    <VTEDir Condition="'$(VTEDir)' == '' And Exists('$(HOME)/.steam/steam/steamapps/workshop/content/294100/3202046258/')">$(HOME)/.steam/steam/steamapps/workshop/content/294100/3202046258/</VTEDir>
+    <VTEDir Condition="'$(VTEDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\3202046258\</VTEDir>
+    <!-- VTE's own LoadFolders maps 1.7 to its 1.6 folder; use a 1.7 build once it ships one -->
+    <VTE16Assemblies>$(VTEDir)1.6/Assemblies/</VTE16Assemblies>
+    <VTE17Assemblies>$(VTEDir)1.6/Assemblies/</VTE17Assemblies>
+    <VTE17Assemblies Condition="Exists('$(VTEDir)1.7/Assemblies/ProxyHeat.dll')">$(VTEDir)1.7/Assemblies/</VTE17Assemblies>
+  </PropertyGroup>
+</Project>

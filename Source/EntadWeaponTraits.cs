@@ -18,7 +18,7 @@ namespace EntadFramework
         // Def data, fixed once the game has loaded; worked out on the first read, which happens in play
         private static bool? anyWeaponProperty, anyIgnoreMaluses;
 
-        internal static bool AnyWeaponProperty =>
+        public static bool AnyWeaponProperty =>
             anyWeaponProperty ?? (anyWeaponProperty = DefDatabase<EntadTraitDef>.AllDefsListForReading.Any(d => !d.weaponProperties.NullOrEmpty())).Value;
 
         private static bool AnyIgnoreMaluses =>
@@ -51,10 +51,12 @@ namespace EntadFramework
             return v;
         }
 
-        public static bool IgnoresAccuracyMaluses(Verb verb)
+        public static bool IgnoresAccuracyMaluses(Verb verb) => IgnoresAccuracyMaluses(verb?.EquipmentSource, verb?.caster);
+
+        public static bool IgnoresAccuracyMaluses(Thing weapon, Thing user)
         {
             if (!AnyIgnoreMaluses) return false;
-            var comp = WeaponComp(verb?.EquipmentSource, verb?.caster);
+            var comp = WeaponComp(weapon, user);
             if (comp == null) return false;
             foreach (var m in comp.activeTraits) if (m.def.ignoreAccuracyMaluses) return true;
             return false;
@@ -326,6 +328,8 @@ namespace EntadFramework
         public static StatDef Entad_NetPowerFactor;
         public static StatDef Entad_NetPowerLeak;
         public static StatDef Entad_NetBatteryLossFactor;
+        // Mirrored: chance worn apparel turns a shot aside (EntadDeflect.cs)
+        public static StatDef Entad_DeflectChance;
 
         static EntadStatDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EntadStatDefOf)); }
     }
@@ -367,7 +371,7 @@ namespace EntadFramework
             if (dinfo.Weapon == null || dinfo.Amount <= 0f || !(dinfo.Instigator is Pawn attacker)) return;
             if (!__instance.Downed && !IsFleeing(__instance)) return;
             var weapon = attacker.equipment?.Primary;
-            if (weapon == null || weapon.def != dinfo.Weapon || !EntadCompInjector.MayHaveComp(weapon.def)) return;
+            if (weapon == null || weapon.def != EntadDamageSource.WeaponOf(dinfo) || !EntadCompInjector.MayHaveComp(weapon.def)) return;
             var comp = weapon.TryGetComp<CompEntad>();
             if (comp == null || !comp.HasMerciless || !__instance.HostileTo(attacker)) return;
             // The stat part applies binding and the info card's hidden-trait rule, as for every other stat

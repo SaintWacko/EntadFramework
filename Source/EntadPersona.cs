@@ -136,7 +136,7 @@ namespace EntadFramework
             foreach (var m in activeTraits)
             {
                 // Bond traits stay known while bonded: the bond is what told the wielder about them
-                bool always = m.def.persona || m.def.neverBond || m.def.secretive
+                bool always = m.def.persona || m.def.neverBond || m.def.secretive || m.def.visible
                     || (bondedPawn != null && (m.def.EffectKinds & EntadEffectKind.Bond) != 0);
                 EntadEffectKind want;
                 if (always || !secretive) want = EntadEffectKind.All;

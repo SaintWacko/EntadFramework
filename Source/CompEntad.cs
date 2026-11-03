@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Verse;
 using RimWorld;
+using UnityEngine;
 
 namespace EntadFramework
 {
@@ -48,7 +49,12 @@ namespace EntadFramework
             owner?.RevealedChanged(this, kind, announce);
         }
 
-        public void Hide() { revealedKinds = EntadEffectKind.None; owner?.RevealedChanged(this, EntadEffectKind.All, false); }
+        public void Hide()
+        {
+            if (def.visible) return;
+            revealedKinds = EntadEffectKind.None;
+            owner?.RevealedChanged(this, EntadEffectKind.All, false);
+        }
 
         // Furniture abilities: game tick each ability is ready again, parallel to def.abilities
         public List<int> abilityReadyTicks = new List<int>();
@@ -83,7 +89,7 @@ namespace EntadFramework
             Scribe_Collections.Look(ref abilityReadyTicks, "abilityReadyTicks", LookMode.Value);
             Scribe_Collections.Look(ref abilityCharges, "abilityCharges", LookMode.Value);
             // A trait saved under a removed name: its stored rolls came from the old trait's range, which can be far
-            // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Steady Hands rolls 1-4).
+            // outside the replacement's (Marksman's Eye rolled shooting accuracy 0.03-0.1, Keen Eye, then called Steady Hands, rolls 1-4).
             // Re-roll the values at the saved rarity so the item behaves like any other copy of the replacement.
             // Also when the def has gained or lost a range since the save (Frostbite moved from a damage type to
             // extra damage, so old copies had no roll for it and dealt +0): the stored lists no longer line up.
@@ -96,6 +102,8 @@ namespace EntadFramework
             }
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                // A trait made visible after the save was written: the owner's hidden-state caches aren't built yet
+                if (def != null && def.visible) revealedKinds = EntadEffectKind.All;
                 abilityReadyTicks = abilityReadyTicks ?? new List<int>();
                 abilityCharges = abilityCharges ?? new List<int>();
                 offsetValues = offsetValues ?? new List<float>();
@@ -162,7 +170,7 @@ namespace EntadFramework
         {
             EntadRarity at = def.ClampRarity(rarity ?? def.rarity);
             float scale = def.RarityScale(at);
-            var applied = new AppliedEntadTrait { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideTraits ? EntadEffectKind.None : EntadEffectKind.All };
+            var applied = new AppliedEntadTrait { def = def, rarityValue = (int)at, revealedKinds = EntadSettings.HideTraits && !def.visible ? EntadEffectKind.None : EntadEffectKind.All };
             if (def.statOffsets != null) foreach (var r in def.statOffsets) applied.offsetValues.Add(r.RollScaled(scale, false));
             if (def.statFactors != null) foreach (var r in def.statFactors) applied.factorValues.Add(r.RollScaled(scale, true));
             if (def.extraDamage != null) foreach (var r in def.extraDamage) applied.extraDamageValues.Add(r.RollScaled(scale));
@@ -170,7 +178,7 @@ namespace EntadFramework
             if (def.weaponProperties != null) foreach (var r in def.weaponProperties) applied.weaponValues.Add(r.RollScaled(scale));
             if (def.triggers != null)
                 foreach (var t in def.triggers)
-                    for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.RangeAt(k).RandomInRange * scale);
+                    for (int k = 0; k < EntadTrigger.ValueCount; k++) applied.triggerValues.Add(t.Roll(k, scale));
             if (def.HasPortableSpace)
                 for (int k = 0; k < 2; k++) applied.spaceValues.Add(UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(def.portableSpace.RandomInRange * scale)));
             applied.thought = def.thought;
@@ -238,7 +246,8 @@ namespace EntadFramework
         public float TriggerValue(int triggerIndex, int triggerValue)
         {
             int idx = triggerIndex * EntadTrigger.ValueCount + triggerValue;
-            return idx < triggerValues.Count ? triggerValues[idx] : def.triggers[triggerIndex].RangeAt(triggerValue).Average * def.RarityScale(Rarity);
+            var t = def.triggers[triggerIndex];
+            return idx < triggerValues.Count ? triggerValues[idx] : t.RangeAt(triggerValue).Average * t.ScaleOf(triggerValue, def.RarityScale(Rarity));
         }
 
         public int TriggerReadyTick(int triggerIndex) => triggerIndex < triggerReadyTicks.Count ? triggerReadyTicks[triggerIndex] : 0;
@@ -271,7 +280,10 @@ namespace EntadFramework
                     {
                         var triggerRange = def.triggers[i].RangeAt(k);
                         if (triggerRange.max - triggerRange.min <= 0.0001f) continue;
-                        rollQualitySum += UnityEngine.Mathf.InverseLerp(triggerRange.min * scale, triggerRange.max * scale, TriggerValue(i, k)); totalTraits++;
+                        float s = def.triggers[i].ScaleOf(k, scale);
+                        float q = UnityEngine.Mathf.InverseLerp(triggerRange.min * s, triggerRange.max * s, TriggerValue(i, k));
+                        // A shorter cooldown is the better roll
+                        rollQualitySum += k == EntadTrigger.Cooldown ? 1f - q : q; totalTraits++;
                     }
             if (def.HasMoodRange && thought != null && def.thoughtMoodRange.max - def.thoughtMoodRange.min > 0.0001f)
             { rollQualitySum += UnityEngine.Mathf.InverseLerp(def.thoughtMoodRange.min, def.thoughtMoodRange.max, EntadTraitDef.MoodEffectOf(thought)); totalTraits++; }
@@ -396,6 +408,7 @@ namespace EntadFramework
             RevealWhere(EntadEffectKind.Custom, m => m.def.customEffects?.Contains(key) == true);
         }
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
+        internal bool glintRegistered;
 
         public bool HasHidden
         {
@@ -419,6 +432,7 @@ namespace EntadFramework
         public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
+            visuals = null;
             propertyFactors = null;
             wearerOffsets = null;
             ClearStatCaches();
@@ -555,7 +569,10 @@ namespace EntadFramework
         // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn, and
         // the Hit trigger on every hit its holder lands. -1 unknown. Not saved; a loaded item starts unknown.
         private int hitStatFlags = -1;
-        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4;
+
+        // The weapon's time and damage per attack, for triggers that scale by them; not saved
+        internal EntadAttackRate.Cache attackRate;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4, FlagDeflect = 8;
 
         private int HitStatFlags
         {
@@ -574,7 +591,11 @@ namespace EntadFramework
                         {
                             if (factors[i].stat == EntadStatDefOf.Entad_MeleeArmorPenetrationMultiplier) flags |= FlagMeleePenetration;
                             else if (factors[i].stat == EntadStatDefOf.Entad_MercilessDamageFactor) flags |= FlagMerciless;
+                            else if (factors[i].stat == EntadStatDefOf.Entad_DeflectChance) flags |= FlagDeflect;
                         }
+                        var offsets = activeTraits[t].def.statOffsets;
+                        for (int i = 0; offsets != null && i < offsets.Count; i++)
+                            if (offsets[i].stat == EntadStatDefOf.Entad_DeflectChance) flags |= FlagDeflect;
                     }
                     hitStatFlags = flags;
                 }
@@ -582,13 +603,54 @@ namespace EntadFramework
             }
         }
 
-        internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
+        public bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
         internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
+        internal bool HasDeflect => (HitStatFlags & FlagDeflect) != 0;
+
+        // Worn apparel is asked this for every hit on its wearer (Apparel.CheckPreAbsorbDamage, before the wearer's
+        // injuries, stun and thoughts), and every item for hits on itself. Mirrored (EntadDeflect.cs) is the only answer.
+        public override void PostPreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
+        {
+            absorbed = false;
+            if (activeTraits.Count == 0 || !HasDeflect) return;
+            absorbed = EntadDeflect.TryDeflect(this, dinfo);
+        }
+
+        // The visuals playing on this item (EntadVisuals.cs), built on first draw and dropped on a trait or reveal change,
+        // or rebuilt when a setting changed which ones play
+        private EntadVisualSet visuals;
+        internal EntadVisualSet Visuals => visuals != null && visuals.builtVersion == EntadVisualSet.version ? visuals : (visuals = EntadVisualSet.For(this));
+
+        // Whether a trait has visuals drawn on the wearer, revealed or not, and whether the wearer's render tree was
+        // last built with a node for this item (EntadWornVisuals.cs), so a trait change can rebuild the tree when the
+        // two disagree
+        internal bool HasWornVisualTraits
+        {
+            get
+            {
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (activeTraits[i].def.HasWornVisuals) return true;
+                return false;
+            }
+        }
+        internal bool wornNodeBuilt;
+
+        internal bool HasBuildingVisualTraits
+        {
+            get
+            {
+                for (int i = 0; i < activeTraits.Count; i++)
+                    if (activeTraits[i].def.HasBuildingVisuals) return true;
+                return false;
+            }
+        }
 
         private void TraitsChanged()
         {
             hitStatFlags = -1;
+            attackRate = null;
+            visuals = null;
             propertyFactors = null;
             wearerOffsets = null;
             hiddenState = 0;
@@ -596,8 +658,11 @@ namespace EntadFramework
             // the game's stat caches for the item and its holder from serving a pre-change value.
             ClearStatCaches();
             EntadAuras.Refresh(this);
+            EntadGlint.Register(this);
             EntadStorage.Refresh(this, parent.Spawned);
             EntadFurnitureEffects.Refresh(this);
+            if (parent.ParentHolder is Pawn_ApparelTracker apparel && wornNodeBuilt != HasWornVisualTraits)
+                apparel.pawn.Drawer?.renderer?.SetAllGraphicsDirty();
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);
@@ -685,6 +750,12 @@ namespace EntadFramework
             EntadFurnitureEffects.Refresh(this);
         }
 
+        public override void PostDrawExtraSelectionOverlays()
+        {
+            base.PostDrawExtraSelectionOverlays();
+            if (activeTraits.Count > 0) EntadCompat.RaiseSelectionOverlays(this);
+        }
+
         public void RemoveTrait(AppliedEntadTrait trait)
         {
             bool scaleHp = parent.def.useHitPoints;
@@ -755,6 +826,7 @@ namespace EntadFramework
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
                 EntadAuras.Refresh(this);
+                EntadGlint.Register(this);
                 EntadFurnitureEffects.Refresh(this);
             }
             EntadCompat.RaiseExposing(this);
@@ -824,7 +896,7 @@ namespace EntadFramework
         // How long until a trigger on cooldown can fire again; null when it is ready
         private static string TriggerReadyIn(AppliedEntadTrait trait, int triggerIndex)
         {
-            if (Current.Game == null || trait.def.triggers[triggerIndex].cooldownHours <= 0f) return null;
+            if (Current.Game == null || !trait.def.triggers[triggerIndex].HasCooldown) return null;
             int left = trait.TriggerReadyTick(triggerIndex) - Find.TickManager.TicksGame;
             return left > 0 ? left.ToStringTicksToPeriod() : null;
         }
@@ -912,7 +984,7 @@ namespace EntadFramework
                 {
                     int triggerIndex = i;
                     var trigger = trait.def.triggers[i];
-                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue));
+                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue), this);
                     string ready = TriggerReadyIn(trait, i);
                     if (ready != null) triggerLine += " " + "EF_Card_TriggerReadyIn".Translate(ready);
                     infoString.AppendLine(" - " + triggerLine);
@@ -1010,6 +1082,40 @@ namespace EntadFramework
     public class Dialog_RenameEntad : Dialog_Rename<CompEntad>
     {
         public Dialog_RenameEntad(CompEntad comp) : base(comp) { }
+    }
+
+    // The rename gizmo only shows while the item itself is selected, so worn and equipped entads get the bio tab's
+    // rename button beside the title of their info card instead. Same audience as the gizmo plus the player's own
+    // carriers: an entad on a trader, a visitor or a raider is not the player's to name (god mode excepted).
+    [HarmonyLib.HarmonyPatch(typeof(Dialog_InfoCard), nameof(Dialog_InfoCard.DoWindowContents))]
+    public static class Patch_InfoCard_RenameEntad
+    {
+        public static void Postfix(Rect inRect, Thing ___thing, Precept_ThingStyle ___precept)
+        {
+            // A relic's card titles it with the precept's name, which this name would not change
+            if (___precept != null) return;
+            var comp = (___thing as ThingWithComps)?.GetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.NullOrEmpty() || !CanRename(___thing)) return;
+
+            // Mirrors the card's own title rect, so the button sits just after the name
+            Text.Font = GameFont.Medium;
+            float titleWidth = Text.CalcSize(___thing.LabelCapNoCount).x;
+            Text.Font = GameFont.Small;
+            float x = inRect.x + 18f + 34f + titleWidth + 8f;
+            var button = new Rect(Mathf.Min(x, inRect.xMax - 90f), inRect.y + 20f, 30f, 30f);
+            TooltipHandler.TipRegion(button, "EF_RenameDesc".Translate());
+            if (Widgets.ButtonImage(button, TexButton.Rename))
+                Find.WindowStack.Add(new Dialog_RenameEntad(comp));
+        }
+
+        private static bool CanRename(Thing thing)
+        {
+            if (DebugSettings.godMode || thing.Spawned) return true;
+            Pawn holder = (thing.ParentHolder as Pawn_EquipmentTracker)?.pawn
+                ?? (thing.ParentHolder as Pawn_ApparelTracker)?.pawn
+                ?? (thing.ParentHolder as Pawn_InventoryTracker)?.pawn;
+            return holder != null && holder.Faction == Faction.OfPlayer;
+        }
     }
 
     public partial class CompEntad

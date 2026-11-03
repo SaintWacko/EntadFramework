@@ -158,14 +158,6 @@ namespace EntadFramework
         }
     }
 
-    // Which kind of weapon a trait can roll on (EntadTraitDef.weaponType)
-    public enum EntadWeaponType
-    {
-        Any,
-        Melee,
-        Ranged
-    }
-
     // Ranged weapon properties that aren't stats (they live on the verb or the projectile)
     public enum EntadWeaponProperty
     {
@@ -251,6 +243,9 @@ namespace EntadFramework
 
     public class EntadTraitDef : Def
     {
+        // Weapon, WeaponMelee, WeaponRanged, Apparel, Furniture. Weapon stats already sort themselves out
+        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
+        // through any held item, so a gun trait made of one needs WeaponRanged or it also rolls on swords.
         public List<string> categories = new List<string>();
 
         // Optional flavour text for a melee or a ranged weapon, where 'description' fits only one of them ("leaves
@@ -338,7 +333,9 @@ namespace EntadFramework
             // Triggered need restores are fractions of the need: past 100% they'd be wasted
             if (triggers != null)
                 foreach (var t in triggers)
-                    if ((t.rest.max > 0f && t.rest.max * scale > 1f) || (t.food.max > 0f && t.food.max * scale > 1f) || (t.joy.max > 0f && t.joy.max * scale > 1f)) return false;
+                    if ((t.rest.max > 0f && t.rest.max * scale > 1f) || (t.food.max > 0f && t.food.max * scale > 1f) || (t.joy.max > 0f && t.joy.max * scale > 1f)
+                        // A chance scaled past 100% would cost the points of a rarity it can't use
+                        || t.chance.max * t.ScaleOf(EntadTrigger.Chance, scale) > 1f) return false;
             // Burst factors and stopping power: a factor can't drop to nothing, and nothing may pass its cap
             if (weaponProperties != null)
                 foreach (var w in weaponProperties)
@@ -425,12 +422,6 @@ namespace EntadFramework
 
         public bool HasWeaponEffect => !weaponProperties.NullOrEmpty() || ignoreAccuracyMaluses;
 
-        // Weapons only: the kind of weapon the trait can roll on. Weapon stats already sort themselves out
-        // (RangedWeapon_*, Accuracy*, MeleeWeapon_*), but a pawn stat such as aiming time or hunting stealth works
-        // through any held item, so a gun trait made of one would also roll on swords where it does nothing.
-        // Apparel ignores it.
-        public EntadWeaponType weaponType = EntadWeaponType.Any;
-
         // Hediffs the wielder or wearer has while the item is equipped, added to the brain like vanilla's
         // equippedHediffs and removed on unequip unless other active gear also gives them
         public List<HediffDef> equippedHediffs;
@@ -440,6 +431,62 @@ namespace EntadFramework
 
         // Effects on the whole power network the building is on (EntadPowerNets.cs): Grounded, Stormcaught, Sparking
         public EntadPowerNetEffect powerNet;
+
+        // How the trait shows on the item (EntadVisuals.cs); before it is identified too, unless the setting or the
+        // entry's beforeIdentified says otherwise
+        public List<EntadVisual> visuals;
+
+        // Whether any trait has a visual of the kind, so the per-frame weapon draw and the per-shot launch hooks cost
+        // one field read in a game whose traits have none
+        private static bool? anyWeaponVisuals, anyTrailVisuals, anyWornVisuals, anyBuildingVisuals;
+        private static int eventVisualMask = -1;
+        public static bool AnyWeaponVisuals => anyWeaponVisuals ?? ReadVisuals().Item1;
+        public static bool AnyTrailVisuals => anyTrailVisuals ?? ReadVisuals().Item2;
+        public static bool AnyWornVisuals => anyWornVisuals ?? ReadVisuals().Item3;
+        public static bool AnyBuildingVisuals
+        {
+            get
+            {
+                if (anyBuildingVisuals == null) ReadVisuals();
+                return anyBuildingVisuals.Value;
+            }
+        }
+        // One bit per EntadVisualEvent some trait plays a visual on, so each event's hook is one int test otherwise
+        public static bool AnyEventVisuals(EntadVisualEvent ev)
+        {
+            if (eventVisualMask < 0) ReadVisuals();
+            return (eventVisualMask & EntadEventVisual.Bit(ev)) != 0;
+        }
+
+        // Whether the trait has a visual drawn on the wearer, which puts a node in the wearer's render tree
+        [Unsaved] private bool? hasWornVisuals;
+        public bool HasWornVisuals => hasWornVisuals ??= visuals != null && visuals.Any(v => v is EntadWornVisual || v is EntadWeaponVisual);
+
+        [Unsaved] private bool? hasBuildingVisuals;
+        public bool HasBuildingVisuals => hasBuildingVisuals ??= visuals != null && visuals.Any(v => v is EntadBuildingVisual);
+
+        private static (bool, bool, bool) ReadVisuals()
+        {
+            bool weapon = false, trail = false, worn = false, building = false;
+            int events = 0;
+            foreach (var d in DefDatabase<EntadTraitDef>.AllDefsListForReading)
+                if (d.visuals != null)
+                    foreach (var v in d.visuals)
+                    {
+                        weapon |= v is EntadWeaponVisual;
+                        trail |= v is EntadVisual_ProjectileTrail;
+                        // Item visuals (glow, flames on the item's own shape) on apparel draw from the worn node too
+                        worn |= v is EntadWornVisual || v is EntadWeaponVisual;
+                        building |= v is EntadBuildingVisual;
+                        if (v is EntadEventVisual e) events |= EntadEventVisual.Bit(e.on);
+                    }
+            eventVisualMask = events;
+            anyWeaponVisuals = weapon;
+            anyTrailVisuals = trail;
+            anyWornVisuals = worn;
+            anyBuildingVisuals = building;
+            return (weapon, trail, worn);
+        }
 
         // On/off effects a compat assembly implements (Mods/<Mod>/), by key: the module registers each key with
         // EntadCompat.RegisterEffect, saying which buildings it can go on, and reads it with CompEntad.HasCustomEffect.
@@ -493,6 +540,9 @@ namespace EntadFramework
         public float killThirstDays = 20f;
         // Never picked by random generation: only added by name (API, dev tools)
         public bool neverRandom;
+        // Gives itself away at a glance (a burning blade, a lit room): starts fully revealed and stays so, whatever
+        // HideTraits, Secretive or a trader's partial identification would do to the item's other traits
+        public bool visible;
 
         public bool HasBondEffect => !bondedHediffs.NullOrEmpty() || bondedThought != null || otherWeaponThought != null || killThirstThought != null;
 
@@ -528,6 +578,10 @@ namespace EntadFramework
         // stats on a melee weapon, say). Stats that don't apply to the item are skipped and not shown. Off by
         // default: a trait normally needs every one of its stats to apply.
         public bool partialStats;
+
+        // Apparel only: the garment must cover at least one of these groups. For pawn stats tied to a body part
+        // (a hat that makes you run faster reads wrong). Weapons ignore it.
+        public List<BodyPartGroupDef> bodyPartGroups;
 
         // Fuel for buildings with a refuelable component (campfires, generators...). By default these are
         // accepted in addition to the building's normal fuel; with replaceFuel only these are accepted.
@@ -747,7 +801,15 @@ namespace EntadFramework
                 yield return $"{defName}: killVictims only applies to killThought; set 'victims' on a written-out Kill trigger instead";
             if (triggers != null)
                 foreach (var t in triggers)
+                {
                     foreach (var e in t.ConfigErrors(defName)) yield return e;
+                    if (t.rarityScales != EntadTriggerRarityScaling.None && !scalesWithRarity)
+                        yield return $"{defName}: a trigger's rarityScales does nothing without scalesWithRarity on the trait";
+                }
+            // Both read the item's own attacks, so on apparel only they'd quietly do nothing (no categories = any item)
+            if (triggers != null && triggers.Any(t => t.rateNormalized > 0f || t.scaleWithDamage > 0f) && !categories.NullOrEmpty()
+                && !categories.Any(c => (EntadUtility.ParseKind(c) & EntadUtility.AnyWeapon) != EntadItemKind.None))
+                yield return $"{defName}: rateNormalized and scaleWithDamage need a weapon category";
             if (HasGearTrigger && HasUseTrigger) yield return $"{defName}: Use triggers (furniture) can't be mixed with gear triggers on one trait";
             if (equippedHediffs != null && equippedHediffs.Any(h => h == null)) yield return $"{defName}: equippedHediffs contains an unknown def";
             if (abilityAmmo != null && (abilityCharges <= 0 || abilities.NullOrEmpty())) yield return $"{defName}: abilityAmmo needs abilities and abilityCharges > 0";
@@ -765,14 +827,33 @@ namespace EntadFramework
             if (neverBond && HasBondEffect) yield return $"{defName}: neverBond can't be combined with bond effects";
             if (!float.IsNaN(points) && points == 0f) yield return $"{defName}: points 0 lets generation add it for free until the trait cap; use a small positive value";
             if (secretive && persona) yield return $"{defName}: secretive goes on its own trait, alongside a persona trait";
+            if (visible && secretive) yield return $"{defName}: a visible trait can't be secretive (it would hide the item's other traits while showing itself)";
             if (portableSpace.min > portableSpace.max || portableSpace.min < 0f) yield return $"{defName}: invalid portableSpace range";
             if (aura != null)
                 foreach (var e in aura.ConfigErrors(defName)) yield return e;
             if (powerNet != null)
                 foreach (var e in powerNet.ConfigErrors(defName)) yield return e;
+            if (visuals != null)
+                foreach (var v in visuals)
+                {
+                    if (v == null) { yield return $"{defName}: visuals contains an empty entry"; continue; }
+                    foreach (var e in v.ConfigErrors(defName)) yield return e;
+                }
+            if (visuals != null && visuals.Any(v => v is EntadWornVisual) && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
+                yield return $"{defName}: worn visuals only play on apparel, and the trait's categories don't include Apparel";
+            if (HasBuildingVisuals && !categories.NullOrEmpty() && !categories.Contains("Furniture"))
+                yield return $"{defName}: building visuals only play on installed buildings, and the trait's categories don't include Furniture";
+            if (visuals != null)
+                foreach (var v in visuals)
+                    if (v is EntadEventVisual e && e.on == EntadVisualEvent.Trigger && e.trigger >= (triggers?.Count ?? 0))
+                        yield return $"{defName}: a trigger visual names trigger {e.trigger}, and the trait has {triggers?.Count ?? 0}";
             if (abilityAmmo != null && abilityCooldownTicks > 0) yield return $"{defName}: abilityCooldownTicks is ignored when abilityAmmo is set (reloadable abilities have no cooldown)";
-            if (weaponType != EntadWeaponType.Any && !categories.NullOrEmpty() && !categories.Any(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
-                yield return $"{defName}: weaponType only applies to weapons, and the trait's categories don't include Weapon";
+            if (categories != null)
+                foreach (string c in categories)
+                    if (EntadUtility.ParseKind(c) == EntadItemKind.None)
+                        yield return $"{defName}: unknown category '{c}' (Weapon, WeaponMelee, WeaponRanged, Apparel or Furniture)";
+            if (!bodyPartGroups.NullOrEmpty() && !categories.NullOrEmpty() && !categories.Contains("Apparel"))
+                yield return $"{defName}: bodyPartGroups only applies to apparel, and the trait's categories don't include Apparel";
             if (!float.IsNaN(targetTemperature) && !ChangesRoomTemperature)
                 yield return $"{defName}: targetTemperature only applies to traits with Entad_RoomHeating or Entad_RoomCooling";
             if (filth != null && !AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))
@@ -820,8 +901,6 @@ namespace EntadFramework
             if (HasMood && td.building != null && !EntadUtility.IsPawnUsable(td)) return false;
             if (HasDamageEffect && (!td.IsWeapon || HasNoDamageHook(td))) return false;
             if (ignoreAccuracyMaluses && !td.IsRangedWeapon) return false;
-            if (td.IsWeapon && weaponType != EntadWeaponType.Any
-                && !(weaponType == EntadWeaponType.Ranged ? td.IsRangedWeapon : td.IsMeleeWeapon)) return false;
             if (!weaponProperties.NullOrEmpty() && weaponProperties.Any(w => !w.AppliesTo(td))) return false;
             // Artillery fires the weapon's own projectile: no melee weapons, beams, sprays or one-use launchers
             if (!abilities.NullOrEmpty() && abilities.Any(EntadArtillery.IsArtillery) && !EntadArtillery.Fits(td)) return false;
@@ -872,6 +951,8 @@ namespace EntadFramework
                 }
                 if (!match) return false;
             }
+            if (td.IsApparel && !bodyPartGroups.NullOrEmpty()
+                && (td.apparel.bodyPartGroups == null || !td.apparel.bodyPartGroups.Any(bodyPartGroups.Contains))) return false;
 
             foreach (var r in Ranges(statFactors))
                 if (r.stat != null && IsWearerStat(r.stat) && !(td.statBases?.Any(m => m.stat == r.stat) ?? false)) return false;
@@ -923,6 +1004,11 @@ namespace EntadFramework
             // A compat module's own stats (EntadCompat), read by its own hooks
             if (EntadCompat.TryStatAppliesTo(stat, td, out bool registered)) return registered;
             if (td.statBases != null && td.statBases.Any(m => m.stat == stat)) return true;
+            // Apparel made from stuff lists the stuff multiplier (StuffEffectMultiplierArmor), not the armor or insulation
+            // it gets from it, so a parka has cold insulation without listing it
+            if (td.MadeFromStuff && td.statBases != null && stat.parts != null
+                && stat.parts.Any(p => p is StatPart_Stuff s && s.multiplierStat != null && td.statBases.Any(m => m.stat == s.multiplierStat)))
+                return true;
             // Vanilla reads tend quality from whatever bed the patient lies in (TendUtility), but only the hospital
             // bed lists the stat. Offsets only: on any other bed the base is 0, so a factor would do nothing.
             if (stat == StatDefOf.MedicalTendQualityOffset) return td.IsBed;
@@ -935,7 +1021,9 @@ namespace EntadFramework
             if (stat == EntadStatDefOf.Entad_IngredientRefundChance) return td.building != null && Cached(stackableIngredients, td, UsesStackableIngredients);
             // Furniture acting on its surroundings (EntadFurnitureEffects.cs). A lamp already has a light for Bright
             // to scale, and a heater or cooler warming its room by magic as well reads as a bug.
-            if (stat == EntadStatDefOf.Entad_GlowRadius) return td.building != null && td.GetCompProperties<CompProperties_Glower>() == null;
+            // Worn, the light follows the wearer (EntadWornLight.cs)
+            if (stat == EntadStatDefOf.Entad_GlowRadius) return (td.IsApparel || td.building != null) && td.GetCompProperties<CompProperties_Glower>() == null;
+            if (stat == EntadStatDefOf.Entad_DeflectChance) return td.IsApparel;
             if (stat == EntadStatDefOf.Entad_RoomHeating || stat == EntadStatDefOf.Entad_RoomCooling)
                 return td.building != null && td.GetCompProperties<CompProperties_HeatPusher>() == null && td.GetCompProperties<CompProperties_TempControl>() == null;
             if (stat == EntadStatDefOf.Entad_StoredRotFactor) return td.building != null && Cached(storesRottables, td, StoresRottables);
@@ -1039,7 +1127,7 @@ namespace EntadFramework
                 if (weaponSpecific < 0)
                 {
                     bool result = HasDamageEffect || HasWeaponEffect || killThought != null || persona || neverBond || secretive || HasBondEffect
-                        || (!categories.NullOrEmpty() && categories.All(c => EntadUtility.ParseKind(c) == EntadItemKind.Weapon))
+                        || (!categories.NullOrEmpty() && categories.All(c => { var k = EntadUtility.ParseKind(c); return k != EntadItemKind.None && (k & ~EntadUtility.AnyWeapon) == 0; }))
                         || AllRanges().Any(r => r.stat != null && (IsRangedOnlyStat(r.stat) || IsMeleeOnlyStat(r.stat)));
                     weaponSpecific = result ? 1 : 0;
                 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Settings (General tab) -->
+  <EF_VTE_Settings>Vanilla Temperature Expanded</EF_VTE_Settings>
+  <EF_VTE_ProxyHeat>Proxy heat from entad furniture</EF_VTE_ProxyHeat>
+  <EF_VTE_ProxyHeat_Tip>Furniture with Warm, Cool, Sweltering or Frigid also changes the temperature of the cells around it, the way Vanilla Temperature Expanded's proxy heat does for campfires and heaters. That works outdoors, and indoors too when proxy heat is allowed indoors in Vanilla Temperature Expanded's settings. Inside a room the furniture still heats or cools the whole room as before.</EF_VTE_ProxyHeat_Tip>
+  <EF_VTE_Strength>Proxy heat strength: {0}</EF_VTE_Strength>
+  <EF_VTE_Strength_Desc>At 100%, the cells around the furniture change by 5 °C for each point of heat per second, up to 50 °C, the rule Vanilla Temperature Expanded uses for vanilla heat sources. The change never goes past the trait's own target temperature.</EF_VTE_Strength_Desc>
+  <EF_VTE_Radius>Extra proxy heat radius: +{0}</EF_VTE_Radius>
+  <EF_VTE_Radius_Desc>Tiles added to the radius Vanilla Temperature Expanded would give a building of that size (1.5 for one tile, 2.5 for two by two). Both sliders take effect when the settings window closes.</EF_VTE_Radius_Desc>
+</LanguageData>

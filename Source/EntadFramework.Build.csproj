@@ -8,13 +8,18 @@
     assembly for each version (Mods/DubsBadHygiene/1.6|1.7/Source, shared C# in Mods/DubsBadHygiene/Source), which
     needs DBH installed (Mods/DubsBadHygiene/Source/DBHDir.props says where), and the Vanilla Psycasts Expanded compat
     assembly for each version (Mods/VanillaPsycastsExpanded/1.6|1.7/Source, shared C# in
-    Mods/VanillaPsycastsExpanded/Source), which needs Vanilla Expanded Framework installed (VEFDir.props there).
+    Mods/VanillaPsycastsExpanded/Source), which needs Vanilla Expanded Framework installed (VEFDir.props there), and
+    the Combat Extended compat assembly (Mods/CombatExtended/1.6/Source, shared C# in Mods/CombatExtended/Source; 1.6
+    only, as CE is), which needs CE installed (CEDir.props there), and the Vanilla Temperature Expanded compat assembly
+    for each version (Mods/VanillaTemperatureExpanded/1.6|1.7/Source, shared C# in Mods/VanillaTemperatureExpanded/Source),
+    which needs VTE installed (VTEDir.props there).
 
     Open this project in an IDE to get both. It has to be the only project file directly in Source/, or
     `dotnet build` there stops and asks which one to build.
   -->
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <!-- net48, the highest any referenced project targets (the VTE compat projects), so every reference is allowed -->
+    <TargetFramework>net48</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AssemblyName>EntadFramework.Build</AssemblyName>
     <!-- Same default as the compat projects; pass /p:AbilityAIDir=... to point both somewhere else -->
@@ -37,6 +42,18 @@
     <HasVEF16 Condition="Exists('$(VEFDir)1.6/Assemblies/VEF.dll')">true</HasVEF16>
     <HasVEF17>false</HasVEF17>
     <HasVEF17 Condition="Exists('$(VEFDir)1.7/Assemblies/VEF.dll')">true</HasVEF17>
+  </PropertyGroup>
+  <Import Project="..\Mods\CombatExtended\Source\CEDir.props" />
+  <PropertyGroup>
+    <HasCE>false</HasCE>
+    <HasCE Condition="Exists('$(CEDir)Assemblies/CombatExtended.dll')">true</HasCE>
+  </PropertyGroup>
+  <Import Project="..\Mods\VanillaTemperatureExpanded\Source\VTEDir.props" />
+  <PropertyGroup>
+    <HasVTE16>false</HasVTE16>
+    <HasVTE16 Condition="Exists('$(VTE16Assemblies)ProxyHeat.dll')">true</HasVTE16>
+    <HasVTE17>false</HasVTE17>
+    <HasVTE17 Condition="Exists('$(VTE17Assemblies)ProxyHeat.dll')">true</HasVTE17>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
@@ -70,12 +87,29 @@
     <ProjectReference Include="..\Mods\VanillaPsycastsExpanded\1.7\Source\EntadFramework.VPECompat.csproj" Condition="'$(HasVEF17)' == 'true'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <!-- Likewise skipped without a CE install: the compat DLL under Mods/CombatExtended is then left as it was -->
+    <ProjectReference Include="..\Mods\CombatExtended\1.6\Source\EntadFramework.CECompat.csproj" Condition="'$(HasCE)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <!-- Likewise skipped without a VTE install: the compat DLLs under Mods/VanillaTemperatureExpanded are then left as they were -->
+    <ProjectReference Include="..\Mods\VanillaTemperatureExpanded\1.6\Source\EntadFramework.VTECompat.csproj" Condition="'$(HasVTE16)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Mods\VanillaTemperatureExpanded\1.7\Source\EntadFramework.VTECompat.csproj" Condition="'$(HasVTE17)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Target Name="WarnNoAbilityAI" BeforeTargets="Build" Condition="'$(HasAbilityAI16)' != 'true' Or '$(HasAbilityAI17)' != 'true'">
     <Warning Text="Ability AI's DLLs were not found under $(AbilityAIDir) (1.6 and 1.7 Assemblies): the Ability AI compat assemblies were not rebuilt." />
   </Target>
   <Target Name="WarnNoVEF" BeforeTargets="Build" Condition="'$(HasVEF16)' != 'true' Or '$(HasVEF17)' != 'true'">
     <Warning Text="Vanilla Expanded Framework's VEF.dll was not found under $(VEFDir) (1.6 and 1.7 Assemblies): the Vanilla Psycasts Expanded compat assemblies were not rebuilt. Pass /p:VEFDir=... to point at an install." />
+  </Target>
+  <Target Name="WarnNoCE" BeforeTargets="Build" Condition="'$(HasCE)' != 'true'">
+    <Warning Text="Combat Extended's CombatExtended.dll was not found under $(CEDir)Assemblies: the Combat Extended compat assembly was not rebuilt. Pass /p:CEDir=... to point at an install." />
+  </Target>
+  <Target Name="WarnNoVTE" BeforeTargets="Build" Condition="'$(HasVTE16)' != 'true' Or '$(HasVTE17)' != 'true'">
+    <Warning Text="Vanilla Temperature Expanded's ProxyHeat.dll was not found under $(VTEDir): the VTE compat assemblies were not rebuilt. Pass /p:VTEDir=... to point at an install." />
   </Target>
   <Target Name="WarnNoDBH" BeforeTargets="Build" Condition="'$(HasDBH16)' != 'true' Or '$(HasDBH17)' != 'true'">
     <Warning Text="Dubs Bad Hygiene's DLLs were not found under $(DBHDir) (1.6 and 1.7 Assemblies): the DBH compat assemblies were not rebuilt. Pass /p:DBHDir=... to point at an install." />

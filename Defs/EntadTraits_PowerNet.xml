@@ -58,5 +58,10 @@
       <flareProof>true</flareProof>
       <arcIntervalDays>20~40</arcIntervalDays>
     </powerNet>
+    <!-- Only while a flare is on and it is keeping the network running -->
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_BuildingArcs"><when>FlareHeld</when><color>(0.75, 0.9, 1, 1)</color><count>2</count><intervalTicks>24</intervalTicks><chance>0.6</chance><arcTicks>5</arcTicks><width>0.4</width><minLength>0.5</minLength><maxLength>2.2</maxLength><spread>0.3</spread></li>
+      <li Class="EntadFramework.EntadVisual_BuildingFlecks"><when>FlareHeld</when><fleck>Entad_Fleck_Static</fleck><perSecond>3</perSecond><maxPerSecond>8</maxPerSecond><scale>0.2~0.35</scale><angle>0~360</angle><speed>0.3~0.7</speed><spread>0.3</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 </Defs>

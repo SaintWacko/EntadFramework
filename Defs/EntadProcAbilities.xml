@@ -102,11 +102,109 @@
       </targetParams>
     </verbProperties>
     <comps>
-      <li Class="EntadFramework.CompProperties_AbilityEntadVolatile">
+      <li Class="EntadFramework.CompProperties_AbilityEntadStrike">
         <radius>2.9</radius>
+        <spareNonHostile>true</spareNonHostile>
         <damageDef>Bomb</damageDef>
         <damageAmount>25</damageAmount>
-        <explosionSound>Explosion_Bomb</explosionSound>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <!-- Flaring's burst: a flame blast on the target that spares the user's side, though the fires it starts don't -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Flare</defName>
+    <label>flare</label>
+    <description>A burst of flame with a 2.9-tile radius around the target that burns only the user's enemies. The ground it scorches can still catch fire, and that fire spares nobody.</description>
+    <iconPath>UI/Abilities/Entad/Flare</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>15</range>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>true</canTargetBuildings>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadStrike">
+        <radius>2.9</radius>
+        <spareNonHostile>true</spareNonHostile>
+        <damageDef>Flame</damageDef>
+        <damageAmount>10</damageAmount>
+        <visuals>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>1.4~1.7</scale></li>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>5~7</count><scale>0.5~0.8</scale><angle>-25~25</angle><speed>0.6~1.2</speed><rotation>-12~12</rotation><spread>0.9</spread></li>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>Entad_Fleck_Ember</fleck><count>6~9</count><scale>0.1~0.16</scale><speed>0.6~1.4</speed><spread>0.6</spread></li>
+        </visuals>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <!-- Crackling's jolt: a crackle of arcs bursting out of the target, never a bolt from the sky (a roof would make
+       that look wrong, and VPE's Thunderbolt is the sky strike) -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Crackle</defName>
+    <label>crackle</label>
+    <description>Electricity bursts out of the target, dealing 12 arc burn damage, and 15 EMP damage more to a mechanoid.</description>
+    <iconPath>UI/Abilities/Entad/Crackle</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>15</range>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>true</canTargetBuildings>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadStrike">
+        <damageDef>Entad_ArcBurn</damageDef>
+        <damageAmount>12</damageAmount>
+        <mechanoidDamageDef>EMP</mechanoidDamageDef>
+        <mechanoidDamage>15</mechanoidDamage>
+        <sound>Explosion_EMP</sound>
+        <visuals>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>LightningGlow</fleck><scale>1.6~2</scale></li>
+          <li Class="EntadFramework.EntadVisual_EventArcs"><at>Other</at><count>5~7</count><reach>0.6~1.3</reach><width>0.24</width><arcTicks>8</arcTicks><fleck>Entad_Fleck_Static</fleck><fleckScale>0.14~0.22</fleckScale></li>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>MicroSparks</fleck><count>2~3</count><scale>0.6~0.9</scale><spread>0.3</spread></li>
+        </visuals>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <!-- Arcing's chain: a jolt on the target, then a jagged bolt on to each next enemy -->
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_ChainArc</defName>
+    <label>chain arc</label>
+    <description>Electricity strikes the target for 8 arc burn damage, then jumps up to 3 times, each time to the nearest other enemy within 5 tiles in sight of the last one, striking each for the same. Mechanoids take 10 EMP damage more. Downed enemies are passed over.</description>
+    <iconPath>UI/Abilities/Entad/ChainArc</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>15</range>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>true</canTargetBuildings>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadChain">
+        <damageDef>Entad_ArcBurn</damageDef>
+        <damageAmount>8</damageAmount>
+        <mechanoidDamageDef>EMP</mechanoidDamageDef>
+        <mechanoidDamage>10</mechanoidDamage>
+        <jumps>3</jumps>
+        <jumpRange>5</jumpRange>
+        <sound>Explosion_EMP</sound>
+        <visuals>
+          <li Class="EntadFramework.EntadVisual_EventFlecks"><at>Other</at><fleck>LightningGlow</fleck><scale>1.1~1.4</scale></li>
+          <li Class="EntadFramework.EntadVisual_EventArcs"><at>Other</at><count>2~3</count><reach>0.4~0.9</reach><width>0.2</width><arcTicks>10</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
+        </visuals>
+        <jumpVisuals>
+          <li Class="EntadFramework.EntadVisual_EventArcs"><at>Holder</at><to>Other</to><segments>5</segments><jag>0.4</jag><width>0.26</width><arcTicks>12</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
+        </jumpVisuals>
       </li>
     </comps>
   </AbilityDef>

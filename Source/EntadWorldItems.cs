@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -202,10 +203,10 @@ namespace EntadFramework
         }
 
         // A trader or quest giver knows part of what it offers: one share per item, uniform from none to all, and
-        // that many of its traits shown, picked at random
+        // that many of its traits shown, picked at random. Visible traits show anyway and aren't part of the share.
         private static void RevealShare(CompEntad comp)
         {
-            var traits = comp.activeTraits;
+            var traits = comp.activeTraits.Where(t => !t.def.visible).ToList();
             foreach (var trait in traits) trait.Hide();
             int known = Rand.RangeInclusive(0, traits.Count);
             foreach (var trait in traits.InRandomOrder())

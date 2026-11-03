@@ -22,6 +22,7 @@ namespace EntadFramework
     {
         private static readonly Dictionary<StatDef, Func<ThingDef, bool>> statChecks = new Dictionary<StatDef, Func<ThingDef, bool>>();
         private static readonly Dictionary<string, Func<ThingDef, bool>> effectChecks = new Dictionary<string, Func<ThingDef, bool>>();
+        private static readonly Dictionary<string, Func<Thing, bool>> visualConditions = new Dictionary<string, Func<Thing, bool>>();
 
         // Raised whenever an entad's traits or spawned state change (spawn, despawn, trait added or removed, game
         // loaded), the moment for a module to list or drop it
@@ -30,6 +31,17 @@ namespace EntadFramework
         // Raised every 250 ticks in play, for effects that act over time; no game component of the module's own, so
         // removing the other mod never leaves a save naming a class that is gone
         public static event Action Tick250;
+
+        // Raised every 10 ticks in play, for checks that must catch something brief (a pawn walking past). Keep the
+        // handler to a count check whenever it has nothing to watch. The handler list is kept as an array, rebuilt on
+        // subscribe, so raising it this often makes no garbage (Raise's GetInvocationList allocates a new one each call).
+        public static event Action Tick10
+        {
+            add { tick10 += value; tick10Handlers = HandlersOf(tick10); }
+            remove { tick10 -= value; tick10Handlers = HandlersOf(tick10); }
+        }
+        private static Action tick10;
+        private static Action[] tick10Handlers = new Action[0];
 
         // Raised once as each game is created or loaded, before anything spawns: the moment to clear static registries.
         // Current.Game may not point at the new game yet, so a handler should only clear.
@@ -40,6 +52,10 @@ namespace EntadFramework
         // and the save loads clean; that holds as long as no class of the module's own is saved where something else
         // reads it, and nothing outside the module keeps a reference into what it saved.
         public static event Action<CompEntad> Exposing;
+
+        // Raised every frame while a spawned entad with traits is selected, from its comp's selection overlays: the
+        // place for a module's radius outlines. Draw nothing for an effect the player hasn't identified yet.
+        public static event Action<CompEntad> SelectionOverlays;
 
         // Vanilla constructs game components twice on a load (in new Game() and again reading the save), with the same game
         private static System.WeakReference<Game> startedFor;
@@ -262,6 +278,25 @@ namespace EntadFramework
             effectChecks[key] = appliesTo;
         }
 
+        // A condition building visuals can name with when Custom and this key (EntadBuildingVisuals.cs): asked about
+        // the spawned building at most every 250 ticks while it is in view. A key nothing registered never plays.
+        public static void RegisterVisualCondition(string key, Func<Thing, bool> holds)
+        {
+            if (key.NullOrEmpty() || holds == null) throw new ArgumentNullException(key.NullOrEmpty() ? nameof(key) : nameof(holds));
+            visualConditions[key] = holds;
+        }
+
+        internal static bool VisualCondition(string key, Thing thing)
+        {
+            if (!visualConditions.TryGetValue(key, out var holds)) return false;
+            try { return holds(thing); }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"[Entad Framework] {holds.Method.DeclaringType}.{holds.Method.Name} failed on {thing}: {e}", holds.Method.GetHashCode());
+                return false;
+            }
+        }
+
         internal static bool TryStatAppliesTo(StatDef stat, ThingDef td, out bool applies)
         {
             applies = false;
@@ -296,7 +331,36 @@ namespace EntadFramework
             }
         }
 
+        internal static void RaiseSelectionOverlays(CompEntad comp)
+        {
+            if (SelectionOverlays == null) return;
+            foreach (Action<CompEntad> handler in SelectionOverlays.GetInvocationList())
+            {
+                try { handler(comp); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handler.Method.DeclaringType}.{handler.Method.Name} failed on {comp.parent}: {e}", handler.Method.GetHashCode()); }
+            }
+        }
+
         internal static void RaiseTick250() => Raise(Tick250);
+
+        internal static void RaiseTick10()
+        {
+            Action[] handlers = tick10Handlers;
+            for (int i = 0; i < handlers.Length; i++)
+            {
+                try { handlers[i](); }
+                catch (Exception e) { Log.ErrorOnce($"[Entad Framework] {handlers[i].Method.DeclaringType}.{handlers[i].Method.Name} failed: {e}", handlers[i].Method.GetHashCode()); }
+            }
+        }
+
+        private static Action[] HandlersOf(Action action)
+        {
+            if (action == null) return new Action[0];
+            Delegate[] list = action.GetInvocationList();
+            var handlers = new Action[list.Length];
+            for (int i = 0; i < list.Length; i++) handlers[i] = (Action)list[i];
+            return handlers;
+        }
 
         internal static void RaiseGameStarted(Game game)
         {

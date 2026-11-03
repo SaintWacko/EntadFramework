@@ -5,7 +5,7 @@
     <defName>Entad_LongSight</defName>
     <label>Long Sight</label>
     <description>Distant targets feel closer.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -17,7 +17,7 @@
     <defName>Entad_QuickStrikes</defName>
     <label>Quick Strikes</label>
     <description>The weapon is eager to strike again.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors>
@@ -66,6 +66,10 @@
     <statOffsets>
       <li><stat>IncomingDamageFactor</stat><min>-0.15</min><max>-0.05</max></li>
     </statOffsets>
+    <visuals>
+      <!-- Vanilla's armor deflection clank and sparks, on cloth too: the trait is called Ironhide -->
+      <li Class="EntadFramework.EntadVisual_EventEffecter"><on>Struck</on><effecter>Deflect_Metal</effecter><minIntervalTicks>20</minIntervalTicks></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Winterproof</defName>
@@ -92,8 +96,9 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Swiftness</defName>
     <label>Swiftness</label>
-    <description>The wearer's steps feel lighter.</description>
+    <description>Its bearer's steps feel lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <!-- Move speed helps in every fight and every job -->
     <points>3</points>
@@ -107,6 +112,7 @@
     <label>Industriousness</label>
     <description>Work seems to go faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -114,10 +120,11 @@
     </statOffsets>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
-    <defName>Entad_SteadyHands</defName>
-    <label>Steady Hands</label>
-    <description>The world holds still while you take aim.</description>
-    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <defName>Entad_KeenEye</defName>
+    <label>Keen Eye</label>
+    <description>Distant targets look close enough to touch.</description>
+    <categories><li>WeaponRanged</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -129,6 +136,7 @@
     <label>Duelist</label>
     <description>Strikes find their mark more often.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -138,19 +146,24 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Evasion</defName>
     <label>Evasion</label>
-    <description>The wearer is hard to hit in melee.</description>
+    <description>Its bearer is hard to hit in melee.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
       <li><stat>MeleeDodgeChance</stat><min>2</min><max>8</max></li>
     </statOffsets>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventAfterimage"><on>Dodge</on></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Attunement</defName>
     <label>Attunement</label>
     <description>Heightened sensitivity to the psychic.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <!-- Only helps psycasters, and makes psychic drones worse for everyone else -->
     <points>2</points>
@@ -162,8 +175,9 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Composure</defName>
     <label>Composure</label>
-    <description>Stress rolls off the wearer.</description>
+    <description>Stress rolls off its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -186,6 +200,7 @@
     <label>Healer's Touch</label>
     <description>Treatment is more effective.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -197,6 +212,7 @@
     <label>Steady Surgeon</label>
     <description>Surgery is less likely to go wrong.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -208,6 +224,7 @@
     <label>Porter</label>
     <description>The load feels lighter.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Torso</li><li>Waist</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -217,8 +234,9 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Delver</defName>
     <label>Delver</label>
-    <description>Stone yields to the wearer.</description>
+    <description>Stone yields to its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -230,6 +248,7 @@
     <label>Builder</label>
     <description>Construction goes faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -241,6 +260,7 @@
     <label>Green Thumb</label>
     <description>Plants thrive under careful hands.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>Arms</li><li>Hands</li></bodyPartGroups>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -253,6 +273,7 @@
     <label>Scholar</label>
     <description>Ideas arrive faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -264,6 +285,7 @@
     <label>Quick Study</label>
     <description>Skills are learned faster.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -296,7 +318,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_AnimalFriend</defName>
     <label>Animal Friend</label>
-    <description>Animals take to the wearer.</description>
+    <description>Animals take to its bearer.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -319,7 +341,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Allure</defName>
     <label>Allure</label>
-    <description>The wearer is striking to behold.</description>
+    <description>Its bearer is striking to behold.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <!-- +2 beauty is vanilla's whole Beautiful trait -->

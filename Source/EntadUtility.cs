@@ -13,7 +13,11 @@ namespace EntadFramework
         Weapon = 1,
         Apparel = 2,
         Furniture = 4,
-        All = Weapon | Apparel | Furniture
+        All = Weapon | Apparel | Furniture,
+        // Every weapon also carries Weapon, so callers compiled against Weapon = 1 (Dungeon Madness, Forge Frenzy)
+        // still match all of them, and All needs neither bit
+        WeaponMelee = 8,
+        WeaponRanged = 16
     }
 
     public static class EntadUtility
@@ -91,7 +95,7 @@ namespace EntadFramework
             // Gear that only exists while equipped (turret guns, mechanoid weapons and mech apparel, the breach axe
             // raiders carry, Odyssey's drone scattergun) is deleted the moment it's dropped, so it can't be an entad
             if (def.destroyOnDrop) return kind;
-            if (def.IsWeapon) kind |= EntadItemKind.Weapon;
+            if (def.IsWeapon) kind |= EntadItemKind.Weapon | (def.IsRangedWeapon ? EntadItemKind.WeaponRanged : EntadItemKind.WeaponMelee);
             if (def.IsApparel) kind |= EntadItemKind.Apparel;
             if (IsFurniture(def)) kind |= EntadItemKind.Furniture;
             return kind;
@@ -162,11 +166,17 @@ namespace EntadFramework
             return KindOf(def) != EntadItemKind.None;
         }
 
+        public const EntadItemKind AnyWeapon = EntadItemKind.Weapon | EntadItemKind.WeaponMelee | EntadItemKind.WeaponRanged;
+
+        // The items a trait category covers. Weapon covers both kinds, so it overlaps WeaponMelee and WeaponRanged
+        // when categories are compared with each other (EntadTraitFilter) as well as with an item's KindOf.
         public static EntadItemKind ParseKind(string category)
         {
             switch (category)
             {
-                case "Weapon": return EntadItemKind.Weapon;
+                case "Weapon": return AnyWeapon;
+                case "WeaponMelee": return EntadItemKind.WeaponMelee;
+                case "WeaponRanged": return EntadItemKind.WeaponRanged;
                 case "Apparel": return EntadItemKind.Apparel;
                 case "Furniture": return EntadItemKind.Furniture;
                 default: return EntadItemKind.None;

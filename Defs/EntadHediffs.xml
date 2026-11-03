@@ -57,6 +57,7 @@
       <li>Weapon</li>
       <li>Apparel</li>
     </categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <equippedHediffs>
       <li>Entad_Hediff_Clarity</li>

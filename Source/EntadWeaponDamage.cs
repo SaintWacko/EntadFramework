@@ -62,6 +62,75 @@ namespace EntadFramework
         {
             if (comp.HasHidden) comp.RevealWhere(EntadEffectKind.Damage);
         }
+
+        // A melee verb's damage infos with the comp's type change on the main blow and its extra damage after it.
+        // Only the first info is the blow itself: what follows is the tool's own extra damage, a surprise attack's
+        // stun or Combat Extended's critical stun, and turning those into the trait's type too made
+        // an Emberforged zeushammer's EMP burn. retype, when given, rebuilds the main blow for the new type instead of
+        // just setting Def (Combat Extended picks sharp or blunt penetration by the type's armor category).
+        // Lazy: the verbs deal each info before asking for the next, so the dead check sees the main blow.
+        public static IEnumerable<DamageInfo> ModifyMelee(IEnumerable<DamageInfo> infos, CompEntad comp, Pawn victim,
+            System.Func<DamageInfo, DamageDef, DamageInfo> retype = null)
+        {
+            DamageDef over = TypeOverride(comp);
+            bool first = true;
+            foreach (var original in infos)
+            {
+                var info = original;
+                if (!first) { yield return info; continue; }
+                first = false;
+                if (over != null && info.Def != over)
+                {
+                    if (retype != null) info = retype(info, over);
+                    else info.Def = over;
+                }
+                yield return info;
+                foreach (var m in comp.activeTraits)
+                {
+                    if (m.def.extraDamage == null) continue;
+                    for (int i = 0; i < m.def.extraDamage.Count; i++)
+                    {
+                        // Skip only our extras; vanilla's own later infos still come through as they would without us
+                        if (victim != null && victim.Dead) continue;
+                        var extra = new DamageInfo(original);
+                        DamageDef type = m.def.extraDamage[i].damageType;
+                        if (retype != null && type != extra.Def) extra = retype(extra, type);
+                        else extra.Def = type;
+                        extra.SetAmount(m.ExtraDamageFor(i));
+                        yield return extra;
+                    }
+                }
+            }
+        }
+    }
+
+    // Which weapon a hit came from. Vanilla names the gun in every DamageInfo; Combat Extended's bullets name the
+    // projectile (ProjectileCE.DamageInfo), so Merciless and Hit triggers saw no gun and never fired on a CE gun's
+    // shots. The CE module sets the pair around a bullet's impact; nested impacts restore the outer pair.
+    public static class EntadDamageSource
+    {
+        [System.ThreadStatic] private static ThingDef projectile;
+        [System.ThreadStatic] private static ThingDef equipment;
+
+        public static (ThingDef projectile, ThingDef equipment) BeginImpact(ThingDef projectileDef, ThingDef equipmentDef)
+        {
+            var previous = (projectile, equipment);
+            projectile = projectileDef;
+            equipment = equipmentDef;
+            return previous;
+        }
+
+        public static void EndImpact((ThingDef projectile, ThingDef equipment) previous)
+        {
+            projectile = previous.projectile;
+            equipment = previous.equipment;
+        }
+
+        public static ThingDef WeaponOf(DamageInfo dinfo)
+        {
+            ThingDef weapon = dinfo.Weapon;
+            return weapon != null && weapon == projectile ? equipment : weapon;
+        }
     }
 
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "DamageInfosToApply")]
@@ -71,37 +140,9 @@ namespace EntadFramework
         {
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.CasterPawn);
             if (comp == null) return;
-            __result = Modify(__result, comp, target.Thing as Pawn);
-        }
-
-        // Lazy: ApplyMeleeDamageToTarget deals each info before asking for the next, so the dead check sees the main blow
-        private static IEnumerable<DamageInfo> Modify(IEnumerable<DamageInfo> infos, CompEntad comp, Pawn victim)
-        {
-            DamageDef over = EntadWeaponDamage.TypeOverride(comp);
-            bool first = true;
-            foreach (var original in infos)
-            {
-                var info = original;
-                if (over != null) info.Def = over;
-                yield return info;
-
-                // Extra damage rides along with the first (main) blow only
-                if (!first) continue;
-                first = false;
-                foreach (var m in comp.activeTraits)
-                {
-                    if (m.def.extraDamage == null) continue;
-                    for (int i = 0; i < m.def.extraDamage.Count; i++)
-                    {
-                        // Skip only our extras; vanilla's own later infos still come through as they would without us
-                        if (victim != null && victim.Dead) continue;
-                        var extra = new DamageInfo(original);
-                        extra.Def = m.def.extraDamage[i].damageType;
-                        extra.SetAmount(m.ExtraDamageFor(i));
-                        yield return extra;
-                    }
-                }
-            }
+            // Vanilla asks for these only inside ApplyMeleeDamageToTarget, so this is the blow landing
+            EntadVisuals.WeaponHit(comp, __instance.CasterPawn, target.Thing);
+            __result = EntadWeaponDamage.ModifyMelee(__result, comp, target.Thing as Pawn);
         }
     }
 
@@ -165,19 +206,41 @@ namespace EntadFramework
         internal static CompEntad pending;
         internal static readonly ConditionalWeakTable<Explosion, CompEntad> sources = new ConditionalWeakTable<Explosion, CompEntad>();
 
+        // Around a projectile's detonation: the next Explosion spawned inside gets the weapon's extra damage. Also
+        // the hit reveal, since the projectile hooks never run for a blast. Used by the vanilla Explode patch and the
+        // Combat Extended module (ProjectileCE.Impact).
+        public static void BeginProjectileBlast(Thing equipment, Thing launcher)
+        {
+            EntadWeaponReveal.Hit(launcher as Pawn, false);
+            var comp = EntadWeaponDamage.CompOf(equipment, launcher);
+            pending = comp != null && (EntadWeaponDamage.HasExtra(comp) || EntadVisuals.HasHitVisuals(comp)) ? comp : null;
+        }
+
+        public static void EndProjectileBlast() => pending = null;
+
         public static void Apply(Explosion explosion, CompEntad comp, IntVec3 cell, List<Thing> damaged, int start, List<Thing> ignored)
         {
-            // Same falloff as Explosion.GetDamageAmountAt: full at the centre, 20% at the edge
-            float factor = explosion.damageFalloff && explosion.radius > 0f
-                ? Mathf.Lerp(1f, 0.2f, cell.DistanceTo(explosion.Position) / explosion.radius) : 1f;
+            // Same falloff as Explosion.GetDamageAmountAt: full at the centre, 20% at the edge. A subclass (Combat
+            // Extended's ExplosionCE) has a falloff of its own, which CE routes through GetDamageAmountAt; that rounds
+            // at random, so the plain vanilla explosion keeps the exact curve.
+            float factor = 1f;
+            if (explosion.damageFalloff && explosion.radius > 0f)
+                factor = explosion.GetType() == typeof(Explosion) || explosion.damAmount <= 0
+                    ? Mathf.Lerp(1f, 0.2f, cell.DistanceTo(explosion.Position) / explosion.radius)
+                    : explosion.GetDamageAmountAt(cell) / (float)explosion.damAmount;
             float ap = explosion.GetArmorPenetrationAt(cell);
             // Captured first: extra damage can kill something that explodes, but that is another Explosion's list
             int end = damaged.Count;
+            bool extra = EntadWeaponDamage.HasExtra(comp);
             for (int k = start; k < end; k++)
             {
                 Thing t = damaged[k];
                 // damagedThings also holds ignored things and fires a bomb put out; neither took the blast
-                if (t == null || t.Destroyed || t is Fire || (ignored != null && ignored.Contains(t))) continue;
+                if (t == null || t is Fire || (ignored != null && ignored.Contains(t))) continue;
+                EntadVisuals.BlastHit(explosion, comp, t, cell);
+                // A blast marked for its hit visuals alone: the angle below costs a game random number, which a
+                // visuals setting mustn't decide
+                if (t.Destroyed || !extra) continue;
                 float angle = t.Position == explosion.Position ? Rand.RangeInclusive(0, 359) : (t.Position - explosion.Position).AngleFlat;
                 var template = new DamageInfo(explosion.damType, 0f, ap, angle, explosion.instigator, null, explosion.weapon,
                     DamageInfo.SourceCategory.ThingOrUnknown, explosion.intendedTarget);
@@ -189,15 +252,10 @@ namespace EntadFramework
     [HarmonyPatch(typeof(Projectile_Explosive), "Explode")]
     public static class Patch_ExplosiveExplode
     {
-        public static void Prefix(Projectile_Explosive __instance, Thing ___equipment, Thing ___launcher)
-        {
-            // Projectile.Impact never runs for these, so its reveal hook doesn't either
-            EntadWeaponReveal.Hit(___launcher as Pawn, false);
-            var comp = EntadWeaponDamage.CompOf(___equipment, ___launcher);
-            EntadExplosionDamage.pending = comp != null && EntadWeaponDamage.HasExtra(comp) ? comp : null;
-        }
+        // Projectile.Impact never runs for these, so its reveal hook doesn't either
+        public static void Prefix(Thing ___equipment, Thing ___launcher) => EntadExplosionDamage.BeginProjectileBlast(___equipment, ___launcher);
 
-        public static void Finalizer() => EntadExplosionDamage.pending = null;
+        public static void Finalizer() => EntadExplosionDamage.EndProjectileBlast();
     }
 
     [HarmonyPatch(typeof(Explosion), nameof(Explosion.SpawnSetup))]
@@ -280,7 +338,9 @@ namespace EntadFramework
             var props = __instance.verbProps;
             if (thing == null || thing.Destroyed || props.beamDamageDef == null) return;
             var comp = EntadWeaponDamage.CompOf(__instance.EquipmentSource, __instance.caster);
-            if (comp == null || !EntadWeaponDamage.HasExtra(comp)) return;
+            if (comp == null) return;
+            EntadVisuals.WeaponHit(comp, __instance.caster, thing);
+            if (!EntadWeaponDamage.HasExtra(comp)) return;
             // Each burst shot hits once, like a bullet. A beam with beamTotalDamage shares that total over its path
             // cells, so the extra is shared the same way and a whole burst deals it about once.
             float factor = damageFactor;

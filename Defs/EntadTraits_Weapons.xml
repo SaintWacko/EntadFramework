@@ -5,7 +5,7 @@
     <defName>Entad_HairTrigger</defName>
     <label>Hair Trigger</label>
     <description>The slightest touch sets it off.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors><li><stat>RangedWeapon_Cooldown</stat><min>0.8</min><max>0.92</max></li></statFactors>
@@ -14,7 +14,7 @@
     <defName>Entad_RapidVolley</defName>
     <label>Rapid Volley</label>
     <description>Each pull of the trigger lets loose more shots than the weapon was built for.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <weaponProperties><li><property>BurstShotCount</property><min>1.25</min><max>1.5</max></li></weaponProperties>
@@ -23,8 +23,7 @@
     <defName>Entad_Quickdraw</defName>
     <label>Quickdraw</label>
     <description>It comes to bear on a target almost before you've chosen one.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>AimingDelayFactor</stat><min>-0.3</min><max>-0.1</max></li></statOffsets>
@@ -33,8 +32,7 @@
     <defName>Entad_HuntersHush</defName>
     <label>Hunter's Hush</label>
     <description>Prey never quite hears it coming.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>HuntingStealth</stat><min>0.1</min><max>0.3</max></li></statOffsets>
@@ -43,7 +41,7 @@
     <defName>Entad_ImpactRounds</defName>
     <label>Impact Rounds</label>
     <description>Its shots knock targets back on their heels, slowing them down.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <weaponProperties><li><property>StoppingPower</property><min>0.5</min><max>1</max></li></weaponProperties>
@@ -52,7 +50,7 @@
     <defName>Entad_Stormsight</defName>
     <label>Stormsight</label>
     <description>Rain, fog and smoke do nothing to spoil its aim.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
     <!-- Only matters in bad weather or smoke -->
     <points>2</points>
@@ -72,7 +70,7 @@
     <defName>Entad_HeavySlugs</defName>
     <label>Heavy Slugs</label>
     <description>Ammunition fired from this weapon hits a little harder.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors><li><stat>RangedWeapon_DamageMultiplier</stat><min>1.08</min><max>1.2</max></li></statFactors>
@@ -81,7 +79,7 @@
     <defName>Entad_SteadyBarrel</defName>
     <label>Steady Barrel</label>
     <description>There is almost no recoil.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets><li><stat>AccuracyShort</stat><min>0.02</min><max>0.06</max></li><li><stat>AccuracyMedium</stat><min>0.02</min><max>0.06</max></li></statOffsets>
@@ -90,7 +88,7 @@
     <defName>Entad_Sharpshooter</defName>
     <label>Sharpshooter</label>
     <description>Every shot is placed with uncanny care and force.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Epic</rarity>
     <!-- Accuracy and damage together, doubled in build 147: priced above a plain Epic -->
     <points>7</points>
@@ -101,8 +99,7 @@
     <defName>Entad_FarReaching</defName>
     <label>Far-Reaching</label>
     <description>Its shots carry further than they have any right to.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Ranged</weaponType>
+    <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <!-- Projectile weapons only (StatAppliesTo). Odyssey's unique weapon traits give +15% to +30%. The total is
@@ -130,7 +127,7 @@
     <defName>Entad_HeavyHitter</defName>
     <label>Heavy Hitter</label>
     <description>It carries more weight than it should.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors><li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.08</min><max>1.2</max></li></statFactors>
@@ -139,7 +136,7 @@
     <defName>Entad_RecklessEdge</defName>
     <label>Reckless Edge</label>
     <description>Hits hard, but leaves the wielder off balance.</description>
-    <categories><li>Weapon</li></categories>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statFactors><li><stat>MeleeWeapon_DamageMultiplier</stat><min>1.3</min><max>1.7</max></li><li><stat>MeleeWeapon_CooldownMultiplier</stat><min>1.1</min><max>1.3</max></li></statFactors>
@@ -148,8 +145,7 @@
     <defName>Entad_Bloodthirst</defName>
     <label>Bloodthirst</label>
     <description>Every kill only makes it hungrier.</description>
-    <categories><li>Weapon</li></categories>
-    <weaponType>Melee</weaponType>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Uncommon</rarity>
     <triggers>
       <li>
@@ -159,6 +155,9 @@
         <hediffHours>1</hediffHours>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><fleck>Entad_Fleck_BloodWisp</fleck><count>4~6</count><scale>0.15~0.25</scale><angle>-30~30</angle><speed>0.4~0.8</speed><spread>0.25</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Bloodthirst</defName>
@@ -182,8 +181,8 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Razoredge</defName>
     <label>Razor-Edged</label>
-    <description>Cuts far deeper than the blade should.</description>
-    <categories><li>Weapon</li></categories>
+    <description>Whatever part of it lands, it cuts like a razor.</description>
+    <categories><li>WeaponMelee</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>Cut</damageType><min>1</min><max>4</max></li></extraDamage>
@@ -194,8 +193,41 @@
     <description>Whatever it was made to do, now it burns.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <!-- Burn is checked against heat armor instead of sharp or blunt, which most armor is weaker against -->
     <changeDamageType>Burn</changeDamageType>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.45, 0.12, 0.25)</color>
+        <pulseSpeed>0.5</pulseSpeed>
+        <flicker>0.25</flicker>
+      </li>
+      <!-- Weapons are thin, so a finer pattern than the apparel's keeps more than one patch on a blade -->
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.45, 0.08, 0.6)</color>
+        <threshold>0.48</threshold>
+        <coreThreshold>0.78</coreThreshold>
+        <riseAbove>0.12</riseAbove>
+        <cellsAcross>8</cellsAcross>
+        <cellsUp>5</cellsUp>
+        <loopTicks>300</loopTicks>
+        <frames>24</frames>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perSecond>4</perSecond>
+        <scale>0.08~0.14</scale>
+        <speed>0.25~0.6</speed>
+        <angle>-25~25</angle>
+      </li>
+      <li Class="EntadFramework.EntadVisual_ProjectileTrail">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perCell>3</perCell>
+        <scale>0.18~0.28</scale>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.3~0.4</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>1~2</count><scale>0.25~0.35</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Searing</defName>
@@ -206,6 +238,11 @@
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>Burn</damageType><min>1</min><max>4</max></li></extraDamage>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.45~0.55</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>2~3</count><scale>0.35~0.5</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Ember</fleck><count>3~5</count><scale>0.08~0.14</scale><speed>0.4~1</speed><spread>0.2</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Stunning</defName>
@@ -218,6 +255,10 @@
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>Stun</damageType><min>2</min><max>6</max></li></extraDamage>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_StunFlash</fleck><scale>0.8~1</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventArcs"><on>Hit</on><at>Other</at><arcColor>(1, 0.95, 0.6, 0.9)</arcColor><count>2~3</count><reach>0.35~0.7</reach><arcTicks>8</arcTicks></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Shocking</defName>
@@ -225,8 +266,37 @@
     <description>Crackles with static, and wrecks machinery.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <scalesWithRarity>true</scalesWithRarity>
     <extraDamage><li><damageType>EMP</damageType><min>2</min><max>6</max></li></extraDamage>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.5, 0.75, 1, 0.35)</color>
+        <pulseSpeed>0</pulseSpeed>
+        <flicker>0.6</flicker>
+        <flickerSpeed>0.4</flickerSpeed>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponArcs">
+        <intervalTicks>20</intervalTicks>
+        <chance>0.65</chance>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Static</fleck>
+        <perSecond>1.5</perSecond>
+        <scale>0.08~0.12</scale>
+        <speed>0.3~0.8</speed>
+        <angle>0~360</angle>
+      </li>
+      <!-- Zaps of lightning from the shot to spots around it, with a spark where each lands -->
+      <li Class="EntadFramework.EntadVisual_ProjectileArcs">
+        <fleck>Entad_Fleck_Static</fleck>
+        <perCell>0.9</perCell>
+        <reach>0.5~1.3</reach>
+        <scale>0.14~0.22</scale>
+        <speed>0.1~0.4</speed>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventArcs"><on>Hit</on><at>Other</at><count>2~4</count><reach>0.4~0.8</reach><arcTicks>6</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Cinderstrike</defName>
@@ -234,9 +304,55 @@
     <description>Every hit bursts into flame, and can set the target alight.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
+    <visible>true</visible>
     <extraDamage>
       <li><damageType>Flame</damageType><min>4</min><max>10</max></li>
     </extraDamage>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.35, 0.05, 0.35)</color>
+        <pulseSpeed>0.7</pulseSpeed>
+        <flicker>0.3</flicker>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.4, 0.05, 0.85)</color>
+        <threshold>0.38</threshold>
+        <coreThreshold>0.7</coreThreshold>
+        <riseAbove>0.16</riseAbove>
+        <cellsAcross>8</cellsAcross>
+        <cellsUp>5</cellsUp>
+        <loopTicks>240</loopTicks>
+        <scrolls>3</scrolls>
+        <evolveCells>4</evolveCells>
+        <frames>32</frames>
+        <pulseSpeed>0.7</pulseSpeed>
+        <pulseMin>0.8</pulseMin>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perSecond>6</perSecond>
+        <scale>0.08~0.16</scale>
+        <speed>0.3~0.8</speed>
+        <angle>-35~35</angle>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_CinderSmoke</fleck>
+        <perSecond>1.2</perSecond>
+        <scale>0.3~0.45</scale>
+        <speed>0.2~0.35</speed>
+        <angle>-15~15</angle>
+        <rotationRate>-20~20</rotationRate>
+      </li>
+      <li Class="EntadFramework.EntadVisual_ProjectileTrail">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perCell>4</perCell>
+        <scale>0.18~0.32</scale>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.6~0.75</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>3~4</count><scale>0.45~0.6</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_CinderSmoke</fleck><scale>0.6~0.8</scale><angle>-15~15</angle><speed>0.2~0.4</speed></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Ember</fleck><count>5~7</count><scale>0.1~0.16</scale><speed>0.5~1.2</speed><spread>0.25</spread></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Frostbite</defName>
@@ -244,11 +360,43 @@
     <description>This weapon's attacks are bitterly cold.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
+    <visible>true</visible>
     <!-- Extra damage rather than changeDamageType: Frostbite ignores armor and isn't violence, so a weapon converted
          to it would bypass all armor and provoke no retaliation -->
     <extraDamage>
       <li><damageType>Frostbite</damageType><min>2</min><max>6</max></li>
     </extraDamage>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.65, 0.88, 1, 0.4)</color>
+        <pulseSpeed>0.3</pulseSpeed>
+        <flicker>0.05</flicker>
+      </li>
+      <!-- Cold air sinks: the mist drifts down the screen -->
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_FrostMist</fleck>
+        <perSecond>3</perSecond>
+        <scale>0.25~0.4</scale>
+        <speed>0.1~0.25</speed>
+        <angle>150~210</angle>
+        <rotationRate>-15~15</rotationRate>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Glint</fleck>
+        <color>(0.4, 0.68, 1)</color>
+        <perSecond>1.2</perSecond>
+        <scale>0.12~0.2</scale>
+        <speed>0~0.05</speed>
+      </li>
+      <li Class="EntadFramework.EntadVisual_ProjectileTrail">
+        <fleck>Entad_Fleck_FrostMist</fleck>
+        <perCell>4</perCell>
+        <scale>0.45~0.65</scale>
+        <speed>0~0.1</speed>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_Glint</fleck><color>(0.4, 0.68, 1)</color><count>3~4</count><scale>0.25~0.4</scale><speed>0.3~0.7</speed><spread>0.2</spread></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Hit</on><at>Other</at><fleck>Entad_Fleck_FrostMist</fleck><count>1~2</count><scale>0.6~0.8</scale><speed>0.1~0.3</speed></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Merciless</defName>

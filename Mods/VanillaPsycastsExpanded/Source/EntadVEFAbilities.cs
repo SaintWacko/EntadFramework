@@ -9,6 +9,7 @@ using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using VEF.Abilities;
+using VEF.Weapons;
 using Verse;
 using Ability = VEF.Abilities.Ability;
 using AbilityDef = VEF.Abilities.AbilityDef;
@@ -75,6 +76,13 @@ namespace EntadFramework.VPECompat
         private static readonly Dictionary<AbilityDef, Owner> ownerOf = new Dictionary<AbilityDef, Owner>();
         private static readonly HashSet<EntadTraitDef> vanillaPsycastTraits = new HashSet<EntadTraitDef>();
         private static readonly Dictionary<AbilityDef, float> sensitivityOf = new Dictionary<AbilityDef, float>();
+
+        // A damage-scaled proc's power (EntadProcContext.power), per proc ability, as of its last cast. Kept after the
+        // cast because VEF reads it again when the projectile lands (AbilityProjectile.DoImpact). Not saved: a shot in
+        // flight across a load lands at its base power.
+        private static readonly ConditionalWeakTable<Ability, StrongBox<float>> procPower = new ConditionalWeakTable<Ability, StrongBox<float>>();
+
+        internal static float PowerOf(Ability ability) => procPower.TryGetValue(ability, out var p) ? p.Value : 1f;
 
         // Items with a copy among their traits, for the AI's questions about a pawn. Few items carry them, so a scan
         // over these is cheaper than a per-pawn index kept in step with every equip and unequip.
@@ -163,6 +171,8 @@ namespace EntadFramework.VPECompat
                             Log.Warning($"[Entad Framework] {trait.defName}: {name} needs a second target a trigger can't pick, so the trait never rolls.");
                             continue;
                         }
+                        if (cast.fromTarget && !typeof(Ability_ShootProjectile).IsAssignableFrom(source.abilityClass))
+                            Log.Warning($"[Entad Framework] {trait.defName}: {name} doesn't shoot a projectile, so fromTarget does nothing.");
                         if (byName == null) procCopies[trait] = byName = new Dictionary<string, AbilityDef>();
                         var copy = Copy(source, trait, "Entad_" + trait.defName + "_Proc_" + name, clone, true);
                         byName[name] = copy;
@@ -203,7 +213,9 @@ namespace EntadFramework.VPECompat
             copy.modExtensions = source.modExtensions?.Where(e => e != psycast).ToList() ?? new List<DefModExtension>();
             if (psycast != null && AccessTools.Field(psycast.GetType(), "psychic")?.GetValue(psycast) is bool psychic && psychic)
                 copy.modExtensions.Add(new AbilityExtension_EntadPsychic { abilityDef = copy });
-            sensitivityOf[copy] = trait.GetModExtension<EntadVEFTraitExtension>()?.casterSensitivity ?? 1f;
+            var ext = trait.GetModExtension<EntadVEFTraitExtension>();
+            sensitivityOf[copy] = ext?.casterSensitivity ?? 1f;
+            if (ext != null && ext.durationTicks > 0) copy.durationTime = ext.durationTicks;
             copy.requiredHediff = null;
             copy.requiredTrait = null;
             copy.gizmoClass = typeof(Command_EntadAbility);
@@ -343,14 +355,18 @@ namespace EntadFramework.VPECompat
             if (!(ctx.state is GlobalTargetInfo[] targets) || !TryGetProc(ctx, out var ability)) return;
             if (!ability.def.hasAoE && targets[0].HasThing && !targets[0].Thing.Spawned) return;
             Hold(ability, ctx.caster);
+            procPower.GetValue(ability, _ => new StrongBox<float>()).Value = ctx.power;
             var comp = ability.Comp;
             var casting = comp.currentlyCasting;
             var castingTargets = comp.currentlyCastingTargets;
             comp.currentlyCasting = ability;
             comp.currentlyCastingTargets = targets;
+            bool fromTarget = Patch_ProcFromTarget.active;
+            Patch_ProcFromTarget.active = ctx.cast.fromTarget;
             try { ability.Cast(targets); }
             finally
             {
+                Patch_ProcFromTarget.active = fromTarget;
                 comp.currentlyCasting = casting;
                 comp.currentlyCastingTargets = castingTargets;
             }
@@ -619,11 +635,15 @@ namespace EntadFramework.VPECompat
     public class EntadVEFTraitExtension : DefModExtension
     {
         public float casterSensitivity = 1f;
+        // Replaces the copies' durationTime (before VEF's stat factors), for an effect whose psycast length is wrong
+        // for a trait: brambles that stay half a day after a fight. 0 keeps the ability's own.
+        public int durationTicks;
 
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string e in base.ConfigErrors()) yield return e;
             if (casterSensitivity < 0f) yield return "casterSensitivity can't be negative";
+            if (durationTicks < 0) yield return "durationTicks can't be negative";
         }
     }
 
@@ -718,6 +738,100 @@ namespace EntadFramework.VPECompat
             if (Scribe.mode != LoadSaveMode.Saving || !EntadVEFAbilities.IsOurs(__instance.currentlyCasting)) return;
             if (!(__instance.parent is Pawn pawn) || !(pawn.jobs?.curDriver is JobDriver_CastAbilityOnce))
                 __instance.currentlyCasting = null;
+        }
+    }
+
+    // A damage-scaled proc's damage, or Chain Bolt's bounce count: what the ability calls its power. VEF's own and every
+    // override VPE's proc abilities use; an override that calls the base is multiplied once (depth).
+    [HarmonyPatch]
+    public static class Patch_ProcPower
+    {
+        private static readonly string[] VpeOverrides =
+        {
+            "VanillaPsycastsExpanded.Staticlord.Ability_ChainBolt:GetPowerForPawn",
+        };
+
+        [ThreadStatic] private static int depth;
+
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.DeclaredMethod(typeof(Ability), nameof(Ability.GetPowerForPawn));
+            foreach (string name in VpeOverrides)
+            {
+                var m = AccessTools.Method(name);
+                if (m != null) yield return m;
+                else Log.Warning($"[Entad Framework] {name} is gone from VPE, so its procs don't scale with the weapon's damage.");
+            }
+        }
+
+        public static void Prefix() => depth++;
+
+        public static void Postfix(Ability __instance, ref float __result)
+        {
+            if (depth == 1) __result *= EntadVEFAbilities.PowerOf(__instance);
+        }
+
+        public static void Finalizer() => depth--;
+    }
+
+    // A proc's power also scales how long its effect lasts (a haywire mech, a stun), as the main assembly does for vanilla
+    // abilities' durations: a diminished repeat on an adapting target (EntadTrigger.adaptFactor) lasts shorter.
+    [HarmonyPatch]
+    public static class Patch_ProcDuration
+    {
+        [ThreadStatic] private static int depth;
+
+        public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability), nameof(Ability.GetDurationForPawn));
+
+        public static void Prefix() => depth++;
+
+        public static void Postfix(Ability __instance, ref int __result)
+        {
+            if (depth == 1 && __result > 0)
+            {
+                float power = EntadVEFAbilities.PowerOf(__instance);
+                if (power != 1f) __result = Mathf.Max(1, Mathf.RoundToInt(__result * power));
+            }
+        }
+
+        public static void Finalizer() => depth--;
+    }
+
+    // EntadTriggerCast.fromTarget: the projectile is spawned on the target and launched at it from there, so it lands the
+    // next tick. A chain bolt draws its arc from its holder, the launcher unless set, so the first arc would still
+    // streak in from the shooter: its holder is set to itself, and every jump after it is drawn from where the last one
+    // landed. The holder can't be the target pawn, whose death would end the chain (the bolt destroys itself when its
+    // holder is destroyed). VEF's accuracy and forced miss are skipped: the target is where the projectile already is.
+    [HarmonyPatch]
+    public static class Patch_ProcFromTarget
+    {
+        [ThreadStatic] internal static bool active;
+
+        private static readonly AccessTools.FieldRef<TeslaProjectile, Thing> TeslaHolder = Field();
+
+        private static AccessTools.FieldRef<TeslaProjectile, Thing> Field()
+        {
+            if (AccessTools.DeclaredField(typeof(TeslaProjectile), "holder") != null) return AccessTools.FieldRefAccess<TeslaProjectile, Thing>("holder");
+            Log.Warning("[Entad Framework] Vanilla Expanded Framework's TeslaProjectile has changed: a chain bolt cast from its target draws its first arc from the caster.");
+            return null;
+        }
+
+        public static MethodBase TargetMethod() => AccessTools.DeclaredMethod(typeof(Ability_ShootProjectile), "ShootProjectile");
+
+        public static bool Prefix(Ability __instance, GlobalTargetInfo target, ref Projectile __result)
+        {
+            if (!active || !target.HasThing || !target.Thing.Spawned) return true;
+            Thing at = target.Thing;
+            var ext = __instance.def.GetModExtension<AbilityExtension_Projectile>();
+            if (ext?.projectile == null || !typeof(Projectile).IsAssignableFrom(ext.projectile.thingClass)) return true;
+            var projectile = (Projectile)GenSpawn.Spawn(ext.projectile, at.Position, at.Map);
+            if (projectile is AbilityProjectile abilityProjectile) abilityProjectile.ability = __instance;
+            var comp = projectile.TryGetComp<CompAbilityProjectile>();
+            if (comp != null) comp.ability = __instance;
+            if (projectile is TeslaProjectile tesla && TeslaHolder != null) TeslaHolder(tesla) = tesla;
+            projectile.Launch(__instance.pawn, at.DrawPos, at, at, ext.hitFlags);
+            __result = projectile;
+            return false;
         }
     }
 

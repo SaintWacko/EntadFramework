@@ -316,14 +316,14 @@ namespace EntadFramework
 
         // ---- What counts as what ----
 
-        private static bool Ignored(Thing t)
+        internal static bool Ignored(Thing t)
         {
             if (t is Pawn || t is Mote || t is Skyfaller || t is PawnFlyer || t is Projectile) return true;
             if (t.def.category == ThingCategory.Ethereal && !(t is Blueprint) && !(t is Frame)) return true;
             return false;
         }
 
-        private static bool IsNaturalRock(Thing t) => t.def.building != null && t.def.building.isNaturalRock;
+        internal static bool IsNaturalRock(Thing t) => t.def.building != null && t.def.building.isNaturalRock;
 
         private static bool IsChunk(Thing t) => t.def.category == ThingCategory.Item && t.def.IsWithinCategory(ThingCategoryDefOf.Chunks);
 
@@ -333,7 +333,7 @@ namespace EntadFramework
 
         // Things covering any cell of the rectangle, including ones that cross its edge (the checks refuse or push those);
         // a thing can cover several cells, so each is listed once
-        private static List<Thing> ThingsIn(Map map, CellRect rect)
+        internal static List<Thing> ThingsIn(Map map, CellRect rect)
         {
             var seen = new HashSet<Thing>();
             var list = new List<Thing>();
@@ -422,7 +422,7 @@ namespace EntadFramework
 
         // Lower numbers spawn first: buildings, then what attaches to them, then everything that sits on them.
         // Despawning runs the other way.
-        private static int SpawnOrder(Thing t)
+        internal static int SpawnOrder(Thing t)
         {
             if (t.def.category == ThingCategory.Building) return t.def.building != null && t.def.building.isAttachment ? 1 : 0;
             return 2;
@@ -879,6 +879,7 @@ namespace EntadFramework
 
             var trait = Trait;
             int ticks = trait != null ? EntadPortableSpace.WorkTicks(trait) : 60;
+            workTicks = ticks;
             Toil work = Toils_General.Wait(ticks).WithProgressBarToilDelay(TargetIndex.A);
             work.initAction = () =>
             {
@@ -887,7 +888,16 @@ namespace EntadFramework
                 var rect = EntadPortableSpace.RectAt(job.targetB.Cell, new Rot4(job.takeInventoryDelay), EntadPortableSpace.Width(t), EntadPortableSpace.Height(t));
                 pawn.rotationTracker.FaceCell(rect.CenterCell);
             };
-            work.tickAction = Shimmer;
+            work.tickAction = () =>
+            {
+                if (EntadSettings.SpaceRipple) RippleTick();
+                else Shimmer();
+            };
+            work.AddFinishAction(() =>
+            {
+                ripple?.End();
+                ripple = null;
+            });
             yield return work;
 
             Toil finish = ToilMaker.MakeToil("UsePortableSpace");
@@ -896,8 +906,27 @@ namespace EntadFramework
             yield return finish;
         }
 
-        // While the pawn works, the air over the area shimmers: a few faint distortions and sparks every few ticks,
-        // more for a bigger area. Visual only, and skipped when nobody can see the map.
+        // Not saved: after a load the next tick starts it again, partway through (EntadPortableSpaceRipple.cs)
+        private SpaceRipple ripple;
+        private int workTicks;
+
+        // Built only once the map is being looked at, so a channel on another map costs nothing until then
+        private void RippleTick()
+        {
+            if (ripple == null)
+            {
+                if (pawn.Map != Find.CurrentMap) return;
+                var t = Trait;
+                if (t == null) return;
+                ripple = SpaceRipple.Start(this, EntadPortableSpace.SpaceOf(t), job.targetA.Cell, job.targetB.Cell, new Rot4(job.takeInventoryDelay),
+                    EntadPortableSpace.Width(t), EntadPortableSpace.Height(t), workTicks);
+                EntadSpaceRipples.Add(ripple);
+            }
+            ripple.Tick();
+        }
+
+        // With the ripple turned off in the settings: the air over the area shimmers, a few faint distortions and
+        // sparks every few ticks, more for a bigger area. Visual only, and skipped when nobody can see the map.
         private void Shimmer()
         {
             if (!pawn.IsHashIntervalTick(10) || pawn.Map != Find.CurrentMap) return;
@@ -931,16 +960,13 @@ namespace EntadFramework
             {
                 case PortableSpaceState.Empty:
                     report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h));
-                    if (report.Accepted) EntadPortableSpace.Capture(space, map, origin, rot, w, h);
                     break;
                 case PortableSpaceState.Holding:
                     report = EntadPortableSpace.CanPlace(space, map, origin, rot, w, h);
-                    if (report.Accepted) EntadPortableSpace.Place(space, map, origin, rot, w, h);
                     break;
                 default:
                     if (space.PlacedMap != map) { report = "EF_Space_OtherMap".Translate(); break; }
                     report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h));
-                    if (report.Accepted) EntadPortableSpace.PickUp(space, map, w, h);
                     break;
             }
             if (!report.Accepted)
@@ -948,7 +974,45 @@ namespace EntadFramework
                 Messages.Message(report.Reason, pawn, MessageTypeDefOf.RejectInput, false);
                 return;
             }
-            comp.TryBindOnUse(pawn);
+            // This toil runs inside the tick list. Despawned things leave that list only at the start of the next tick,
+            // and it skips only destroyed things, so a lifted door later in the list would still tick with no map
+            // (Building_Door.Tick NRE). EntadTriggerQueue runs these after every map's tick lists, same tick.
+            PortableSpaceState stateAtFinish = space.state;
+            Pawn user = pawn;
+            EntadTriggerQueue.NextTick(() => Move(user, comp, trait, space, stateAtFinish, map, origin, rot, w, h));
+        }
+
+        // Checked again because something else in the same tick (another pawn's job, a raid's explosion) may have
+        // changed the space or the area since Finish accepted it
+        private static void Move(Pawn user, CompEntad comp, AppliedEntadTrait trait, PortableSpace space, PortableSpaceState expected,
+            Map map, IntVec3 origin, Rot4 rot, int w, int h)
+        {
+            if (map.Disposed) return;
+            AcceptanceReport report;
+            if (space.state != expected) report = "EF_Space_Changed".Translate();
+            else switch (expected)
+            {
+                case PortableSpaceState.Empty:
+                    report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h));
+                    if (report.Accepted) EntadPortableSpace.Capture(space, map, origin, rot, w, h);
+                    break;
+                case PortableSpaceState.Holding:
+                    report = EntadPortableSpace.CanPlace(space, map, origin, rot, w, h);
+                    if (report.Accepted) EntadPortableSpace.Place(space, map, origin, rot, w, h);
+                    break;
+                default:
+                    report = space.PlacedMap != map ? (AcceptanceReport)"EF_Space_OtherMap".Translate()
+                        : EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h));
+                    if (report.Accepted) EntadPortableSpace.PickUp(space, map, w, h);
+                    break;
+            }
+            if (!report.Accepted)
+            {
+                Messages.Message(report.Reason, new LookTargets(new TargetInfo(origin, map)), MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+            // Only once something has moved: a move rejected here must not bind the item or reveal its effect
+            comp.TryBindOnUse(user);
             trait.Reveal(EntadEffectKind.Space);
         }
     }

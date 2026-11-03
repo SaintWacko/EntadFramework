@@ -147,6 +147,11 @@ namespace EntadFramework
         public static int LootMaxEntads = DefaultLootMaxEntads;
         public const float DefaultLootBindChance = 0.25f;
         public static float LootBindChance = DefaultLootBindChance;
+
+        // Multipliers on the chance and cooldown of every combat trigger (EntadTrigger.IsCombat), read as they roll, so
+        // they change existing items too
+        public static float TriggerChanceFactor = 1f;
+        public static float TriggerCooldownFactor = 1f;
         public static readonly float[] ItemCurveValues = { 1000f, 4000f, 10000f, 25000f };
         public static readonly float[] DefaultItemCurvePoints = { 3f, 8f, 15f, 25f };
         public static readonly float[] ItemCurvePoints = (float[])DefaultItemCurvePoints.Clone();
@@ -156,12 +161,36 @@ namespace EntadFramework
         // The colony's verity as a row under the resource readout, once there is any
         public static bool VerityReadout = true;
 
+        // Portable space channels play a ripple with ghosts of the room (EntadPortableSpaceRipple.cs) rather than the plain shimmer
+        public static bool SpaceRipple = true;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
         // Aura ground glow and link lines (need Ideology). Off: auras show their range ring when selected instead.
         // Pulse flecks don't need Ideology and aren't affected.
         public static bool AuraEffects = true;
+
+        // The glint on entads in view (EntadGlint), on gear in use too, and whether a fully identified one stops
+        public static bool Glint = true;
+        public static bool GlintOnGear = true;
+        public static bool GlintHideIdentified = false;
+
+        // Trait visuals (EntadVisuals.cs): the master switch, then on gear (held and lying weapons) and on shots
+        public static bool Visuals = true;
+        public static bool VisualsGear = true;
+        public static bool VisualsProjectiles = true;
+        // One-off visuals on hits, dodges, heals and triggers (EntadEventVisuals.cs), and the Sprint afterimages
+        public static bool VisualsEvents = true;
+        // Ambient effects on installed furniture (EntadBuildingVisuals.cs)
+        public static bool VisualsFurniture = true;
+        // Visuals play before their trait is identified, as a hint that something is there; an entry's
+        // beforeIdentified overrides it
+        public static bool VisualsUnidentified = true;
+
+        // Worn lights (EntadWornLight.cs) move with a walking wearer only every this many cells; each move rebuilds
+        // the lighting around it. 1 follows every step.
+        public static int LightFollowCells = 1;
 
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
@@ -186,6 +215,16 @@ namespace EntadFramework
         {
             HideTraits = true;
             AuraEffects = true;
+            Glint = true;
+            GlintOnGear = true;
+            GlintHideIdentified = false;
+            Visuals = true;
+            VisualsGear = true;
+            VisualsProjectiles = true;
+            VisualsEvents = true;
+            VisualsFurniture = true;
+            VisualsUnidentified = true;
+            LightFollowCells = 1;
             WeaponSpecificWeight = DefaultWeaponSpecificWeight;
             UniqueWeaponChance = 0f;
             DrawbackChance = DefaultDrawbackChance;
@@ -222,6 +261,8 @@ namespace EntadFramework
             LootItemChance = DefaultLootItemChance;
             LootMaxEntads = DefaultLootMaxEntads;
             LootBindChance = DefaultLootBindChance;
+            TriggerChanceFactor = 1f;
+            TriggerCooldownFactor = 1f;
             DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
             ItemPointVariance = DefaultItemPointVariance;
             VerityReadout = true;
@@ -242,6 +283,17 @@ namespace EntadFramework
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
+            Scribe_Values.Look(ref SpaceRipple, "spaceRipple", true);
+            Scribe_Values.Look(ref Glint, "glint", true);
+            Scribe_Values.Look(ref GlintOnGear, "glintOnGear", true);
+            Scribe_Values.Look(ref GlintHideIdentified, "glintHideIdentified", false);
+            Scribe_Values.Look(ref Visuals, "visuals", true);
+            Scribe_Values.Look(ref VisualsGear, "visualsGear", true);
+            Scribe_Values.Look(ref VisualsProjectiles, "visualsProjectiles", true);
+            Scribe_Values.Look(ref VisualsEvents, "visualsEvents", true);
+            Scribe_Values.Look(ref VisualsFurniture, "visualsFurniture", true);
+            Scribe_Values.Look(ref VisualsUnidentified, "visualsUnidentified", true);
+            Scribe_Values.Look(ref LightFollowCells, "lightFollowCells", 1);
             Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
             if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
@@ -320,6 +372,10 @@ namespace EntadFramework
             LootMaxEntads = Mathf.Clamp(LootMaxEntads, 1, 10);
             Scribe_Values.Look(ref LootBindChance, "lootBindChance", DefaultLootBindChance);
             LootBindChance = Mathf.Clamp01(LootBindChance);
+            Scribe_Values.Look(ref TriggerChanceFactor, "triggerChanceFactor", 1f);
+            TriggerChanceFactor = Mathf.Clamp(TriggerChanceFactor, 0f, 2f);
+            Scribe_Values.Look(ref TriggerCooldownFactor, "triggerCooldownFactor", 1f);
+            TriggerCooldownFactor = Mathf.Clamp(TriggerCooldownFactor, 0f, 2f);
             for (int i = 0; i < ItemCurvePoints.Length; i++)
             {
                 float v = ItemCurvePoints[i];
@@ -369,6 +425,7 @@ namespace EntadFramework
             if (appliedDurability != null && Current.Game != null) EntadUtility.RescaleDurability(appliedDurability);
             appliedDurability = null;
             EntadFurnitureEffects.RefreshAll();
+            EntadVisualSet.Invalidate();
         }
 
         private enum Tab { General, Generation, World, Rarity, Traits }
@@ -420,7 +477,11 @@ namespace EntadFramework
             }
 
             var reset = new Rect(inRect.x, inRect.yMax - 32f, 200f, 32f);
-            if (Widgets.ButtonText(reset, "EF_Settings_Reset".Translate())) EntadSettings.ResetToDefaults();
+            if (Widgets.ButtonText(reset, "EF_Settings_Reset".Translate()))
+            {
+                EntadSettings.ResetToDefaults();
+                EntadVisualSet.Invalidate();
+            }
             TooltipHandler.TipRegion(reset, "EF_Settings_Reset_Tip".Translate());
         }
 
@@ -578,6 +639,7 @@ namespace EntadFramework
             if (d.persona) parts.Add("EF_Summary_Persona".Translate());
             if (d.neverBond) parts.Add("EF_Summary_NeverBond".Translate());
             if (d.secretive) parts.Add("EF_Summary_Secretive".Translate());
+            if (d.visible) parts.Add("EF_Summary_Visible".Translate());
             if (d.bondedHediffs != null) foreach (var h in d.bondedHediffs) if (h != null) parts.Add(h.LabelCap);
             if (d.bondedThought != null) parts.Add("EF_Summary_BondedMood".Translate());
             if (d.otherWeaponThought != null) parts.Add("EF_Summary_OtherWeapon".Translate());
@@ -591,9 +653,38 @@ namespace EntadFramework
             list.CheckboxLabeled("EF_Settings_HideTraits".Translate(), ref EntadSettings.HideTraits, "EF_Settings_HideTraits_Tip".Translate());
             list.Gap();
 
+            Section(list, "EF_Settings_Triggers");
+            list.Label("EF_Settings_TriggerChance".Translate(EntadSettings.TriggerChanceFactor.ToStringPercent()));
+            EntadSettings.TriggerChanceFactor = Mathf.Round(list.Slider(EntadSettings.TriggerChanceFactor, 0f, 2f) * 20f) / 20f;
+            list.Label("EF_Settings_TriggerCooldown".Translate(EntadSettings.TriggerCooldownFactor.ToStringPercent()));
+            EntadSettings.TriggerCooldownFactor = Mathf.Round(list.Slider(EntadSettings.TriggerCooldownFactor, 0f, 2f) * 20f) / 20f;
+            list.Label("EF_Settings_Triggers_Desc".Translate());
+            list.Gap();
+
             Section(list, "EF_Settings_Visuals");
             list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
             list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_SpaceRipple".Translate(), ref EntadSettings.SpaceRipple, "EF_Settings_SpaceRipple_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_Glint".Translate(), ref EntadSettings.Glint, "EF_Settings_Glint_Tip".Translate());
+            if (EntadSettings.Glint)
+            {
+                list.CheckboxLabeled("  " + "EF_Settings_GlintOnGear".Translate(), ref EntadSettings.GlintOnGear, "EF_Settings_GlintOnGear_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_GlintHideIdentified".Translate(), ref EntadSettings.GlintHideIdentified, "EF_Settings_GlintHideIdentified_Tip".Translate());
+            }
+            list.CheckboxLabeled("EF_Settings_TraitVisuals".Translate(), ref EntadSettings.Visuals, "EF_Settings_TraitVisuals_Tip".Translate());
+            if (EntadSettings.Visuals)
+            {
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsGear".Translate(), ref EntadSettings.VisualsGear, "EF_Settings_VisualsGear_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsProjectiles".Translate(), ref EntadSettings.VisualsProjectiles, "EF_Settings_VisualsProjectiles_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsEvents".Translate(), ref EntadSettings.VisualsEvents, "EF_Settings_VisualsEvents_Tip".Translate());
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsFurniture".Translate(), ref EntadSettings.VisualsFurniture, "EF_Settings_VisualsFurniture_Tip".Translate());
+                bool unidentified = EntadSettings.VisualsUnidentified;
+                list.CheckboxLabeled("  " + "EF_Settings_VisualsUnidentified".Translate(), ref EntadSettings.VisualsUnidentified, "EF_Settings_VisualsUnidentified_Tip".Translate());
+                if (unidentified != EntadSettings.VisualsUnidentified) EntadVisualSet.Invalidate();
+            }
+            list.Label(EntadSettings.LightFollowCells == 1 ? "EF_Settings_LightFollowEvery".Translate() : "EF_Settings_LightFollow".Translate(EntadSettings.LightFollowCells),
+                tooltip: "EF_Settings_LightFollow_Tip".Translate());
+            EntadSettings.LightFollowCells = Mathf.RoundToInt(list.Slider(EntadSettings.LightFollowCells, 1f, 6f));
             list.Gap();
 
             Section(list, "EF_Settings_MarketValue");

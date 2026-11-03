@@ -19,6 +19,9 @@
         <heal>4~10</heal>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventRibbons"><on>Trigger</on><from>Other</from><to>Holder</to><color>(1, 0.12, 0.15)</color></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -46,6 +49,9 @@
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <equippedHediffs><li>Entad_Hediff_Clotting</li></equippedHediffs>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Struck</on><fleck>Entad_Fleck_ClotPulse</fleck><scale>0.7~0.9</scale><whileBleeding>true</whileBleeding><minIntervalTicks>120</minIntervalTicks></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Clotting</defName>
@@ -69,6 +75,10 @@
     <statOffsets>
       <li><stat>InjuryHealingFactor</stat><min>0.5</min><max>1</max></li>
     </statOffsets>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Heal</on><fleck>Entad_Fleck_HealPulse</fleck><scale>0.9~1.1</scale><minIntervalTicks>300</minIntervalTicks></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Heal</on><fleck>Entad_Fleck_HealMote</fleck><count>2~3</count><scale>0.12~0.2</scale><angle>-25~25</angle><speed>0.3~0.6</speed><spread>0.3</spread><minIntervalTicks>300</minIntervalTicks></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
 
   <EntadFramework.EntadTraitDef>
@@ -108,6 +118,7 @@
     <label>Psychic Ward</label>
     <description>A soft hum at the back of the mind drowns out other voices.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
+    <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <statOffsets>
@@ -167,6 +178,9 @@
         <cooldownHours>12</cooldownHours>
       </li>
     </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><fleck>Entad_Fleck_SurgeFlash</fleck><scale>1~1.2</scale></li>
+    </visuals>
   </EntadFramework.EntadTraitDef>
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_AdrenalSurge</defName>

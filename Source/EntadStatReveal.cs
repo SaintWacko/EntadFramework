@@ -13,13 +13,16 @@ namespace EntadFramework
     {
         Equip, Use, Hit, Armor,
         Work, GeneralLabor, Mining, Construction, Plant, Research, Doctor, Animals, Trade, Social, Eat, Rest, Learn,
-        Shoot, MeleeAttack, MeleeDodge, Damage, Toxic
+        Shoot, MeleeAttack, MeleeDodge, Damage, Toxic,
+        // Revealed by the code that acts on it (Mirrored's deflect), never by a general event
+        Own
     }
 
     public static class EntadStatReveal
     {
         public static EntadStatTrigger Classify(StatDef stat, ThingDef td)
         {
+            if (stat == EntadStatDefOf.Entad_DeflectChance) return EntadStatTrigger.Own;
             if (EntadTraitDef.IsWearerStat(stat))
             {
                 switch (stat.defName)
@@ -214,16 +217,20 @@ namespace EntadFramework
             }
             EntadStatReveal.Fire(pawn, melee ? EntadStatTrigger.MeleeAttack : EntadStatTrigger.Shoot);
         }
+
+        // After a melee verb's ApplyMeleeDamageToTarget (vanilla's, or Combat Extended's override). Dodge stats
+        // reveal on a dodge instead (Patch_MeleeDodge_Visuals, which Combat Extended's dodge reaches too).
+        public static void MeleeHit(Pawn caster, LocalTargetInfo target, DamageWorker.DamageResult result)
+        {
+            if (result != null && result.totalDamageDealt > 0f) Hit(caster, true);
+        }
     }
 
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
     public static class Patch_MeleeHit_Reveal
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, DamageWorker.DamageResult __result)
-        {
-            if (target.Thing is Pawn victim) EntadStatReveal.Fire(victim, EntadStatTrigger.MeleeDodge);
-            if (__result != null && __result.totalDamageDealt > 0f) EntadWeaponReveal.Hit(__instance.CasterPawn, true);
-        }
+        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target, DamageWorker.DamageResult __result) =>
+            EntadWeaponReveal.MeleeHit(__instance.CasterPawn, target, __result);
     }
 
     [HarmonyPatch(typeof(Projectile), "Impact")]

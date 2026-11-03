@@ -49,6 +49,9 @@ namespace EntadFramework
             sources.Clear();
             humbleItems.Clear();
             sheddingItems.Clear();
+            EntadWornLight.Clear();
+            EntadGlint.Clear();
+            EntadVisuals.Clear();
             EntadCompat.RaiseGameStarted(game);
         }
 
@@ -79,16 +82,17 @@ namespace EntadFramework
         {
             RefreshHumble(comp);
             RefreshShedding(comp);
+            EntadWornLight.Refresh(comp);
             EntadPowerNets.Refresh(comp);
+            EntadBuildingVisuals.Refresh(comp);
             EntadCompat.RaiseRefreshed(comp);
             Thing thing = comp.parent;
             var source = Lookup(comp);
             bool spawned = thing.Spawned && thing.def.building != null && comp.activeTraits.Count > 0;
-            float heat = 0f, glow = 0f;
+            float heat = 0f, glow = 0f, target = 0f;
             if (spawned)
             {
-                if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomHeating)) heat += thing.GetStatValue(EntadStatDefOf.Entad_RoomHeating);
-                if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomCooling)) heat -= thing.GetStatValue(EntadStatDefOf.Entad_RoomCooling);
+                heat = HeatOf(comp, out target);
                 if (comp.HasStatTrait(EntadStatDefOf.Entad_GlowRadius)) glow = thing.GetStatValue(EntadStatDefOf.Entad_GlowRadius);
             }
             if (source != null && source.glower != null && (glow <= 0f || source.glowMap != thing.MapHeld || source.glower.Props.glowRadius != glow))
@@ -100,8 +104,21 @@ namespace EntadFramework
             }
             if (source == null) sources.Add(source = new Source { comp = comp });
             source.heat = heat;
-            if (heat != 0f) source.targetTemperature = TargetTemperature(comp, heat > 0f);
+            if (heat != 0f) source.targetTemperature = target;
             if (glow > 0f && source.glower == null) AddGlower(source, glow);
+        }
+
+        // Heat per second the item's traits push (negative cools; 0 without Warm, Cool or their drawbacks) and the
+        // temperature it stops at. Read again on each Refresh; modules that carry the heat further (Proxy Heat under
+        // Vanilla Temperature Expanded) read it here so they agree with the room effect.
+        public static float HeatOf(CompEntad comp, out float targetTemperature)
+        {
+            Thing thing = comp.parent;
+            float heat = 0f;
+            if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomHeating)) heat += thing.GetStatValue(EntadStatDefOf.Entad_RoomHeating);
+            if (comp.HasStatTrait(EntadStatDefOf.Entad_RoomCooling)) heat -= thing.GetStatValue(EntadStatDefOf.Entad_RoomCooling);
+            targetTemperature = heat != 0f ? TargetTemperature(comp, heat > 0f) : 0f;
+            return heat;
         }
 
         // The temperature the trait doing the net heating (or cooling) aims for. Only a modded item would carry both.
@@ -157,7 +174,11 @@ namespace EntadFramework
 
         public override void GameComponentTick()
         {
-            if (Find.TickManager.TicksGame % 250 != 0) return;
+            if (EntadVisuals.AnyTrails || EntadVisuals.AnyZaps) EntadVisuals.TickTrails();
+            if (EntadWornLight.Any) EntadWornLight.Tick();
+            int ticks = Find.TickManager.TicksGame;
+            if (ticks % 10 == 0) EntadCompat.RaiseTick10();
+            if (ticks % 250 != 0) return;
             EntadCompat.RaiseTick250();
             if (sheddingItems.Count > 0) TickShedding();
             for (int i = sources.Count - 1; i >= 0; i--)
@@ -198,9 +219,12 @@ namespace EntadFramework
                 if (!cell.InBounds(at.Map)) continue;
                 ThingDef filth = comp.activeTraits
                     .FirstOrDefault(t => t.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_FilthPerDay))?.def.filth ?? ThingDefOf.Filth_Dirt;
-                // Seen at home on the colony's own things or loose items; not on a raider's gear
+                // Seen at home on the colony's own things or loose items; not on a raider's gear, not under fog (an
+                // ancient complex on the home map), and not from inside a crate or shelf container, where nothing
+                // shows which of its contents left the mess
                 if (FilthMaker.TryMakeFilth(cell, at.Map, filth) && comp.HasHidden && at.Map.IsPlayerHome
-                    && (at.Faction == null || at.Faction == Faction.OfPlayer))
+                    && (at.Faction == null || at.Faction == Faction.OfPlayer) && (thing.Faction == null || thing.Faction == Faction.OfPlayer)
+                    && (at == thing || at is Pawn || (at is MinifiedThing && thing.ParentHolder == at)) && !cell.Fogged(at.Map) && !at.Position.Fogged(at.Map))
                     comp.RevealStat(EntadStatDefOf.Entad_FilthPerDay);
             }
         }

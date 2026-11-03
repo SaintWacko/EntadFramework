@@ -17,6 +17,8 @@ namespace EntadFramework
         public EntadTriggerCast cast;
         public LocalTargetInfo target;
         public object state;   // a module's own: what its canCast worked out, for its cast
+        // scaleWithDamage's multiplier (1 otherwise), for whatever the ability can scale: its damage, duration or count
+        public float power = 1f;
 
         internal EntadProcAbility vanilla;
     }
@@ -28,6 +30,9 @@ namespace EntadFramework
     public class EntadProcAbility : Ability
     {
         public EntadProcAbility(Pawn pawn, AbilityDef def) : base(pawn, def) { }
+
+        // EntadProcContext.power: our own effect comps read it, and vanilla's durations (Patch_AbilityDuration_EntadProc)
+        public float power = 1f;
 
         // The pulse sounds and fleck are Royalty's: null without it
         private bool IsPsycast => ModsConfig.RoyaltyActive && def.abilityClass != null && typeof(Psycast).IsAssignableFrom(def.abilityClass);
@@ -118,13 +123,18 @@ namespace EntadFramework
             for (int i = 0; i < t.casts.Count; i++)
             {
                 var cast = t.casts[i];
-                var ctx = new EntadProcContext { caster = caster, item = p.trait.owner, trait = p.trait, cast = cast };
+                var ctx = new EntadProcContext { caster = caster, item = p.trait.owner, trait = p.trait, cast = cast, power = p.power };
                 string name = cast.IsExternal ? cast.externalAbility : cast.ability?.defName;
                 bool ok;
                 if (!TryTarget(cast, p, out ctx.target))
                 {
                     ok = false;
                     if (LogTriggers) refusal = $"{name}: no {cast.target} target";
+                }
+                else if (cast.unroofed && ctx.target.Cell.Roofed(caster.Map))
+                {
+                    ok = false;
+                    if (LogTriggers) refusal = $"{name}: {ctx.target} is under a roof";
                 }
                 else
                 {
@@ -248,6 +258,7 @@ namespace EntadFramework
                             if (!comps[i].Valid(target, false)) return false;
                 }
                 ctx.target = target;
+                ability.power = ctx.power;
                 ctx.vanilla = ability;
                 return true;
             }
@@ -293,6 +304,17 @@ namespace EntadFramework
                 maintaining.RemoveAt(i);
                 maintainUntil.RemoveAt(i);
             }
+        }
+    }
+
+    // A damage-scaled proc's stun or burden lasts longer or shorter with its power. Vanilla's duration effects read it
+    // here (not mental states: GiveMentalState never asks); for anything else it is one type check per cast.
+    [HarmonyPatch(typeof(CompAbilityEffect_WithDuration), nameof(CompAbilityEffect_WithDuration.GetDurationSeconds))]
+    public static class Patch_AbilityDuration_EntadProc
+    {
+        public static void Postfix(CompAbilityEffect_WithDuration __instance, ref float __result)
+        {
+            if (__instance.parent is EntadProcAbility proc) __result *= proc.power;
         }
     }
 }

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Elemental and reactive apparel: Flaming, Infernal, Radiant, Mirrored, Thorned, Stormcloak. Flaming and Infernal
+       share their stats, so they never meet on one item (nor with Ember Ward or Winterproof). Thorned, Infernal and
+       Stormcloak all answer a melee blow, so one item gets one of them. -->
+
+  <!-- An electric burn from Stormcloak's arcs. Core has the hediff; the damage def is Anomaly's. -->
+  <DamageDef ParentName="Flame">
+    <defName>Entad_ArcBurn</defName>
+    <label>arc burn</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <deathMessage>{0} has died from electrical burns.</deathMessage>
+    <hediff>ElectricalBurn</hediff>
+    <minDamageToFragment>1</minDamageToFragment>
+    <explosionColorCenter>(0.26, 0.51, 0.97)</explosionColorCenter>
+    <explosionColorEdge>(0.26, 0.51, 0.97)</explosionColorEdge>
+    <scaleDamageToBuildingsBasedOnFlammability>false</scaleDamageToBuildingsBasedOnFlammability>
+  </DamageDef>
+
+  <!-- Given while Flaming or Infernal apparel is worn (equippedHediffs). A pawn catches fire less the lower its
+       flammability, and not at all below 0.01: Infernal takes it to 0. -->
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_FlameWreathed</defName>
+    <label>flame-wreathed</label>
+    <description>Small flames from an entad this person wears play over them without burning. They are harder to set alight.</description>
+    <defaultLabelColor>(1, 0.65, 0.3)</defaultLabelColor>
+    <stages>
+      <li>
+        <statOffsets>
+          <Flammability>-0.4</Flammability>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_InfernalWreath</defName>
+    <label>infernal wreath</label>
+    <description>Fire from an entad this person wears wraps around them without burning. No other fire can take hold of them.</description>
+    <defaultLabelColor>(1, 0.45, 0.2)</defaultLabelColor>
+    <stages>
+      <li>
+        <statOffsets>
+          <Flammability>-1</Flammability>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Flaming</defName>
+    <label>Flaming</label>
+    <description>Small flames dance over it. They never burn the cloth, and never quite go out.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <visible>true</visible>
+    <statOffsets>
+      <li><stat>ArmorRating_Heat</stat><min>0.25</min><max>0.4</max></li>
+      <li><stat>Insulation_Cold</stat><min>12</min><max>20</max></li>
+    </statOffsets>
+    <equippedHediffs><li>Entad_Hediff_FlameWreathed</li></equippedHediffs>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.45, 0.1, 0.22)</color>
+        <pulseSpeed>0.5</pulseSpeed>
+        <flicker>0.25</flicker>
+        <tint>0.6</tint>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.45, 0.08, 0.5)</color>
+        <threshold>0.5</threshold>
+        <coreThreshold>0.78</coreThreshold>
+        <riseAbove>0.1</riseAbove>
+        <loopTicks>360</loopTicks>
+        <frames>32</frames>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perSecond>1.5</perSecond>
+        <scale>0.07~0.12</scale>
+        <speed>0.25~0.5</speed>
+        <angle>-25~25</angle>
+      </li>
+    </visuals>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Infernal</defName>
+    <label>Infernal</label>
+    <description>It burns, and so does anyone who lays a hand on its wearer.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <visible>true</visible>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusivityTags><li>EntadMeleeRetaliation</li></exclusivityTags>
+    <statOffsets>
+      <li><stat>ArmorRating_Heat</stat><min>0.35</min><max>0.5</max></li>
+      <li><stat>Insulation_Cold</stat><min>15</min><max>25</max></li>
+    </statOffsets>
+    <equippedHediffs><li>Entad_Hediff_InfernalWreath</li></equippedHediffs>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <includeBlocked>true</includeBlocked>
+        <toOther>true</toOther>
+        <damageDef>Burn</damageDef>
+        <damage>4~8</damage>
+        <igniteChance>0.25</igniteChance>
+      </li>
+    </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(1, 0.35, 0.05, 0.4)</color>
+        <pulseSpeed>0.7</pulseSpeed>
+        <flicker>0.35</flicker>
+        <tint>0.8</tint>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.4, 0.05, 0.8)</color>
+        <threshold>0.4</threshold>
+        <coreThreshold>0.7</coreThreshold>
+        <riseAbove>0.15</riseAbove>
+        <loopTicks>300</loopTicks>
+        <scrolls>3</scrolls>
+        <frames>40</frames>
+        <evolveCells>4</evolveCells>
+        <pulseSpeed>0.7</pulseSpeed>
+        <pulseMin>0.75</pulseMin>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Ember</fleck>
+        <perSecond>3</perSecond>
+        <scale>0.08~0.14</scale>
+        <speed>0.3~0.6</speed>
+        <angle>-25~25</angle>
+      </li>
+      <!-- Sparks spitting upward and out -->
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_LeakSpark</fleck>
+        <perSecond>2.5</perSecond>
+        <scale>0.06~0.1</scale>
+        <speed>1~1.8</speed>
+        <angle>-50~50</angle>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>Entad_Fleck_BurnFlash</fleck><scale>0.45~0.55</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>Entad_Fleck_FlameLick</fleck><count>2~3</count><scale>0.35~0.5</scale><angle>-20~20</angle><speed>0.4~0.8</speed><rotation>-12~12</rotation><spread>0.2</spread></li>
+    </visuals>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Radiant</defName>
+    <label>Radiant</label>
+    <description>It gives off a steady light, wherever its wearer goes. Game sees them coming.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <visible>true</visible>
+    <!-- Not scaled: the stealth cost would grow with the light -->
+    <glowColor>(255, 236, 196, 0)</glowColor>
+    <statOffsets>
+      <li><stat>Entad_GlowRadius</stat><min>5</min><max>8</max></li>
+      <li><stat>HuntingStealth</stat><min>-0.2</min><max>-0.2</max></li>
+    </statOffsets>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Mirrored</defName>
+    <label>Mirrored</label>
+    <description>Its surface is polished to a mirror shine that no scuff or stain will dull.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statOffsets>
+      <li><stat>Entad_DeflectChance</stat><min>0.15</min><max>0.25</max></li>
+    </statOffsets>
+    <visuals>
+      <!-- The shine is how the item looks, so it shows before the trait is identified whatever the setting -->
+      <li Class="EntadFramework.EntadVisual_WeaponSheen">
+        <beforeIdentified>true</beforeIdentified>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponGlints">
+        <beforeIdentified>true</beforeIdentified>
+        <count>2</count>
+        <periodTicks>90~200</periodTicks>
+        <size>0.2~0.32</size>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Deflect</on><fleck>ExplosionFlash</fleck><scale>1.4~1.8</scale></li>
+      <li Class="EntadFramework.EntadVisual_EventEffecter"><on>Deflect</on><effecter>Deflect_Metal</effecter></li>
+    </visuals>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Thorned</defName>
+    <label>Thorned</label>
+    <description>Something sharp is woven into it. You only notice when you grab it.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusivityTags><li>EntadMeleeRetaliation</li></exclusivityTags>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <includeBlocked>true</includeBlocked>
+        <toOther>true</toOther>
+        <damageDef>Cut</damageDef>
+        <damage>3~6</damage>
+        <armorPenetration>0.15</armorPenetration>
+      </li>
+    </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_EventFlecks"><on>Trigger</on><at>Other</at><fleck>BloodSplash</fleck><scale>0.8~1</scale></li>
+    </visuals>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_Stormcloak</defName>
+    <label>Stormcloak</label>
+    <description>Static crawls over it constantly. Touch its wearer and the storm answers.</description>
+    <categories><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <visible>true</visible>
+    <scalesWithRarity>true</scalesWithRarity>
+    <exclusivityTags><li>EntadMeleeRetaliation</li></exclusivityTags>
+    <triggers>
+      <li>
+        <on>TakeDamage</on>
+        <attack>Melee</attack>
+        <fromEnemy>true</fromEnemy>
+        <includeBlocked>true</includeBlocked>
+        <toOther>true</toOther>
+        <damageDef>Entad_ArcBurn</damageDef>
+        <damage>3~5</damage>
+        <stunSeconds>1~2</stunSeconds>
+        <!-- EMP stuns a mechanoid about a second per 2 damage; vanilla's EMP adaptation then applies -->
+        <mechanoidDamageDef>EMP</mechanoidDamageDef>
+        <mechanoidDamage>8~12</mechanoidDamage>
+        <!-- Without it a stun on every blow holds a melee attacker in place -->
+        <adaptSeconds>8</adaptSeconds>
+      </li>
+    </triggers>
+    <visuals>
+      <li Class="EntadFramework.EntadVisual_WeaponGlow">
+        <color>(0.5, 0.75, 1, 0.3)</color>
+        <pulseSpeed>0</pulseSpeed>
+        <flicker>0.6</flicker>
+        <flickerSpeed>0.4</flickerSpeed>
+        <tint>1</tint>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponArcs">
+        <intervalTicks>22</intervalTicks>
+        <chance>0.6</chance>
+        <arcTicks>4</arcTicks>
+        <width>0.18</width>
+      </li>
+      <li Class="EntadFramework.EntadVisual_WeaponFlecks">
+        <fleck>Entad_Fleck_Static</fleck>
+        <perSecond>2</perSecond>
+        <scale>0.08~0.14</scale>
+        <speed>0.1~0.4</speed>
+        <angle>0~360</angle>
+      </li>
+      <li Class="EntadFramework.EntadVisual_EventArcs"><on>Trigger</on><at>Holder</at><to>Other</to><segments>4</segments><jag>0.35</jag><width>0.22</width><arcTicks>10</arcTicks><fleck>Entad_Fleck_Static</fleck></li>
+    </visuals>
+  </EntadFramework.EntadTraitDef>
+</Defs>
