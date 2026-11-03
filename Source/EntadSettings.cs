@@ -161,6 +161,9 @@ namespace EntadFramework
         // The colony's verity as a row under the resource readout, once there is any
         public static bool VerityReadout = true;
 
+        // Portable space channels play a ripple with ghosts of the room (EntadPortableSpaceRipple.cs) rather than the plain shimmer
+        public static bool SpaceRipple = true;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -280,6 +283,7 @@ namespace EntadFramework
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
+            Scribe_Values.Look(ref SpaceRipple, "spaceRipple", true);
             Scribe_Values.Look(ref Glint, "glint", true);
             Scribe_Values.Look(ref GlintOnGear, "glintOnGear", true);
             Scribe_Values.Look(ref GlintHideIdentified, "glintHideIdentified", false);
@@ -660,6 +664,7 @@ namespace EntadFramework
             Section(list, "EF_Settings_Visuals");
             list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
             list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_SpaceRipple".Translate(), ref EntadSettings.SpaceRipple, "EF_Settings_SpaceRipple_Tip".Translate());
             list.CheckboxLabeled("EF_Settings_Glint".Translate(), ref EntadSettings.Glint, "EF_Settings_Glint_Tip".Translate());
             if (EntadSettings.Glint)
             {

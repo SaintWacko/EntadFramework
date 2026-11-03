@@ -273,6 +273,8 @@
   <EF_Settings_VisualsEvents_Tip>Short effects when a trait acts: a burn flash where a searing blade lands, red wisps drawn from a kill into a vampiric weapon, sparks off armor, a dodge leaving an afterimage, a pulse when an injury heals. Sprinting pawns leave afterimages too.</EF_Settings_VisualsEvents_Tip>
   <EF_Settings_VisualsFurniture>On furniture</EF_Settings_VisualsFurniture>
   <EF_Settings_VisualsFurniture_Tip>Installed furniture shows its traits while they are at work: cold mist off a cool shelf, heat haze over a warm one, sparks off a building on a leaking or sparking power network, motes over a planter.</EF_Settings_VisualsFurniture_Tip>
+  <EF_Settings_SpaceRipple>Portable space ripple</EF_Settings_SpaceRipple>
+  <EF_Settings_SpaceRipple_Tip>While a pawn sets down a portable space, a ring spreads out from them leaving ghosts of the room's floors, buildings, plants and items. While they fold one up, the ring closes in on them from the far edge, dimming the area. Off: the air over the area just shimmers.</EF_Settings_SpaceRipple_Tip>
   <EF_Settings_VerityReadout_Tip>Adds the colony's entad verity as a row under the resource list in the top left, once the colony has any. Research benches show it either way.</EF_Settings_VerityReadout_Tip>
   <EF_Settings_Triggers>Combat triggers</EF_Settings_Triggers>
   <EF_Settings_TriggerChance>Trigger chance: {0}</EF_Settings_TriggerChance>
@@ -406,6 +408,7 @@
   <EF_Space_LostOffMap>{0} was destroyed away from any map, and the room it held is gone.</EF_Space_LostOffMap>
   <EF_Space_LostOnRemove>{0} lost its portable space away from any map, and the room it held is gone.</EF_Space_LostOnRemove>
   <EF_Space_OtherMap>The room is on another map.</EF_Space_OtherMap>
+  <EF_Space_Changed>The portable space changed before the move finished. Nothing was moved.</EF_Space_Changed>
   <EF_Space_CantTurn>{0} can't be turned this way. Rotate the room a quarter turn.</EF_Space_CantTurn>
   <EF_Space_Stored>stored</EF_Space_Stored>
   <EF_Space_StoredTip>Stored in the room held by {0}. Weighs nothing while it travels with it.</EF_Space_StoredTip>

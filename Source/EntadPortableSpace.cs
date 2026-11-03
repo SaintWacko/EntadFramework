@@ -879,6 +879,7 @@ namespace EntadFramework
 
             var trait = Trait;
             int ticks = trait != null ? EntadPortableSpace.WorkTicks(trait) : 60;
+            workTicks = ticks;
             Toil work = Toils_General.Wait(ticks).WithProgressBarToilDelay(TargetIndex.A);
             work.initAction = () =>
             {
@@ -887,7 +888,16 @@ namespace EntadFramework
                 var rect = EntadPortableSpace.RectAt(job.targetB.Cell, new Rot4(job.takeInventoryDelay), EntadPortableSpace.Width(t), EntadPortableSpace.Height(t));
                 pawn.rotationTracker.FaceCell(rect.CenterCell);
             };
-            work.tickAction = Shimmer;
+            work.tickAction = () =>
+            {
+                if (EntadSettings.SpaceRipple) RippleTick();
+                else Shimmer();
+            };
+            work.AddFinishAction(() =>
+            {
+                ripple?.End();
+                ripple = null;
+            });
             yield return work;
 
             Toil finish = ToilMaker.MakeToil("UsePortableSpace");
@@ -896,8 +906,27 @@ namespace EntadFramework
             yield return finish;
         }
 
-        // While the pawn works, the air over the area shimmers: a few faint distortions and sparks every few ticks,
-        // more for a bigger area. Visual only, and skipped when nobody can see the map.
+        // Not saved: after a load the next tick starts it again, partway through (EntadPortableSpaceRipple.cs)
+        private SpaceRipple ripple;
+        private int workTicks;
+
+        // Built only once the map is being looked at, so a channel on another map costs nothing until then
+        private void RippleTick()
+        {
+            if (ripple == null)
+            {
+                if (pawn.Map != Find.CurrentMap) return;
+                var t = Trait;
+                if (t == null) return;
+                ripple = SpaceRipple.Start(this, EntadPortableSpace.SpaceOf(t), job.targetA.Cell, job.targetB.Cell, new Rot4(job.takeInventoryDelay),
+                    EntadPortableSpace.Width(t), EntadPortableSpace.Height(t), workTicks);
+                EntadSpaceRipples.Add(ripple);
+            }
+            ripple.Tick();
+        }
+
+        // With the ripple turned off in the settings: the air over the area shimmers, a few faint distortions and
+        // sparks every few ticks, more for a bigger area. Visual only, and skipped when nobody can see the map.
         private void Shimmer()
         {
             if (!pawn.IsHashIntervalTick(10) || pawn.Map != Find.CurrentMap) return;
