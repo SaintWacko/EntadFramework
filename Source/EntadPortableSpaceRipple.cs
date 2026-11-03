@@ -30,6 +30,8 @@ namespace EntadFramework
         // Dust and shimmer at the ring's front, at most this many cells a tick however fast it moves
         private const int MaxFrontEffectsPerTick = 6;
 
+        // The thing itself isn't handed to comps' DrawGhost: it is off every map, and a comp reading its Map would
+        // throw every frame
         private struct Ghost
         {
             public ThingDef def;
@@ -176,7 +178,7 @@ namespace EntadFramework
             {
                 Ghost g = ghosts[i];
                 if (g.key > p) break;
-                GhostDrawer.DrawGhostThing(g.pos, g.rot, g.def, g.graphic, GhostColor, AltitudeLayer.Blueprint, g.thing, false, g.thing.Stuff);
+                GhostDrawer.DrawGhostThing(g.pos, g.rot, g.def, g.graphic, GhostColor, AltitudeLayer.Blueprint, null, false, g.thing.Stuff);
             }
         }
 
@@ -245,11 +247,9 @@ namespace EntadFramework
     {
         private static readonly List<SpaceRipple> active = new List<SpaceRipple>();
 
-        public EntadSpaceRipples(Game game)
-        {
-            for (int i = 0; i < active.Count; i++) active[i].Dispose();
-            active.Clear();
-        }
+        // No Dispose here: a load builds the new Game off the main thread, where Object.Destroy throws. Meshes left
+        // from the game being left go with the scene reload.
+        public EntadSpaceRipples(Game game) { active.Clear(); }
 
         internal static void Add(SpaceRipple ripple) => active.Add(ripple);
 
