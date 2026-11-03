@@ -1086,7 +1086,17 @@ namespace EntadFramework
         public override IEnumerable<Gizmo> CompGetWornGizmosExtra()
         {
             foreach (var g in base.CompGetWornGizmosExtra()) yield return g;
+            foreach (var g in HeldGizmos()) yield return g;
+        }
+
+        // Everything the holder of worn apparel (above) or an equipped weapon (Patch_EquipmentTracker_GetGizmos_Space)
+        // gets from the item: the portable space and whatever compat modules add
+        internal IEnumerable<Gizmo> HeldGizmos()
+        {
             foreach (var g in SpaceGizmos()) yield return g;
+            if (activeTraits.NullOrEmpty() || !EntadCompat.HasGizmoProviders) yield break;
+            var extra = EntadCompat.GizmosFor(this);
+            if (extra != null) foreach (var g in extra) yield return g;
         }
 
         // Worn apparel (above) and equipped weapons (Patch_EquipmentTracker_GetGizmos_Space) share these
@@ -1193,7 +1203,7 @@ namespace EntadFramework
             {
                 var comp = list[i].GetComp<CompEntad>();
                 if (comp == null) continue;
-                foreach (var g in comp.SpaceGizmos()) yield return g;
+                foreach (var g in comp.HeldGizmos()) yield return g;
             }
         }
     }

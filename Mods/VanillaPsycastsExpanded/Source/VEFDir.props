@@ -1,0 +1,11 @@
+<Project>
+  <!-- Where Vanilla Expanded Framework is installed: the folder holding its 1.6/ and 1.7/ folders. Shared by both
+       compat projects and the build entry (Source/EntadFramework.Build.csproj). Only VEF.dll is referenced: the module
+       recognises VPE's psycast extension by type name, so it needs nothing from VPE's own assembly. Pass
+       /p:VEFDir=... (with a trailing slash) for any other install. -->
+  <PropertyGroup>
+    <VEFDir Condition="'$(VEFDir)' == '' And Exists('$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2023507013/')">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2023507013/</VEFDir>
+    <VEFDir Condition="'$(VEFDir)' == '' And Exists('$(HOME)/.steam/steam/steamapps/workshop/content/294100/2023507013/')">$(HOME)/.steam/steam/steamapps/workshop/content/294100/2023507013/</VEFDir>
+    <VEFDir Condition="'$(VEFDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2023507013\</VEFDir>
+  </PropertyGroup>
+</Project>

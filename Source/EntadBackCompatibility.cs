@@ -40,11 +40,20 @@ namespace EntadFramework
         {
         };
 
+        // Traits defined by a compat module (Mods/<Mod>/Defs), which don't exist while that mod is off. Removing the
+        // mod mid-save drops them from old items the same way. Named here because the module's own code isn't loaded
+        // then either.
+        private static readonly HashSet<string> ModuleTraits = new HashSet<string>
+        {
+            // Mods/DubsBadHygiene
+            "Entad_Pure", "Entad_Wellspring", "Entad_Cesspit", "Entad_BottomlessPit", "Entad_Fouling", "Entad_Evaporative",
+        };
+
         // Only reached for a def name that failed to resolve, so it never runs on a normal load
         public static void Postfix(string defName, Type type, ref bool __result)
         {
             if (__result || defName == null) return;
-            if (type == typeof(EntadTraitDef)) __result = RemovedTraits.Contains(defName);
+            if (type == typeof(EntadTraitDef)) __result = RemovedTraits.Contains(defName) || ModuleTraits.Contains(defName);
             else if (type == typeof(RimWorld.ThoughtDef)) __result = RemovedThoughts.Contains(defName);
         }
     }

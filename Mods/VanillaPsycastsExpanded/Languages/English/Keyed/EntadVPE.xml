@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Settings (Generation tab) -->
+  <EF_VPE_Settings>Vanilla Psycasts Expanded</EF_VPE_Settings>
+  <EF_VPE_Weight>Psycast trait weight: x{0}</EF_VPE_Weight>
+  <EF_VPE_Weight_Desc>How likely the traits that grant Vanilla Psycasts Expanded psycasts are, next to other traits of the same rarity. 0 = they never roll. Items that already have them keep them.</EF_VPE_Weight_Desc>
+  <EF_VPE_KeepVanilla>Keep vanilla psycast traits</EF_VPE_KeepVanilla>
+  <EF_VPE_KeepVanilla_Tip>Chaos Skip, Far Skip and Stun Charge grant Royalty's own psycasts. While Vanilla Psycasts Expanded is active they stop rolling unless this is on. Items that already have them keep them.</EF_VPE_KeepVanilla_Tip>
+
+  <!-- Gizmo of an ability whose trait isn't identified yet -->
+  <EF_VPE_HiddenCooldown>Usable again in {0}.</EF_VPE_HiddenCooldown>
+</LanguageData>

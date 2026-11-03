@@ -80,7 +80,7 @@ namespace EntadFramework
             {
                 if (p == null || boundPawns.Contains(p)) continue;
                 boundPawns.Add(p);
-                EntadBindingRegistry.Keep(p);
+                EntadBindingRegistry.Keep(p, this);
                 changed = true;
             }
             if (changed) BindingChanged();
@@ -103,10 +103,14 @@ namespace EntadFramework
             Bind(new[] { pawn });
         }
 
+        // Set on some found loot (EntadWorldItems): binds like a bindOnFirstUse trait, without a trait to show it
+        public bool bindOnFirstUse;
+
         public bool BindsOnFirstUse
         {
             get
             {
+                if (bindOnFirstUse) return true;
                 for (int i = 0; i < activeTraits.Count; i++) if (activeTraits[i].def.bindOnFirstUse) return true;
                 return false;
             }
@@ -143,11 +147,12 @@ namespace EntadFramework
             // A pawn discarded some other way is never written to the save, so its reference couldn't resolve on load
             if (Scribe.mode == LoadSaveMode.Saving && boundPawns != null) boundPawns.RemoveAll(p => p == null || p.Discarded);
             Scribe_Collections.Look(ref boundPawns, "boundPawns", true, LookMode.Reference);
+            Scribe_Values.Look(ref bindOnFirstUse, "entadBindOnFirstUse");
             if (Scribe.mode == LoadSaveMode.PostLoadInit && boundPawns != null)
             {
                 boundPawns.RemoveAll(p => p == null);
                 if (boundPawns.Count == 0) boundPawns = null;
-                else foreach (var p in boundPawns) EntadBindingRegistry.Keep(p);
+                else foreach (var p in boundPawns) EntadBindingRegistry.Keep(p, this);
             }
         }
 
@@ -162,16 +167,70 @@ namespace EntadFramework
     // and their parent relations go with them, which would cut every descendant off from the bloodline. Pawns in
     // this set are reported as critical, so they stay. Rebuilt on load from the items themselves, so nothing extra
     // is saved and a destroyed item's pawns are simply not re-added.
+    // A pawn is only kept while one of their items is somewhere else (looted, dropped, worn by someone else). An NPC
+    // generated with a bound entad (EntadWorldPawns) who leaves still carries it, and is discarded together with it,
+    // so nothing is left that needs them; keeping every such raider and caravan guard would pile up world pawns.
     public static class EntadBindingRegistry
     {
-        private static readonly HashSet<Pawn> kept = new HashSet<Pawn>();
+        private static readonly Dictionary<Pawn, List<CompEntad>> kept = new Dictionary<Pawn, List<CompEntad>>();
 
-        public static void Keep(Pawn pawn)
+        public static void Keep(Pawn pawn, CompEntad item)
         {
-            if (pawn != null) kept.Add(pawn);
+            if (pawn == null) return;
+            // World pawn GC asks about a carrier while it still holds its gear, then discards it, and nothing asks
+            // again; binds are rare, so this is where those entries go
+            if (kept.Count > 0)
+            {
+                var gone = kept.Keys.Where(p => p.Discarded).ToList();
+                foreach (var p in gone) kept.Remove(p);
+            }
+            if (!kept.TryGetValue(pawn, out var items)) kept[pawn] = items = new List<CompEntad>();
+            if (item != null && !items.Contains(item)) items.Add(item);
+            neededTick = -1;
         }
 
-        public static bool IsKept(Pawn pawn) => kept.Count > 0 && kept.Contains(pawn);
+        private static int neededTick = -1;
+        private static bool anyNeeded;
+
+        // Whether any entry needs keeping right now. NPC carriers still holding their own gear don't, and in most
+        // games that is every entry (Phase 1 binds carriers at generation), so the GC's ancestor walk and the alert
+        // stop here. Asking every entry also drops the ones GC discarded since. Once per tick: GC asks about many
+        // pawns in the same tick.
+        public static bool AnyNeeded
+        {
+            get
+            {
+                if (kept.Count == 0) return false;
+                int tick = Find.TickManager?.TicksGame ?? 0;
+                if (tick == neededTick) return anyNeeded;
+                neededTick = tick;
+                anyNeeded = false;
+                foreach (var p in kept.Keys.ToList()) if (Needed(p)) anyNeeded = true;
+                return anyNeeded;
+            }
+        }
+
+        public static bool IsKept(Pawn pawn) => kept.Count > 0 && Needed(pawn);
+
+        // The player's own pawns are always kept: a pawn wearing their own item is still the link between dead
+        // descendants and later generations. Vanilla's GC already keeps anyone who was ever a colonist, so for GC this
+        // only matters for player-faction pawns it doesn't count as colonists; it also keeps AnyNeeded true for the alert. Discarding a pawn doesn't destroy what it carried, so a discarded pawn's
+        // entry is dropped here rather than waiting for its items.
+        private static bool Needed(Pawn pawn)
+        {
+            if (!kept.TryGetValue(pawn, out var items)) return false;
+            // Unbind leaves the entry behind; it goes here, as a destroyed item's does
+            items.RemoveAll(c => c.parent.Destroyed || !c.BoundPawns.Contains(pawn));
+            if (pawn.Discarded || items.Count == 0)
+            {
+                kept.Remove(pawn);
+                return false;
+            }
+            if (pawn.Faction == Faction.OfPlayer) return true;
+            for (int i = 0; i < items.Count; i++)
+                if (items[i].Holder != pawn) return true;
+            return false;
+        }
 
         // Bound pawns and every descendant of one. A dead descendant in the middle of the line (a bound pawn's son
         // who died off-map, say) is what links the grandchildren to the binding; vanilla only keeps relatives one
@@ -179,8 +238,8 @@ namespace EntadFramework
         // Walks parents upward with a visited set and a depth cap. Only called from world pawn GC passes.
         public static bool IsKeptOrDescendant(Pawn pawn)
         {
-            if (kept.Count == 0 || pawn == null) return false;
-            if (kept.Contains(pawn)) return true;
+            if (pawn == null || !AnyNeeded) return false;
+            if (Needed(pawn)) return true;
             if (!pawn.RaceProps.Humanlike) return false;
             var visited = new HashSet<Pawn>();
             var frontier = new List<Pawn> { pawn };
@@ -190,7 +249,7 @@ namespace EntadFramework
                 foreach (var p in frontier)
                 {
                     if (p == null || !visited.Add(p)) continue;
-                    if (kept.Contains(p)) return true;
+                    if (Needed(p)) return true;
                     var rels = p.relations?.DirectRelations;
                     if (rels == null) continue;
                     for (int i = 0; i < rels.Count; i++)
@@ -201,13 +260,15 @@ namespace EntadFramework
             return false;
         }
 
-        public static void Clear() => kept.Clear();
-
-        public static bool Any => kept.Count > 0;
+        public static void Clear()
+        {
+            kept.Clear();
+            neededTick = -1;
+        }
     }
 
     // Side alert, like "Need colonist beds": a colonist is using gear bound to another bloodline, so its traits do
-    // nothing for them. Returns at once in a session where nothing has been bound.
+    // nothing for them. Returns at once while no binding needs keeping (only NPC carriers holding their own gear).
     public class Alert_EntadWrongBloodline : Alert
     {
         private readonly List<Pawn> culprits = new List<Pawn>();
@@ -226,7 +287,7 @@ namespace EntadFramework
             culprits.Clear();
             users.Clear();
             items.Clear();
-            if (!EntadBindingRegistry.Any) return false;
+            if (!EntadBindingRegistry.AnyNeeded) return false;
             // Colonists and slaves; the same cached vanilla list, so slaves cost nothing extra
             foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
             {

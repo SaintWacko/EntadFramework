@@ -353,6 +353,48 @@ namespace EntadFramework
             return 0f;
         }
         private int spawnedTick;
+        // When a Humble item first counted for less colony wealth (EntadFurnitureEffects.ReduceWealth), -1 before
+        internal int humbleSinceTick = -1;
+        // Stormcaught and Sparking: ticks of live network left before the next arc, -1 without an arc trait
+        internal int arcTicksLeft = -1;
+        // When a Grounded building was first seen on a live player network, -1 before (EntadPowerNets.Notice)
+        internal int groundedSinceTick = -1;
+
+        public int TicksSinceSpawned => Find.TickManager.TicksGame - spawnedTick;
+
+        // Whether a trait on the item changes the stat; cheap enough for a spawn or a trait change, not a tick
+        public bool HasStatTrait(StatDef stat)
+        {
+            for (int t = 0; t < activeTraits.Count; t++)
+                foreach (var r in activeTraits[t].def.AllRanges())
+                    if (r.stat == stat) return true;
+            return false;
+        }
+
+        // Reveals the traits that change the stat, for an effect the player has now seen happen
+        public void RevealStat(StatDef stat)
+        {
+            if (!HasHidden) return;
+            RevealWhere(EntadEffectKind.Stat, m =>
+            {
+                foreach (var r in m.def.AllRanges()) if (r.stat == stat) return true;
+                return false;
+            });
+        }
+
+        // A compat module's on/off effect (EntadTraitDef.customEffects); as HasStatTrait, for a spawn or trait change
+        public bool HasCustomEffect(string key)
+        {
+            for (int t = 0; t < activeTraits.Count; t++)
+                if (activeTraits[t].def.customEffects?.Contains(key) == true) return true;
+            return false;
+        }
+
+        public void RevealCustomEffect(string key)
+        {
+            if (!HasHidden) return;
+            RevealWhere(EntadEffectKind.Custom, m => m.def.customEffects?.Contains(key) == true);
+        }
         private int hiddenState; // 0 unknown, 1 some hidden, 2 none hidden
 
         public bool HasHidden
@@ -370,6 +412,10 @@ namespace EntadFramework
             for (int i = 0; i < activeTraits.Count; i++) activeTraits[i].Reveal(EntadEffectKind.All, false);
         }
 
+        // Set while traits go onto gear that is already in use somewhere the player can't see (EntadWorldPawns):
+        // adding and granting reveal what a holder would notice, and those reveals are undone straight after
+        [System.ThreadStatic] internal static bool quietReveals;
+
         public void RevealedChanged(AppliedEntadTrait m, EntadEffectKind kind, bool announce = true)
         {
             hiddenState = 0;
@@ -379,7 +425,7 @@ namespace EntadFramework
             // No glower refresh here: a reveal never changes the radius (building factors apply whether revealed or
             // not), and a reveal can be triggered from inside GlowGrid.RegisterGlower (the radius read in the GlowLight
             // constructor), where re-registering would corrupt the glow grid's light list.
-            if (announce) Messages.Message("EF_TraitRevealed".Translate(parent.LabelNoCount, m.def.label), parent, MessageTypeDefOf.NeutralEvent, false);
+            if (announce && !quietReveals) Messages.Message("EF_TraitRevealed".Translate(parent.LabelNoCount, m.def.label), parent, MessageTypeDefOf.NeutralEvent, false);
         }
 
         // Applies a changed glow radius to a light that is on. The glow grid keeps the radius it read when the light
@@ -506,10 +552,10 @@ namespace EntadFramework
         }
 
         // Which per-hit stats any trait has, worked out on first use after the trait list changes: the melee
-        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn.
-        // -1 unknown. Not saved; a loaded item starts unknown.
+        // penetration postfix asks on every melee hit, Merciless on every hit against a downed or fleeing pawn, and
+        // the Hit trigger on every hit its holder lands. -1 unknown. Not saved; a loaded item starts unknown.
         private int hitStatFlags = -1;
-        private const int FlagMeleePenetration = 1, FlagMerciless = 2;
+        private const int FlagMeleePenetration = 1, FlagMerciless = 2, FlagHitTrigger = 4;
 
         private int HitStatFlags
         {
@@ -520,6 +566,9 @@ namespace EntadFramework
                     int flags = 0;
                     for (int t = 0; t < activeTraits.Count; t++)
                     {
+                        var triggers = activeTraits[t].def.triggers;
+                        for (int i = 0; triggers != null && i < triggers.Count; i++)
+                            if (triggers[i].on == EntadTriggerEvent.Hit) flags |= FlagHitTrigger;
                         var factors = activeTraits[t].def.statFactors;
                         for (int i = 0; factors != null && i < factors.Count; i++)
                         {
@@ -535,6 +584,7 @@ namespace EntadFramework
 
         internal bool HasMeleePenetration => (HitStatFlags & FlagMeleePenetration) != 0;
         internal bool HasMerciless => (HitStatFlags & FlagMerciless) != 0;
+        internal bool HasHitTrigger => (HitStatFlags & FlagHitTrigger) != 0;
 
         private void TraitsChanged()
         {
@@ -547,6 +597,7 @@ namespace EntadFramework
             ClearStatCaches();
             EntadAuras.Refresh(this);
             EntadStorage.Refresh(this, parent.Spawned);
+            EntadFurnitureEffects.Refresh(this);
             if (!parent.Spawned) return;
             RefreshGlower(parent.GetComp<CompGlower>());
             EntadFuel.Refresh(parent, this);
@@ -612,6 +663,7 @@ namespace EntadFramework
             spawnedTick = Find.TickManager.TicksGame;
             if (!activeTraits.NullOrEmpty()) EntadFuel.Refresh(parent, this);
             if (!activeTraits.NullOrEmpty()) EntadStorage.Refresh(this, true, fromSpawn: true);
+            if (!activeTraits.NullOrEmpty()) EntadFurnitureEffects.Refresh(this);
         }
 
         // Set while BaseMarketValue reads the stat, so StatPart_Entad leaves this item's market value untouched
@@ -630,6 +682,7 @@ namespace EntadFramework
         {
             base.PostDeSpawn(map, mode);
             EntadStorage.Refresh(this, false);
+            EntadFurnitureEffects.Refresh(this);
         }
 
         public void RemoveTrait(AppliedEntadTrait trait)
@@ -668,6 +721,9 @@ namespace EntadFramework
             ExposeBinding();
             ExposePersona();
             Scribe_Values.Look(ref dismantleWorkDone, "dismantleWorkDone", 0f);
+            Scribe_Values.Look(ref humbleSinceTick, "entadHumbleSince", -1);
+            Scribe_Values.Look(ref arcTicksLeft, "entadArcTicksLeft", -1);
+            Scribe_Values.Look(ref groundedSinceTick, "entadGroundedSince", -1);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 activeTraits = activeTraits ?? new List<AppliedEntadTrait>();
@@ -699,7 +755,9 @@ namespace EntadFramework
                 if (BondedPawn != null && !IsPersona) Unbond();
                 SyncDurability();
                 EntadAuras.Refresh(this);
+                EntadFurnitureEffects.Refresh(this);
             }
+            EntadCompat.RaiseExposing(this);
         }
 
         // The pawn currently wearing/wielding this item, if any
@@ -751,7 +809,24 @@ namespace EntadFramework
             if (bond != null) inspectString += "\n" + bond;
             string dismantle = EntadDismantle.InspectLine(this);
             if (dismantle != null) inspectString += "\n" + dismantle;
+            foreach (var trait in activeTraits)
+            {
+                if (!trait.IsRevealed(EntadEffectKind.Trigger) || trait.def.triggers == null) continue;
+                for (int i = 0; i < trait.def.triggers.Count; i++)
+                {
+                    string ready = TriggerReadyIn(trait, i);
+                    if (ready != null) inspectString += "\n" + "EF_InspectTriggerReady".Translate(trait.NameHidden ? unknown : trait.def.LabelCap.ToString(), ready);
+                }
+            }
             return inspectString;
+        }
+
+        // How long until a trigger on cooldown can fire again; null when it is ready
+        private static string TriggerReadyIn(AppliedEntadTrait trait, int triggerIndex)
+        {
+            if (Current.Game == null || trait.def.triggers[triggerIndex].cooldownHours <= 0f) return null;
+            int left = trait.TriggerReadyTick(triggerIndex) - Find.TickManager.TicksGame;
+            return left > 0 ? left.ToStringTicksToPeriod() : null;
         }
 
         // Charges and cooldown of a granted ability, read from the def EntadAbilityPrep made for the trait, which
@@ -759,12 +834,17 @@ namespace EntadFramework
         private static string AbilityLimitLine(AbilityDef ability, bool chargesApply)
         {
             if (ability == null) return null;
-            int cooldown = UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average);
+            return AbilityLimitLine(ability.LabelCap, chargesApply ? ability.charges : 1,
+                UnityEngine.Mathf.RoundToInt(ability.cooldownTicksRange.Average), ability.cooldownPerCharge);
+        }
+
+        private static string AbilityLimitLine(string label, int charges, int cooldown, bool perCharge)
+        {
             if (cooldown <= 0) return null;
             string period = cooldown.ToStringTicksToPeriod();
-            if (chargesApply && ability.charges > 1)
-                return (ability.cooldownPerCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(ability.LabelCap, ability.charges, period);
-            return "EF_Card_AbilityCooldown".Translate(ability.LabelCap, period);
+            if (charges > 1)
+                return (perCharge ? "EF_Card_AbilityChargesEach" : "EF_Card_AbilityChargesAll").Translate(label, charges, period);
+            return "EF_Card_AbilityCooldown".Translate(label, period);
         }
 
         // Single row in the Basics section; hover shows details like unique weapon traits
@@ -800,6 +880,17 @@ namespace EntadFramework
                     if (stat == null || !trait.def.UsesStat(stat, parent)) continue;
                     infoString.AppendLine(" - " + "EF_Card_StatFactor".Translate(stat.LabelCap, trait.FactorFor(i).ToStringPercent()));
                 }
+                if (trait.IsRevealed(EntadEffectKind.Stat) && trait.def.ChangesRoomTemperature)
+                {
+                    bool heating = trait.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_RoomHeating);
+                    infoString.AppendLine(" - " + (heating ? "EF_Card_HeatsTo" : "EF_Card_CoolsTo").Translate(trait.def.TargetTemperature(heating).ToStringTemperature("F0")));
+                }
+                if (trait.IsRevealed(EntadEffectKind.Stat) && trait.def.AllRanges().Any(r => r.stat == EntadStatDefOf.Entad_NetBatteryLossFactor))
+                    infoString.AppendLine(" - " + "EF_Card_NetNoSelfDischarge".Translate());
+                if (trait.def.powerNet != null && trait.IsRevealed(EntadEffectKind.Network))
+                    foreach (var line in trait.def.powerNet.CardLines()) infoString.AppendLine(" - " + line);
+                if (trait.def.customCardLines != null && trait.IsRevealed(EntadEffectKind.Custom))
+                    foreach (var line in trait.def.customCardLines) infoString.AppendLine(" - " + line);
                 if (trait.thought != null && trait.IsRevealed(EntadEffectKind.Mood))
                 {
                     infoString.AppendLine(" - " + "EF_Card_Mood".Translate(trait.thought.stages?.FirstOrDefault()?.LabelCap ?? trait.thought.defName,
@@ -821,7 +912,10 @@ namespace EntadFramework
                 {
                     int triggerIndex = i;
                     var trigger = trait.def.triggers[i];
-                    infoString.AppendLine(" - " + trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue)));
+                    string triggerLine = trigger.Line(triggerValue => trait.TriggerValue(triggerIndex, triggerValue));
+                    string ready = TriggerReadyIn(trait, i);
+                    if (ready != null) triggerLine += " " + "EF_Card_TriggerReadyIn".Translate(ready);
+                    infoString.AppendLine(" - " + triggerLine);
                     // (the trigger line already names the hediff, so only a hediff vanilla can describe gets a line)
                     string hediffEffects = EntadUtility.HediffEffects(trigger.hediff);
                     if (hediffEffects != null)
@@ -858,6 +952,18 @@ namespace EntadFramework
                         foreach (var slot in EntadReload.SlotsOf(this).Where(x => x.trait == trait))
                             infoString.AppendLine("   " + "EF_Card_Reloadable".Translate(EntadReload.Charges(slot), slot.Max, slot.Ammo.label, slot.PerCharge));
                 }
+                if (!trait.def.externalAbilities.NullOrEmpty() && trait.IsRevealed(EntadEffectKind.Ability))
+                {
+                    var labels = trait.def.externalAbilities.Select(a => EntadCompat.ExternalAbilityLabel(a).CapitalizeFirst()).ToList();
+                    infoString.AppendLine(" - " + "EF_Card_GrantsAbility".Translate(string.Join(", ", labels)));
+                    // The module's copy uses the trait's cooldown; without one it keeps the ability's own, which only
+                    // the module knows, so no line
+                    foreach (string l in labels)
+                    {
+                        string limit = AbilityLimitLine(l, trait.def.abilityCharges, trait.def.abilityCooldownTicks, true);
+                        if (limit != null) infoString.AppendLine("   " + limit);
+                    }
+                }
                 if (trait.def.HasMealEffect && trait.IsRevealed(EntadEffectKind.Meal))
                 {
                     if (trait.def.mealNutritionFactor.min != 1f || trait.def.mealNutritionFactor.max != 1f)
@@ -886,10 +992,15 @@ namespace EntadFramework
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
             string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
-            // The card names a granted ability; its hyperlink opens the ability's own description
-            var abilityLinks = activeTraits
+            // The card names a granted ability, or one a trigger casts; its hyperlink opens the ability's own description
+            var granted = activeTraits
                 .Where(m => !m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
-                .SelectMany(m => m.def.abilities).Where(a => a != null).Distinct()
+                .SelectMany(m => m.def.abilities);
+            var cast = activeTraits
+                .Where(m => m.def.triggers != null && m.IsRevealed(EntadEffectKind.Trigger))
+                .SelectMany(m => m.def.triggers).Where(t => t.casts != null)
+                .SelectMany(t => t.casts).Select(c => c?.ability);
+            var abilityLinks = granted.Concat(cast).Where(a => a != null).Distinct()
                 .Select(a => new Dialog_InfoCard.Hyperlink(a)).ToList();
             yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_TraitsLabel".Translate(), label, infoString.ToString().TrimEnd(), 4000,
                 hyperlinks: abilityLinks.Count > 0 ? abilityLinks : null);

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Generated thing sets that may hold entads (EntadWorldItems.cs). Trader: the stock rolls once and converts a
+       few items. Reward and Loot: each weapon, apparel or furniture item rolls on its own, up to a most per set.
+       Chances and counts come from the settings unless the extension sets them. Raid loot makers are left out:
+       raiders already carry entads of their own. -->
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/ThingSetMakerDef[defName="TraderStock"]</xpath>
+    <value>
+      <li Class="EntadFramework.EntadThingSetExtension">
+        <kind>Trader</kind>
+      </li>
+    </value>
+  </Operation>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/ThingSetMakerDef[defName="Reward_ItemsStandard"]</xpath>
+    <value>
+      <li Class="EntadFramework.EntadThingSetExtension">
+        <kind>Reward</kind>
+      </li>
+    </value>
+  </Operation>
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/ThingSetMakerDef[defName="MapGen_AncientComplexRoomLoot_Default" or defName="MapGen_AncientPodContents" or defName="MapGen_AncientTempleContents" or defName="MapGen_DefaultStockpile"]</xpath>
+    <value>
+      <li Class="EntadFramework.EntadThingSetExtension">
+        <kind>Loot</kind>
+      </li>
+    </value>
+  </Operation>
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Ideology</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <operations>
+        <li Class="PatchOperationAddModExtension">
+          <xpath>Defs/ThingSetMakerDef[defName="Reward_ReliquaryPilgrims"]</xpath>
+          <value>
+            <li Class="EntadFramework.EntadThingSetExtension">
+              <kind>Reward</kind>
+            </li>
+          </value>
+        </li>
+        <li Class="PatchOperationAddModExtension">
+          <xpath>Defs/ThingSetMakerDef[defName="MapGen_AncientComplexRoomLoot_Better" or defName="MapGen_AncientComplex_SecurityCrate"]</xpath>
+          <value>
+            <li Class="EntadFramework.EntadThingSetExtension">
+              <kind>Loot</kind>
+            </li>
+          </value>
+        </li>
+      </operations>
+    </match>
+  </Operation>
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Anomaly</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <operations>
+        <li Class="PatchOperationAddModExtension">
+          <xpath>Defs/ThingSetMakerDef[defName="Reward_GrayBox" or defName="Reward_GrayBoxLowReward"]</xpath>
+          <value>
+            <li Class="EntadFramework.EntadThingSetExtension">
+              <kind>Loot</kind>
+            </li>
+          </value>
+        </li>
+      </operations>
+    </match>
+  </Operation>
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Odyssey</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <operations>
+        <li Class="PatchOperationAddModExtension">
+          <xpath>Defs/ThingSetMakerDef[defName="Reward_UniqueWeapon"]</xpath>
+          <value>
+            <li Class="EntadFramework.EntadThingSetExtension">
+              <kind>Reward</kind>
+            </li>
+          </value>
+        </li>
+        <li Class="PatchOperationAddModExtension">
+          <xpath>Defs/ThingSetMakerDef[defName="MapGen_AbandonedColonyStockpile" or defName="MapGen_HighValueCrate" or defName="MapGen_OrbitalItemStash" or defName="MapGen_ScarlandsAncientPodContents" or defName="MapGen_ScarlandsHermeticCrate"]</xpath>
+          <value>
+            <li Class="EntadFramework.EntadThingSetExtension">
+              <kind>Loot</kind>
+            </li>
+          </value>
+        </li>
+      </operations>
+    </match>
+  </Operation>
+  <!-- Exotic goods traders deal in the strange and rare: twice the settings' chance -->
+  <Operation Class="PatchOperationAddModExtension">
+    <xpath>Defs/TraderKindDef[defName="Orbital_Exotic"]</xpath>
+    <value>
+      <li Class="EntadFramework.EntadTraderExtension">
+        <chanceFactor>2</chanceFactor>
+      </li>
+    </value>
+  </Operation>
+</Patch>

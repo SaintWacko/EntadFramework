@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Dubs Bad Hygiene traits (Mods/DubsBadHygiene/Source/EntadHygiene.cs), loaded only while DBH is active. Each is
+       read from the DBH building that carries it. -->
+  <StatDef>
+    <defName>Entad_WaterCapacityFactor</defName>
+    <label>water capacity</label>
+    <description>How much water this draws from the ground or pumps into its plumbing, compared to normal. A well's own readout shows its ground capacity before this; the network's pump capacity includes it.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>3</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_SewageTreatmentFactor</defName>
+    <label>sewage treated</label>
+    <description>How fast this treats the sewage it holds, compared to normal.</description>
+    <category>Building</category>
+    <defaultBaseValue>1</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>4</maxValue>
+    <hideAtValue>1</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_WaterFoulingChance</defName>
+    <label>chance per day to foul its water</label>
+    <description>The chance each day that this contaminates one water tower on its plumbing network, as a polluted well does. A working water filter on the network stops it.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+
+  <StatDef>
+    <defName>Entad_WaterLossPerDay</defName>
+    <label>water lost per day</label>
+    <description>The share of this tank's capacity that disappears from it each day.</description>
+    <category>Building</category>
+    <defaultBaseValue>0</defaultBaseValue>
+    <minValue>0</minValue>
+    <maxValue>1</maxValue>
+    <hideAtValue>0</hideAtValue>
+    <toStringStyle>PercentZero</toStringStyle>
+  </StatDef>
+</Defs>

@@ -180,8 +180,9 @@ namespace EntadFramework
             var chances = request.rarityChances ?? EntadRarityChances.Default;
             var allowed = request.traitFilter?.rarities;
             Func<EntadTraitDef, float> weight = null;
-            if (thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f)
-                weight = d => d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f;
+            bool weaponWeight = thing.def.IsWeapon && EntadSettings.WeaponSpecificWeight > 1f;
+            if (weaponWeight || EntadCompat.HasWeights)
+                weight = d => (weaponWeight && d.IsWeaponSpecific ? EntadSettings.WeaponSpecificWeight : 1f) * EntadCompat.WeightOf(d);
 
             bool hasRealTrait = false;
             // Runs past the target only to take a drawback the item rolled for, whose points reopen the target

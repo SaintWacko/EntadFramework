@@ -3,8 +3,10 @@
      (saintwacko.AbilityAI) is active (LoadFolders.xml), so the AbilityAI.* class names here always resolve.
      Without it, Sprint, Battle Cry, Flashbang and Artillery fall back to vanilla's fight AI through aiCanUse in the
      base defs (Second Wind, Blink and Smokescreen have no fallback: see the header there); Ability AI stands
-     vanilla down for every ability it handles, so the two never both cast one.
-     The workers and their fields are described in Ability AI's AbilityAIWorkers.cs; radius, hediff and stuns are
+     vanilla down for every ability it handles while its vanilla stand-down setting is on (the default); with it off,
+     both AIs can cast the four aiCanUse abilities.
+     The workers and their fields are described in Ability AI's AbilityAIWorkers.cs (Interrupt in
+     AbilityAIWorkersTargeted.cs); radius, hediff and stuns are
      read from the pulse comp (registered in Mods/AbilityAI/Source/EntadAbilityAICompat.cs). -->
 <!-- One top-level operation per ability, so a renamed ability loses only its own rules -->
 <Patch>

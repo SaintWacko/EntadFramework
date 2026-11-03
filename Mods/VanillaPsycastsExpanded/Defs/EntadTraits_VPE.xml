@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Vanilla Psycasts Expanded psycasts as gear abilities (Mods/VanillaPsycastsExpanded/Source/EntadVEFAbilities.cs),
+       loaded only while VPE is active. Anyone holding the item can cast them: no psylink, psyfocus or neural heat, with
+       the trait's charges and cooldown instead (a charge comes back after each cooldown). Where VPE scales an effect by
+       the caster's psychic sensitivity (range, duration, Word of Animals' odds, Mend's repair), the holder counts as
+       100%, or as the casterSensitivity of an EntadFramework.VPECompat.EntadVEFTraitExtension on the trait. A target's
+       own sensitivity still counts, and a psychically deaf pawn can't be targeted by the psychic ones.
+       Only psycasts that need a deliberate choice of target are here; the reactive ones are planned as triggered
+       traits. Rarity follows the psycast's level: 1-2 Uncommon, 3 Rare, 4 Epic, 5 Legendary. -->
+
+  <!-- Skipmaster -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Skip</defName>
+    <label>Skip</label>
+    <description>Things it points at have a habit of being somewhere else a moment later.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_Skip</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Farskip</defName>
+    <label>Farskip</label>
+    <description>Whoever carries it is never quite as far from home as the map says.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Legendary</rarity>
+    <externalAbilities><li>VPE_Farskip</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>180000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Nightstalker -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Shadowskip</defName>
+    <label>Shadowskip</label>
+    <description>It is always cold to the touch, and darkest where it rests.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_Shadowskip</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Warlord -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_PowerLeap</defName>
+    <label>Power Leap</label>
+    <description>Its bearer lands lighter than they should, and further away.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_PowerLeap</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_FiringFocus</defName>
+    <label>Firing Focus</label>
+    <description>Holding it, the world narrows down to the next target.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <weaponType>Ranged</weaponType>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_FiringFocus</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_BladeFocus</defName>
+    <label>Blade Focus</label>
+    <description>In a close fight, its bearer seems to move a beat ahead of everyone else.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <weaponType>Melee</weaponType>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_BladeFocus</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Harmonist -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_LocationSwap</defName>
+    <label>Location Swap</label>
+    <description>Two people looking at it at once sometimes find themselves looking from the other side.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_LocationSwap</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_PsychicGuidance</defName>
+    <label>Psychic Guidance</label>
+    <description>A quiet voice in it gives good advice to whoever stands nearby.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_PsychicGuidance</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Necropath -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Ghostwalk</defName>
+    <label>Ghostwalk</label>
+    <description>Its bearer is sometimes seen passing through a wall, and never quite remembers doing it.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_Ghostwalk</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Staticlord -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_BallLightning</defName>
+    <label>Ball Lightning</label>
+    <description>Hair stands on end around it, and small sparks gather where nobody is looking.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_BallLightning</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Frostshaper -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_IceBlock</defName>
+    <label>Ice Block</label>
+    <description>Frost creeps out from it on warm days, and the air around it smells of snow.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_IceBlock</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Empath -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_WordOfJoy</defName>
+    <label>Word of Joy</label>
+    <description>People who talk with its bearer come away smiling and can't say why.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_WordofJoy</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_WordOfInspiration</defName>
+    <label>Word of Inspiration</label>
+    <description>Its bearer always seems to know what someone else should try next.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_WordofInspiration</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Wildspeaker -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_WordOfAnimals</defName>
+    <label>Word of Animals</label>
+    <description>Animals stop and listen when its bearer speaks, though not always kindly.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Rare</rarity>
+    <externalAbilities><li>VPE_WordofAnimals</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Archon: VPE's own mind break is a level 4 psycast with a heavy psyfocus cost. As a gear ability it recruits a
+       pawn per cast, so it gets a far longer cooldown than its level alone would give. -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_MindBreak</defName>
+    <label>Mind Break</label>
+    <description>Some who meet its bearer's eye forget who they used to follow.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Epic</rarity>
+    <externalAbilities><li>VPE_MindBreak</li></externalAbilities>
+    <abilityCharges>1</abilityCharges>
+    <abilityCooldownTicks>600000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Technomancer: VPE's Mend repairs (sensitivity - 1) x 100 hit points, nothing at 100%, so this one casts at 150%:
+       50 hit points shared over a pawn's damaged gear, an item or a building, or 50 points of a mech's injuries -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_Mend</defName>
+    <label>Mend</label>
+    <description>Scratches fade from whatever it rests against, and torn seams knit themselves shut overnight.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_Mend</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+    <modExtensions>
+      <li Class="EntadFramework.VPECompat.EntadVEFTraitExtension">
+        <casterSensitivity>1.5</casterSensitivity>
+      </li>
+    </modExtensions>
+  </EntadFramework.EntadTraitDef>
+
+  <!-- Chronopath: VPE ages the caster a year with each of these, and the copies keep that -->
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_PlantTimeskip</defName>
+    <label>Plant Timeskip</label>
+    <description>Seedlings lean towards it. Its bearer has more grey hair than last season.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_PlantTimeskip</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+
+  <EntadFramework.EntadTraitDef>
+    <defName>Entad_VPE_CraftTimeskip</defName>
+    <label>Craft Timeskip</label>
+    <description>Half-made things finish themselves around it. Its bearer looks a little older afterwards.</description>
+    <categories><li>Weapon</li><li>Apparel</li></categories>
+    <rarity>Uncommon</rarity>
+    <externalAbilities><li>VPE_CraftTimeskip</li></externalAbilities>
+    <abilityCharges>2</abilityCharges>
+    <abilityCooldownTicks>60000</abilityCooldownTicks>
+  </EntadFramework.EntadTraitDef>
+</Defs>

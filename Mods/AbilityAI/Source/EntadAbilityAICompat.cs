@@ -1,3 +1,5 @@
+using System;
+using System.Runtime.CompilerServices;
 using AbilityAI;
 using RimWorld;
 using Verse;
@@ -41,6 +43,24 @@ namespace EntadFramework.AbilityAICompat
             // Ability AI caches these answers per comp properties object. Entad never changes a pulse comp after
             // startup (the per-trait ability copies share the source's comps list), so the cache stays right.
             AbilityAIInfo.Register<CompProperties_AbilityEntadPulse>(p => p.radius, p => p.hediff, p => p.stunSeconds > 0f);
+            // Ability AI's AssemblyVersion doesn't change between releases, so an older copy without these loads
+            // fine and only fails when the calls are compiled. In their own method so that failure lands in the catch.
+            try { RegisterHeld(); }
+            catch (Exception e) when (e is MissingMethodException || e is TypeLoadException || e is MissingMemberException)
+            {
+                Log.Warning("[Entad Framework] This Ability AI is older than the one Entad was built for, so NPCs won't cast abilities from Entad items that use another ability system (Vanilla Psycasts Expanded). Updating Ability AI fixes this.");
+            }
+        }
+
+        // Abilities kept on items (the Vanilla Psycasts Expanded module's), which no tracker of the pawn's lists.
+        // Same rule as the vanilla hook: Claim what the gear grants, Veto it on the player's pawns while hidden.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RegisterHeld()
+        {
+            AIHeldAbilities.Register(EntadCompat.HasHeldAbilities, EntadCompat.CollectHeldAbilities);
+            AbilityAIHooks.RegisterVote((pawn, raw) =>
+                !EntadCompat.HeldAbilityGrants(pawn, raw, out bool hidden) ? AbilityAIVote.NoOpinion
+                : hidden && pawn.Faction != null && pawn.Faction.IsPlayer ? AbilityAIVote.Veto : AbilityAIVote.Claim);
         }
     }
 }

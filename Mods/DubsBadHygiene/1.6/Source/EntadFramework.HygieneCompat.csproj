@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!--
+        RimWorld 1.6 build of Entad's Dubs Bad Hygiene compat assembly. The C# is shared with 1.7:
+        Mods/DubsBadHygiene/Source. Output goes to Mods/DubsBadHygiene/1.6/Assemblies, which LoadFolders.xml loads only
+        on 1.6 and only when Dubs Bad Hygiene (Dubwise.DubsBadHygiene) is active.
+
+        DBH is not on NuGet, so its DLLs are read from its install (the Steam Workshop folder by default; override with
+        /p:DBHDir=... pointing at the folder that holds 1.6/ and 1.7/). Neither they nor EntadFramework.dll are copied
+        to the output.
+    -->
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net472</TargetFramework>
+        <RootNamespace>EntadFramework.HygieneCompat</RootNamespace>
+        <AssemblyName>EntadFramework.HygieneCompat</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Deterministic>true</Deterministic>
+        <OutputPath>..\Assemblies\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <DefineConstants>$(DefineConstants);RW16</DefineConstants>
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <Product>Entad Framework</Product>
+        <Authors>SaintWacko</Authors>
+    </PropertyGroup>
+
+    <Import Project="..\..\Source\DBHDir.props" />
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <Optimize>true</Optimize>
+        <DebugType>none</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <Optimize>false</Optimize>
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\Source\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+        <!-- Compile-only, as in the main project: the Harmony mod supplies the runtime DLL -->
+        <PackageReference Include="Lib.Harmony" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\..\1.6\Source\EntadFramework.csproj">
+            <Private>false</Private>
+        </ProjectReference>
+        <Reference Include="BadHygiene">
+            <HintPath>$(DBHDir)1.6/Assemblies/BadHygiene.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="0DubCore">
+            <HintPath>$(DBHDir)1.6/Assemblies/0DubCore.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+</Project>

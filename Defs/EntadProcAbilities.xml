@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Abilities for triggers to cast (Source/EntadProcEffects.cs, traits in EntadTraits_Procs.xml). No DLC needed. A
+       trigger casts them at once, ignoring range and line of sight, so the verbs here only say what they can
+       target. Each effect refuses a target it would do nothing to (no second enemy for a ricochet, no weapon to knock
+       away), and the trigger then keeps its cooldown. They are never granted as gizmos, but another mod can. -->
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Ricochet</defName>
+    <label>ricochet</label>
+    <description>A second shot from the user's weapon flies from where the first one landed to the nearest other enemy within 8 tiles in sight of that spot. It deals the weapon's own damage and flies past anyone else in the way. An explosive shot still bursts where it lands.</description>
+    <iconPath>UI/Abilities/Entad/Ricochet</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>8</range>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadRicochet">
+        <range>8</range>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Disarm</defName>
+    <label>disarm</label>
+    <description>Knocks a person's weapon out of their hands, up to 3 tiles away. Weapons that can't be dropped, like a mechanoid's or a turret's, are left alone.</description>
+    <iconPath>UI/Abilities/Entad/Disarm</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>1.5</range>
+      <targetParams>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+        <canTargetAnimals>false</canTargetAnimals>
+        <canTargetMechs>false</canTargetMechs>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadDisarm">
+        <throwDistance>3</throwDistance>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadSelfAbilityBase">
+    <defName>Entad_Shockwave</defName>
+    <label>shockwave</label>
+    <description>Throws every enemy within 3 tiles of the user 3 tiles further away. They are stunned for 1 to 3 seconds where they land. Downed enemies, enemies carrying someone and anything larger than a horse stay where they are.</description>
+    <iconPath>UI/Abilities/Entad/Shockwave</iconPath>
+    <hostile>true</hostile>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadShockwave">
+        <radius>3.9</radius>
+        <distance>3</distance>
+        <maxBodySize>2</maxBodySize>
+        <fleck>PsycastAreaEffect</fleck>
+        <sound>Explosion_Stun</sound>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Harrow</defName>
+    <label>harrow</label>
+    <description>A wave of dread: each enemy within 6 tiles has a 35% chance to panic and flee, multiplied by their psychic sensitivity. Mechanoids, entities and anyone already in a mental state are unaffected.</description>
+    <iconPath>UI/Abilities/Entad/Harrow</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>15</range>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadHarrow">
+        <radius>6</radius>
+        <chance>0.35</chance>
+        <mentalState>PanicFlee</mentalState>
+        <fleck>PsycastAreaEffect</fleck>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="EntadAbilityBase">
+    <defName>Entad_Volatile</defName>
+    <label>volatile burst</label>
+    <description>An explosion with a 2.9-tile radius that hurts only the user's enemies and their buildings. Everyone and everything else in it is spared.</description>
+    <iconPath>UI/Abilities/Entad/Volatile</iconPath>
+    <hostile>true</hostile>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>15</range>
+      <targetParams>
+        <canTargetLocations>true</canTargetLocations>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadVolatile">
+        <radius>2.9</radius>
+        <damageDef>Bomb</damageDef>
+        <damageAmount>25</damageAmount>
+        <explosionSound>Explosion_Bomb</explosionSound>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <HediffDef ParentName="EntadHediffBase">
+    <defName>Entad_Hediff_Chilled</defName>
+    <label>chilled</label>
+    <description>Frost clings to this creature's limbs, slowing every movement.</description>
+    <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>1200~1200</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statFactors>
+          <MoveSpeed>0.5</MoveSpeed>
+          <MeleeCooldownFactor>1.3</MeleeCooldownFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <AbilityDef ParentName="EntadSelfAbilityBase">
+    <defName>Entad_Frostburst</defName>
+    <label>frostburst</label>
+    <description>Every enemy next to the user is chilled for 20 seconds: half speed, and melee attacks 30% slower.</description>
+    <iconPath>UI/Abilities/Entad/Frostburst</iconPath>
+    <hostile>true</hostile>
+    <comps>
+      <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
+        <radius>1.9</radius>
+        <targets>Enemies</targets>
+        <hediff>Entad_Hediff_Chilled</hediff>
+        <fleck>PsycastAreaEffect</fleck>
+      </li>
+    </comps>
+  </AbilityDef>
+</Defs>

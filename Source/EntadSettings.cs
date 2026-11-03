@@ -101,6 +101,61 @@ namespace EntadFramework
         public const int DefaultAppraiserDailyMin = 1;
         public static int AppraiserDailyMin = DefaultAppraiserDailyMin;
 
+        // Entads carried by NPC groups (EntadWorldPawns.cs): the chance a group has any carriers, one more carrier per
+        // so many group points up to the most, each entad's points from a curve over group points (four anchors,
+        // straight lines between) rolled within the variance, and the share bound to their carrier with its points
+        // multiplier. Factions may override the chances and add their own multiplier (EntadFactionExtension).
+        // The world switches (this one, WorldEnabled, TradersEnabled, RewardsEnabled, LootEnabled, AppraisersEnabled)
+        // are defaults for new games: a game can override them (EntadWorld.cs). Read them through EntadWorld.Enabled.
+        public static bool WorldEnabled = true;
+        public static bool AppraisersEnabled = true;
+        public static bool CarriersEnabled = true;
+        public const float DefaultCarrierGroupChance = 0.35f;
+        public static float CarrierGroupChance = DefaultCarrierGroupChance;
+        public const float DefaultCarrierPointsPerExtra = 1500f;
+        public static float CarrierPointsPerExtra = DefaultCarrierPointsPerExtra;
+        public const int DefaultMaxCarriers = 3;
+        public static int MaxCarriers = DefaultMaxCarriers;
+        public static readonly float[] CarrierCurveGroupPoints = { 100f, 1000f, 3000f, 7000f };
+        public static readonly float[] DefaultCarrierCurvePoints = { 3f, 8f, 15f, 25f };
+        public static readonly float[] CarrierCurvePoints = (float[])DefaultCarrierCurvePoints.Clone();
+        public const float DefaultCarrierPointVariance = 0.25f;
+        public static float CarrierPointVariance = DefaultCarrierPointVariance;
+        public const float DefaultCarrierBoundChance = 0.5f;
+        public static float CarrierBoundChance = DefaultCarrierBoundChance;
+        public const float DefaultCarrierBoundPointFactor = 1.5f;
+        public static float CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
+
+        // Entads in trader stock, quest rewards and site loot (EntadWorldItems.cs): a trader's stock rolls once and
+        // converts a few items; each reward or loot item rolls on its own up to a most per set. Points come from a
+        // curve over the set's market value (four anchors), rolled within the variance. ThingSetMakerDefs and
+        // TraderKindDefs may override (EntadThingSetExtension, EntadTraderExtension).
+        public static bool TradersEnabled = true;
+        public static bool RewardsEnabled = true;
+        public static bool LootEnabled = true;
+        public const float DefaultTraderStockChance = 0.4f;
+        public static float TraderStockChance = DefaultTraderStockChance;
+        public static readonly IntRange DefaultTraderEntadCount = new IntRange(1, 2);
+        public static IntRange TraderEntadCount = DefaultTraderEntadCount;
+        public const float DefaultRewardItemChance = 0.15f;
+        public static float RewardItemChance = DefaultRewardItemChance;
+        public const int DefaultRewardMaxEntads = 1;
+        public static int RewardMaxEntads = DefaultRewardMaxEntads;
+        public const float DefaultLootItemChance = 0.25f;
+        public static float LootItemChance = DefaultLootItemChance;
+        public const int DefaultLootMaxEntads = 2;
+        public static int LootMaxEntads = DefaultLootMaxEntads;
+        public const float DefaultLootBindChance = 0.25f;
+        public static float LootBindChance = DefaultLootBindChance;
+        public static readonly float[] ItemCurveValues = { 1000f, 4000f, 10000f, 25000f };
+        public static readonly float[] DefaultItemCurvePoints = { 3f, 8f, 15f, 25f };
+        public static readonly float[] ItemCurvePoints = (float[])DefaultItemCurvePoints.Clone();
+        public const float DefaultItemPointVariance = 0.25f;
+        public static float ItemPointVariance = DefaultItemPointVariance;
+
+        // The colony's verity as a row under the resource readout, once there is any
+        public static bool VerityReadout = true;
+
         // When on, a trait's details stay hidden ("???") until something it affects actually happens
         public static bool HideTraits = true;
 
@@ -110,6 +165,12 @@ namespace EntadFramework
 
         // defNames of traits the player has switched off; they are never picked when generating
         public static HashSet<string> DisabledTraits = new HashSet<string>();
+
+        // Compat modules' settings (EntadCompat.RegisterSettings), by key. Plain numbers, so a module that is gone
+        // leaves nothing that can't be read back.
+        private static Dictionary<string, float> moduleValues = new Dictionary<string, float>();
+        public static float ModuleValue(string key, float defaultValue) => moduleValues.TryGetValue(key, out float v) ? v : defaultValue;
+        public static void SetModuleValue(string key, float value) => moduleValues[key] = value;
         public static bool IsDisabled(EntadTraitDef def) => DisabledTraits.Contains(def.defName);
 
         // Selection weight of weapon-specific traits relative to general ones when picking for a weapon
@@ -141,6 +202,30 @@ namespace EntadFramework
             IdentifyWealthFraction = DefaultIdentifyWealthFraction;
             AppraiserMax = DefaultAppraiserMax;
             AppraiserDailyMin = DefaultAppraiserDailyMin;
+            WorldEnabled = true;
+            AppraisersEnabled = true;
+            CarriersEnabled = true;
+            CarrierGroupChance = DefaultCarrierGroupChance;
+            CarrierPointsPerExtra = DefaultCarrierPointsPerExtra;
+            MaxCarriers = DefaultMaxCarriers;
+            DefaultCarrierCurvePoints.CopyTo(CarrierCurvePoints, 0);
+            CarrierPointVariance = DefaultCarrierPointVariance;
+            CarrierBoundChance = DefaultCarrierBoundChance;
+            CarrierBoundPointFactor = DefaultCarrierBoundPointFactor;
+            TradersEnabled = true;
+            RewardsEnabled = true;
+            LootEnabled = true;
+            TraderStockChance = DefaultTraderStockChance;
+            TraderEntadCount = DefaultTraderEntadCount;
+            RewardItemChance = DefaultRewardItemChance;
+            RewardMaxEntads = DefaultRewardMaxEntads;
+            LootItemChance = DefaultLootItemChance;
+            LootMaxEntads = DefaultLootMaxEntads;
+            LootBindChance = DefaultLootBindChance;
+            DefaultItemCurvePoints.CopyTo(ItemCurvePoints, 0);
+            ItemPointVariance = DefaultItemPointVariance;
+            VerityReadout = true;
+            moduleValues.Clear();
             ResetRarityWeights();
         }
 
@@ -157,6 +242,8 @@ namespace EntadFramework
             base.ExposeData();
             Scribe_Values.Look(ref HideTraits, "hideTraits", true);
             Scribe_Values.Look(ref AuraEffects, "auraEffects", true);
+            Scribe_Collections.Look(ref moduleValues, "moduleValues", LookMode.Value, LookMode.Value);
+            if (moduleValues == null) moduleValues = new Dictionary<string, float>();
             var disabled = DisabledTraits.ToList();
             Scribe_Collections.Look(ref disabled, "disabledTraits", LookMode.Value);
             DisabledTraits = new HashSet<string>(disabled ?? new List<string>());
@@ -192,6 +279,56 @@ namespace EntadFramework
             AppraiserMax = new IntRange(Mathf.Clamp(AppraiserMax.min, 1, 20), Mathf.Clamp(AppraiserMax.max, Mathf.Clamp(AppraiserMax.min, 1, 20), 20));
             Scribe_Values.Look(ref AppraiserDailyMin, "appraiserDailyMin", DefaultAppraiserDailyMin);
             AppraiserDailyMin = Mathf.Clamp(AppraiserDailyMin, 1, 20);
+            Scribe_Values.Look(ref WorldEnabled, "worldEnabled", true);
+            Scribe_Values.Look(ref AppraisersEnabled, "appraisersEnabled", true);
+            Scribe_Values.Look(ref CarriersEnabled, "carriersEnabled", true);
+            Scribe_Values.Look(ref CarrierGroupChance, "carrierGroupChance", DefaultCarrierGroupChance);
+            CarrierGroupChance = Mathf.Clamp01(CarrierGroupChance);
+            Scribe_Values.Look(ref CarrierPointsPerExtra, "carrierPointsPerExtra", DefaultCarrierPointsPerExtra);
+            CarrierPointsPerExtra = Mathf.Clamp(CarrierPointsPerExtra, 250f, 10000f);
+            Scribe_Values.Look(ref MaxCarriers, "maxCarriers", DefaultMaxCarriers);
+            MaxCarriers = Mathf.Clamp(MaxCarriers, 1, 10);
+            for (int i = 0; i < CarrierCurvePoints.Length; i++)
+            {
+                float v = CarrierCurvePoints[i];
+                Scribe_Values.Look(ref v, "carrierCurve" + i, DefaultCarrierCurvePoints[i]);
+                CarrierCurvePoints[i] = Mathf.Clamp(v, 0f, 100f);
+            }
+            Scribe_Values.Look(ref CarrierPointVariance, "carrierPointVariance", DefaultCarrierPointVariance);
+            CarrierPointVariance = Mathf.Clamp(CarrierPointVariance, 0f, 0.9f);
+            Scribe_Values.Look(ref CarrierBoundChance, "carrierBoundChance", DefaultCarrierBoundChance);
+            CarrierBoundChance = Mathf.Clamp01(CarrierBoundChance);
+            Scribe_Values.Look(ref CarrierBoundPointFactor, "carrierBoundPointFactor", DefaultCarrierBoundPointFactor);
+            CarrierBoundPointFactor = Mathf.Clamp(CarrierBoundPointFactor, 0.5f, 4f);
+            // worldItemsEnabled was one switch for all three before they were split; it seeds them until they are saved
+            bool legacyItems = true;
+            if (Scribe.mode == LoadSaveMode.LoadingVars) Scribe_Values.Look(ref legacyItems, "worldItemsEnabled", true);
+            Scribe_Values.Look(ref TradersEnabled, "tradersEnabled", legacyItems);
+            Scribe_Values.Look(ref RewardsEnabled, "rewardsEnabled", legacyItems);
+            Scribe_Values.Look(ref LootEnabled, "lootEnabled", legacyItems);
+            Scribe_Values.Look(ref TraderStockChance, "traderStockChance", DefaultTraderStockChance);
+            TraderStockChance = Mathf.Clamp01(TraderStockChance);
+            Scribe_Values.Look(ref TraderEntadCount, "traderEntadCount", DefaultTraderEntadCount);
+            TraderEntadCount = new IntRange(Mathf.Clamp(TraderEntadCount.min, 1, 5), Mathf.Clamp(TraderEntadCount.max, Mathf.Clamp(TraderEntadCount.min, 1, 5), 5));
+            Scribe_Values.Look(ref RewardItemChance, "rewardItemChance", DefaultRewardItemChance);
+            RewardItemChance = Mathf.Clamp01(RewardItemChance);
+            Scribe_Values.Look(ref RewardMaxEntads, "rewardMaxEntads", DefaultRewardMaxEntads);
+            RewardMaxEntads = Mathf.Clamp(RewardMaxEntads, 1, 10);
+            Scribe_Values.Look(ref LootItemChance, "lootItemChance", DefaultLootItemChance);
+            LootItemChance = Mathf.Clamp01(LootItemChance);
+            Scribe_Values.Look(ref LootMaxEntads, "lootMaxEntads", DefaultLootMaxEntads);
+            LootMaxEntads = Mathf.Clamp(LootMaxEntads, 1, 10);
+            Scribe_Values.Look(ref LootBindChance, "lootBindChance", DefaultLootBindChance);
+            LootBindChance = Mathf.Clamp01(LootBindChance);
+            for (int i = 0; i < ItemCurvePoints.Length; i++)
+            {
+                float v = ItemCurvePoints[i];
+                Scribe_Values.Look(ref v, "itemCurve" + i, DefaultItemCurvePoints[i]);
+                ItemCurvePoints[i] = Mathf.Clamp(v, 0f, 100f);
+            }
+            Scribe_Values.Look(ref ItemPointVariance, "itemPointVariance", DefaultItemPointVariance);
+            ItemPointVariance = Mathf.Clamp(ItemPointVariance, 0f, 0.9f);
+            Scribe_Values.Look(ref VerityReadout, "verityReadout", true);
             foreach (EntadRarity r in System.Enum.GetValues(typeof(EntadRarity)))
             {
                 float w = Weights[r];
@@ -209,6 +346,9 @@ namespace EntadFramework
             }
         }
     }
+
+    // The settings tabs a compat module can add a section to (the Traits tab is a list, not a listing)
+    public enum EntadSettingsTab { General, Generation, World, Rarity }
 
     public class EntadMod : Mod
     {
@@ -228,9 +368,10 @@ namespace EntadFramework
             base.WriteSettings();
             if (appliedDurability != null && Current.Game != null) EntadUtility.RescaleDurability(appliedDurability);
             appliedDurability = null;
+            EntadFurnitureEffects.RefreshAll();
         }
 
-        private enum Tab { General, Rarity, Traits }
+        private enum Tab { General, Generation, World, Rarity, Traits }
         private Tab tab;
         private string search = "";
         private Vector2 scroll;
@@ -247,6 +388,8 @@ namespace EntadFramework
             var tabs = new List<TabRecord>
             {
                 new TabRecord("EF_Tab_General".Translate(), () => SetTab(Tab.General), tab == Tab.General),
+                new TabRecord("EF_Tab_Generation".Translate(), () => SetTab(Tab.Generation), tab == Tab.Generation),
+                new TabRecord("EF_Tab_World".Translate(), () => SetTab(Tab.World), tab == Tab.World),
                 new TabRecord("EF_Tab_Rarity".Translate(), () => SetTab(Tab.Rarity), tab == Tab.Rarity),
                 new TabRecord("EF_Tab_Traits".Translate(), () => SetTab(Tab.Traits), tab == Tab.Traits),
             };
@@ -264,8 +407,13 @@ namespace EntadFramework
                 // column off to the right, CurHeight measures only that column and the view never grows back.
                 var list = new Listing_Standard { maxOneColumn = true };
                 list.Begin(view);
-                if (tab == Tab.General) DoGeneral(list);
-                else DoRarity(list);
+                switch (tab)
+                {
+                    case Tab.General: DoGeneral(list); EntadCompat.DrawSettings(EntadSettingsTab.General, list); break;
+                    case Tab.Generation: DoGeneration(list); EntadCompat.DrawSettings(EntadSettingsTab.Generation, list); break;
+                    case Tab.World: DoWorld(list); EntadCompat.DrawSettings(EntadSettingsTab.World, list); break;
+                    default: DoRarity(list); EntadCompat.DrawSettings(EntadSettingsTab.Rarity, list); break;
+                }
                 listingHeight = list.CurHeight + 20f;
                 list.End();
                 Widgets.EndScrollView();
@@ -282,7 +430,45 @@ namespace EntadFramework
             listingScroll = Vector2.zero;
         }
 
-        private static void Section(Listing_Standard list, string key)
+        // A world source's switch, as Bastle Framework draws its own: the source's sliders are only drawn while it is
+        // on. While the loaded game overrides the switch (EntadWorld.SetForGame), the box shows the game's value,
+        // greyed and locked, with a line saying where to change it; the settings' own value is kept for new games.
+        // The sliders show while either the game or the settings has the source on, and stay editable: numbers are
+        // never per game. The master switch asks for the game's value instead, since it dims everything below it.
+        private static bool WorldSwitch(Listing_Standard list, EntadWorldFeature feature, string key, ref bool value, bool returnGameValue = false)
+        {
+            string tip = (key + "_Tip").Translate();
+            bool? forGame = EntadWorld.GetForGame(feature);
+            if (!forGame.HasValue)
+            {
+                list.CheckboxLabeled(key.Translate(), ref value, tip);
+                return value;
+            }
+            bool shown = forGame.Value;
+            string label = key.Translate();
+            Rect row = list.GetRect(Text.CalcHeight(label, list.ColumnWidth));
+            TooltipHandler.TipRegion(row, tip);
+            Widgets.CheckboxLabeled(row, label, ref shown, disabled: true);
+            list.Gap(list.verticalSpacing);
+            string source = EntadWorld.OverrideSourceForGame;
+            Hint(list, source != null
+                ? "EF_Settings_WorldOverriddenBy".Translate(source).ToString()
+                : "EF_Settings_WorldOverridden".Translate().ToString());
+            return returnGameValue ? shown : shown || value;
+        }
+
+        public static void Hint(Listing_Standard list, string text)
+        {
+            Text.Font = GameFont.Tiny;
+            Color before = GUI.color;
+            GUI.color = Color.gray * new Color(1f, 1f, 1f, before.a);
+            list.Label(text);
+            GUI.color = before;
+            Text.Font = GameFont.Small;
+            list.Gap(4f);
+        }
+
+        public static void Section(Listing_Standard list, string key)
         {
             Text.Font = GameFont.Medium;
             list.Label(key.Translate());
@@ -298,12 +484,15 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) sb.Append(' ').Append(r.stat.label).Append(' ').Append(r.stat.defName);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) sb.Append(' ').Append(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) sb.Append(' ').Append(a.label).Append(' ').Append(a.defName);
+            if (d.externalAbilities != null) foreach (var a in d.externalAbilities) sb.Append(' ').Append(EntadCompat.ExternalAbilityLabel(a)).Append(' ').Append(a);
             if (d.AllFuelTypes != null) foreach (var f in d.AllFuelTypes) sb.Append(' ').Append(f.label);
             if (d.changeDamageType != null) sb.Append(' ').Append(d.changeDamageType.label);
             if (d.weaponProperties != null) foreach (var w in d.weaponProperties) sb.Append(' ').Append(w.Label);
             if (d.ignoreAccuracyMaluses) sb.Append(' ').Append("EF_Summary_Weapon".Translate());
             if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) sb.Append(' ').Append(h.label);
             if (d.aura?.hediff != null) sb.Append(' ').Append("EF_Summary_Aura".Translate(d.aura.hediff.label));
+            if (d.powerNet != null) foreach (var line in d.powerNet.CardLines()) sb.Append(' ').Append(line);
+            if (d.customCardLines != null) foreach (var line in d.customCardLines) sb.Append(' ').Append(line);
             if (d.triggers != null)
                 foreach (var t in d.triggers) sb.Append(' ').Append(t.EventLabel).Append(' ').Append(t.EffectsLabel(null));
             if (d.extraDamage != null) foreach (var e in d.extraDamage) sb.Append(' ').Append(e.damageType?.label);
@@ -365,17 +554,27 @@ namespace EntadFramework
             foreach (var r in d.AllRanges()) if (r.stat != null) parts.Add(r.stat.LabelCap);
             if (d.buildingFactors != null) foreach (var b in d.buildingFactors) parts.Add(b.Label);
             if (d.abilities != null) foreach (var a in d.abilities) if (a != null) parts.Add(a.LabelCap);
+            if (d.externalAbilities != null) foreach (var a in d.externalAbilities) parts.Add(EntadCompat.ExternalAbilityLabel(a).CapitalizeFirst());
             if (d.HasDamageEffect) parts.Add("EF_Summary_Damage".Translate());
             if (d.weaponProperties != null) foreach (var w in d.weaponProperties) parts.Add(w.Label);
             if (d.ignoreAccuracyMaluses) parts.Add("EF_Summary_Weapon".Translate());
             if (d.equippedHediffs != null) foreach (var h in d.equippedHediffs) if (h != null) parts.Add(h.LabelCap);
             if (d.aura?.hediff != null) parts.Add("EF_Summary_Aura".Translate(d.aura.hediff.label));
-            if (d.triggers != null) foreach (var t in d.triggers) parts.Add(t.EventLabel);
+            if (d.triggers != null)
+                foreach (var t in d.triggers)
+                {
+                    parts.Add(t.EventLabel);
+                    if (t.casts != null) foreach (var c in t.casts) parts.Add(c.AbilityLabel.CapitalizeFirst());
+                }
             if (!d.AllFuelTypes.NullOrEmpty()) parts.Add("EF_Summary_Fuel".Translate());
             // Descriptions are flavour text, so the row's summary is where the rules show in the settings list
             if (d.HasMood) parts.Add("EF_Summary_Mood".Translate());
             if (d.HasMealEffect) parts.Add("EF_Summary_Meal".Translate());
             if (d.HasPortableSpace) parts.Add("EF_Summary_Space".Translate());
+            if (d.powerNet?.grounded == true) parts.Add("EF_Summary_NetGrounded".Translate());
+            if (d.powerNet?.flareProof == true) parts.Add("EF_Summary_NetFlareProof".Translate());
+            if (d.powerNet?.Arcs == true) parts.Add("EF_Summary_NetArcs".Translate());
+            if (d.customCardLines != null) parts.AddRange(d.customCardLines);
             if (d.persona) parts.Add("EF_Summary_Persona".Translate());
             if (d.neverBond) parts.Add("EF_Summary_NeverBond".Translate());
             if (d.secretive) parts.Add("EF_Summary_Secretive".Translate());
@@ -394,8 +593,26 @@ namespace EntadFramework
 
             Section(list, "EF_Settings_Visuals");
             list.CheckboxLabeled("EF_Settings_AuraEffects".Translate(), ref EntadSettings.AuraEffects, "EF_Settings_AuraEffects_Tip".Translate());
+            list.CheckboxLabeled("EF_Settings_VerityReadout".Translate(), ref EntadSettings.VerityReadout, "EF_Settings_VerityReadout_Tip".Translate());
             list.Gap();
 
+            Section(list, "EF_Settings_MarketValue");
+            list.Label("EF_Settings_ValuePercent".Translate(EntadSettings.ValuePercentPerPoint.ToStringPercent()));
+            EntadSettings.ValuePercentPerPoint = Mathf.Round(list.Slider(EntadSettings.ValuePercentPerPoint, 0f, 0.5f) * 100f) / 100f;
+            list.Label("EF_Settings_ValueSilver".Translate(EntadSettings.ValueSilverPerPoint.ToStringMoney()));
+            EntadSettings.ValueSilverPerPoint = Mathf.Round(list.Slider(EntadSettings.ValueSilverPerPoint, 0f, 500f) / 5f) * 5f;
+            list.Label("EF_Settings_Value_Desc".Translate());
+            list.Gap();
+            list.Label("EF_Settings_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent()));
+            EntadSettings.ValueFloor = Mathf.Round(list.Slider(EntadSettings.ValueFloor, 0f, 1f) * 20f) / 20f;
+            list.Gap();
+            list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
+            EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
+            list.Label("EF_Settings_MysteryBonus_Desc".Translate());
+        }
+
+        private static void DoGeneration(Listing_Standard list)
+        {
             Section(list, "EF_Settings_Generation");
             list.Label("EF_Settings_WeaponWeight".Translate(EntadSettings.WeaponSpecificWeight.ToString("0.#")));
             EntadSettings.WeaponSpecificWeight = Mathf.Round(list.Slider(EntadSettings.WeaponSpecificWeight, 1f, 10f) * 2f) / 2f;
@@ -418,24 +635,104 @@ namespace EntadFramework
             list.Label("EF_Settings_MaxDrawbacks".Translate(EntadSettings.MaxDrawbacks));
             EntadSettings.MaxDrawbacks = Mathf.RoundToInt(list.Slider(EntadSettings.MaxDrawbacks, 0f, 5f));
             list.Label("EF_Settings_Drawbacks_Desc".Translate());
+        }
+
+        private static void DoWorld(Listing_Standard list)
+        {
+            Section(list, "EF_Settings_WorldSources");
+            bool worldOn = WorldSwitch(list, EntadWorldFeature.World, "EF_Settings_WorldEnabled", ref EntadSettings.WorldEnabled, returnGameValue: true);
+            // Dimmed by a box drawn over everything below once it is drawn: sliders and ranges set GUI.color to white
+            // themselves, so tinting GUI.color first only dims the labels
+            Rect dimFrom = list.GetRect(0f);
             list.Gap();
 
-            Section(list, "EF_Settings_MarketValue");
-            list.Label("EF_Settings_ValuePercent".Translate(EntadSettings.ValuePercentPerPoint.ToStringPercent()));
-            EntadSettings.ValuePercentPerPoint = Mathf.Round(list.Slider(EntadSettings.ValuePercentPerPoint, 0f, 0.5f) * 100f) / 100f;
-            list.Label("EF_Settings_ValueSilver".Translate(EntadSettings.ValueSilverPerPoint.ToStringMoney()));
-            EntadSettings.ValueSilverPerPoint = Mathf.Round(list.Slider(EntadSettings.ValueSilverPerPoint, 0f, 500f) / 5f) * 5f;
-            list.Label("EF_Settings_Value_Desc".Translate());
+            Section(list, "EF_Settings_Carriers");
+            if (WorldSwitch(list, EntadWorldFeature.Carriers, "EF_Settings_CarriersEnabled", ref EntadSettings.CarriersEnabled))
+            {
+                list.Label("EF_Settings_CarrierChance".Translate(EntadSettings.CarrierGroupChance.ToStringPercent()));
+                EntadSettings.CarrierGroupChance = Mathf.Round(list.Slider(EntadSettings.CarrierGroupChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierPerExtra".Translate(EntadSettings.CarrierPointsPerExtra.ToString("0")));
+                EntadSettings.CarrierPointsPerExtra = Mathf.Round(list.Slider(EntadSettings.CarrierPointsPerExtra, 250f, 10000f) / 250f) * 250f;
+                list.Label("EF_Settings_MaxCarriers".Translate(EntadSettings.MaxCarriers));
+                EntadSettings.MaxCarriers = Mathf.RoundToInt(list.Slider(EntadSettings.MaxCarriers, 1f, 10f));
+                list.Label("EF_Settings_Carriers_Desc".Translate());
+                list.Gap();
+                for (int i = 0; i < EntadSettings.CarrierCurvePoints.Length; i++)
+                {
+                    float v = EntadSettings.CarrierCurvePoints[i];
+                    list.Label("EF_Settings_CarrierCurveRow".Translate(EntadSettings.CarrierCurveGroupPoints[i].ToString("0"), v.ToString("0.#")));
+                    EntadSettings.CarrierCurvePoints[i] = Mathf.Round(list.Slider(v, 0f, 100f) * 2f) / 2f;
+                }
+                list.Label("EF_Settings_CarrierVariance".Translate(EntadSettings.CarrierPointVariance.ToStringPercent()));
+                EntadSettings.CarrierPointVariance = Mathf.Round(list.Slider(EntadSettings.CarrierPointVariance, 0f, 0.9f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierCurve_Desc".Translate());
+                list.Gap();
+                list.Label("EF_Settings_CarrierBound".Translate(EntadSettings.CarrierBoundChance.ToStringPercent()));
+                EntadSettings.CarrierBoundChance = Mathf.Round(list.Slider(EntadSettings.CarrierBoundChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierBoundFactor".Translate(EntadSettings.CarrierBoundPointFactor.ToString("0.##")));
+                EntadSettings.CarrierBoundPointFactor = Mathf.Round(list.Slider(EntadSettings.CarrierBoundPointFactor, 0.5f, 4f) * 20f) / 20f;
+                list.Label("EF_Settings_CarrierBound_Desc".Translate());
+            }
             list.Gap();
-            list.Label("EF_Settings_ValueFloor".Translate(EntadSettings.ValueFloor.ToStringPercent()));
-            EntadSettings.ValueFloor = Mathf.Round(list.Slider(EntadSettings.ValueFloor, 0f, 1f) * 20f) / 20f;
-            list.Gap();
-            list.Label("EF_Settings_MysteryBonus".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
-            EntadSettings.MysteryBonus = Mathf.Round(list.Slider(EntadSettings.MysteryBonus, 0f, 1f) * 20f) / 20f;
-            list.Label("EF_Settings_MysteryBonus_Desc".Translate());
+
+            Section(list, "EF_Settings_WorldItems");
+            bool traders = WorldSwitch(list, EntadWorldFeature.Traders, "EF_Settings_TradersEnabled", ref EntadSettings.TradersEnabled);
+            if (traders)
+            {
+                list.Label("EF_Settings_TraderChance".Translate(EntadSettings.TraderStockChance.ToStringPercent()));
+                EntadSettings.TraderStockChance = Mathf.Round(list.Slider(EntadSettings.TraderStockChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_TraderCount".Translate(EntadSettings.TraderEntadCount.min, EntadSettings.TraderEntadCount.max));
+                Widgets.IntRange(list.GetRect(28f), 0x45465754, ref EntadSettings.TraderEntadCount, 1, 5);
+                list.Label("EF_Settings_Trader_Desc".Translate());
+            }
+            bool rewards = WorldSwitch(list, EntadWorldFeature.Rewards, "EF_Settings_RewardsEnabled", ref EntadSettings.RewardsEnabled);
+            if (rewards)
+            {
+                list.Label("EF_Settings_RewardChance".Translate(EntadSettings.RewardItemChance.ToStringPercent()));
+                EntadSettings.RewardItemChance = Mathf.Round(list.Slider(EntadSettings.RewardItemChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_RewardMax".Translate(EntadSettings.RewardMaxEntads));
+                EntadSettings.RewardMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.RewardMaxEntads, 1f, 10f));
+            }
+            bool loot = WorldSwitch(list, EntadWorldFeature.Loot, "EF_Settings_LootEnabled", ref EntadSettings.LootEnabled);
+            if (loot)
+            {
+                list.Label("EF_Settings_LootChance".Translate(EntadSettings.LootItemChance.ToStringPercent()));
+                EntadSettings.LootItemChance = Mathf.Round(list.Slider(EntadSettings.LootItemChance, 0f, 1f) * 20f) / 20f;
+                list.Label("EF_Settings_LootMax".Translate(EntadSettings.LootMaxEntads));
+                EntadSettings.LootMaxEntads = Mathf.RoundToInt(list.Slider(EntadSettings.LootMaxEntads, 1f, 10f));
+                list.Label("EF_Settings_LootBind".Translate(EntadSettings.LootBindChance.ToStringPercent()), tooltip: "EF_Settings_LootBind_Tip".Translate());
+                EntadSettings.LootBindChance = Mathf.Round(list.Slider(EntadSettings.LootBindChance, 0f, 1f) * 20f) / 20f;
+            }
+            if (rewards || loot) list.Label("EF_Settings_RewardLoot_Desc".Translate());
+            if (traders || rewards || loot)
+            {
+                list.Gap();
+                for (int i = 0; i < EntadSettings.ItemCurvePoints.Length; i++)
+                {
+                    float v = EntadSettings.ItemCurvePoints[i];
+                    list.Label("EF_Settings_ItemCurveRow".Translate(EntadSettings.ItemCurveValues[i].ToStringMoney(), v.ToString("0.#")));
+                    EntadSettings.ItemCurvePoints[i] = Mathf.Round(list.Slider(v, 0f, 100f) * 2f) / 2f;
+                }
+                list.Label("EF_Settings_ItemVariance".Translate(EntadSettings.ItemPointVariance.ToStringPercent()));
+                EntadSettings.ItemPointVariance = Mathf.Round(list.Slider(EntadSettings.ItemPointVariance, 0f, 0.9f) * 20f) / 20f;
+                list.Label("EF_Settings_ItemCurve_Desc".Translate());
+            }
             list.Gap();
 
             Section(list, "EF_Settings_Appraisers");
+            if (WorldSwitch(list, EntadWorldFeature.Appraisers, "EF_Settings_AppraisersEnabled", ref EntadSettings.AppraisersEnabled))
+                DoAppraisers(list);
+
+            if (!worldOn)
+            {
+                Rect dimTo = list.GetRect(0f);
+                Widgets.DrawBoxSolid(new Rect(dimFrom.x, dimFrom.y, dimFrom.width, dimTo.y - dimFrom.y), new Color(Widgets.MenuSectionBGFillColor.r,
+                    Widgets.MenuSectionBGFillColor.g, Widgets.MenuSectionBGFillColor.b, 0.6f));
+            }
+        }
+
+        private static void DoAppraisers(Listing_Standard list)
+        {
             list.Label("EF_Settings_CaravanAppraiser".Translate(EntadSettings.CaravanAppraiserChance.ToStringPercent()));
             EntadSettings.CaravanAppraiserChance = Mathf.Round(list.Slider(EntadSettings.CaravanAppraiserChance, 0f, 1f) * 20f) / 20f;
             list.Label("EF_Settings_SettlementAppraiser".Translate(EntadSettings.SettlementAppraiserChance.ToStringPercent()));
