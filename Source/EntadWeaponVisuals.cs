@@ -476,7 +476,11 @@ namespace EntadFramework
             float pos = UpPosition(d);
             int nearest = Mathf.RoundToInt(pos) % AngleBuckets;
             if (d.weapon == null) return nearest;
-            int[] last = itemBucket.GetValue(d.weapon, _ => new[] { nearest });
+            if (!itemBucket.TryGetValue(d.weapon, out int[] last))
+            {
+                last = new[] { nearest };
+                itemBucket.Add(d.weapon, last);
+            }
             float off = Mathf.Abs(pos - last[0]) % AngleBuckets;
             if (Mathf.Min(off, AngleBuckets - off) > 0.5f + BucketHysteresis) last[0] = nearest;
             return last[0];
@@ -490,7 +494,7 @@ namespace EntadFramework
                 frameCache[shape] = sets;
             }
             if (sets[bucket] != null) return sets[bucket].Length > 0 ? sets[bucket] : null;
-            if (lastBuildFrame == Time.frameCount)
+            if (lastBuildFrame == Time.frameCount && shape.mask != null)
             {
                 // Over this frame's budget: show the nearest angle already made, if any, until it's this one's turn
                 for (int step = 1; step <= AngleBuckets / 2; step++)
@@ -500,11 +504,11 @@ namespace EntadFramework
                 }
                 return null;
             }
-            lastBuildFrame = Time.frameCount;
             Material[] mats = System.Array.Empty<Material>();
             float[] mask = shape.mask;
             if (mask != null && frames >= 2)
             {
+                lastBuildFrame = Time.frameCount;
                 int n = EntadWeaponShape.Size;
                 // Up and across in texture space; bucket 0 is exactly (0, 1) and (1, 0), so apparel is unchanged
                 float rad = bucket * (360f / AngleBuckets) * Mathf.Deg2Rad;
