@@ -105,7 +105,7 @@ namespace EntadFramework
             else
                 foreach (Thing t in EntadPortableSpace.ThingsIn(map, rect))
                     if (!EntadPortableSpace.Ignored(t) && !EntadPortableSpace.IsNaturalRock(t)) pieces.Add((t, t.Position, t.Rotation));
-            ripple.AddGhosts(pieces, KeyAt);
+            ripple.AddGhosts(pieces, KeyAt, onMap: !unfolding);
 
             // Begun partway (a load mid-channel, or the map only now being looked at): no burst for the cells already passed
             float progress = ripple.Progress;
@@ -136,12 +136,15 @@ namespace EntadFramework
             }
         }
 
-        private void AddGhosts(List<(Thing thing, IntVec3 pos, Rot4 rot)> pieces, System.Func<Vector3, float> keyAt)
+        // onMap: the pieces are the real things still standing there (folding up), so walls link through the map's own
+        // link grid and join the real walls outside the area too
+        private void AddGhosts(List<(Thing thing, IntVec3 pos, Rot4 rot)> pieces, System.Func<Vector3, float> keyAt, bool onMap)
         {
             // What each ghost cell links to, so ghost walls join up with each other the way the real ones do
             var links = new Dictionary<IntVec3, LinkFlags>();
             foreach (var (thing, pos, rot) in pieces)
             {
+                if (onMap) break;
                 LinkFlags flags = thing.def.graphicData?.linkFlags ?? LinkFlags.None;
                 if (flags == LinkFlags.None) continue;
                 foreach (IntVec3 c in GenAdj.OccupiedRect(pos, rot, thing.def.size))
@@ -162,7 +165,7 @@ namespace EntadFramework
                 if (graphic is Graphic_RandomRotated rotated) graphic = rotated.SubGraphic;
                 Graphic linked = null;
                 if (graphic is Graphic_Linked l) { linked = l; graphic = l.SubGraphic; }
-                graphic = Tinted(graphic);
+                graphic = Tinted(graphic, thing.Stuff);
                 if (graphic == null) continue;
 
                 // Buildings, then attachments, then what sits on them, as they spawn
@@ -180,7 +183,12 @@ namespace EntadFramework
                     LinkFlags mine = def.graphicData.linkFlags;
                     int dirs = 0;
                     for (int i = 0, bit = 1; i < 4; i++, bit *= 2)
-                        if (links.TryGetValue(pos + GenAdj.CardinalDirections[i], out var f) && (f & mine) != 0) dirs += bit;
+                    {
+                        IntVec3 c = pos + GenAdj.CardinalDirections[i];
+                        LinkFlags there = onMap ? (c.InBounds(map) ? map.linkGrid.LinkFlagsAt(c) : LinkFlags.None)
+                            : links.TryGetValue(c, out var f) ? f : LinkFlags.None;
+                        if ((there & mine) != 0) dirs += bit;
+                    }
                     ghost.linkedMat = MaterialAtlasPool.SubMaterialFromAtlas(graphic.MatSingle, (LinkDirections)dirs);
                 }
                 ghosts.Add(ghost);
@@ -188,17 +196,26 @@ namespace EntadFramework
             ghosts.SortBy(g => g.key);
         }
 
-        // The graphic in the transparent shader with the ghost tint, or null for one that can't be recoloured
-        // (Graphic's own GetColoredVersion only logs an error)
-        private static Graphic Tinted(Graphic graphic)
+        // The graphic in the transparent shader with the ghost tint and no shadow, made the way GhostUtility makes a
+        // ghost graphic: a stuffed wall's appearance picked by its stuff, the GraphicData copied without its shadow,
+        // colorTwo white (Graphic_Random and friends log an error for any other). Null for a graphic GraphicDatabase
+        // can't build (no parameterless constructor, no path).
+        private static Graphic Tinted(Graphic graphic, ThingDef stuff)
         {
+            if (graphic is Graphic_Appearances appearances && stuff != null) graphic = appearances.SubGraphicFor(stuff);
             if (graphic == null || graphic == BaseContent.BadGraphic) return null;
             if (tinted.TryGetValue(graphic, out Graphic done)) return done;
             Graphic result = null;
-            var method = graphic.GetType().GetMethod(nameof(Graphic.GetColoredVersion));
-            if (method != null && method.DeclaringType != typeof(Graphic))
+            if (!graphic.path.NullOrEmpty() && graphic.GetType().GetConstructor(System.Type.EmptyTypes) != null)
             {
-                result = graphic.GetColoredVersion(ShaderDatabase.Transparent, ThingTint, ThingTint);
+                GraphicData data = null;
+                if (graphic.data != null)
+                {
+                    data = new GraphicData();
+                    data.CopyFrom(graphic.data);
+                    data.shadowData = null;
+                }
+                result = GraphicDatabase.Get(graphic.GetType(), graphic.path, ShaderDatabase.Transparent, graphic.drawSize, ThingTint, Color.white, data, null);
                 if (result == BaseContent.BadGraphic) result = null;
             }
             tinted[graphic] = result;
@@ -231,8 +248,15 @@ namespace EntadFramework
             {
                 Ghost g = ghosts[i];
                 if (g.key > p) break;
-                if (g.linkedMat != null) Graphics.DrawMesh(MeshPool.plane10, g.loc, Quaternion.identity, g.linkedMat, 0);
-                else g.graphic.DrawFromDef(g.loc, g.rot, g.def);
+                if (g.linkedMat != null) { Graphics.DrawMesh(MeshPool.plane10, g.loc, Quaternion.identity, g.linkedMat, 0); continue; }
+                // A modded graphic whose DrawWorker needs the thing (it gets none here) would throw every frame: that
+                // ghost is dropped instead
+                try { g.graphic.DrawFromDef(g.loc, g.rot, g.def); }
+                catch (System.Exception e)
+                {
+                    Log.WarningOnce($"[Entad Framework] No ripple ghost for {g.def.defName}: {e.Message}", g.def.shortHash ^ 0x5e1a);
+                    ghosts.RemoveAt(i--);
+                }
             }
         }
 
