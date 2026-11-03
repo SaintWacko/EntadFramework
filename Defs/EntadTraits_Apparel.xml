@@ -70,6 +70,7 @@
         <color>(1, 0.45, 0.08, 0.5)</color>
         <threshold>0.5</threshold>
         <coreThreshold>0.78</coreThreshold>
+        <riseAbove>0.1</riseAbove>
         <loopTicks>360</loopTicks>
         <frames>32</frames>
       </li>
@@ -120,6 +121,7 @@
         <color>(1, 0.4, 0.05, 0.8)</color>
         <threshold>0.4</threshold>
         <coreThreshold>0.7</coreThreshold>
+        <riseAbove>0.15</riseAbove>
         <loopTicks>300</loopTicks>
         <scrolls>3</scrolls>
         <frames>40</frames>

@@ -386,7 +386,7 @@ namespace EntadFramework
         public int cellsAcross = 7;
         public int cellsUp = 4;
         // How far the patches may reach above the item's outline, as a fraction of the texture's height (0 = kept
-        // inside it; 0.1-0.16 for fire). Only as far as the texture's top edge: the frames are the texture's size.
+        // inside it; 0.1-0.16 for fire). Only as far as the texture's edge: the frames are the texture's size.
         public float riseAbove = 0f;
         // Cells the shapes change through per loop; more = faster change
         public int evolveCells = 3;
@@ -400,7 +400,13 @@ namespace EntadFramework
         // Added light (fire, sparks) or blended colour (frost, smoke, anything that should show on white cloth)
         public bool additive = true;
 
-        private readonly Dictionary<EntadWeaponShape, Material[]> frameCache = new Dictionary<EntadWeaponShape, Material[]>();
+        // The pattern rises up the screen, not up the texture: a held weapon turns with its aim and one on the ground
+        // lies at a random angle, and flames running along a barrel looked wrong. Frames can't be turned once made
+        // (the noise is baked into them), so each texture gets a set per angle bucket, made the first time the item is
+        // drawn at that angle. Upright apparel only ever uses bucket 0, which is the unturned pattern.
+        private const int AngleBuckets = 16;
+
+        private readonly Dictionary<EntadWeaponShape, Material[][]> frameCache = new Dictionary<EntadWeaponShape, Material[][]>();
 
         public override IEnumerable<string> ConfigErrors(string defName)
         {
@@ -414,7 +420,7 @@ namespace EntadFramework
 
         public override void Draw(EntadWeaponDraw d)
         {
-            var mats = FramesFor(d.shape);
+            var mats = FramesFor(d.shape, UpBucket(d));
             if (mats == null || mats.Length < 2 || loopTicks < 1) return;
             int seed = Gen.HashCombineInt(d.seed, 0xF10);
             float at = (d.ticks + ((seed >> 4) & 0xFFFF)) % loopTicks / (float)loopTicks * mats.Length;
@@ -441,16 +447,39 @@ namespace EntadFramework
             Graphics.DrawMesh(mesh, m, mats[b], 0, null, 0, block);
         }
 
-        private Material[] FramesFor(EntadWeaponShape shape)
+        // Which bucket the screen's up falls in, in the texture's own space. The matrix is a TRS turned about y, so
+        // world +z in local space is (m20 / sx², m22 / sz²); a flipped mesh mirrors the texture's u.
+        private static int UpBucket(EntadWeaponDraw d)
         {
-            if (frameCache.TryGetValue(shape, out var mats)) return mats;
-            mats = null;
+            Matrix4x4 m = d.matrix;
+            float sx = m.m00 * m.m00 + m.m10 * m.m10 + m.m20 * m.m20;
+            float sz = m.m02 * m.m02 + m.m12 * m.m12 + m.m22 * m.m22;
+            if (sx <= 0f || sz <= 0f) return 0;
+            float ux = m.m20 / sx, uz = m.m22 / sz;
+            if (d.flipped) ux = -ux;
+            if (Mathf.Abs(ux) < 1e-4f && Mathf.Abs(uz) < 1e-4f) return 0;
+            float deg = Mathf.Atan2(ux, uz) * Mathf.Rad2Deg;
+            return ((Mathf.RoundToInt(deg / (360f / AngleBuckets)) % AngleBuckets) + AngleBuckets) % AngleBuckets;
+        }
+
+        private Material[] FramesFor(EntadWeaponShape shape, int bucket)
+        {
+            if (!frameCache.TryGetValue(shape, out var sets))
+            {
+                sets = new Material[AngleBuckets][];
+                frameCache[shape] = sets;
+            }
+            if (sets[bucket] != null) return sets[bucket].Length > 0 ? sets[bucket] : null;
+            Material[] mats = System.Array.Empty<Material>();
             float[] mask = shape.mask;
             if (mask != null && frames >= 2)
             {
                 int n = EntadWeaponShape.Size;
+                // Up and across in texture space; bucket 0 is exactly (0, 1) and (1, 0), so apparel is unchanged
+                float rad = bucket * (360f / AngleBuckets) * Mathf.Deg2Rad;
+                float upX = Mathf.Sin(rad), upY = Mathf.Cos(rad);
                 float[] height = null;
-                if (riseAbove > 0f) mask = StretchUp(mask, n, Mathf.RoundToInt(riseAbove * n), out height);
+                if (riseAbove > 0f) mask = StretchUp(mask, n, Mathf.RoundToInt(riseAbove * n), upX, upY, out height);
                 mats = new Material[frames];
                 var colors = new Color32[n * n];
                 Shader shader = additive ? ShaderDatabase.MoteGlow : ShaderDatabase.Transparent;
@@ -462,7 +491,8 @@ namespace EntadFramework
                         {
                             float alpha = mask[y * n + x];
                             if (alpha <= 0f) { colors[y * n + x] = default; continue; }
-                            float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                            float px = (x + 0.5f) / n - 0.5f, py = (y + 0.5f) / n - 0.5f;
+                            float u = px * upY - py * upX + 0.5f, v = px * upX + py * upY + 0.5f;
                             // The fine octave's time is offset half a cell so the two don't pause on the same beat
                             float rise = v - t * scrolls;
                             float value = 0.65f * Noise(u * cellsAcross, rise * cellsUp, t * evolveCells, cellsAcross, cellsUp, evolveCells, 17)
@@ -483,26 +513,29 @@ namespace EntadFramework
                     mats[k] = new Material(shader) { mainTexture = tex, name = tex.name };
                 }
             }
-            frameCache[shape] = mats;
-            return mats;
+            sets[bucket] = mats;
+            return mats.Length > 0 ? mats : null;
         }
 
-        // The mask smeared upwards by up to reach rows, fading with distance, so the flow has room above the outline.
-        // height is how far above the outline each pixel's value came from (0 on the body, 1 at the reach).
-        private static float[] StretchUp(float[] mask, int n, int reach, out float[] height)
+        // The mask smeared up (upX, upY in texture pixels) by up to reach pixels, fading with distance, so the flow has
+        // room above the outline. height is how far above the outline each pixel's value came from (0 on the body, 1
+        // at the reach).
+        private static float[] StretchUp(float[] mask, int n, int reach, float upX, float upY, out float[] height)
         {
             var stretched = (float[])mask.Clone();
             height = new float[mask.Length];
             if (reach < 1) return stretched;
             for (int x = 0; x < n; x++)
-                for (int y = 1; y < n; y++)
+                for (int y = 0; y < n; y++)
                 {
                     int i = y * n + x;
                     float best = mask[i];
                     int bestD = 0;
-                    for (int d = 1; d <= reach && d <= y; d++)
+                    for (int d = 1; d <= reach; d++)
                     {
-                        float v = mask[(y - d) * n + x] * (1f - d / (float)(reach + 1));
+                        int sx = Mathf.RoundToInt(x - upX * d), sy = Mathf.RoundToInt(y - upY * d);
+                        if (sx < 0 || sy < 0 || sx >= n || sy >= n) break;
+                        float v = mask[sy * n + sx] * (1f - d / (float)(reach + 1));
                         if (v > best) { best = v; bestD = d; }
                     }
                     stretched[i] = best;

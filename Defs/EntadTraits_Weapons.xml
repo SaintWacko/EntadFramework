@@ -198,13 +198,20 @@
     <changeDamageType>Burn</changeDamageType>
     <visuals>
       <li Class="EntadFramework.EntadVisual_WeaponGlow">
-        <color>(1, 0.45, 0.12, 0.45)</color>
+        <color>(1, 0.45, 0.12, 0.25)</color>
         <pulseSpeed>0.5</pulseSpeed>
         <flicker>0.25</flicker>
       </li>
-      <li Class="EntadFramework.EntadVisual_WeaponFlames">
-        <count>2</count>
-        <size>0.2~0.28</size>
+      <!-- Weapons are thin, so a finer pattern than the apparel's keeps more than one patch on a blade -->
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.45, 0.08, 0.6)</color>
+        <threshold>0.48</threshold>
+        <coreThreshold>0.78</coreThreshold>
+        <riseAbove>0.12</riseAbove>
+        <cellsAcross>8</cellsAcross>
+        <cellsUp>5</cellsUp>
+        <loopTicks>300</loopTicks>
+        <frames>24</frames>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
@@ -303,13 +310,23 @@
     </extraDamage>
     <visuals>
       <li Class="EntadFramework.EntadVisual_WeaponGlow">
-        <color>(1, 0.35, 0.05, 0.6)</color>
+        <color>(1, 0.35, 0.05, 0.35)</color>
         <pulseSpeed>0.7</pulseSpeed>
         <flicker>0.3</flicker>
       </li>
-      <li Class="EntadFramework.EntadVisual_WeaponFlames">
-        <count>4</count>
-        <size>0.26~0.36</size>
+      <li Class="EntadFramework.EntadVisual_WeaponFlow">
+        <color>(1, 0.4, 0.05, 0.85)</color>
+        <threshold>0.38</threshold>
+        <coreThreshold>0.7</coreThreshold>
+        <riseAbove>0.16</riseAbove>
+        <cellsAcross>8</cellsAcross>
+        <cellsUp>5</cellsUp>
+        <loopTicks>240</loopTicks>
+        <scrolls>3</scrolls>
+        <evolveCells>4</evolveCells>
+        <frames>32</frames>
+        <pulseSpeed>0.7</pulseSpeed>
+        <pulseMin>0.8</pulseMin>
       </li>
       <li Class="EntadFramework.EntadVisual_WeaponFlecks">
         <fleck>Entad_Fleck_Ember</fleck>
