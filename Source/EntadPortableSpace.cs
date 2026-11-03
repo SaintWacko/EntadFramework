@@ -316,14 +316,14 @@ namespace EntadFramework
 
         // ---- What counts as what ----
 
-        private static bool Ignored(Thing t)
+        internal static bool Ignored(Thing t)
         {
             if (t is Pawn || t is Mote || t is Skyfaller || t is PawnFlyer || t is Projectile) return true;
             if (t.def.category == ThingCategory.Ethereal && !(t is Blueprint) && !(t is Frame)) return true;
             return false;
         }
 
-        private static bool IsNaturalRock(Thing t) => t.def.building != null && t.def.building.isNaturalRock;
+        internal static bool IsNaturalRock(Thing t) => t.def.building != null && t.def.building.isNaturalRock;
 
         private static bool IsChunk(Thing t) => t.def.category == ThingCategory.Item && t.def.IsWithinCategory(ThingCategoryDefOf.Chunks);
 
@@ -333,7 +333,7 @@ namespace EntadFramework
 
         // Things covering any cell of the rectangle, including ones that cross its edge (the checks refuse or push those);
         // a thing can cover several cells, so each is listed once
-        private static List<Thing> ThingsIn(Map map, CellRect rect)
+        internal static List<Thing> ThingsIn(Map map, CellRect rect)
         {
             var seen = new HashSet<Thing>();
             var list = new List<Thing>();
@@ -422,7 +422,7 @@ namespace EntadFramework
 
         // Lower numbers spawn first: buildings, then what attaches to them, then everything that sits on them.
         // Despawning runs the other way.
-        private static int SpawnOrder(Thing t)
+        internal static int SpawnOrder(Thing t)
         {
             if (t.def.category == ThingCategory.Building) return t.def.building != null && t.def.building.isAttachment ? 1 : 0;
             return 2;

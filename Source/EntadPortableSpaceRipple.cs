@@ -10,34 +10,35 @@ namespace EntadFramework
     // The channel's ripple (JobDriver_UsePortableSpace). Visual only: the room still moves all at once when the
     // channel ends (EntadPortableSpace.Place / PickUp), so nothing here touches the map or is saved.
     //
-    // Setting the room down, a ring grows out from where the pawn stands and leaves ghosts of the room's floors,
-    // buildings, plants and items behind it. Folding an area up (capture or pick-up), the ring starts at the far edge
-    // and closes in on the pawn, dimming the cells it has passed. Either way it reaches its end a little before the
-    // channel does, so the swap lands on a finished picture.
+    // Setting the room down, a ring grows out from where the pawn stands and leaves the room behind it as a ghost.
+    // Folding an area up (capture or pick-up), the ring starts at the far edge and closes in on the pawn, turning what
+    // it passes into the same ghost. The ghost is the same in both directions: a blue tint over the cells, the room's
+    // floors under it when setting down, and every building, plant and item drawn in its own texture, tinted and
+    // half transparent (over the real one when folding). The ring reaches its last cell as the channel ends.
     //
     // Every piece carries a key from 0 to 1, the progress at which the ring reaches it, and each list is sorted by key,
-    // so a frame only walks the part already reached. Floors and the dimming are one mesh per material whose
-    // triangle count grows as the ring passes, not a draw call per cell.
+    // so a frame only walks the part already reached. Floors and the tint are one mesh per material whose triangle
+    // count grows as the ring passes, not a draw call per cell.
     internal class SpaceRipple
     {
-        // Fixed colours: GhostUtility caches a ghost graphic per colour, so a fading alpha would fill its cache
-        private static readonly Color GhostColor = new Color(0.75f, 0.85f, 1f, 0.45f);
-        private static readonly Color FloorTint = new Color(0.85f, 0.9f, 1f, 0.55f);
-        private static readonly Color FoldedTint = new Color(0.08f, 0.05f, 0.16f, 0.5f);
+        private static readonly Color ThingTint = new Color(0.62f, 0.72f, 1f, 0.6f);
+        private static readonly Color FloorTint = new Color(0.75f, 0.82f, 1f, 0.6f);
+        private static readonly Color CellTint = new Color(0.3f, 0.36f, 0.75f, 0.28f);
 
-        // Share of the channel the ring takes to cross the area
-        private const float RippleEnd = 0.9f;
         // Dust and shimmer at the ring's front, at most this many cells a tick however fast it moves
         private const int MaxFrontEffectsPerTick = 6;
 
-        // The thing itself isn't handed to comps' DrawGhost: it is off every map, and a comp reading its Map would
-        // throw every frame
+        // Tinted copies of graphics, shared by every ripple: GetColoredVersion makes a new graphic for some types,
+        // and a ghost is drawn every frame
+        private static readonly Dictionary<Graphic, Graphic> tinted = new Dictionary<Graphic, Graphic>();
+
         private struct Ghost
         {
             public ThingDef def;
             public Graphic graphic;
-            public Thing thing;
-            public IntVec3 pos;
+            // Walls and other linked graphics: the atlas piece for how the ghost links to its neighbours
+            public Material linkedMat;
+            public Vector3 loc;
             public Rot4 rot;
             public float key;
         }
@@ -58,7 +59,7 @@ namespace EntadFramework
             this.workTicks = Mathf.Max(1, workTicks);
         }
 
-        public float Progress => Mathf.Clamp01((1f - driver.ticksLeftThisToil / (float)workTicks) / RippleEnd);
+        public float Progress => Mathf.Clamp01(1f - driver.ticksLeftThisToil / (float)workTicks);
 
         public bool Live => !ended && driver.pawn.jobs?.curDriver == driver && driver.pawn.Map == map;
 
@@ -75,7 +76,7 @@ namespace EntadFramework
 
             Vector3 centre = from.ToVector3Shifted();
             float maxDist = 0.5f;
-            foreach (IntVec3 c in rect) maxDist = Mathf.Max(maxDist, (c.ToVector3Shifted() - centre).MagnitudeHorizontal() + 0.5f);
+            foreach (IntVec3 c in rect) maxDist = Mathf.Max(maxDist, (c.ToVector3Shifted() - centre).MagnitudeHorizontal());
             float KeyAt(Vector3 at)
             {
                 float d = Mathf.Clamp01((at - centre).MagnitudeHorizontal() / maxDist);
@@ -85,18 +86,30 @@ namespace EntadFramework
             foreach (IntVec3 c in rect) ripple.front.Add((c, KeyAt(c.ToVector3Shifted())));
             ripple.front.SortBy(f => f.key);
 
+            if (unfolding) ripple.AddFloors(space, origin, rot, w, h, KeyAt);
+            ripple.meshes.Add(new RevealMesh(ripple.front, SolidColorMaterials.SimpleSolidColorMaterial(CellTint),
+                AltitudeLayer.Blueprint.AltitudeFor() - 0.02f, Color.white));
+
+            var pieces = new List<(Thing thing, IntVec3 pos, Rot4 rot)>();
             if (unfolding)
             {
-                ripple.AddFloors(space, origin, rot, w, h, KeyAt);
-                ripple.AddGhosts(space, origin, rot, w, h, KeyAt);
+                space.PruneRoom();
+                foreach (var st in space.room)
+                {
+                    if (EntadPortableSpace.TurnBlocks(st, rot)) continue;
+                    EntadPortableSpace.Transform(st.thing.def, st.pos, st.rot, l => EntadPortableSpace.ToMap(l, origin, rot, w, h), rot.AsInt,
+                        st.thing.Rotation, out IntVec3 p, out Rot4 r);
+                    pieces.Add((st.thing, p, r));
+                }
             }
             else
-                ripple.meshes.Add(new RevealMesh(ripple.front, SolidColorMaterials.SimpleSolidColorMaterial(FoldedTint),
-                    AltitudeLayer.MetaOverlays.AltitudeFor(), Color.white));
+                foreach (Thing t in EntadPortableSpace.ThingsIn(map, rect))
+                    if (!EntadPortableSpace.Ignored(t) && !EntadPortableSpace.IsNaturalRock(t)) pieces.Add((t, t.Position, t.Rotation));
+            ripple.AddGhosts(pieces, KeyAt);
 
             // Begun partway (a load mid-channel, or the map only now being looked at): no burst for the cells already passed
-            float p = ripple.Progress;
-            while (ripple.nextFront < ripple.front.Count && ripple.front[ripple.nextFront].key <= p) ripple.nextFront++;
+            float progress = ripple.Progress;
+            while (ripple.nextFront < ripple.front.Count && ripple.front[ripple.nextFront].key <= progress) ripple.nextFront++;
             return ripple;
         }
 
@@ -114,8 +127,8 @@ namespace EntadFramework
                 if (!byMaterial.TryGetValue(mat, out var cells)) byMaterial[mat] = cells = new List<(IntVec3, float)>();
                 cells.Add((c, keyAt(c.ToVector3Shifted())));
             }
-            // Just under the building ghosts, over whatever is standing there now
-            float y = AltitudeLayer.Blueprint.AltitudeFor() - 0.01f;
+            // Under the tint and the thing ghosts, over whatever is standing there now
+            float y = AltitudeLayer.Blueprint.AltitudeFor() - 0.03f;
             foreach (var pair in byMaterial)
             {
                 pair.Value.SortBy(f => f.Item2);
@@ -123,37 +136,73 @@ namespace EntadFramework
             }
         }
 
-        private void AddGhosts(PortableSpace space, IntVec3 origin, Rot4 rot, int w, int h, System.Func<Vector3, float> keyAt)
+        private void AddGhosts(List<(Thing thing, IntVec3 pos, Rot4 rot)> pieces, System.Func<Vector3, float> keyAt)
         {
-            space.PruneRoom();
-            foreach (var st in space.room)
+            // What each ghost cell links to, so ghost walls join up with each other the way the real ones do
+            var links = new Dictionary<IntVec3, LinkFlags>();
+            foreach (var (thing, pos, rot) in pieces)
             {
-                ThingDef def = st.thing.def;
+                LinkFlags flags = thing.def.graphicData?.linkFlags ?? LinkFlags.None;
+                if (flags == LinkFlags.None) continue;
+                foreach (IntVec3 c in GenAdj.OccupiedRect(pos, rot, thing.def.size))
+                    links[c] = (links.TryGetValue(c, out var f) ? f : LinkFlags.None) | flags;
+            }
+
+            foreach (var (thing, pos, rot) in pieces)
+            {
+                ThingDef def = thing.def;
                 bool shown = def.category == ThingCategory.Building || def.category == ThingCategory.Item || def.category == ThingCategory.Plant;
-                if (!shown || def.graphicData == null || EntadPortableSpace.TurnBlocks(st, rot)) continue;
-                EntadPortableSpace.Transform(def, st.pos, st.rot, l => EntadPortableSpace.ToMap(l, origin, rot, w, h), rot.AsInt, st.thing.Rotation, out IntVec3 p, out Rot4 r);
-                if (!p.InBounds(map)) continue;
+                if (!shown || def.graphicData == null || !pos.InBounds(map)) continue;
                 // A held thing is off every map; a graphic getter written for spawned things (some modded plants and
                 // buildings read their Map) would throw here, and that thing just goes without a ghost
                 Graphic graphic;
-                try { graphic = st.thing.Graphic; }
+                try { graphic = thing.Graphic; }
                 catch { continue; }
-                // GhostUtility rebuilds the ghost through GraphicDatabase, which only makes graphics with a parameterless
-                // constructor. Items that lie at a random angle are wrapped in Graphic_RandomRotated, which has none
-                // ("Invalid generic arguments"): the ghost uses what it wraps. Any other wrapper of that kind is skipped.
+                // Items that lie at a random angle are wrapped; the ghost lies straight
                 if (graphic is Graphic_RandomRotated rotated) graphic = rotated.SubGraphic;
-                if (graphic == null || graphic == BaseContent.BadGraphic || graphic.GetType().GetConstructor(System.Type.EmptyTypes) == null) continue;
-                ghosts.Add(new Ghost
+                Graphic linked = null;
+                if (graphic is Graphic_Linked l) { linked = l; graphic = l.SubGraphic; }
+                graphic = Tinted(graphic);
+                if (graphic == null) continue;
+
+                // Buildings, then attachments, then what sits on them, as they spawn
+                int layer = EntadPortableSpace.SpawnOrder(thing);
+                var ghost = new Ghost
                 {
                     def = def,
                     graphic = graphic,
-                    thing = st.thing,
-                    pos = p,
-                    rot = r,
-                    key = keyAt(GenThing.TrueCenter(p, r, def.size, 0f))
-                });
+                    rot = rot,
+                    loc = GenThing.TrueCenter(pos, rot, def.size, AltitudeLayer.Blueprint.AltitudeFor() + layer * 0.01f),
+                    key = keyAt(GenThing.TrueCenter(pos, rot, def.size, 0f))
+                };
+                if (linked != null)
+                {
+                    LinkFlags mine = def.graphicData.linkFlags;
+                    int dirs = 0;
+                    for (int i = 0, bit = 1; i < 4; i++, bit *= 2)
+                        if (links.TryGetValue(pos + GenAdj.CardinalDirections[i], out var f) && (f & mine) != 0) dirs += bit;
+                    ghost.linkedMat = MaterialAtlasPool.SubMaterialFromAtlas(graphic.MatSingle, (LinkDirections)dirs);
+                }
+                ghosts.Add(ghost);
             }
             ghosts.SortBy(g => g.key);
+        }
+
+        // The graphic in the transparent shader with the ghost tint, or null for one that can't be recoloured
+        // (Graphic's own GetColoredVersion only logs an error)
+        private static Graphic Tinted(Graphic graphic)
+        {
+            if (graphic == null || graphic == BaseContent.BadGraphic) return null;
+            if (tinted.TryGetValue(graphic, out Graphic done)) return done;
+            Graphic result = null;
+            var method = graphic.GetType().GetMethod(nameof(Graphic.GetColoredVersion));
+            if (method != null && method.DeclaringType != typeof(Graphic))
+            {
+                result = graphic.GetColoredVersion(ShaderDatabase.Transparent, ThingTint, ThingTint);
+                if (result == BaseContent.BadGraphic) result = null;
+            }
+            tinted[graphic] = result;
+            return result;
         }
 
         public void Tick()
@@ -182,7 +231,8 @@ namespace EntadFramework
             {
                 Ghost g = ghosts[i];
                 if (g.key > p) break;
-                GhostDrawer.DrawGhostThing(g.pos, g.rot, g.def, g.graphic, GhostColor, AltitudeLayer.Blueprint, null, false, g.thing.Stuff);
+                if (g.linkedMat != null) Graphics.DrawMesh(MeshPool.plane10, g.loc, Quaternion.identity, g.linkedMat, 0);
+                else g.graphic.DrawFromDef(g.loc, g.rot, g.def);
             }
         }
 
