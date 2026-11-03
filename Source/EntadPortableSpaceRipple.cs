@@ -41,6 +41,7 @@ namespace EntadFramework
             // Doors: their two closed leaves, turned to the walls around them as Building_Door.DrawMovers draws them
             public Material doorMat;
             public Matrix4x4 doorMatrix;
+            public Matrix4x4 doorMatrixFlip;
             public Vector3 loc;
             public Rot4 rot;
             public float key;
@@ -148,10 +149,12 @@ namespace EntadFramework
             var links = new Dictionary<IntVec3, LinkFlags>();
             var solid = new HashSet<IntVec3>();
             var doors = new HashSet<IntVec3>();
+            var fences = new HashSet<IntVec3>();
             foreach (var (thing, pos, rot) in pieces)
             {
                 if (onMap) break;
                 if (IsDoor(thing.def)) doors.Add(pos);
+                else if (thing.def.IsFence) fences.Add(pos);
                 else if (thing.def.passability == Traversability.Impassable)
                     foreach (IntVec3 c in GenAdj.OccupiedRect(pos, rot, thing.def.size)) solid.Add(c);
                 LinkFlags flags = thing.def.graphicData?.linkFlags ?? LinkFlags.None;
@@ -184,8 +187,16 @@ namespace EntadFramework
                     // A 1x1 door turns to its walls every frame (Building_Door.DoorPreDraw); a held one has no map to ask
                     Rot4 doorRot = rot;
                     if (def.size == IntVec2.One)
-                        doorRot = onMap ? DoorUtility.DoorRotationAt(pos, map, def.building.preferConnectingToFences) : GhostDoorRotation(pos, rect, solid, doors);
+                        doorRot = onMap ? DoorUtility.DoorRotationAt(pos, map, def.building.preferConnectingToFences)
+                            : GhostDoorRotation(pos, rect, solid, doors, fences, def.building.preferConnectingToFences);
                     Vector3 at = GenThing.TrueCenter(pos, doorRot, def.size, AltitudeLayer.Blueprint.AltitudeFor() + layer * 0.01f);
+                    // Closed, as DrawMovers draws them: a 1x1 door's two leaves overlap at full width; a wider door
+                    // (Building_MultiTileDoor) has half-width leaves a quarter of its width either side of the middle
+                    bool wide = def.size != IntVec2.One;
+                    Rot4 across = doorRot;
+                    across.Rotate(RotationDirection.Clockwise);
+                    Vector3 shift = wide ? across.AsQuat * new Vector3(0f, 0f, def.size.x) * 0.25f : Vector3.zero;
+                    var scale = new Vector3(def.size.x * (wide ? 0.5f : 1f), 1f, def.size.z);
                     ghosts.Add(new Ghost
                     {
                         def = def,
@@ -194,7 +205,8 @@ namespace EntadFramework
                         loc = at,
                         key = keyAt(GenThing.TrueCenter(pos, doorRot, def.size, 0f)),
                         doorMat = graphic.MatAt(doorRot),
-                        doorMatrix = Matrix4x4.TRS(at, doorRot.AsQuat, new Vector3(def.size.x, 1f, def.size.z))
+                        doorMatrix = Matrix4x4.TRS(at - shift, doorRot.AsQuat, scale),
+                        doorMatrixFlip = Matrix4x4.TRS(at + shift, doorRot.AsQuat, scale)
                     });
                     continue;
                 }
@@ -227,9 +239,11 @@ namespace EntadFramework
         private static bool IsDoor(ThingDef def) => def.thingClass != null && typeof(Building_Door).IsAssignableFrom(def.thingClass);
 
         // DoorUtility.DoorRotationAt against the room being set down: inside the area its ghosts count (solid 9, a
-        // door 1, or 5 with a door opposite too), outside it the map does. Leaves run north-south when east and
-        // west hold at least as much as north and south.
-        private Rot4 GhostDoorRotation(IntVec3 pos, CellRect rect, HashSet<IntVec3> solid, HashSet<IntVec3> doors)
+        // door 1, or 5 with a door opposite too, a fence 1, or 10 for a gate that prefers fences), outside it only
+        // what the map has that blocks. Leaves run north-south when east and west hold at least as much as north and
+        // south.
+        private Rot4 GhostDoorRotation(IntVec3 pos, CellRect rect, HashSet<IntVec3> solid, HashSet<IntVec3> doors,
+            HashSet<IntVec3> fences, bool preferFences)
         {
             int Quality(IntVec3 offset)
             {
@@ -238,6 +252,7 @@ namespace EntadFramework
                 if (!rect.Contains(c)) return c.WalkableByNormal(map) ? 0 : 9;
                 if (solid.Contains(c)) return 9;
                 if (doors.Contains(c)) return doors.Contains(pos - offset) ? 5 : 1;
+                if (fences.Contains(c)) return preferFences ? 10 : 1;
                 return 0;
             }
             int eastWest = Quality(IntVec3.East) + Quality(IntVec3.West);
@@ -301,7 +316,7 @@ namespace EntadFramework
                 if (g.doorMat != null)
                 {
                     Graphics.DrawMesh(MeshPool.plane10, g.doorMatrix, g.doorMat, 0);
-                    Graphics.DrawMesh(MeshPool.plane10Flip, g.doorMatrix, g.doorMat, 0);
+                    Graphics.DrawMesh(MeshPool.plane10Flip, g.doorMatrixFlip, g.doorMat, 0);
                     continue;
                 }
                 // A modded graphic whose DrawWorker needs the thing (it gets none here) would throw every frame: that
