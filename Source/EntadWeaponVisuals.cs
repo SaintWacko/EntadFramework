@@ -403,10 +403,19 @@ namespace EntadFramework
         // The pattern rises up the screen, not up the texture: a held weapon turns with its aim and one on the ground
         // lies at a random angle, and flames running along a barrel looked wrong. Frames can't be turned once made
         // (the noise is baked into them), so each texture gets a set per angle bucket, made the first time the item is
-        // drawn at that angle. Upright apparel only ever uses bucket 0, which is the unturned pattern.
+        // drawn at that angle. Standing pawns' apparel uses bucket 0, the unturned pattern; a pawn lying down turns
+        // its apparel, so the flames still rise up the screen.
         private const int AngleBuckets = 16;
+        // Neighbouring buckets show unrelated patches, so an item stays on its bucket until it is this far (in
+        // buckets, about 4 degrees) past the edge: recoil wobbling an aim near an edge flickered between two
+        private const float BucketHysteresis = 0.18f;
+
+        // A set of frames costs a few milliseconds to make; one per rendered frame across every flow, so a screen of
+        // items at new angles fills in over a few frames instead of stalling one
+        private static int lastBuildFrame = -1;
 
         private readonly Dictionary<EntadWeaponShape, Material[][]> frameCache = new Dictionary<EntadWeaponShape, Material[][]>();
+        private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Thing, int[]> itemBucket = new System.Runtime.CompilerServices.ConditionalWeakTable<Thing, int[]>();
 
         public override IEnumerable<string> ConfigErrors(string defName)
         {
@@ -420,7 +429,7 @@ namespace EntadFramework
 
         public override void Draw(EntadWeaponDraw d)
         {
-            var mats = FramesFor(d.shape, UpBucket(d));
+            var mats = FramesFor(d.shape, BucketFor(d));
             if (mats == null || mats.Length < 2 || loopTicks < 1) return;
             int seed = Gen.HashCombineInt(d.seed, 0xF10);
             float at = (d.ticks + ((seed >> 4) & 0xFFFF)) % loopTicks / (float)loopTicks * mats.Length;
@@ -449,17 +458,28 @@ namespace EntadFramework
 
         // Which bucket the screen's up falls in, in the texture's own space. The matrix is a TRS turned about y, so
         // world +z in local space is (m20 / sx², m22 / sz²); a flipped mesh mirrors the texture's u.
-        private static int UpBucket(EntadWeaponDraw d)
+        private static float UpPosition(EntadWeaponDraw d)
         {
             Matrix4x4 m = d.matrix;
             float sx = m.m00 * m.m00 + m.m10 * m.m10 + m.m20 * m.m20;
             float sz = m.m02 * m.m02 + m.m12 * m.m12 + m.m22 * m.m22;
-            if (sx <= 0f || sz <= 0f) return 0;
+            if (sx <= 0f || sz <= 0f) return 0f;
             float ux = m.m20 / sx, uz = m.m22 / sz;
             if (d.flipped) ux = -ux;
-            if (Mathf.Abs(ux) < 1e-4f && Mathf.Abs(uz) < 1e-4f) return 0;
-            float deg = Mathf.Atan2(ux, uz) * Mathf.Rad2Deg;
-            return ((Mathf.RoundToInt(deg / (360f / AngleBuckets)) % AngleBuckets) + AngleBuckets) % AngleBuckets;
+            if (Mathf.Abs(ux) < 1e-4f && Mathf.Abs(uz) < 1e-4f) return 0f;
+            float pos = Mathf.Atan2(ux, uz) * Mathf.Rad2Deg / (360f / AngleBuckets);
+            return pos < 0f ? pos + AngleBuckets : pos;
+        }
+
+        private int BucketFor(EntadWeaponDraw d)
+        {
+            float pos = UpPosition(d);
+            int nearest = Mathf.RoundToInt(pos) % AngleBuckets;
+            if (d.weapon == null) return nearest;
+            int[] last = itemBucket.GetValue(d.weapon, _ => new[] { nearest });
+            float off = Mathf.Abs(pos - last[0]) % AngleBuckets;
+            if (Mathf.Min(off, AngleBuckets - off) > 0.5f + BucketHysteresis) last[0] = nearest;
+            return last[0];
         }
 
         private Material[] FramesFor(EntadWeaponShape shape, int bucket)
@@ -470,6 +490,17 @@ namespace EntadFramework
                 frameCache[shape] = sets;
             }
             if (sets[bucket] != null) return sets[bucket].Length > 0 ? sets[bucket] : null;
+            if (lastBuildFrame == Time.frameCount)
+            {
+                // Over this frame's budget: show the nearest angle already made, if any, until it's this one's turn
+                for (int step = 1; step <= AngleBuckets / 2; step++)
+                {
+                    var near = sets[(bucket + step) % AngleBuckets] ?? sets[(bucket - step + AngleBuckets) % AngleBuckets];
+                    if (near != null) return near.Length > 0 ? near : null;
+                }
+                return null;
+            }
+            lastBuildFrame = Time.frameCount;
             Material[] mats = System.Array.Empty<Material>();
             float[] mask = shape.mask;
             if (mask != null && frames >= 2)
