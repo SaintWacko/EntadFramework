@@ -138,7 +138,11 @@ namespace EntadFramework
                 Graphic graphic;
                 try { graphic = st.thing.Graphic; }
                 catch { continue; }
-                if (graphic == null || graphic == BaseContent.BadGraphic) continue;
+                // GhostUtility rebuilds the ghost through GraphicDatabase, which only makes graphics with a parameterless
+                // constructor. Items that lie at a random angle are wrapped in Graphic_RandomRotated, which has none
+                // ("Invalid generic arguments"): the ghost uses what it wraps. Any other wrapper of that kind is skipped.
+                if (graphic is Graphic_RandomRotated rotated) graphic = rotated.SubGraphic;
+                if (graphic == null || graphic == BaseContent.BadGraphic || graphic.GetType().GetConstructor(System.Type.EmptyTypes) == null) continue;
                 ghosts.Add(new Ghost
                 {
                     def = def,
