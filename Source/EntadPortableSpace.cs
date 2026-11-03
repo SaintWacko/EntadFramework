@@ -962,21 +962,24 @@ namespace EntadFramework
         private static void Move(PortableSpace space, PortableSpaceState expected, Map map, IntVec3 origin, Rot4 rot, int w, int h)
         {
             if (space.state != expected || map.Disposed) return;
+            AcceptanceReport report;
             switch (expected)
             {
                 case PortableSpaceState.Empty:
-                    if (EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h)).Accepted)
-                        EntadPortableSpace.Capture(space, map, origin, rot, w, h);
+                    report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h));
+                    if (report.Accepted) EntadPortableSpace.Capture(space, map, origin, rot, w, h);
                     break;
                 case PortableSpaceState.Holding:
-                    if (EntadPortableSpace.CanPlace(space, map, origin, rot, w, h).Accepted)
-                        EntadPortableSpace.Place(space, map, origin, rot, w, h);
+                    report = EntadPortableSpace.CanPlace(space, map, origin, rot, w, h);
+                    if (report.Accepted) EntadPortableSpace.Place(space, map, origin, rot, w, h);
                     break;
                 default:
-                    if (space.PlacedMap == map && EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h)).Accepted)
-                        EntadPortableSpace.PickUp(space, map, w, h);
+                    report = space.PlacedMap != map ? (AcceptanceReport)"EF_Space_OtherMap".Translate()
+                        : EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h));
+                    if (report.Accepted) EntadPortableSpace.PickUp(space, map, w, h);
                     break;
             }
+            if (!report.Accepted) Messages.Message(report.Reason, MessageTypeDefOf.RejectInput, false);
         }
     }
 
