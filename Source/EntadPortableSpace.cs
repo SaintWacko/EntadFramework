@@ -931,17 +931,22 @@ namespace EntadFramework
             {
                 case PortableSpaceState.Empty:
                     report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h));
-                    if (report.Accepted) EntadPortableSpace.Capture(space, map, origin, rot, w, h);
                     break;
                 case PortableSpaceState.Holding:
                     report = EntadPortableSpace.CanPlace(space, map, origin, rot, w, h);
-                    if (report.Accepted) EntadPortableSpace.Place(space, map, origin, rot, w, h);
                     break;
                 default:
                     if (space.PlacedMap != map) { report = "EF_Space_OtherMap".Translate(); break; }
                     report = EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h));
-                    if (report.Accepted) EntadPortableSpace.PickUp(space, map, w, h);
                     break;
+            }
+            if (report.Accepted)
+            {
+                // This toil runs inside the tick list. Despawned things leave that list only at the start of the next
+                // tick, and it skips only destroyed things, so a lifted door later in the list would still tick with no
+                // map (Building_Door.Tick NRE). EntadTriggerQueue runs these after every map's tick lists, same tick.
+                PortableSpaceState stateAtFinish = space.state;
+                EntadTriggerQueue.NextTick(() => Move(space, stateAtFinish, map, origin, rot, w, h));
             }
             if (!report.Accepted)
             {
@@ -950,6 +955,28 @@ namespace EntadFramework
             }
             comp.TryBindOnUse(pawn);
             trait.Reveal(EntadEffectKind.Space);
+        }
+
+        // Checked again because something else in the same tick (another pawn's job, a raid's explosion) may have
+        // changed the space or the area since Finish accepted it
+        private static void Move(PortableSpace space, PortableSpaceState expected, Map map, IntVec3 origin, Rot4 rot, int w, int h)
+        {
+            if (space.state != expected || map.Disposed) return;
+            switch (expected)
+            {
+                case PortableSpaceState.Empty:
+                    if (EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(origin, rot, w, h)).Accepted)
+                        EntadPortableSpace.Capture(space, map, origin, rot, w, h);
+                    break;
+                case PortableSpaceState.Holding:
+                    if (EntadPortableSpace.CanPlace(space, map, origin, rot, w, h).Accepted)
+                        EntadPortableSpace.Place(space, map, origin, rot, w, h);
+                    break;
+                default:
+                    if (space.PlacedMap == map && EntadPortableSpace.CanCapture(map, EntadPortableSpace.RectAt(space.origin, space.rot, w, h)).Accepted)
+                        EntadPortableSpace.PickUp(space, map, w, h);
+                    break;
+            }
         }
     }
 
