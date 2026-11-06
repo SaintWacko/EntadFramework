@@ -874,7 +874,7 @@ namespace EntadFramework
         {
             if (activeTraits.NullOrEmpty()) return null;
             string unknown = "EF_Unknown".Translate();
-            string inspectString = "EF_InspectTraits".Translate(string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.LabelCap.ToString())));
+            string inspectString = "EF_InspectTraits".Translate(TraitNameList(m => m.def.LabelCap.ToString(), unknown));
             // Plain: an item in the inspect pane is on the map, so it has no holder for the red to be about
             if (IsBound) inspectString += "\n" + "EF_BoundTo".Translate(BoundNames);
             string bond = PersonaInspectLine;
@@ -891,6 +891,15 @@ namespace EntadFramework
                 }
             }
             return inspectString;
+        }
+
+        // Known names in order, then a single "???" however many names are hidden: one per trait would tell the player
+        // how many traits they have yet to find
+        private string TraitNameList(System.Func<AppliedEntadTrait, string> name, string unknown)
+        {
+            var names = activeTraits.Where(m => !m.NameHidden).Select(name).ToList();
+            if (activeTraits.Any(m => m.NameHidden)) names.Add(unknown);
+            return string.Join(", ", names);
         }
 
         // How long until a trigger on cooldown can fire again; null when it is ready
@@ -930,11 +939,7 @@ namespace EntadFramework
             infoString.AppendLine("EF_Card_Intro".Translate());
             foreach (var trait in activeTraits)
             {
-                if (trait.NameHidden)
-                {
-                    infoString.Append("\n").AppendLine(unknown.Colorize(ColoredText.TipSectionTitleColor));
-                    continue;
-                }
+                if (trait.NameHidden) continue;
                 infoString.Append("\n").AppendLine("EF_Card_TraitHeader".Translate(trait.def.LabelCap.Resolve(), trait.Rarity.Label()).Resolve().Colorize(ColoredText.TipSectionTitleColor));
                 if (!trait.AnyHidden) infoString.AppendLine(trait.def.DescriptionFor(parent.def));
                 for (int i = 0; trait.IsRevealed(EntadEffectKind.Stat) && trait.def.statOffsets != null && i < trait.def.statOffsets.Count; i++)
@@ -1048,6 +1053,8 @@ namespace EntadFramework
                 if (trait.AnyHidden) infoString.AppendLine(" - " + unknown);
                 if (!trait.AnyHidden && !IsBound) infoString.AppendLine(" - " + "EF_Card_MarketValue".Translate(trait.MarketValueOffset(baseValue).ToStringMoneyOffset()));
             }
+            if (activeTraits.Any(m => m.NameHidden))
+                infoString.Append("\n").AppendLine(unknown.Colorize(ColoredText.TipSectionTitleColor));
             // A bound entad is priced as a flat premium instead of per trait (StatPart_Entad)
             if (IsBound)
                 infoString.Append("\n").AppendLine("EF_Card_BoundValue".Translate(EntadSettings.MysteryBonus.ToStringPercent()));
@@ -1063,7 +1070,7 @@ namespace EntadFramework
                 yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EF_Card_BoundLabel".Translate(), BoundLine(BoundNames),
                     "EF_Card_BoundDesc".Translate(), 3999);
             }
-            string label = string.Join(", ", activeTraits.Select(m => m.NameHidden ? unknown : m.def.label));
+            string label = TraitNameList(m => m.def.label, unknown);
             // The card names a granted ability, or one a trigger casts; its hyperlink opens the ability's own description
             var granted = activeTraits
                 .Where(m => !m.def.abilities.NullOrEmpty() && m.IsRevealed(EntadEffectKind.Ability))
