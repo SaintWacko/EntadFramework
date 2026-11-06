@@ -91,7 +91,7 @@ A trait only rolls on an item where every one of its stats means something. The 
 
 Two traits that touch the same stat never share an item. Set `allowOverlap` to true on either to allow it.
 
-The framework's own stats in `Defs/EntadStats.xml` work in XML like any other, and each already has its rule for which items it rolls on: `Entad_GlowRadius` (light from furniture without a lamp, or from apparel, where the light follows the wearer), `Entad_DeflectChance` (apparel: the chance a shot hitting the wearer glances off, some back at the shooter; capped at 60%), `Entad_RoomHeating` and `Entad_RoomCooling` (pair with `targetTemperature`), `Entad_StoredRotFactor`, `Entad_FertilityOffset`, `Entad_PlantGrowthFactor`, `Entad_FilthPerDay` (pair with `filth`), `Entad_ProductQualityChance`, `Entad_ProductDoubleChance`, `Entad_IngredientRefundChance`, `Entad_ColonyWealthFactor`, `Entad_MercilessDamageFactor`, `Entad_MeleeArmorPenetrationMultiplier`, `Entad_FilthPickupFactor` and the three power network stats. `Defs/EntadTraits_Furniture.xml`, `EntadTraits_Drawbacks.xml` and `EntadTraits_Apparel.xml` show them in use.
+The framework's own stats in `Defs/EntadStats.xml` work in XML like any other, and each already has its rule for which items it rolls on: `Entad_GlowRadius` (light from furniture without a lamp, or from apparel, where the light follows the wearer; the trait's `glowColor` sets the light's colour, a lamp's by default), `Entad_DeflectChance` (apparel: the chance a shot hitting the wearer glances off, some back at the shooter; capped at 60%), `Entad_RoomHeating` and `Entad_RoomCooling` (pair with `targetTemperature`), `Entad_StoredRotFactor`, `Entad_FertilityOffset`, `Entad_PlantGrowthFactor`, `Entad_FilthPerDay` (pair with `filth`), `Entad_ProductQualityChance`, `Entad_ProductDoubleChance`, `Entad_IngredientRefundChance`, `Entad_ColonyWealthFactor`, `Entad_MercilessDamageFactor`, `Entad_MeleeArmorPenetrationMultiplier`, `Entad_FilthPickupFactor` and the three power network stats. `Defs/EntadTraits_Furniture.xml`, `EntadTraits_Drawbacks.xml` and `EntadTraits_Apparel.xml` show them in use.
 
 ## Building properties
 
@@ -412,7 +412,7 @@ The applies-to checks above decide where a stat can roll, and they only know van
 
 | Shape | Fields | Example file |
 |---|---|---|
-| Persona weapons | `persona`, `neverBond`, `secretive`, `bondedHediffs`, `bondedThought`, `otherWeaponThought`, `killThirstThought` | `Defs/EntadTraits_Persona.xml` |
+| Persona weapons | `persona`, `neverBond`, `secretive`, `bondedHediffs`, `bondedThought`, `otherWeaponThought`, `killThirstThought`, `killThirstDays` | `Defs/EntadTraits_Persona.xml` |
 | Portable space | `portableSpace` | `Defs/EntadTraits_Space.xml` |
 | Power network effects | `powerNet` | `Defs/EntadTraits_PowerNet.xml` |
 | Effects and abilities from a compat assembly | `customEffects`, `customCardLines`, `externalAbilities`, trigger casts with `externalAbility` | `Mods/DubsBadHygiene/`, `Mods/VanillaPsycastsExpanded/` |
