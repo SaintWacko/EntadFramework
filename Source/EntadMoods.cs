@@ -192,6 +192,12 @@ namespace EntadFramework
             bool credited = succeeded || atUsed || inside;
             if (credited) Check(pawn, used, null, usedKind);
 
+            // Meditation targets a cell (A) and keeps its focus object in C, so the focus is never `used` above. It
+            // usually ends by interruption (psyfocus or joy full), not Succeeded, so being settled on the spot counts.
+            if (stopped && job.targetC.HasThing && typeof(JobDriver_Meditate).IsAssignableFrom(job.def.driverClass)
+                && pawn.Position == job.targetA.Cell)
+                Check(pawn, job.targetC.Thing, used, usedKind);
+
             // A chair the pawn sat on, or a bed it lay in. Chairs are walkable, so a chair only counts for a job done
             // seated at something, and a bed only for a job that lies the pawn down. Any other job that happens to
             // end on the cell (cleaning, hauling, a walk or skygazing, whose target is a cell) does not count.

@@ -23,7 +23,9 @@ namespace EntadFramework
         public static EntadStatTrigger Classify(StatDef stat, ThingDef td)
         {
             if (stat == EntadStatDefOf.Entad_DeflectChance) return EntadStatTrigger.Own;
-            if (EntadTraitDef.IsWearerStat(stat))
+            // Only gear passes a wearer stat on to a pawn. On a building it is the building's own stat (a focus object's
+            // MeditationFocusStrength), noticed when it is used: as Equip it would wait for an equip that never comes.
+            if (EntadTraitDef.IsWearerStat(stat) && (td.IsWeapon || td.IsApparel))
             {
                 switch (stat.defName)
                 {
