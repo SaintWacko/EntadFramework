@@ -194,7 +194,7 @@ namespace EntadFramework
 
             // Meditation targets a cell (A) and keeps its focus object in C, so the focus is never `used` above. It
             // usually ends by interruption (psyfocus or joy full), not Succeeded, so being settled on the spot counts.
-            if (stopped && job.targetC.HasThing && typeof(JobDriver_Meditate).IsAssignableFrom(job.def.driverClass)
+            if (stopped && job.targetC.HasThing && job.targetC.Thing.Spawned && typeof(JobDriver_Meditate).IsAssignableFrom(job.def.driverClass)
                 && pawn.Position == job.targetA.Cell)
                 Check(pawn, job.targetC.Thing, used, usedKind);
 

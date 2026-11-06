@@ -144,7 +144,7 @@ Bright,Furniture,Uncommon,2,its changed property is seen in use,Light radius 25%
 Frugal,Furniture,Rare,3,its changed property is seen in use,Burns fuel 20% to 50% slower and holds 25% to 100% more of it.,,furniture,Everburning,,Entad_FrugalBurner
 Everburning,Furniture,Epic,5,its changed property is seen in use,Burns fuel 92% to 97% slower. A full load lasts many times longer than usual.,,furniture,Frugal,,Entad_Everburning
 Overflowing,Furniture,Epic,5,its changed property is seen in use,Generates 20% to 100% more power.,,furniture,,,Entad_OverflowingGenerator
-Meditative,Furniture,Uncommon,2,is equipped,+10% to 30% psyfocus gained by someone meditating at it.,,furniture,,,Entad_Meditative
+Meditative,Furniture,Uncommon,2,someone meditates at it,+10% to 30% psyfocus gained by someone meditating at it.,,furniture,,,Entad_Meditative
 Potent,Furniture,Uncommon,2,its changed property is seen in use,Heats or cools 25% to 100% harder for the same power.,,furniture,,,Entad_PotentCooling
 Thrifty,Furniture,Uncommon,2,its changed property is seen in use,Draws 20% to 60% less power.,,furniture,,,Entad_ThriftyDevice
 Stone-Burning,Furniture,Epic,3,is refueled with its fuel,Burns stone blocks as fuel instead of its usual fuel.,,furniture,Hayburner,,Entad_StoneBurner
