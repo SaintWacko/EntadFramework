@@ -355,7 +355,7 @@ namespace EntadFramework
         public static float StatWithoutTraits(Thing thing, StatDef stat)
         {
             // A minifiedThingInherits stat reads the inner thing through its cache, which would keep the traits
-            thing = (thing as MinifiedThing)?.InnerThing ?? thing;
+            if (stat.minifiedThingInherits && thing is MinifiedThing minified && minified.InnerThing != null) thing = minified.InnerThing;
             using (new StatPart_Entad.WithoutTraits(thing, stat))
                 return stat.Worker.GetValue(StatRequest.For(thing));
         }
