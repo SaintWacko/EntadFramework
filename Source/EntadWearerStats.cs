@@ -194,6 +194,7 @@ namespace EntadFramework
         public static void Postfix(Thing gear, StatDef stat, ref float __result)
         {
             if (!EntadWearerStats.AffectsStat(stat) || !EntadWearerStats.IsEntadGear(gear)) return;
+            if (StatPart_Entad.WithoutTraits.Applies(gear, stat)) return;
             float total = EntadWearerStats.OffsetFrom(gear, stat, out float hiddenPart);
             __result += EntadWearerStats.HidingFor(gear) ? total - hiddenPart : total;
         }

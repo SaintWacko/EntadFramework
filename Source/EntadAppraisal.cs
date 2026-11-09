@@ -86,7 +86,7 @@ namespace EntadFramework
             EntadAppraisal.Unregister(pawn);
         }
 
-        public override string TipStringExtra => "EF_Appraiser_LeftToday".Translate(state.LeftToday(pawn.Tile), state.max);
+        public override string TipStringExtra => "EF_Appraiser_LeftToday".Translate(state.LeftToday(pawn.Tile));
 
         public override void ExposeData()
         {

@@ -646,8 +646,13 @@ namespace EntadFramework
             }
         }
 
+        // EntadApi.TraitsVersion, for other mods caching what they read from the traits. Never 0, which the API
+        // keeps for a thing without traits.
+        internal int traitsVersion = 1;
+
         private void TraitsChanged()
         {
+            traitsVersion++;
             hitStatFlags = -1;
             attackRate = null;
             visuals = null;

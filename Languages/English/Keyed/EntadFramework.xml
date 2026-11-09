@@ -32,7 +32,7 @@
   <EF_Rename>Rename</EF_Rename>
 
   <!-- Appraisers: identify entads for silver -->
-  <EF_Appraiser_LeftToday>Items left to identify today: {0} (at most {1} a day).</EF_Appraiser_LeftToday>
+  <EF_Appraiser_LeftToday>Items left to identify today: {0}.</EF_Appraiser_LeftToday>
   <EF_Appraise_Option>Ask {0} to identify entads</EF_Appraise_Option>
   <EF_Appraise_CannotTalk>{0}: unable to talk</EF_Appraise_CannotTalk>
   <EF_Appraise_Command>Identify entads</EF_Appraise_Command>
@@ -43,7 +43,7 @@
   <EF_Appraise_PriceLine>Price per item: {0}. Silver available: {1}</EF_Appraise_PriceLine>
   <EF_Appraise_None>You have no entads with hidden traits that the appraiser can see.</EF_Appraise_None>
   <EF_Appraise_Button>Identify ({0})</EF_Appraise_Button>
-  <EF_Appraise_NoneLeft>They can't identify any more items today. They'll be able to again after midnight.</EF_Appraise_NoneLeft>
+  <EF_Appraise_NoneLeft>They can't identify any more items today.</EF_Appraise_NoneLeft>
   <EF_Appraise_NoSilver>Not enough silver.</EF_Appraise_NoSilver>
   <EF_Appraise_Done>The appraiser identified {0}: {1}.</EF_Appraise_Done>
   <EF_RenameDesc>Give this entad a name.</EF_RenameDesc>

@@ -288,6 +288,80 @@ namespace EntadFramework
         /// unbound item, or for a bound pawn or one of their descendants.</summary>
         public static bool TraitsActiveFor(Thing thing, Pawn pawn) => thing?.TryGetComp<CompEntad>()?.ActiveFor(pawn) ?? true;
 
+        /// <summary>The combat effects of the traits on <paramref name="weapon"/> that its stats don't carry, for AI
+        /// weapon rating. Read as if the traits work: ask <see cref="TraitsActiveFor"/> for a given pawn, and when it
+        /// is false use none of this. Unrevealed traits are included, since they apply in play.</summary>
+        /// <remarks>
+        /// <para>burstCountFactor: the game applies it as Max(1, CeilToInt(BurstShotCount * factor)), and only to a
+        /// verb with a burst count above 0. burstSpeedFactor: TicksBetweenBurstShots becomes
+        /// Max(1, RoundToInt(ticks / factor)). Both are 1 when no trait changes them; the rounding is the caller's.</para>
+        /// <para>damageTypeOverride: replaces the main hit's damage type, on projectiles (explosive ones included),
+        /// beams and the first DamageInfo of a melee blow with this weapon. Null when unchanged.</para>
+        /// <para>Extra damage: each pair (extraDamageTypes[i], extraDamageAmounts[i]) is one separate hit of that type
+        /// and amount, dealt right after the main hit with the main hit's armor penetration, angle and instigator.
+        /// Once per bullet or projectile impact, once per melee blow, once per thing an explosive projectile's blast
+        /// damages (times the blast's falloff at that cell, full at the centre down to 20% at the edge), and once per
+        /// beam hit (times the beam's damage factor; a beam with beamTotalDamage shares it over its path cells, so a
+        /// whole burst deals it about once). It is skipped when the main hit already killed or destroyed the target.
+        /// The extra hits keep their own types; damageTypeOverride does not apply to them.</para>
+        /// <para>Both lists are cleared first and may be null when the caller doesn't want extra damage.</para>
+        /// </remarks>
+        /// <returns>False when the weapon has none of these effects (the out values are then neutral).</returns>
+        public static bool GetWeaponCombat(Thing weapon, out float burstCountFactor, out float burstSpeedFactor,
+            out DamageDef damageTypeOverride, List<DamageDef> extraDamageTypes, List<float> extraDamageAmounts)
+        {
+            burstCountFactor = 1f;
+            burstSpeedFactor = 1f;
+            damageTypeOverride = null;
+            extraDamageTypes?.Clear();
+            extraDamageAmounts?.Clear();
+            var comp = weapon?.TryGetComp<CompEntad>();
+            if (comp == null || comp.activeTraits.Count == 0) return false;
+
+            // A null user counts as active, as for a weapon nobody holds
+            burstCountFactor = EntadWeaponTraits.Combined(weapon, null, EntadWeaponProperty.BurstShotCount);
+            burstSpeedFactor = EntadWeaponTraits.Combined(weapon, null, EntadWeaponProperty.BurstShotSpeed);
+            damageTypeOverride = EntadWeaponDamage.TypeOverride(comp);
+            bool any = burstCountFactor != 1f || burstSpeedFactor != 1f || damageTypeOverride != null;
+            foreach (var m in comp.activeTraits)
+            {
+                if (m.def.extraDamage == null) continue;
+                for (int i = 0; i < m.def.extraDamage.Count; i++)
+                {
+                    any = true;
+                    extraDamageTypes?.Add(m.def.extraDamage[i].damageType);
+                    extraDamageAmounts?.Add(m.ExtraDamageFor(i));
+                }
+            }
+            return any;
+        }
+
+        /// <summary>Changes whenever the traits on <paramref name="thing"/> are added or removed. 0 for a thing without
+        /// traits. Not saved: it starts again after a load, when every thing is a new object anyway. Binding changes
+        /// and reveals don't change it.</summary>
+        public static int TraitsVersion(Thing thing)
+        {
+            var comp = thing?.TryGetComp<CompEntad>();
+            return comp == null || comp.activeTraits.Count == 0 ? 0 : comp.traitsVersion;
+        }
+
+        /// <summary>The stat of <paramref name="thing"/> as if its traits didn't work, as for a pawn outside a bound
+        /// item's bloodline: durability and market value keep their trait parts, every other stat leaves them out.
+        /// Uncached. For a wearer stat (one a trait adds to whoever equips the item) use
+        /// <see cref="GearOffsetWithoutTraits"/>.</summary>
+        public static float StatWithoutTraits(Thing thing, StatDef stat)
+        {
+            using (new StatPart_Entad.WithoutTraits(thing, stat))
+                return stat.Worker.GetValue(StatRequest.For(thing));
+        }
+
+        /// <summary>What <paramref name="gear"/> adds to its wearer's <paramref name="stat"/> (StatWorker.StatOffsetFromGear)
+        /// as if its traits didn't work. Uncached.</summary>
+        public static float GearOffsetWithoutTraits(Thing gear, StatDef stat)
+        {
+            using (new StatPart_Entad.WithoutTraits(gear, stat))
+                return StatWorker.StatOffsetFromGear(gear, stat);
+        }
         /// <summary>Item defs that can become entads and match the request's kinds, lists and predicate.</summary>
         public static List<ThingDef> GetCandidateItemDefs(EntadItemRequest request)
         {

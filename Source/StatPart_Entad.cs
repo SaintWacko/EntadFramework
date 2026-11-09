@@ -8,6 +8,34 @@ namespace EntadFramework
 {
     public class StatPart_Entad : StatPart
     {
+        // EntadApi.StatWithoutTraits: one stat of one thing read as if its traits didn't work. Matched on the stat too,
+        // so another stat that a part reads through the cache while this one is computed (LabelCap reads
+        // MaxHitPoints) gets its real value and can't cache a trait-free one. Restores the previous pair on dispose
+        // in case the read nests.
+        public struct WithoutTraits : System.IDisposable
+        {
+            [System.ThreadStatic] private static Thing thing;
+            [System.ThreadStatic] private static StatDef stat;
+            private readonly Thing prevThing;
+            private readonly StatDef prevStat;
+
+            public WithoutTraits(Thing thing, StatDef stat)
+            {
+                prevThing = WithoutTraits.thing;
+                prevStat = WithoutTraits.stat;
+                WithoutTraits.thing = thing;
+                WithoutTraits.stat = stat;
+            }
+
+            public static bool Applies(Thing t, StatDef s) => thing != null && thing == t && stat == s;
+
+            public void Dispose()
+            {
+                thing = prevThing;
+                stat = prevStat;
+            }
+        }
+
         public override void TransformValue(StatRequest req, ref float val)
         {
             // Runs for every MaxHitPoints and MarketValue read of every thing: a table lookup rules out most of them
@@ -36,7 +64,8 @@ namespace EntadFramework
 
             // A bound item held by someone outside the bloodline: its trait stats don't apply. Market value and
             // durability are the item's own and stay. An item nobody holds counts as active (ActiveFor(null)).
-            bool userActive = isValue || parentStat == StatDefOf.MaxHitPoints || comp.ActiveForHolder;
+            bool userActive = isValue || parentStat == StatDefOf.MaxHitPoints
+                || (comp.ActiveForHolder && !WithoutTraits.Applies(req.Thing, parentStat));
             // Market value by context. Wealth (and so raid size) counts every trait: the storyteller isn't fooled by a
             // trait nobody has found yet. Traders price only what's identified, plus one mystery premium if anything
             // isn't. The item's own card shows identified traits only. Trade prices are read while a TradeSession is
