@@ -304,7 +304,8 @@ namespace EntadFramework
         /// beam hit (times the beam's damage factor; a beam with beamTotalDamage shares it over its path cells, so a
         /// whole burst deals it about once). It is skipped when the main hit already killed or destroyed the target.
         /// The extra hits keep their own types; damageTypeOverride does not apply to them.</para>
-        /// <para>Both lists are cleared first and may be null when the caller doesn't want extra damage.</para>
+        /// <para>Both lists are cleared first. Pass null for both when the caller doesn't want extra damage; they are
+        /// only filled when both are given, so they always pair up.</para>
         /// </remarks>
         /// <returns>False when the weapon has none of these effects (the out values are then neutral).</returns>
         public static bool GetWeaponCombat(Thing weapon, out float burstCountFactor, out float burstSpeedFactor,
@@ -315,6 +316,7 @@ namespace EntadFramework
             damageTypeOverride = null;
             extraDamageTypes?.Clear();
             extraDamageAmounts?.Clear();
+            bool fill = extraDamageTypes != null && extraDamageAmounts != null;
             var comp = weapon?.TryGetComp<CompEntad>();
             if (comp == null || comp.activeTraits.Count == 0) return false;
 
@@ -329,8 +331,9 @@ namespace EntadFramework
                 for (int i = 0; i < m.def.extraDamage.Count; i++)
                 {
                     any = true;
-                    extraDamageTypes?.Add(m.def.extraDamage[i].damageType);
-                    extraDamageAmounts?.Add(m.ExtraDamageFor(i));
+                    if (!fill) continue;
+                    extraDamageTypes.Add(m.def.extraDamage[i].damageType);
+                    extraDamageAmounts.Add(m.ExtraDamageFor(i));
                 }
             }
             return any;
@@ -351,6 +354,8 @@ namespace EntadFramework
         /// <see cref="GearOffsetWithoutTraits"/>.</summary>
         public static float StatWithoutTraits(Thing thing, StatDef stat)
         {
+            // A minifiedThingInherits stat reads the inner thing through its cache, which would keep the traits
+            thing = (thing as MinifiedThing)?.InnerThing ?? thing;
             using (new StatPart_Entad.WithoutTraits(thing, stat))
                 return stat.Worker.GetValue(StatRequest.For(thing));
         }

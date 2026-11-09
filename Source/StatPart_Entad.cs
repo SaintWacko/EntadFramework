@@ -12,7 +12,7 @@ namespace EntadFramework
         // so another stat that a part reads through the cache while this one is computed (LabelCap reads
         // MaxHitPoints) gets its real value and can't cache a trait-free one. Restores the previous pair on dispose
         // in case the read nests.
-        public struct WithoutTraits : System.IDisposable
+        internal struct WithoutTraits : System.IDisposable
         {
             [System.ThreadStatic] private static Thing thing;
             [System.ThreadStatic] private static StatDef stat;
