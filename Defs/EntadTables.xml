@@ -2,7 +2,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BountifulTable</defName>
     <label>Bountiful Table</label>
-    <description>Every plate set on it somehow goes further.</description>
+    <description>Food eaten from here somehow seems more filling.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -15,7 +15,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_GildedTable</defName>
     <label>Gilded Table</label>
-    <description>Food served here tastes one notch better than it was prepared.</description>
+    <description>Food served here tastes better than expected.</description>
     <categories>
       <li>Furniture</li>
     </categories>

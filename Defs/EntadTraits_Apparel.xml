@@ -22,7 +22,7 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_FlameWreathed</defName>
     <label>flame-wreathed</label>
-    <description>Small flames from an entad this person wears play over them without burning. They are harder to set alight.</description>
+    <description>Small flames flicker over them, and new flames have a hard time finding purchase.</description>
     <defaultLabelColor>(1, 0.65, 0.3)</defaultLabelColor>
     <stages>
       <li>
@@ -36,7 +36,7 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_InfernalWreath</defName>
     <label>infernal wreath</label>
-    <description>Fire from an entad this person wears wraps around them without burning. No other fire can take hold of them.</description>
+    <description>They are wrapped in a sheet of flame, and no other fire may take hold.</description>
     <defaultLabelColor>(1, 0.45, 0.2)</defaultLabelColor>
     <stages>
       <li>
@@ -50,7 +50,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Flaming</defName>
     <label>Flaming</label>
-    <description>Small flames dance over it. They never burn the cloth, and never quite go out.</description>
+    <description>Small flames dance across the surface.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <visible>true</visible>
@@ -87,7 +87,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Infernal</defName>
     <label>Infernal</label>
-    <description>It burns, and so does anyone who lays a hand on its wearer.</description>
+    <description>Flames obscure the surface, and lick out to retaliate against attackers.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <visible>true</visible>
@@ -152,7 +152,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Radiant</defName>
     <label>Radiant</label>
-    <description>It gives off a steady light, wherever its wearer goes. Game sees them coming.</description>
+    <description>A soft glow lights the way at night, but makes it much harder to hide.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <visible>true</visible>

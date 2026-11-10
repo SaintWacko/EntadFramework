@@ -82,7 +82,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sprint</defName>
     <label>Sprint</label>
-    <description>It makes the ground feel shorter than it is.</description>
+    <description>Move like the wind.</description>
     <categories><li>Apparel</li></categories>
     <bodyPartGroups><li>Legs</li><li>Feet</li></bodyPartGroups>
     <rarity>Uncommon</rarity>
@@ -94,7 +94,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Blink</defName>
     <label>Blink</label>
-    <description>It doesn't care much for the space in between.</description>
+    <description>Everything you can see is but a blink away.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <abilities><li>Entad_Blink</li></abilities>
@@ -116,7 +116,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Smokescreen</defName>
     <label>Smokescreen</label>
-    <description>It's always faintly smoking, and it can do a great deal more than faintly.</description>
+    <description>It's always faintly smoking, and sometimes can send out a great billow of smoke.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Uncommon</rarity>
     <abilities><li>Entad_Smokescreen</li></abilities>
@@ -138,7 +138,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Artillery</defName>
     <label>Artillery</label>
-    <description>Its shots don't so much land as arrive, in numbers.</description>
+    <description>A shot may have your name on it, but an artillery shot is addressed "To whom it may concern".</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Epic</rarity>
     <abilities><li>Entad_Artillery</li></abilities>

@@ -74,7 +74,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Winterproof</defName>
     <label>Winterproof</label>
-    <description>Cold simply stops at the fabric.</description>
+    <description>Cold simply fails to penetrate.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -85,7 +85,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Summerproof</defName>
     <label>Summerproof</label>
-    <description>Heat simply stops at the fabric.</description>
+    <description>Heat simply fails to penetrate.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -161,7 +161,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Attunement</defName>
     <label>Attunement</label>
-    <description>Heightened sensitivity to the psychic.</description>
+    <description>Its berare has heightened sensitivity to the psychic.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <bodyPartGroups><li>UpperHead</li><li>FullHead</li><li>Eyes</li></bodyPartGroups>
     <rarity>Rare</rarity>

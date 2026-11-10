@@ -41,7 +41,7 @@
   <AbilityDef ParentName="EntadSelfAbilityBase">
     <defName>Entad_SecondWind</defName>
     <label>second wind</label>
-    <description>Restores 50% of the user's rest at once.</description>
+    <description>A rush of energy wipes away fatigue. (Restore 50% of sleep need)</description>
     <iconPath>UI/Abilities/Entad/SecondWind</iconPath>
     <comps>
       <li Class="EntadFramework.CompProperties_AbilityEntadPulse">
@@ -75,7 +75,7 @@
   <AbilityDef ParentName="EntadSelfAbilityBase">
     <defName>Entad_Sprint</defName>
     <label>sprint</label>
-    <description>The user moves 50% faster for 1 hour.</description>
+    <description>A burst of power, and the world slows around you. (Move 50% faster for 1 hour)</description>
     <iconPath>UI/Abilities/Entad/Sprint</iconPath>
     <!-- Vanilla fallback: on the caster when a fight starts -->
     <aiCanUse>true</aiCanUse>
@@ -111,7 +111,7 @@
   <AbilityDef ParentName="EntadSelfAbilityBase">
     <defName>Entad_BattleCry</defName>
     <label>battle cry</label>
-    <description>The user and allies within 9 tiles become emboldened for 2 hours, gaining shooting accuracy and melee hit chance.</description>
+    <description>Let out a rallying cry that echoes in the minds of those around you. (All friendlies within 9 tiles gain ranged and melee prowess for 2 hours)</description>
     <iconPath>UI/Abilities/Entad/BattleCry</iconPath>
     <!-- Vanilla fallback: on the caster when a fight starts, whoever is near -->
     <aiCanUse>true</aiCanUse>
@@ -129,7 +129,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Blink</defName>
     <label>blink</label>
-    <description>The user vanishes and reappears at a spot within 12 tiles that they can see.</description>
+    <description>Space twists, and suddenly you're standing where you looked.</description>
     <iconPath>UI/Abilities/Entad/Blink</iconPath>
     <verbProperties>
       <verbClass>Verb_CastAbility</verbClass>
@@ -151,7 +151,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Smokescreen</defName>
     <label>smokescreen</label>
-    <description>Fills a 4-tile radius with smoke, up to 15 tiles away. Smoke makes shots through it less accurate and stops turrets from locking on.</description>
+    <description>Send out a wave of smoke that hangs in the air, obstructing vision.</description>
     <iconPath>UI/Abilities/Entad/Smokescreen</iconPath>
     <!-- No vanilla fallback: vanilla's fight AI could only drop the smoke on the enemy being fought, where it thins
          the caster's shots as much as the enemy's and keeps turrets off the enemy. Smoke is worth casting on the
@@ -175,7 +175,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Flashbang</defName>
     <label>flashbang</label>
-    <description>A blinding burst up to 15 tiles away stuns every enemy within 3 tiles of it for 4 seconds.</description>
+    <description>A burst of light stuns and disorients enemies.</description>
     <iconPath>UI/Abilities/Entad/Flashbang</iconPath>
     <!-- Vanilla fallback: on the enemy being fought, within 15 tiles (only enemies are stunned) -->
     <aiCanUse>true</aiCanUse>
@@ -206,7 +206,7 @@
   <AbilityDef ParentName="EntadAbilityBase">
     <defName>Entad_Artillery</defName>
     <label>artillery shot</label>
-    <description>Fires one shot from the user's weapon that splits into three at 8, 16 and 24 tiles from the user: 3 projectiles past 8 tiles, 9 past 16 and 27 past 24. Explosive shots split twice at most. Most final projectiles near an enemy home in on someone close to where they land, usually the enemy, and at most three home in on one person; explosive ones hurt anyone in the blast. Targeting a person follows them while the user aims. The range is the weapon's.</description>
+    <description>Fires a shot that splits at regular intervals, exponentially increasing in destructive potential.</description>
     <iconPath>UI/Abilities/Entad/Artillery</iconPath>
     <!-- Vanilla fallback: at the enemy being fought, from any range the weapon reaches (explosive shots can hit
          the caster's side, as an NPC's grenades do) -->

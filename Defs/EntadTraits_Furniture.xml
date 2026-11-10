@@ -33,7 +33,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_ConvivialTable</defName>
     <label>Convivial</label>
-    <description>Meals taken here feel like good company.</description>
+    <description>Meals taken here feel like a party.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <triggers>
@@ -176,7 +176,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Luminous</defName>
     <label>Luminous</label>
-    <description>A soft light hangs about it that no one ever lit.</description>
+    <description>A soft light hangs about it.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <visible>true</visible>
@@ -190,7 +190,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Warm</defName>
     <label>Warm</label>
-    <description>Always warm to the touch, as if someone had just stood up from it.</description>
+    <description>Always warm to the touch.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -252,7 +252,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Sparing</defName>
     <label>Sparing</label>
-    <description>Some days the work seems to take only half of what was brought for it.</description>
+    <description>Some days the work seems to take only half of what it should.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>

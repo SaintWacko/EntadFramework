@@ -174,7 +174,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraNoisy</defName>
     <label>kept awake</label>
-    <description>A nearby entad's noise keeps this person from resting properly. It fades soon after leaving its range.</description>
+    <description>Strange noises keep waking you up at night.</description>
     <defaultLabelColor>(0.75, 0.6, 0.5)</defaultLabelColor>
     <isBad>true</isBad>
     <stages>

@@ -55,7 +55,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RallyingAura</defName>
     <label>Rallying</label>
-    <description>Allies fight harder when it's raised among them.</description>
+    <description>Allies fight harder when they see it.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <aura>
@@ -84,7 +84,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_DreadAura</defName>
     <label>Dread</label>
-    <description>Those who face it feel a cold weight settle on their limbs.</description>
+    <description>Its presence drags at the mind and body of foes.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Legendary</rarity>
     <aura>
@@ -97,7 +97,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraDread</defName>
     <label>dread</label>
-    <description>Gripped by dread from an enemy's entad. It fades soon after the enemy is out of range.</description>
+    <description>Gripped by dread, the mind and body move slower.</description>
     <defaultLabelColor>(0.6, 0.4, 0.7)</defaultLabelColor>
     <isBad>true</isBad>
     <stages>
@@ -134,7 +134,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraSteadied</defName>
     <label>steadied</label>
-    <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
+    <description>A calming sensation. It's not really that bad.</description>
     <defaultLabelColor>(0.5, 0.75, 1.0)</defaultLabelColor>
     <stages>
       <li>
@@ -148,7 +148,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_WardingAura</defName>
     <label>Warding</label>
-    <description>Blows aimed at its bearer's friends seem to lose heart.</description>
+    <description>Blows aimed at its bearer's friends seem not to hit as hard.</description>
     <categories><li>Weapon</li><li>Apparel</li></categories>
     <rarity>Epic</rarity>
     <aura>
@@ -162,7 +162,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraWarded</defName>
     <label>warded</label>
-    <description>Shielded by an ally's entad. It fades soon after the ally is out of range or the fight ends.</description>
+    <description>Incoming blows seem cushioned somehow.</description>
     <defaultLabelColor>(0.75, 0.8, 0.9)</defaultLabelColor>
     <stages>
       <li>
@@ -177,7 +177,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_SereneAura</defName>
     <label>Serene Presence</label>
-    <description>The air around it is a little quieter than anywhere else.</description>
+    <description>Just looking at it makes you happier.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -193,7 +193,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraSerene</defName>
     <label>serene</label>
-    <description>Calmed by a nearby entad. It fades soon after leaving its range.</description>
+    <description>Something in the air leaves you smiling.</description>
     <defaultLabelColor>(0.55, 0.9, 0.7)</defaultLabelColor>
     <stages>
       <li />
@@ -216,7 +216,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_MendingAura</defName>
     <label>Mending Ward</label>
-    <description>Wounds close more willingly in its company.</description>
+    <description>A song drifts from it that closes the wounds of nearby allies.</description>
     <categories><li>Furniture</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -230,7 +230,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraMending</defName>
     <label>mending ward</label>
-    <description>A nearby entad speeds up healing. It fades soon after leaving its range.</description>
+    <description>Your wounds seem to close on their own.</description>
     <defaultLabelColor>(0.95, 0.55, 0.55)</defaultLabelColor>
     <stages>
       <li>
@@ -259,7 +259,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraDiligent</defName>
     <label>diligent</label>
-    <description>A nearby entad keeps this person focused on their work. It fades soon after leaving its range.</description>
+    <description>Something drives you to work harder and faster.</description>
     <defaultLabelColor>(0.95, 0.75, 0.45)</defaultLabelColor>
     <stages>
       <li>
@@ -319,7 +319,7 @@
   <HediffDef ParentName="EntadAuraHediffBase">
     <defName>Entad_Hediff_AuraGrasping</defName>
     <label>grasped</label>
-    <description>Something from a nearby entad clings to this creature's limbs. It fades soon after leaving its range.</description>
+    <description>The ground drags at your feet.</description>
     <defaultLabelColor>(0.5, 0.75, 0.4)</defaultLabelColor>
     <isBad>true</isBad>
     <stages>

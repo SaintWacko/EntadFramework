@@ -2,7 +2,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_BrightHearth</defName>
     <label>Bright</label>
-    <description>Burns with a wider, warmer glow than it should.</description>
+    <description>Burns with a wider, warmer glow than expected.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -24,7 +24,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_FrugalBurner</defName>
     <label>Frugal</label>
-    <description>A little fuel goes a long way in it.</description>
+    <description>A little fuel goes a long way.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -46,7 +46,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Everburning</defName>
     <label>Everburning</label>
-    <description>Once lit, it barely seems to notice the fuel at all.</description>
+    <description>Fuel seems to last forever.</description>
     <categories>
       <li>Furniture</li>
     </categories>
@@ -98,7 +98,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_PotentCooling</defName>
     <label>Potent</label>
-    <description>Heats or cools much harder than it should.</description>
+    <description>Has far more effect on the ambient temperature than it normally would.</description>
     <categories>
       <li>Furniture</li>
     </categories>

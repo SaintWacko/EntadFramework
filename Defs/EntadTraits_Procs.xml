@@ -34,7 +34,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_Stun</defName>
     <label>Staggering</label>
-    <description>Now and then a hit from it lands harder in the mind than on the body.</description>
+    <description>Now and then a hit from it lands harder on the mind than on the body.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -60,7 +60,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_Berserk</defName>
     <label>Maddening</label>
-    <description>Some it wounds forget which side they were on.</description>
+    <description>Some it wounds forget which side they are on.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Epic</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -87,7 +87,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Proc_BlindingPulse</defName>
     <label>Dazzling</label>
-    <description>Whoever takes aim at its owner sometimes finds the world gone white.</description>
+    <description>Whoever takes aim at its owner sometimes finds the world has gone white.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -185,7 +185,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Ricochet</defName>
     <label>Ricochet</label>
-    <description>Its shots rarely stop at the first body they find.</description>
+    <description>Impossibly, its shots sometimes bounce between enemies.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -207,7 +207,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Disarm</defName>
     <label>Disarming</label>
-    <description>It has a way of finding the hand that holds the weapon.</description>
+    <description>Sometimes the weapon twists on its own to knock the blade from the foe's hand.</description>
     <categories><li>WeaponMelee</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -230,7 +230,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Harrow</defName>
     <label>Harrowing</label>
-    <description>Those who see what it does to one of them lose the stomach for the rest.</description>
+    <description>Those who see what it does to one of them lose their nerve for the fight.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -253,7 +253,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Volatile</defName>
     <label>Volatile</label>
-    <description>What it kills sometimes goes off like a grenade, though never in its owner's face.</description>
+    <description>What it kills sometimes goes off like a grenade.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -323,7 +323,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Arcing</defName>
     <label>Arcing</label>
-    <description>Whatever it hits, lightning goes looking for the next one.</description>
+    <description>Hungry lightning seeks out more targets.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -346,7 +346,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Proc_Shockwave</defName>
     <label>Shockwave</label>
-    <description>Crowd its owner, and the air itself shoves back.</description>
+    <description>Crowd its owner, and the air itself pushes back.</description>
     <categories><li>Apparel</li></categories>
     <rarity>Rare</rarity>
     <scalesWithRarity>true</scalesWithRarity>

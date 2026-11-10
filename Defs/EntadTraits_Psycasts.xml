@@ -20,7 +20,7 @@
   <EntadFramework.EntadTraitDef MayRequire="Ludeon.RimWorld.Royalty">
     <defName>Entad_Farskip</defName>
     <label>Far Skip</label>
-    <description>Distance means less to it than it should.</description>
+    <description>Distance means less to it.</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>

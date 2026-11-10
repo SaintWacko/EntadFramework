@@ -15,7 +15,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RandomGoodMood</defName>
     <label>Fickle Cheer</label>
-    <description>It never feels the same way twice, but it always feels good.</description>
+    <description>I can't believe that happened! Wait... did it happen?</description>
     <categories>
       <li>Weapon</li>
       <li>Apparel</li>

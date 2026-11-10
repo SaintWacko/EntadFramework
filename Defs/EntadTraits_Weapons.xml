@@ -40,7 +40,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_ImpactRounds</defName>
     <label>Impact Rounds</label>
-    <description>Its shots knock targets back on their heels, slowing them down.</description>
+    <description>Its shots knock targets back on their heels.</description>
     <categories><li>WeaponRanged</li></categories>
     <rarity>Uncommon</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -126,7 +126,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_HeavyHitter</defName>
     <label>Heavy Hitter</label>
-    <description>It carries more weight than it should.</description>
+    <description>Its blows hit harder than expected.</description>
     <categories><li>WeaponMelee</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -181,7 +181,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Razoredge</defName>
     <label>Razor-Edged</label>
-    <description>Whatever part of it lands, it cuts like a razor.</description>
+    <description>Sharp embellishments glint and glisten.</description>
     <categories><li>WeaponMelee</li></categories>
     <rarity>Common</rarity>
     <scalesWithRarity>true</scalesWithRarity>
@@ -190,7 +190,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_Emberforged</defName>
     <label>Emberforged</label>
-    <description>Whatever it was made to do, now it burns.</description>
+    <description>A weapon formed of pure heat.</description>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <visible>true</visible>
@@ -264,6 +264,7 @@
     <defName>Entad_Shocking</defName>
     <label>Shocking</label>
     <description>Crackles with static, and wrecks machinery.</description>
+    <descriptionRanged>Crackles with static, and its shots wreck machinery.</descriptionRanged>
     <categories><li>Weapon</li></categories>
     <rarity>Rare</rarity>
     <visible>true</visible>
@@ -409,4 +410,17 @@
       <li><stat>Entad_MercilessDamageFactor</stat><min>1.25</min><max>1.5</max></li>
     </statFactors>
   </EntadFramework.EntadTraitDef>
+  <!-- <EntadFramework.EntadTraitDef>
+    <defName>Entad_Destructive</defName>
+    <label>Destructive</label>
+    <description>It tears down walls.</description>
+    <descriptionMelee>Its blows fall upon the walls like a sledgehammer.</descriptionMelee>
+    <descriptionRanged>Its shots fall upon the walls like a sledgehammer.</descriptionRanged>
+    <categories><li>Weapon</li></categories>
+    <rarity>Uncommon</rarity>
+    <scalesWithRarity>true</scalesWithRarity>
+    <statFactors>
+      <li><stat>buildingDamageFactor</stat><min>2</min><max>3</max></li>
+    </statFactors>
+  </EntadFramework.EntadTraitDef> -->
 </Defs>

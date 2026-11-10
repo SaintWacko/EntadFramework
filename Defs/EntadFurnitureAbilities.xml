@@ -22,7 +22,7 @@
   <AbilityDef>
     <defName>Entad_RestfulSigh</defName>
     <label>restful sigh</label>
-    <description>Halves the user's pain for 4 hours.</description>
+    <description>The wound is still there, but the pain is lessened. (Halves the user's pain for 4 hours)</description>
     <iconPath>UI/Commands/Draft</iconPath>
     <cooldownTicksRange>60000~60000</cooldownTicksRange>
     <targetRequired>false</targetRequired>
@@ -57,7 +57,7 @@
   <EntadFramework.EntadTraitDef>
     <defName>Entad_RestfulPause</defName>
     <label>Restful Pause</label>
-    <description>A pawn can pause by it for a few seconds and come away with their pain halved for a while.</description>
+    <description>Takes away the pain... for a while.</description>
     <categories>
       <li>Furniture</li>
     </categories>

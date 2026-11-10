@@ -23,7 +23,7 @@
     <label>Conserving</label>
     <description>Everything wired to it runs just as well on less, and nobody can say why.</description>
     <categories><li>Furniture</li></categories>
-    <rarity>Rare</rarity>
+    <rarity>Epic</rarity>
     <scalesWithRarity>true</scalesWithRarity>
     <exclusiveWith><li>Entad_Leaky</li></exclusiveWith>
     <statFactors>

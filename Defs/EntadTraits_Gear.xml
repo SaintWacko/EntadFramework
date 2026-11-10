@@ -104,7 +104,7 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_Sustaining</defName>
     <label>entad sustenance</label>
-    <description>An entad this person carries keeps them fed.</description>
+    <description>You can go longer between meals.</description>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <stages>
       <li>
@@ -145,7 +145,7 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_MorningVigor</defName>
     <label>morning vigor</label>
-    <description>Woke up full of energy. Works faster for a while.</description>
+    <description>Woke up full of energy.</description>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <comps>
       <li Class="HediffCompProperties_Disappears">
@@ -185,7 +185,7 @@
   <HediffDef ParentName="EntadHediffBase">
     <defName>Entad_Hediff_AdrenalSurge</defName>
     <label>adrenal surge</label>
-    <description>A rush of energy from an entad. Pain is dulled and movement is quicker.</description>
+    <description>A rush of energy. Pain is dulled and movement is quicker.</description>
     <defaultLabelColor>(0.6, 0.85, 1)</defaultLabelColor>
     <comps>
       <li Class="HediffCompProperties_Disappears">
